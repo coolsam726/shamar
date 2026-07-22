@@ -1,5 +1,15 @@
 <tr class="hover:bg-surface-row-hover transition-colors" data-shamar-record-id="{{ record.id }}">
-  <td class="px-3 py-3"></td>
+  <td class="px-3 py-3">
+    @if(bulkActions && bulkActions.length)
+      <input
+        type="checkbox"
+        class="rounded border-default"
+        :checked="selected.includes({{ jsonAttr(String(record.id)) }})"
+        @change="toggleId({{ jsonAttr(String(record.id)) }})"
+        aria-label="Select record"
+      />
+    @endif
+  </td>
   @each(column in resource.columns)
     <td class="px-4 py-3 text-body {{ resolveAlignmentClass(column) }}">
       @if(column.type === 'boolean' || column.format === 'boolean' || column.format === 'toggle')
@@ -25,8 +35,39 @@
   @endeach
   <td class="px-4 py-3 text-right">
     <div class="inline-flex flex-wrap items-center justify-end gap-1 text-xs">
-      <a href="{{ basePath }}/{{ resource.slug }}/{{ record.id }}{{ recordNavQuery(query) }}" class="px-2 py-1 rounded-md text-body hover:bg-surface-hover">View</a>
-      <a href="{{ basePath }}/{{ resource.slug }}/{{ record.id }}/edit{{ recordNavQuery(query) }}" class="px-2 py-1 rounded-md text-body hover:bg-surface-hover">Edit</a>
+      @if(rowActions)
+        @each(action in rowActions)
+          @if(action.name === 'view')
+            <a href="{{ basePath }}/{{ resource.slug }}/{{ record.id }}{{ recordNavQuery(query) }}" class="px-2 py-1 rounded-md text-body hover:bg-surface-hover">{{ action.label }}</a>
+          @elseif(action.name === 'edit' && showEditButton)
+            <a href="{{ basePath }}/{{ resource.slug }}/{{ record.id }}/edit{{ recordNavQuery(query) }}" class="px-2 py-1 rounded-md text-body hover:bg-surface-hover">{{ action.label }}</a>
+          @elseif(action.name === 'delete' && showDeleteButton)
+            <button
+              type="button"
+              class="px-2 py-1 rounded-md text-fg-danger hover:bg-danger-soft"
+              @click="$dispatch('shamar-open-confirm', { variant: 'danger', mode: 'confirm', title: {{ jsonAttr(action.label) }}, message: {{ jsonAttr(action.confirm || 'Are you sure?') }}, confirmLabel: 'Delete', action: '{{ basePath }}/{{ resource.slug }}/{{ record.id }}/delete' })"
+            >{{ action.label }}</button>
+          @elseif(action.name === 'revoke' && !record.revokedAt)
+            <button
+              type="button"
+              class="px-2 py-1 rounded-md text-fg-danger hover:bg-danger-soft"
+              @click="$dispatch('shamar-open-confirm', { variant: 'danger', mode: 'confirm', title: {{ jsonAttr(action.label) }}, message: {{ jsonAttr(action.confirm || 'Are you sure?') }}, confirmLabel: {{ jsonAttr(action.label) }}, action: '{{ basePath }}/{{ resource.slug }}/{{ record.id }}/action/{{ action.name }}' })"
+            >{{ action.label }}</button>
+          @elseif(action.name === 'reactivate' && record.revokedAt)
+            <button
+              type="button"
+              class="px-2 py-1 rounded-md text-body hover:bg-surface-hover"
+              @click="$dispatch('shamar-open-confirm', { variant: 'primary', mode: 'confirm', title: {{ jsonAttr(action.label) }}, message: {{ jsonAttr(action.confirm || 'Are you sure?') }}, confirmLabel: {{ jsonAttr(action.label) }}, action: '{{ basePath }}/{{ resource.slug }}/{{ record.id }}/action/{{ action.name }}' })"
+            >{{ action.label }}</button>
+          @elseif(action.name !== 'view' && action.name !== 'edit' && action.name !== 'delete' && action.name !== 'revoke' && action.name !== 'reactivate')
+            <button
+              type="button"
+              class="px-2 py-1 rounded-md text-body hover:bg-surface-hover {{ action.color === 'danger' ? 'text-fg-danger hover:bg-danger-soft' : '' }}"
+              @click="$dispatch('shamar-open-confirm', { variant: {{ jsonAttr(action.color === 'danger' ? 'danger' : 'primary') }}, mode: 'confirm', title: {{ jsonAttr(action.label) }}, message: {{ jsonAttr(action.confirm || 'Are you sure?') }}, confirmLabel: {{ jsonAttr(action.label) }}, action: '{{ basePath }}/{{ resource.slug }}/{{ record.id }}/action/{{ action.name }}' })"
+            >{{ action.label }}</button>
+          @endif
+        @endeach
+      @endif
     </div>
   </td>
 </tr>

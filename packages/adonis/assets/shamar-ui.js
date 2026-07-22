@@ -135,6 +135,105 @@
     setTimeout(dismiss, toastData.durationMs ?? 4200);
   }
 
+  /**
+   * One-time secret reveal (API keys / PATs). Blocks redirect until the user confirms.
+   */
+  function revealOneTimeSecret({ secret, title, message, confirmLabel, onConfirm }) {
+    const value = String(secret ?? '').trim();
+    if (!value) {
+      if (typeof onConfirm === 'function') onConfirm();
+      return;
+    }
+    window.dispatchEvent(
+      new CustomEvent('shamar-open-confirm', {
+        detail: {
+          mode: 'secret',
+          variant: 'warning',
+          title: title || 'Copy your secret',
+          message:
+            message ||
+            'This value will only be shown once. Copy it now and store it somewhere safe.',
+          secret: value,
+          confirmLabel: confirmLabel || "I've copied it",
+          onConfirm: typeof onConfirm === 'function' ? onConfirm : null,
+        },
+      }),
+    );
+  }
+
+  function clearFieldErrors(form) {
+    if (!form) return;
+    form.querySelectorAll('.shamar-field__error').forEach((el) => el.remove());
+    form.querySelectorAll('.is-invalid').forEach((el) => el.classList.remove('is-invalid'));
+  }
+
+  function findFieldHost(form, name) {
+    if (!form || !name) return null;
+    const byData = form.querySelector(`[data-field-name="${CSS.escape(name)}"]`);
+    if (byData) return byData;
+
+    const input =
+      form.querySelector(`[name="${CSS.escape(name)}"]`) ||
+      form.querySelector(`[name="${CSS.escape(name)}[]"]`) ||
+      form.querySelector(`#field-${CSS.escape(name)}`);
+    if (input) return input.closest('.shamar-field') || input.parentElement;
+
+    for (const el of form.querySelectorAll(
+      '[data-shamar-m2o-config], [data-shamar-m2m-config]',
+    )) {
+      try {
+        const raw =
+          el.getAttribute('data-shamar-m2o-config') ||
+          el.getAttribute('data-shamar-m2m-config') ||
+          '{}';
+        const cfg = JSON.parse(raw);
+        if (cfg?.name === name) return el.closest('.shamar-field') || el;
+      } catch {
+        /* ignore */
+      }
+    }
+    return null;
+  }
+
+  /** Apply server validation errors onto form fields. Returns message list. */
+  function applyFieldErrors(form, errors) {
+    clearFieldErrors(form);
+    if (!form || !errors || typeof errors !== 'object') return [];
+    const messages = [];
+    let firstHost = null;
+    for (const [name, message] of Object.entries(errors)) {
+      const text = String(message ?? '').trim();
+      if (!text) continue;
+      messages.push(text);
+      const host = findFieldHost(form, name);
+      if (!host) continue;
+      if (!firstHost) firstHost = host;
+      host.classList.add('is-invalid');
+      const control =
+        host.querySelector(
+          '.shamar-input, .shamar-select, .shamar-combobox, .shamar-m2m-checkboxes, [data-shamar-m2o-config], [data-shamar-m2m-config]',
+        ) || host;
+      control.classList.add('is-invalid');
+      const p = document.createElement('p');
+      p.className = 'shamar-field__error';
+      p.setAttribute('role', 'alert');
+      p.setAttribute('data-shamar-field-error', name);
+      p.textContent = text;
+      host.appendChild(p);
+    }
+    if (firstHost?.scrollIntoView) {
+      firstHost.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    return messages;
+  }
+
+  function validationToastMessage(messages, fallbackMessage) {
+    if (messages?.length === 1) return messages[0];
+    if (messages?.length > 1) return `${messages[0]} (+${messages.length - 1} more)`;
+    if (fallbackMessage) return String(fallbackMessage);
+    return 'Could not save your changes — fix any errors and try again.';
+  }
+
   function listViewKey(slug) {
     return `shamar-list-view:${slug}`;
   }
@@ -449,6 +548,8 @@
 
   window.ShamarUI = {
     showToast,
+    applyFieldErrors,
+    clearFieldErrors,
     getStoredListView,
     setStoredListView,
     listPath,
@@ -809,6 +910,9 @@
         ? cfg.initialItems.map((item) => ({
             id: String(item.id),
             label: item.label || String(item.id),
+            name: item.name,
+            group: item.group,
+            ability: item.ability,
           }))
         : [],
       query: '',
@@ -1093,16 +1197,19 @@
     self.cascadeWildcards = cfg.cascadeWildcards !== false;
     self.groupBy = cfg.groupBy ? String(cfg.groupBy) : '';
     self.framed = cfg.checkboxFramed !== false;
+    self.valueAttribute = cfg.valueAttribute ? String(cfg.valueAttribute) : 'id';
     self.options = Array.isArray(cfg.options)
       ? cfg.options.map((item) => normalizeCheckboxOption(item))
       : [];
     const prevInit = self.init;
     self.init = function initCheckbox() {
+      this.selected = this.selected.map((item) => normalizeCheckboxOption(item));
       prevInit.call(this);
       if (this.options.length === 0) {
         this.loadAllOptions();
       } else {
         this.sortOptions();
+        this.options = this.options.map((item) => normalizeCheckboxOption(item));
         this.mergeSelectedIntoOptions();
         this.pruneCovered();
       }
@@ -1149,8 +1256,25 @@
         }));
       },
     });
+    self.itemValue = function itemValue(item) {
+      if (!item) return '';
+      if (this.valueAttribute === 'name') {
+        return String(item.name || this.permissionKey(item) || item.id || '');
+      }
+      return String(item.id ?? '');
+    };
     self.permissionKey = function permissionKey(item) {
-      return String(item?.label || item?.id || '').trim();
+      if (item?.name) return String(item.name).trim();
+      if (item?.group != null && item?.ability != null) {
+        const group = String(item.group).trim();
+        const ability = String(item.ability).trim();
+        if (group === '*' && ability === '*') return '*';
+        if (group && ability) return `${group}:${ability}`;
+      }
+      const label = String(item?.label || item?.id || '').trim();
+      if (label === '*') return '*';
+      if (label.includes(':')) return label;
+      return label;
     };
     self.itemDisplay = function itemDisplay(item) {
       if (item?.ability) {
@@ -1166,7 +1290,7 @@
     };
     self.groupSelectedCount = function groupSelectedCount(group) {
       if (!group?.items) return 0;
-      return group.items.filter((item) => this.isSelected(item.id)).length;
+      return group.items.filter((item) => this.isSelected(item)).length;
     };
     self.covers = function covers(wildcard, candidate) {
       if (!wildcard || !candidate || wildcard === candidate) return false;
@@ -1211,8 +1335,12 @@
         return compareAbility(a, b, this);
       });
     };
-    self.isSelected = function isSelected(id) {
-      return this.selectedIds.has(String(id));
+    self.isSelected = function isSelected(itemOrId) {
+      const id =
+        itemOrId && typeof itemOrId === 'object'
+          ? String(itemOrId.id ?? '')
+          : String(itemOrId ?? '');
+      return this.selectedIds.has(id);
     };
     self.pick = function pickCheckbox(item) {
       if (!item || item.id == null || this.readonly) return;
@@ -1224,8 +1352,8 @@
     };
     self.toggle = function toggle(item) {
       if (this.readonly || !item) return;
-      if (this.isCovered(item) && !this.isSelected(item.id)) return;
-      if (this.isSelected(item.id)) {
+      if (this.isCovered(item) && !this.isSelected(item)) return;
+      if (this.isSelected(item)) {
         this.remove(item.id);
       } else {
         this.pick(item);
@@ -1266,11 +1394,22 @@
   function normalizeCheckboxOption(item) {
     const id = String(item.id ?? item.value ?? '');
     const label = item.label || id;
+    const group = item.group || deriveGroupFromLabel(item.name || label);
+    const ability =
+      item.ability || deriveAbilityFromLabel(item.name || label);
+    let name = item.name ? String(item.name).trim() : '';
+    if (!name && group && ability) {
+      name = group === '*' && ability === '*' ? '*' : `${group}:${ability}`;
+    }
+    if (!name) {
+      name = deriveGroupFromLabel(label) === '*' ? '*' : label.includes(':') ? label : id;
+    }
     return {
       id,
       label,
-      group: item.group || deriveGroupFromLabel(label),
-      ability: item.ability || deriveAbilityFromLabel(label),
+      name,
+      group,
+      ability,
     };
   }
 
@@ -1379,6 +1518,8 @@
           this.fieldMeta[field.name] = {
             visible: field.visible !== false,
             disabled: !!field.disabled,
+            required: !!field.required,
+            readonly: !!field.readonly,
             label: field.label,
             help: field.help,
             placeholder: field.placeholder,
@@ -1399,6 +1540,14 @@
 
       isDisabled(name) {
         return !!this.fieldMeta[name]?.disabled;
+      },
+
+      isRequired(name) {
+        return !!this.fieldMeta[name]?.required;
+      },
+
+      isReadonly(name) {
+        return !!this.fieldMeta[name]?.readonly;
       },
 
       fieldLabel(name, fallback) {
@@ -1480,8 +1629,9 @@
         const live = this.liveMap[name];
         if (!live) return;
         const parsed = this.parseLive(live);
-        if (parsed.event === 'change') {
-          this.scheduleSync(name, parsed.debounce);
+        // Selects/comboboxes fire change; default live() uses "input" — treat both.
+        if (parsed.event === 'change' || parsed.event === 'input') {
+          this.scheduleSync(name, parsed.event === 'input' ? parsed.debounce : 0);
         }
       },
 
@@ -1545,6 +1695,8 @@
               this.fieldMeta[field.name] = {
                 visible: field.visible !== false,
                 disabled: !!field.disabled,
+                required: !!field.required,
+                readonly: !!field.readonly,
                 label: field.label,
                 help: field.help,
                 placeholder: field.placeholder,
@@ -1873,25 +2025,17 @@
       openFilterField: null,
       m2oQuery: {},
       m2oResults: {},
+      _searchGen: 0,
+      _softReloading: false,
       init() {
+        // Free-text search stays in the input — never becomes a chip.
+        this.searchInput = (cfg.search || '').trim();
         const chips = [];
-        const search = (cfg.search || '').trim();
-        if (search) {
-          chips.push({ field: null, op: 'ilike', value: search, label: `Search: "${search}"` });
-          this.searchInput = search;
-        }
         const filters = Array.isArray(cfg.filters) ? cfg.filters : [];
         for (const chip of filters) {
           if (chip && chip.field) chips.push(chip);
         }
         this.chips = chips;
-      },
-      _searchChipIndex() {
-        return this.chips.findIndex((c) => c.field === null);
-      },
-      get _searchValue() {
-        const i = this._searchChipIndex();
-        return i >= 0 ? this.chips[i].value : '';
       },
       buildUrl() {
         const fieldChips = this.chips.filter((c) => c.field !== null);
@@ -1900,7 +2044,8 @@
             ? `${this.basePath}/${this.slug}/kanban`
             : `${this.basePath}/${this.slug}`;
         const params = new URLSearchParams();
-        if (this._searchValue) params.set('search', String(this._searchValue));
+        const search = (this.searchInput || '').trim();
+        if (search) params.set('search', search);
         if (this.sort) {
           params.set('sort', this.sort);
           if (this.direction === 'asc' || this.direction === 'desc') {
@@ -1919,26 +2064,122 @@
       reload() {
         window.location.assign(this.buildUrl());
       },
-      onSearchChange() {
-        const value = (this.searchInput || '').trim();
-        const i = this._searchChipIndex();
-        if (!value) {
-          if (i >= 0) this.chips.splice(i, 1);
-        } else {
-          const chip = { field: null, op: 'ilike', value, label: `Search: "${value}"` };
-          if (i >= 0) this.chips[i] = chip;
-          else this.chips.push(chip);
+      async softReload(gen) {
+        const url = this.buildUrl();
+        const input = this.$refs.listSearchInput;
+        const keepFocus = Boolean(input && document.activeElement === input);
+        const selStart = input?.selectionStart ?? null;
+        const selEnd = input?.selectionEnd ?? null;
+
+        try {
+          history.replaceState(null, '', url);
+        } catch {
+          /* ignore */
         }
-        this.reload();
+
+        this._softReloading = true;
+        let res;
+        try {
+          res = await fetch(url, {
+            credentials: 'same-origin',
+            headers: {
+              Accept: 'text/html',
+              'X-Requested-With': 'XMLHttpRequest',
+            },
+          });
+        } catch {
+          this._softReloading = false;
+          window.location.assign(url);
+          return;
+        }
+
+        if (gen != null && gen !== this._searchGen) {
+          this._softReloading = false;
+          return;
+        }
+
+        if (!res.ok) {
+          this._softReloading = false;
+          window.location.assign(url);
+          return;
+        }
+
+        const html = await res.text();
+        if (gen != null && gen !== this._searchGen) {
+          this._softReloading = false;
+          return;
+        }
+
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const newRoot = doc.querySelector('[data-shamar-list-root]');
+        const curRoot = document.querySelector('[data-shamar-list-root]');
+        if (!newRoot || !curRoot) {
+          this._softReloading = false;
+          window.location.assign(url);
+          return;
+        }
+
+        const newTbody = newRoot.querySelector('tbody');
+        const curTbody = curRoot.querySelector('tbody');
+        if (newTbody && curTbody) {
+          curTbody.innerHTML = newTbody.innerHTML;
+          if (window.Alpine?.initTree) {
+            window.Alpine.initTree(curTbody);
+          }
+        }
+
+        const newPagination = newRoot.querySelector('[data-shamar-list-pagination]');
+        const curPagination = curRoot.querySelector('[data-shamar-list-pagination]');
+        if (newPagination && curPagination) {
+          curPagination.replaceWith(document.importNode(newPagination, true));
+          const nextPagination = curRoot.querySelector('[data-shamar-list-pagination]');
+          if (nextPagination && window.Alpine?.initTree) {
+            window.Alpine.initTree(nextPagination);
+          }
+        }
+
+        for (const key of ['total', 'search', 'sort', 'direction']) {
+          const attr = `data-shamar-${key}`;
+          const value = newRoot.getAttribute(attr);
+          if (value == null) curRoot.removeAttribute(attr);
+          else curRoot.setAttribute(attr, value);
+        }
+
+        const listData = window.Alpine?.$data?.(curRoot);
+        if (listData) {
+          listData.total = Number(curRoot.getAttribute('data-shamar-total') || 0);
+          if (typeof listData.clearSelection === 'function') {
+            listData.clearSelection();
+          } else if (typeof listData.refreshPageState === 'function') {
+            listData.refreshPageState();
+          }
+        }
+
+        this._softReloading = false;
+
+        if (keepFocus && input) {
+          input.focus();
+          try {
+            const len = input.value.length;
+            input.setSelectionRange(
+              selStart == null ? len : selStart,
+              selEnd == null ? len : selEnd,
+            );
+          } catch {
+            /* ignore */
+          }
+        }
+      },
+      onSearchChange() {
+        const gen = ++this._searchGen;
+        this.softReload(gen);
       },
       clearSearch() {
         this.searchInput = '';
         this.onSearchChange();
       },
       removeChip(i) {
-        const chip = this.chips[i];
         this.chips.splice(i, 1);
-        if (chip && chip.field === null) this.searchInput = '';
         this.reload();
       },
       clearAll() {
@@ -2069,9 +2310,11 @@
         this.selectAllMatching = false;
         this.selected = [];
         this.pageFullySelected = false;
+        this.bulkOpen = false;
       },
       submitBulk(url, action, confirmMessage) {
         if (!this.selected.length && !this.selectAllMatching) return;
+        this.bulkOpen = false;
         const countLabel = this.selectAllMatching ? this.total : this.selected.length;
         const run = () => this.executeBulk(url, action);
         if (confirmMessage) {
@@ -2149,6 +2392,8 @@
       fullPageUrl: '',
       confirmAction: '',
       confirmMessage: '',
+      secretText: '',
+      secretCopied: false,
       fullscreen: false,
       x: 0,
       y: 0,
@@ -2425,34 +2670,71 @@
         this.open = true;
         this.loading = false;
         this.clearContentFooter();
-        const mode = detail.mode === 'alert' || detail.mode === 'info' ? detail.mode : 'confirm';
+        const rawMode = detail.mode;
+        const mode =
+          rawMode === 'alert' || rawMode === 'info' || rawMode === 'secret'
+            ? rawMode
+            : 'confirm';
         const variant =
           detail.variant ||
-          (mode === 'alert' || mode === 'info' ? 'info' : detail.color === 'danger' ? 'danger' : 'danger');
+          (mode === 'secret'
+            ? 'warning'
+            : mode === 'alert' || mode === 'info'
+              ? 'info'
+              : detail.color === 'danger'
+                ? 'danger'
+                : 'danger');
         this.promptMode = mode === 'info' ? 'alert' : mode;
         this.promptVariant = variant;
         this.title =
           detail.title ||
-          (this.promptMode === 'alert'
-            ? this.promptVariant === 'danger'
-              ? 'Alert'
-              : 'Notice'
-            : 'Confirm');
+          (this.promptMode === 'secret'
+            ? 'Copy your secret'
+            : this.promptMode === 'alert'
+              ? this.promptVariant === 'danger'
+                ? 'Alert'
+                : 'Notice'
+              : 'Confirm');
         this.confirmMessage = detail.message || 'Are you sure?';
+        this.secretText = this.promptMode === 'secret' ? String(detail.secret || '') : '';
+        this.secretCopied = false;
         this.confirmAction = detail.action || '';
         this._confirmCallback = typeof detail.onConfirm === 'function' ? detail.onConfirm : null;
         this.confirmLabel =
           detail.confirmLabel ||
-          (this.promptMode === 'alert' ? 'OK' : detail.variant === 'danger' ? 'Delete' : 'Confirm');
+          (this.promptMode === 'secret'
+            ? "I've copied it"
+            : this.promptMode === 'alert'
+              ? 'OK'
+              : detail.variant === 'danger'
+                ? 'Delete'
+                : 'Confirm');
         this.cancelLabel = detail.cancelLabel || 'Cancel';
         this.fullPageUrl = '';
         this.fullscreen = false;
-        this.width = 420;
-        this.height = 240;
+        this.width = this.promptMode === 'secret' ? 560 : 420;
+        this.height = this.promptMode === 'secret' ? 360 : 240;
         this.x = 0;
         this.y = 0;
         document.body.classList.add('overflow-hidden');
         this.focusDialog();
+      },
+
+      async copySecret() {
+        const value = String(this.secretText || '');
+        if (!value) return;
+        try {
+          await navigator.clipboard.writeText(value);
+          this.secretCopied = true;
+          window.setTimeout(() => {
+            this.secretCopied = false;
+          }, 2000);
+        } catch {
+          showToast('error', {
+            title: 'Copy failed',
+            message: 'Select the key and copy it manually.',
+          });
+        }
       },
 
       confirmButtonClass() {
@@ -2469,6 +2751,8 @@
         this.fullscreen = false;
         this.dialogStack = [];
         this._confirmCallback = null;
+        this.secretText = '';
+        this.secretCopied = false;
         _dialogOnResult = null;
         this.currentEmbedUrl = '';
         this.clearContentFooter();
@@ -2483,6 +2767,10 @@
       },
 
       async dismissDialog(options = {}) {
+        // One-time secrets must be acknowledged — no backdrop / × dismiss.
+        if (this.confirmMode && this.promptMode === 'secret') {
+          return;
+        }
         if (this.confirmMode) {
           this.close();
           return;
@@ -2560,6 +2848,7 @@
               method: 'POST',
               headers: csrfHeaders({
                 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                Accept: 'application/json',
               }),
               body,
               redirect: 'follow',
@@ -2569,11 +2858,48 @@
               this.handleRedirect(`${done.pathname}${done.search}`);
               return;
             }
-            if (!res.ok) {
+            if (res.status === 422 || !res.ok) {
+              let payload = null;
+              try {
+                payload = await res.json();
+              } catch {
+                /* ignore */
+              }
+              const messages = applyFieldErrors(form, payload?.errors);
               showToast('error', {
                 title: 'Could not save',
-                message: 'Please check the form and try again.',
+                message: validationToastMessage(messages, payload?.message),
               });
+              return;
+            }
+            let payload = null;
+            try {
+              payload = await res.json();
+            } catch {
+              /* ignore */
+            }
+            if (payload?.id != null || payload?._id != null) {
+              const base = (
+                form.getAttribute('data-shamar-after-create') ||
+                form.action.replace(/\/$/, '')
+              ).replace(/\/$/, '');
+              const id = payload.id ?? payload._id;
+              const view =
+                form.getAttribute('data-shamar-after-create-view') ||
+                (payload.plainText ? 'show' : 'edit');
+              const next =
+                view === 'show' ? `${base}/${id}` : `${base}/${id}/edit`;
+              if (payload.plainText) {
+                revealOneTimeSecret({
+                  secret: payload.plainText,
+                  title: 'Copy your API key',
+                  message:
+                    'This secret will only be shown once. Copy it now and store it somewhere safe before continuing.',
+                  onConfirm: () => this.handleRedirect(next),
+                });
+              } else {
+                this.handleRedirect(next);
+              }
             }
           } catch {
             showToast('error', {
@@ -2797,6 +3123,14 @@
     const form = componentEl?.closest?.('form');
     if (!form) return;
     queueMicrotask(() => {
+      try {
+        const alpine = window.Alpine?.$data?.(form);
+        if (typeof alpine?.onFieldChange === 'function') {
+          alpine.onFieldChange(fieldName);
+        }
+      } catch {
+        /* ignore */
+      }
       const hidden =
         componentEl.querySelector(`input[type="hidden"][name="${fieldName}"]`) ||
         componentEl.querySelector(`input[type="hidden"][name="${fieldName}[]"]`);
@@ -2849,8 +3183,15 @@
         return;
       }
       for (const item of selected) {
-        if (item?.id != null && String(item.id).trim() !== '') {
-          data.append(`${cfg.name}[]`, String(item.id));
+        const valueAttr = cfg.valueAttribute ? String(cfg.valueAttribute) : 'id';
+        let value = '';
+        if (valueAttr === 'name') {
+          value = String(item.name || item.id || '').trim();
+        } else {
+          value = item?.id != null ? String(item.id).trim() : '';
+        }
+        if (value) {
+          data.append(`${cfg.name}[]`, value);
         }
       }
     });
@@ -2963,30 +3304,6 @@
       window.setTimeout(() => takeSnapshot(initial), 50);
     }
 
-    function clearFieldErrors(form) {
-      form.querySelectorAll('.shamar-field__error').forEach((el) => el.remove());
-      form.querySelectorAll('.is-invalid').forEach((el) => el.classList.remove('is-invalid'));
-    }
-
-    function applyFieldErrors(form, errors) {
-      clearFieldErrors(form);
-      if (!errors || typeof errors !== 'object') return;
-      for (const [name, message] of Object.entries(errors)) {
-        const field =
-          form.querySelector(`[name="${CSS.escape(name)}"]`) ||
-          form.querySelector(`#field-${CSS.escape(name)}`);
-        if (!field) continue;
-        field.classList.add('is-invalid');
-        const host = field.closest('.shamar-field') || field.parentElement;
-        if (!host) continue;
-        const p = document.createElement('p');
-        p.className = 'shamar-field__error';
-        p.setAttribute('role', 'alert');
-        p.textContent = String(message);
-        host.appendChild(p);
-      }
-    }
-
     function editUrlAfterCreate(form, record) {
       const base =
         form.getAttribute('data-shamar-after-create') ||
@@ -2994,7 +3311,11 @@
         '';
       const id = record?.id ?? record?._id;
       if (!base || id == null) return null;
-      return `${base.replace(/\/$/, '')}/${id}/edit`;
+      const view =
+        form.getAttribute('data-shamar-after-create-view') ||
+        (record?.plainText ? 'show' : 'edit');
+      const suffix = view === 'show' ? '' : '/edit';
+      return `${base.replace(/\/$/, '')}/${id}${suffix}`;
     }
 
     async function saveFormInPlace(form, { silent = false } = {}) {
@@ -3018,22 +3339,39 @@
         } catch {
           /* ignore */
         }
-        applyFieldErrors(form, payload?.errors);
+        const messages = applyFieldErrors(form, payload?.errors);
         if (!silent) {
           showToast({
             type: 'error',
             title: 'Save failed',
-            message: 'Could not save your changes — fix any errors and try again.',
+            message: validationToastMessage(messages, payload?.message),
           });
         }
         return false;
       }
       if (!res.ok) {
+        let payload = null;
+        try {
+          payload = await res.json();
+        } catch {
+          /* ignore */
+        }
+        if (payload?.errors) {
+          const messages = applyFieldErrors(form, payload.errors);
+          if (!silent) {
+            showToast({
+              type: 'error',
+              title: 'Save failed',
+              message: validationToastMessage(messages, payload?.message),
+            });
+          }
+          return false;
+        }
         if (!silent) {
           showToast({
             type: 'error',
             title: 'Save failed',
-            message: 'Could not save your changes — fix any errors and try again.',
+            message: validationToastMessage([], payload?.message),
           });
         }
         return false;
@@ -3053,8 +3391,21 @@
       if (mode === 'create') {
         const next = editUrlAfterCreate(form, record);
         if (next) {
-          allowUnload = true;
-          window.location.href = next;
+          const go = () => {
+            allowUnload = true;
+            window.location.href = next;
+          };
+          if (record?.plainText) {
+            revealOneTimeSecret({
+              secret: record.plainText,
+              title: 'Copy your API key',
+              message:
+                'This secret will only be shown once. Copy it now and store it somewhere safe before continuing.',
+              onConfirm: go,
+            });
+            return true;
+          }
+          go();
           return true;
         }
       }

@@ -1,8 +1,37 @@
 import { defaultActions } from './actions.js';
 import { form, FormBuilder } from './form.js';
 import { infolist, infolistFromFields, InfolistBuilder } from './infolist.js';
+import { userHasPermission, normalizeCustomPermissions } from './permissions.js';
+import type { PolicyClass } from './policy-types.js';
 import { table, TableBuilder } from './table.js';
-import type { ResourceMeta, ResourceModel, ShamarUser } from './types.js';
+import type { DataAdapter, ResourceMeta, ResourceModel, ShamarUser } from './types.js';
+
+/** Result of {@link Resource.prepareCreate} before adapter.create. */
+export interface PrepareCreateResult {
+  data: Record<string, unknown>;
+  /** One-time secret to flash after create (e.g. API key plaintext). */
+  flashPlainText?: string;
+  /** Override success flash message. */
+  flashMessage?: string;
+}
+
+export interface PrepareCreateContext {
+  adapter: DataAdapter;
+  meta: ResourceMeta;
+  /** Authenticated user id when available (audit). */
+  userId?: string | null;
+}
+
+export interface HandleActionContext {
+  adapter: DataAdapter;
+  meta: ResourceMeta;
+  userId?: string | null;
+  user?: ShamarUser | null;
+}
+
+export interface HandleActionResult {
+  message?: string;
+}
 
 /**
  * Base resource class — Filament `Resource` equivalent.
@@ -21,6 +50,8 @@ export abstract class Resource {
   static icon?: string;
   static companyScoped?: boolean;
   static softDelete?: boolean | { field?: string };
+  /** Optional record-level policy (Loom / Laravel style). */
+  static policy?: PolicyClass;
 
   static form(): ReturnType<typeof form> {
     return form(() => undefined);
@@ -47,20 +78,69 @@ export abstract class Resource {
     return defaultActions();
   }
 
-  static canViewAny(_user: ShamarUser): boolean {
-    return true;
+  /**
+   * Extra abilities beyond CRUD (`viewAny` / `view` / `create` / `edit` / `delete`).
+   * Seeded as `{slug}:{ability}` unless the name already contains `:`.
+   */
+  static permissions(): Array<string | { name: string; label?: string }> {
+    return [];
   }
 
-  static canCreate(_user: ShamarUser): boolean {
-    return true;
+  /**
+   * Mutate create payload before validation / adapter.create.
+   * Return `flashPlainText` for one-time secrets (API keys).
+   */
+  static prepareCreate(
+    data: Record<string, unknown>,
+    _ctx: PrepareCreateContext,
+  ): PrepareCreateResult | Promise<PrepareCreateResult> {
+    return { data };
   }
 
-  static canEdit(_user: ShamarUser, _record?: Record<string, unknown>): boolean {
-    return true;
+  /**
+   * Handle a named custom action (`placement: 'row' | 'bulk'`) for one or more records.
+   * Return `null`/`undefined` when the action is unknown so the controller can 400.
+   */
+  static handleAction(
+    _action: string,
+    _records: Record<string, unknown>[],
+    _ctx: HandleActionContext,
+  ):
+    | HandleActionResult
+    | void
+    | null
+    | Promise<HandleActionResult | void | null> {
+    return null;
   }
 
-  static canDelete(_user: ShamarUser, _record?: Record<string, unknown>): boolean {
-    return true;
+  /** Whether the resource appears in navigation and is reachable. */
+  static canAccess(user: ShamarUser): boolean {
+    return this.canViewAny(user);
+  }
+
+  static canViewAny(user: ShamarUser): boolean {
+    if (this.policy?.viewAny) return Boolean(this.policy.viewAny(user, this.slug));
+    return userHasPermission(user, this.slug, 'viewAny');
+  }
+
+  static canView(user: ShamarUser, record?: Record<string, unknown>): boolean {
+    if (this.policy?.view) return Boolean(this.policy.view(user, record ?? {}, this.slug));
+    return userHasPermission(user, this.slug, 'view');
+  }
+
+  static canCreate(user: ShamarUser): boolean {
+    if (this.policy?.create) return Boolean(this.policy.create(user, this.slug));
+    return userHasPermission(user, this.slug, 'create');
+  }
+
+  static canEdit(user: ShamarUser, record?: Record<string, unknown>): boolean {
+    if (this.policy?.edit) return Boolean(this.policy.edit(user, record ?? {}, this.slug));
+    return userHasPermission(user, this.slug, 'edit');
+  }
+
+  static canDelete(user: ShamarUser, record?: Record<string, unknown>): boolean {
+    if (this.policy?.delete) return Boolean(this.policy.delete(user, record ?? {}, this.slug));
+    return userHasPermission(user, this.slug, 'delete');
   }
 
   static configure(): ResourceMeta {
@@ -96,6 +176,7 @@ export abstract class Resource {
       defaultSort: tableSchema.defaultSort,
       companyScoped: this.companyScoped,
       softDelete: this.softDelete,
+      customPermissions: normalizeCustomPermissions(this.slug, this.permissions()),
     };
   }
 

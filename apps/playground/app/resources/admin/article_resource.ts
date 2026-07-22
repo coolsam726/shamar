@@ -40,6 +40,17 @@ export default class ArticleResource extends Resource {
   static override navigationSort = 30
   static override softDelete = true
 
+  /**
+   * Extra verbs beyond CRUD — synced into the permissions catalog on app boot.
+   * Assign them to roles via the Roles resource checkbox list.
+   */
+  static override permissions() {
+    return [
+      { name: 'approve', label: 'Approve articles' },
+      { name: 'publish', label: 'Publish articles' },
+    ]
+  }
+
   static override form() {
     return form((f) => {
       f.schema([

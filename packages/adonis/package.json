@@ -14,6 +14,10 @@
     "./provider": {
       "types": "./dist/provider.d.ts",
       "import": "./dist/provider.js"
+    },
+    "./require_api_key_middleware": {
+      "types": "./dist/middleware/require_api_key_middleware.d.ts",
+      "import": "./dist/middleware/require_api_key_middleware.js"
     }
   },
   "files": ["dist", "resources", "assets", "stubs"],
@@ -24,6 +28,7 @@
     "prepublishOnly": "pnpm build && pnpm build:css"
   },
   "dependencies": {
+    "@shamar/cherubim": "workspace:*",
     "@shamar/core": "workspace:*",
     "@shamar/lucid": "workspace:*",
     "@shamar/mongoose": "workspace:*"

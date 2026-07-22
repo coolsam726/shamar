@@ -68,6 +68,7 @@
     "@adonisjs/static": "^2.0.1",
     "@adonisjs/vite": "^5.1.1",
     "@shamar/adonis": "workspace:*",
+    "@shamar/cherubim": "workspace:*",
     "@shamar/core": "workspace:*",
     "@shamar/lucid": "workspace:*",
     "@shamar/mongoose": "workspace:*",

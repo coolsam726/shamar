@@ -19,6 +19,7 @@ export class ResourceController {
     search?: string;
     sort?: string;
     direction?: 'asc' | 'desc';
+    scope?: Record<string, unknown>;
   }) {
     return this.adapter.list(meta, {
       page: query.page ?? 1,
@@ -26,6 +27,7 @@ export class ResourceController {
       search: query.search,
       sort: query.sort,
       direction: query.direction,
+      scope: query.scope,
     });
   }
 

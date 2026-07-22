@@ -56,6 +56,9 @@
       data-shamar-save-mode="{{ mode }}"
       @if(mode === 'create')
         data-shamar-after-create="{{ basePath }}/{{ resource.slug }}"
+        @if(redirectAfterCreateToShow)
+          data-shamar-after-create-view="show"
+        @endif
       @endif
       x-data='shamarForm({
         endpoint: {{ jsonAttr(formStateEndpoint) }},

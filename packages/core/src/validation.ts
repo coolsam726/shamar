@@ -1,5 +1,6 @@
 import type { DataAdapter, FieldConfig, ResourceMeta, UniqueOptions } from './types.js';
 import { humanizeLabel } from './labels.js';
+import { createFieldContext, resolveClosure } from './reactivity.js';
 
 export class ValidationException extends Error {
   readonly errors: Record<string, string>;
@@ -10,6 +11,19 @@ export class ValidationException extends Error {
     this.name = 'ValidationException';
     this.errors = errors;
   }
+}
+
+/** Duck-type safe across duplicate package copies in a monorepo. */
+export function isValidationException(error: unknown): error is ValidationException {
+  if (error instanceof ValidationException) return true;
+  if (typeof error !== 'object' || error === null) return false;
+  const candidate = error as { name?: unknown; errors?: unknown };
+  return (
+    candidate.name === 'ValidationException' &&
+    typeof candidate.errors === 'object' &&
+    candidate.errors !== null &&
+    !Array.isArray(candidate.errors)
+  );
 }
 
 function resolveUniqueOptions(field: FieldConfig): UniqueOptions | null {
@@ -24,7 +38,7 @@ function resolveUniqueOptions(field: FieldConfig): UniqueOptions | null {
 }
 
 function isBlank(value: unknown): boolean {
-  return value == null || value === '';
+  return value == null || value === '' || (Array.isArray(value) && value.length === 0);
 }
 
 function fieldLabel(field: FieldConfig): string {
@@ -40,6 +54,7 @@ function asString(value: unknown): string {
 
 /**
  * Validate Filament-style length / value / pattern constraints (and required).
+ * Skips fields that are not visible; resolves `required` closures against state.
  */
 export function validateFieldConstraints(
   meta: ResourceMeta,
@@ -53,12 +68,22 @@ export function validateFieldConstraints(
     if (field.hiddenOnForm) continue;
     if (field.dehydrated === false) continue;
     if (isEdit && field.createOnly) continue;
-    if (!(field.name in data) && !field.required) continue;
 
+    const ctx = createFieldContext({
+      state: data,
+      record: null,
+      operation: isEdit ? 'edit' : 'create',
+    });
+    const visible = resolveClosure(field.visible, ctx, true) ?? true;
+    if (!visible) continue;
+
+    const required = Boolean(resolveClosure(field.required, ctx, false));
     const raw = data[field.name];
     const label = fieldLabel(field);
 
-    if (field.required && isBlank(raw)) {
+    if (!(field.name in data) && !required) continue;
+
+    if (required && isBlank(raw)) {
       errors[field.name] = `The ${label} field is required.`;
       continue;
     }
@@ -146,6 +171,14 @@ export async function validateUniqueFields(
     const unique = resolveUniqueOptions(field);
     if (!unique) continue;
     if (!(field.name in data)) continue;
+
+    const ctx = createFieldContext({
+      state: data,
+      record: null,
+      operation: options.recordId ? 'edit' : 'create',
+    });
+    const visible = resolveClosure(field.visible, ctx, true) ?? true;
+    if (!visible) continue;
 
     const value = data[field.name];
     if (isBlank(value)) continue;

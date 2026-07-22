@@ -41,14 +41,14 @@
           type="search"
           x-ref="listSearchInput"
           x-model="searchInput"
-          @input.debounce.400ms="onSearchChange()"
+          @input.debounce.350ms="onSearchChange()"
           @keydown.escape="clearSearch()"
-          :placeholder="chips.length ? '' : 'Search…'"
+          placeholder="Search…"
           class="flex-1 min-w-[120px] bg-transparent border-0 px-1 py-1 text-sm text-body placeholder:text-body-subtle focus:outline-none focus:ring-0"
         />
 
         <button
-          x-show="chips.length || groupBy"
+          x-show="chips.length || groupBy || searchInput"
           x-cloak
           type="button"
           @click="clearAll()"

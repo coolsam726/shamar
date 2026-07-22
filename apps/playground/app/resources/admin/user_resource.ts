@@ -5,13 +5,15 @@ import {
   infolist,
   Section,
   TextInput,
+  CheckboxList,
+  TagsInput,
   TextColumn,
   TextEntry,
 } from '@shamar/core'
 import User from '#models/user'
 
 /**
- * Admin CRUD for users — password createOnly + revealable, email unique.
+ * Admin CRUD for users — manyToMany Roles, optional direct permissions.
  */
 export default class UserResource extends Resource {
   static override model = User
@@ -39,6 +41,16 @@ export default class UserResource extends Resource {
               .autocomplete('new-password')
               .helperText('Required on create only; never shown after save.')
               .columnSpanFull(),
+            CheckboxList.make('roleIds')
+              .label('Roles')
+              .relationship('roles', 'name')
+              .required()
+              .columnSpanFull()
+              .helperText('Users may belong to multiple roles; permissions are merged.'),
+            TagsInput.make('permissions')
+              .label('Direct permissions')
+              .helperText('Optional extra grants like products:create or *.')
+              .columnSpanFull(),
           ]),
       ])
     })
@@ -49,6 +61,7 @@ export default class UserResource extends Resource {
       t.schema([
         TextColumn.make('fullName').label('Name').searchable().sortable(),
         TextColumn.make('email').email().searchable().sortable(),
+        TextColumn.make('roles.name').label('Roles'),
         TextColumn.make('createdAt').dateTime().label('Joined').sortable(),
       ])
     })
@@ -62,6 +75,8 @@ export default class UserResource extends Resource {
           .schema([
             TextEntry.make('fullName').label('Full name').columnSpanFull(),
             TextEntry.make('email').email().copyable(),
+            TextEntry.make('roles.name').label('Roles').badge().columnSpanFull(),
+            TextEntry.make('permissions').badge().label('Direct permissions').columnSpanFull(),
             TextEntry.make('createdAt').dateTime().label('Joined'),
             TextEntry.make('updatedAt').dateTime().label('Updated'),
           ]),

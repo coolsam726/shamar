@@ -88,19 +88,31 @@ export interface RelationConfig {
   createOptionForm?: FieldConfig[];
   /** Initial option load size for radio / checkbox list. */
   preloadLimit?: number;
+  /** Checkbox list: group options by this related field (e.g. `resource`). */
+  groupBy?: string;
+  checkboxColumns?: number;
+  checkboxFramed?: boolean;
+  cascadeWildcards?: boolean;
+  /**
+   * Attribute used as the dehydrated form value (default `id`).
+   * Set to `name` for ability pickers that store permission keys.
+   */
+  valueAttribute?: string;
 }
 
 export interface FieldConfig {
   name: string;
   type: FieldType;
   label?: StringOrClosure;
-  required?: boolean;
+  /** Static or reactive required (Filament-style closure). */
+  required?: BoolOrClosure;
   searchable?: boolean;
   sortable?: boolean;
   hiddenOnForm?: boolean;
   hiddenOnTable?: boolean;
   hiddenOnDetail?: boolean;
-  readonly?: boolean;
+  /** Static or reactive readonly. */
+  readonly?: BoolOrClosure;
   disabled?: BoolOrClosure;
   visible?: BoolOrClosure;
   dehydrated?: boolean;
@@ -110,6 +122,10 @@ export interface FieldConfig {
   /** Short text beside the label (Filament `hint`). */
   hint?: StringOrClosure;
   options?: Array<{ label: string; value: string | number }>;
+  checkboxColumns?: number;
+  checkboxFramed?: boolean;
+  cascadeWildcards?: boolean;
+  groupBy?: string;
   relation?: RelationConfig;
   createOnly?: boolean;
   default?: UnknownOrClosure;
@@ -388,6 +404,8 @@ export interface ResourceMeta {
   defaultSort?: { field: string; direction: SortDirection };
   companyScoped?: boolean;
   softDelete?: boolean | { field?: string };
+  /** Extra permission names declared by `Resource.permissions()`. */
+  customPermissions?: Array<{ name: string; label?: string }>;
 }
 
 /** Lucid/Mongoose model class or table/model name string. */
@@ -416,6 +434,8 @@ export interface ShamarUser {
   email?: string;
   permissions?: string[];
   roleIds?: string[];
+  /** Resolved role slugs (populated at runtime). */
+  roles?: string[];
 }
 
 /** Options for relation option search / label resolution. */
@@ -435,6 +455,11 @@ export interface RelationSearchQuery {
 export interface RelationSearchResult {
   id: string;
   label: string;
+  /** Full permission key, e.g. `products:viewAny` or `*`. */
+  name?: string;
+  /** Checkbox list grouping (e.g. permission resource slug). */
+  group?: string;
+  ability?: string;
 }
 
 export interface DataAdapter {

@@ -122,4 +122,47 @@ describe('relation field UI config', () => {
     assert.equal(ui.kind, 'manyToMany');
     assert.deepEqual(ui.initialItems, [{ id: 'a', label: 'Outdoor' }]);
   });
+
+  it('marks relation UI readonly on show', () => {
+    const field = CheckboxList.make('permissionIds')
+      .relationship('permissions', 'label')
+      .cascadeWildcards()
+      .build();
+    const ui = buildRelationUiConfig({
+      field,
+      parentMeta: {
+        slug: 'roles',
+        singularLabel: 'Role',
+        label: 'Roles',
+        model: 'Role',
+        fields: [field],
+        columns: [],
+        searchableFields: [],
+        actions: [],
+      } as never,
+      relatedMeta: {
+        slug: 'permissions',
+        singularLabel: 'Permission',
+        label: 'Permissions',
+        model: 'Permission',
+        fields: [],
+        columns: [],
+        searchableFields: [],
+        actions: [],
+      } as never,
+      basePath: '/admin',
+      record: { id: 'r1', permissionIds: ['p1'] },
+      initialItems: [
+        { id: 'p1', label: 'All', name: '*', group: '*', ability: '*' },
+      ],
+      preloadedOptions: [
+        { id: 'p1', label: 'All', name: '*', group: '*', ability: '*' },
+        { id: 'p2', label: 'Products — View', name: 'products:view', group: 'products', ability: 'view' },
+      ],
+      operation: 'show',
+    });
+
+    assert.equal(ui.readonly, true);
+    assert.equal(ui.cascadeWildcards, true);
+  });
 });
