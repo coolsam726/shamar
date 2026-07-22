@@ -20,6 +20,8 @@ import {
   RECORD_NAV_CAP,
   recordNavQuery,
   buildRecordPager,
+  toFormControlValue,
+  parseCurrencyInput,
   type ListViewQuery,
   type RecordPager,
 } from '../shamar/list-query.js';
@@ -47,6 +49,11 @@ export class AdminController {
     showCreateButton?: boolean;
     showEditButton?: boolean;
     showBackToList?: boolean;
+    recordBreadcrumb?: {
+      mode?: 'create' | 'edit' | 'show';
+      recordTitle?: string;
+      recordHref?: string;
+    };
   }) {
     return buildShellContext({
       config: this.config,
@@ -115,6 +122,7 @@ export class AdminController {
       meta,
       pageTitle: `New ${meta.singularLabel}`,
       showBackToList: false,
+      recordBreadcrumb: { mode: 'create' },
     });
 
     const initialState = this.initialFormState(meta, null, 'create');
@@ -178,6 +186,10 @@ export class AdminController {
       pageTitle: title,
       showEditButton: false,
       showBackToList: false,
+      recordBreadcrumb: {
+        mode: 'show',
+        recordTitle: title,
+      },
     });
 
     return ctx.view.render('shamar::show', {
@@ -204,10 +216,17 @@ export class AdminController {
     }
 
     const embed = this.isEmbed(ctx);
+    const title = recordTitle(meta, record);
+    const navQuery = recordNavQuery(this.listQuery(ctx));
     const shell = this.shellOpts(ctx, {
       meta,
-      pageTitle: `Edit ${recordTitle(meta, record)}`,
+      pageTitle: `Edit ${title}`,
       showBackToList: false,
+      recordBreadcrumb: {
+        mode: 'edit',
+        recordTitle: title,
+        recordHref: `${this.basePath}/${meta.slug}/${record.id}${navQuery}`,
+      },
     });
 
     const formInitialState = this.initialFormState(meta, record, 'edit');
@@ -412,10 +431,23 @@ export class AdminController {
         ? `New ${meta.singularLabel}`
         : `Edit ${recordTitle(meta, options.record ?? {})}`;
 
+    const navQuery = recordNavQuery(this.listQuery(ctx));
+    const recordId = options.record?.id;
     const shell = this.shellOpts(ctx, {
       meta,
       pageTitle: title,
       showBackToList: false,
+      recordBreadcrumb:
+        options.mode === 'create'
+          ? { mode: 'create' }
+          : {
+              mode: 'edit',
+              recordTitle: recordTitle(meta, options.record ?? {}),
+              recordHref:
+                recordId != null
+                  ? `${this.basePath}/${meta.slug}/${recordId}${navQuery}`
+                  : undefined,
+            },
     });
 
     const formInitialState =
@@ -492,11 +524,15 @@ export class AdminController {
     const state: Record<string, unknown> = {};
     for (const field of meta.fields) {
       if (record && field.name in record) {
-        state[field.name] = record[field.name];
+        state[field.name] = toFormControlValue(record[field.name], field);
       } else if (field.default !== undefined && typeof field.default !== 'function') {
-        state[field.name] = field.default;
-      } else if (field.type === 'boolean') {
+        state[field.name] = toFormControlValue(field.default, field);
+      } else if (field.type === 'boolean' || field.type === 'checkbox') {
         state[field.name] = false;
+      } else if (field.type === 'color') {
+        state[field.name] = '#000000';
+      } else if (field.type === 'select' && field.multiple) {
+        state[field.name] = [];
       } else {
         state[field.name] = '';
       }
@@ -518,7 +554,7 @@ export class AdminController {
       if (field.dehydrated === false) continue;
       if (action === 'update' && field.createOnly) continue;
 
-      if (field.type === 'boolean') {
+      if (field.type === 'boolean' || field.type === 'checkbox') {
         data[field.name] =
           input[field.name] === true ||
           input[field.name] === '1' ||
@@ -527,8 +563,30 @@ export class AdminController {
         continue;
       }
 
+      if (field.currency) {
+        const raw = field.name in input ? input[field.name] : undefined;
+        if (raw !== undefined) {
+          data[field.name] = parseCurrencyInput(raw);
+        }
+        continue;
+      }
+
+      if (field.type === 'tags') {
+        const raw = input[field.name] ?? input[`${field.name}[]`];
+        if (Array.isArray(raw)) {
+          data[field.name] = raw.map((item) => String(item));
+        } else if (typeof raw === 'string' && raw.trim()) {
+          data[field.name] = raw.split(',').map((item) => item.trim()).filter(Boolean);
+        } else if (field.name in input || `${field.name}[]` in input) {
+          data[field.name] = [];
+        }
+        continue;
+      }
+
       if (field.name in input) {
         data[field.name] = input[field.name];
+      } else if (`${field.name}[]` in input) {
+        data[field.name] = input[`${field.name}[]`];
       }
     }
 

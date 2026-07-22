@@ -53,18 +53,26 @@ export default class ShamarProvider {
         sortColumnUrl,
         cellValue,
         detailValue,
+        badgeValues,
         fieldChecked,
         formInputType,
+        fieldInputAttrs,
         recordNavQuery,
       } = await import('./shamar/list-query.js');
 
       edge.global('sortColumnUrl', sortColumnUrl);
       edge.global('cellValue', cellValue);
       edge.global('detailValue', detailValue);
+      edge.global('badgeValues', badgeValues);
       edge.global('fieldChecked', fieldChecked);
       edge.global('formInputType', formInputType);
+      edge.global('fieldInputAttrs', fieldInputAttrs);
       edge.global('recordNavQuery', recordNavQuery);
       edge.global('resolveGridItemStyle', resolveGridItemStyle);
+      const { humanizeLabel, resolveAlignmentClass, alignmentTextClass } = await import('@shamar/core');
+      edge.global('humanizeLabel', humanizeLabel);
+      edge.global('resolveAlignmentClass', resolveAlignmentClass);
+      edge.global('alignmentTextClass', alignmentTextClass);
       edge.global('jsonAttr', (value: unknown) => {
         return JSON.stringify(value ?? null).replace(/</g, '\\u003c');
       });

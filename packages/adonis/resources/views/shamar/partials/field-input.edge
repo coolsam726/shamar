@@ -5,11 +5,22 @@
     x-model="state['{{ field.name }}']"
   />
 @else
-<div class="shamar-field" data-field-type="{{ field.type }}">
-  @if(!(field.type === 'boolean' && field.inline) && field.type !== 'checkbox')
+@let(fieldLabelText = field.label ?? humanizeLabel(field.name))
+@let(hasTextPrefix = !!(field.prefix || field.prefixIcon))
+@let(hasTextSuffix = !!(field.suffix || field.suffixIcon))
+@let(hasActionSuffix = !!(field.copyable || (field.revealable && field.type === 'password')))
+@let(prefixInline = field.inlinePrefix !== false)
+@let(suffixInline = field.inlineSuffix !== false)
+@let(showInlinePrefix = hasTextPrefix && prefixInline)
+@let(showInlineSuffix = (hasTextSuffix && suffixInline) || hasActionSuffix)
+@let(showStackedPrefix = hasTextPrefix && !prefixInline)
+@let(showStackedSuffix = hasTextSuffix && !suffixInline)
+@let(useGroup = showInlinePrefix || showInlineSuffix)
+<div class="shamar-field {{ alignmentTextClass(field.alignment) }}" data-field-type="{{ field.type }}">
+  @if(!((field.type === 'boolean' || field.type === 'checkbox') && field.inline))
     <div class="shamar-field__label-row">
       <label for="field-{{ field.name }}" class="shamar-field__label">
-        <span x-text='fieldLabel({{ jsonAttr(field.name) }}, {{ jsonAttr(field.label ?? field.name) }})'>{{ field.label ?? field.name }}</span>
+        <span x-text='fieldLabel({{ jsonAttr(field.name) }}, {{ jsonAttr(fieldLabelText) }})'>{{ fieldLabelText }}</span>
         @if(field.required)
           <span class="shamar-field__required">*</span>
         @endif
@@ -42,7 +53,7 @@
       @if(field.inline)
         <span class="shamar-toggle__text">
           <span class="shamar-toggle__label">
-            <span x-text='fieldLabel({{ jsonAttr(field.name) }}, {{ jsonAttr(field.label ?? field.name) }})'>{{ field.label ?? field.name }}</span>
+            <span x-text='fieldLabel({{ jsonAttr(field.name) }}, {{ jsonAttr(fieldLabelText) }})'>{{ fieldLabelText }}</span>
             @if(field.required)
               <span class="shamar-field__required">*</span>
             @endif
@@ -69,12 +80,22 @@
         :disabled="isDisabled('{{ field.name }}')"
         {{ field.required ? 'required' : '' }}
       />
-      <span class="shamar-checkbox__label">
-        <span x-text='fieldLabel({{ jsonAttr(field.name) }}, {{ jsonAttr(field.label ?? field.name) }})'>{{ field.label ?? field.name }}</span>
-        @if(field.required)
-          <span class="shamar-field__required">*</span>
-        @endif
-      </span>
+      @if(field.inline)
+        <span class="shamar-checkbox__text">
+          <span class="shamar-checkbox__label">
+            <span x-text='fieldLabel({{ jsonAttr(field.name) }}, {{ jsonAttr(fieldLabelText) }})'>{{ fieldLabelText }}</span>
+            @if(field.required)
+              <span class="shamar-field__required">*</span>
+            @endif
+          </span>
+          @if(field.hint)
+            <span
+              class="shamar-field__hint"
+              x-text='fieldMeta[{{ jsonAttr(field.name) }}]?.hint || {{ jsonAttr(field.hint) }}'
+            >{{ field.hint }}</span>
+          @endif
+        </span>
+      @endif
     </label>
   @elseif(field.type === 'radio')
     <div class="shamar-radio{{ field.inline ? ' shamar-radio--inline' : '' }}">
@@ -134,16 +155,18 @@
         x-model="state['{{ field.name }}']"
         @change="onFieldChange('{{ field.name }}')"
         :disabled="isDisabled('{{ field.name }}')"
+        {{ field.required ? 'required' : '' }}
       />
       <input
         type="text"
         name="{{ field.name }}"
-        class="shamar-input"
+        class="shamar-input shamar-color__value"
         x-model="state['{{ field.name }}']"
-        @input="onFieldInput('{{ field.name }}')"
-        @change="onFieldChange('{{ field.name }}')"
+        readonly
+        tabindex="-1"
         :disabled="isDisabled('{{ field.name }}')"
         placeholder="#000000"
+        aria-label="Selected color"
       />
     </div>
   @elseif(field.type === 'textarea')
@@ -153,6 +176,7 @@
       rows="{{ field.rows ?? 4 }}"
       {{ field.required ? 'required' : '' }}
       {{ field.readonly ? 'readonly' : '' }}
+      {{{ fieldInputAttrs(field) }}}
       x-model="state['{{ field.name }}']"
       @input="onFieldInput('{{ field.name }}')"
       @change="onFieldChange('{{ field.name }}')"
@@ -161,36 +185,321 @@
       :placeholder='fieldMeta[{{ jsonAttr(field.name) }}]?.placeholder || {{ jsonAttr(field.placeholder ?? "") }}'
       class="shamar-input{{ formErrors && formErrors[field.name] ? ' is-invalid' : '' }}"
     ></textarea>
+    @if(field.maxLength)
+      <p class="shamar-field__counter" x-text="String(state['{{ field.name }}'] ?? '').length + ' / {{ field.maxLength }}'"></p>
+    @endif
   @elseif(field.type === 'select')
-    <select
+    @if(field.nativeSelect)
+      <select
+        id="field-{{ field.name }}"
+        name="{{ field.name }}{{ field.multiple ? '[]' : '' }}"
+        {{ field.required ? 'required' : '' }}
+        {{ field.multiple ? 'multiple' : '' }}
+        {{{ fieldInputAttrs(field) }}}
+        x-model="state['{{ field.name }}']"
+        @change="onFieldChange('{{ field.name }}')"
+        :disabled="isDisabled('{{ field.name }}')"
+        class="shamar-select{{ formErrors && formErrors[field.name] ? ' is-invalid' : '' }}"
+      >
+        @if(!field.multiple && field.selectablePlaceholder !== false)
+          <option value="">{{ field.placeholder ?? 'Select...' }}</option>
+        @endif
+        @each(option in field.options)
+          <option value="{{ option.value }}">{{ option.label }}</option>
+        @endeach
+      </select>
+    @else
+      <div
+        class="shamar-combobox{{ field.multiple ? ' shamar-combobox--multiple' : '' }}{{ formErrors && formErrors[field.name] ? ' is-invalid' : '' }}"
+        :class="{ 'is-open': open, 'is-disabled': disabled }"
+        x-data="shamarCombobox({
+          name: {{ jsonAttr(field.name) }},
+          multiple: {{ field.multiple ? 'true' : 'false' }},
+          options: {{ jsonAttr(field.options ?? []) }},
+          placeholder: {{ jsonAttr(field.placeholder ?? 'Select...') }},
+          selectablePlaceholder: {{ field.selectablePlaceholder !== false ? 'true' : 'false' }},
+          getValue: () => state[{{ jsonAttr(field.name) }}],
+          setValue: (v) => { state[{{ jsonAttr(field.name) }}] = v; onFieldChange({{ jsonAttr(field.name) }}); },
+          isDisabled: () => isDisabled({{ jsonAttr(field.name) }}),
+        })"
+        @focusout="onFocusOut($event)"
+      >
+        <div
+          class="shamar-combobox__control"
+          @click="onControlClick()"
+          role="combobox"
+          :aria-expanded="open.toString()"
+          aria-haspopup="listbox"
+          :aria-disabled="disabled.toString()"
+        >
+          @if(field.multiple)
+            <div class="shamar-combobox__chips">
+              <template x-for="opt in selectedOptions" :key="opt.value">
+                <span class="shamar-combobox__chip">
+                  <span class="shamar-combobox__chip-label" x-text="opt.label"></span>
+                  <button
+                    type="button"
+                    class="shamar-combobox__chip-remove"
+                    @click.stop="remove(opt.value)"
+                    :disabled="disabled"
+                    :aria-label="'Remove ' + opt.label"
+                  >
+                    <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12" aria-hidden="true">
+                      <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                    </svg>
+                  </button>
+                </span>
+              </template>
+              <input
+                id="field-{{ field.name }}"
+                type="text"
+                class="shamar-combobox__search"
+                x-ref="search"
+                x-model="query"
+                @input="onInput()"
+                @keydown="onKeydown($event)"
+                @focus="openDropdown()"
+                :disabled="disabled"
+                :placeholder="selectedOptions.length ? '' : placeholder"
+                autocomplete="off"
+                role="searchbox"
+                aria-autocomplete="list"
+              />
+            </div>
+          @else
+            <input
+              id="field-{{ field.name }}"
+              type="text"
+              class="shamar-combobox__search shamar-combobox__search--single"
+              x-ref="search"
+              x-model="query"
+              @input="onInput()"
+              @keydown="onKeydown($event)"
+              @focus="openDropdown()"
+              :disabled="disabled"
+              :placeholder="placeholder"
+              autocomplete="off"
+              role="searchbox"
+              aria-autocomplete="list"
+            />
+            <button
+              type="button"
+              class="shamar-combobox__clear"
+              x-show="selectedValues.length && !disabled"
+              x-cloak
+              @click.stop="clearSelection()"
+              aria-label="Clear selection"
+            >
+              <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14" aria-hidden="true">
+                <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+              </svg>
+            </button>
+          @endif
+          <button
+            type="button"
+            class="shamar-combobox__toggle"
+            @click.stop="toggleOpen()"
+            :disabled="disabled"
+            tabindex="-1"
+            aria-label="Toggle options"
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true">
+              <path fill-rule="evenodd" d="M5.22 8.22a.75.75 0 011.06 0L10 11.94l3.72-3.72a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.22 9.28a.75.75 0 010-1.06z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+
+        <div
+          class="shamar-combobox__dropdown"
+          x-ref="list"
+          x-show="open"
+          x-cloak
+          role="listbox"
+          :aria-multiselectable="multiple.toString()"
+        >
+          <template x-for="(opt, index) in filteredOptions" :key="opt.value">
+            <button
+              type="button"
+              class="shamar-combobox__option"
+              :class="{ 'is-active': cursor === index, 'is-selected': isSelected(opt) }"
+              :data-combobox-index="index"
+              role="option"
+              :aria-selected="isSelected(opt).toString()"
+              @click.prevent="pick(opt)"
+              @mouseenter="cursor = index"
+            >
+              <span class="shamar-combobox__option-label" x-text="opt.label"></span>
+              <svg
+                class="shamar-combobox__option-check"
+                x-show="isSelected(opt)"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                width="14"
+                height="14"
+                aria-hidden="true"
+              >
+                <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+              </svg>
+            </button>
+          </template>
+          <div class="shamar-combobox__empty" x-show="filteredOptions.length === 0">
+            No options found
+          </div>
+        </div>
+
+        @if(field.multiple)
+          <template x-for="value in selectedValues" :key="'h-' + value">
+            <input type="hidden" name="{{ field.name }}[]" :value="value" />
+          </template>
+        @else
+          <input type="hidden" name="{{ field.name }}" :value="selectedValues[0] || ''" />
+        @endif
+      </div>
+    @endif
+  @elseif(field.type === 'file' || field.type === 'image')
+    <input
       id="field-{{ field.name }}"
+      type="file"
       name="{{ field.name }}{{ field.multiple ? '[]' : '' }}"
       {{ field.required ? 'required' : '' }}
-      {{ field.multiple ? 'multiple' : '' }}
-      x-model="state['{{ field.name }}']"
-      @change="onFieldChange('{{ field.name }}')"
+      {{{ fieldInputAttrs(field) }}}
+      @change="state['{{ field.name }}'] = $event.target.files && $event.target.files.length ? ($event.target.files.length > 1 ? Array.from($event.target.files).map(f => f.name) : $event.target.files[0].name) : null; onFieldChange('{{ field.name }}')"
       :disabled="isDisabled('{{ field.name }}')"
-      class="shamar-select{{ formErrors && formErrors[field.name] ? ' is-invalid' : '' }}"
-    >
-      @if(!field.multiple)
-        <option value="">{{ field.placeholder ?? 'Select...' }}</option>
-      @endif
-      @each(option in field.options)
-        <option value="{{ option.value }}">{{ option.label }}</option>
-      @endeach
-    </select>
+      class="shamar-input shamar-input--file{{ formErrors && formErrors[field.name] ? ' is-invalid' : '' }}"
+    />
   @else
-    @if(field.prefix || field.suffix)
-      <div class="shamar-input-group{{ field.prefix ? ' has-prefix' : '' }}{{ field.suffix ? ' has-suffix' : '' }}">
-        @if(field.prefix)
-          <span class="shamar-input-group__affix">{{ field.prefix }}</span>
+    <div class="shamar-input-affixes{{ (showStackedPrefix || showStackedSuffix) ? ' shamar-input-affixes--stacked' : '' }}">
+      @if(showStackedPrefix)
+        @if(field.prefixIcon)
+          @let(icon = field.prefixIcon)
+          <span class="shamar-input-affixes__outside shamar-input-affixes__outside--icon" aria-hidden="true" data-icon="{{ field.prefixIcon }}">
+            @include('shamar::partials/field-affix-icon')
+          </span>
+        @else
+          <span class="shamar-input-affixes__outside">{{ field.prefix }}</span>
         @endif
+      @endif
+
+      @if(useGroup)
+        <div
+          class="shamar-input-group{{ showInlinePrefix ? ' has-prefix' : '' }}{{ showInlineSuffix ? ' has-suffix' : '' }}"
+          @if(field.revealable && field.type === 'password')
+            x-data="{ revealed: false }"
+          @endif
+        >
+          @if(showInlinePrefix)
+            @if(field.prefixIcon)
+              @let(icon = field.prefixIcon)
+              <span class="shamar-input-group__affix shamar-input-group__affix--icon" aria-hidden="true" data-icon="{{ field.prefixIcon }}">
+                @include('shamar::partials/field-affix-icon')
+              </span>
+            @elseif(field.prefix)
+              <span class="shamar-input-group__affix">{{ field.prefix }}</span>
+            @endif
+          @endif
+
+          @if(field.currency)
+            <input
+              id="field-{{ field.name }}"
+              type="text"
+              inputmode="decimal"
+              name="{{ field.name }}"
+              {{ field.required ? 'required' : '' }}
+              {{ field.readonly ? 'readonly' : '' }}
+              {{{ fieldInputAttrs(field) }}}
+              :value="currencyDisplay('{{ field.name }}')"
+              @focus="beginCurrencyEdit('{{ field.name }}')"
+              @input="onCurrencyInput('{{ field.name }}', $event)"
+              @change="onFieldChange('{{ field.name }}')"
+              @blur="endCurrencyEdit('{{ field.name }}'); onFieldBlur('{{ field.name }}')"
+              :disabled="isDisabled('{{ field.name }}')"
+              :placeholder='fieldMeta[{{ jsonAttr(field.name) }}]?.placeholder || {{ jsonAttr(field.placeholder ?? "") }}'
+              class="shamar-input{{ formErrors && formErrors[field.name] ? ' is-invalid' : '' }}"
+            />
+          @else
+            <input
+              id="field-{{ field.name }}"
+              @if(field.revealable && field.type === 'password')
+                :type="revealed ? 'text' : 'password'"
+              @else
+                type="{{ formInputType(field) }}"
+              @endif
+              name="{{ field.name }}"
+              {{ field.required ? 'required' : '' }}
+              {{ field.readonly ? 'readonly' : '' }}
+              {{{ fieldInputAttrs(field) }}}
+              x-model="state['{{ field.name }}']"
+              @input="onFieldInput('{{ field.name }}')"
+              @change="onFieldChange('{{ field.name }}')"
+              @blur="onFieldBlur('{{ field.name }}')"
+              :disabled="isDisabled('{{ field.name }}')"
+              :placeholder='fieldMeta[{{ jsonAttr(field.name) }}]?.placeholder || {{ jsonAttr(field.placeholder ?? "") }}'
+              class="shamar-input{{ formErrors && formErrors[field.name] ? ' is-invalid' : '' }}"
+            />
+          @endif
+
+          @if(field.revealable && field.type === 'password')
+            <button
+              type="button"
+              class="shamar-input-group__affix shamar-input-group__affix--action"
+              @click="revealed = !revealed"
+              :aria-label="revealed ? 'Hide password' : 'Show password'"
+              :aria-pressed="revealed.toString()"
+            >
+              <svg x-show="!revealed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <svg x-show="revealed" x-cloak viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+              </svg>
+            </button>
+          @elseif(field.copyable)
+            <button
+              type="button"
+              class="shamar-input-group__affix shamar-input-group__affix--action"
+              @click="navigator.clipboard.writeText(String(state['{{ field.name }}'] ?? ''))"
+              aria-label="Copy"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+              </svg>
+            </button>
+          @elseif(showInlineSuffix && field.suffixIcon)
+            @let(icon = field.suffixIcon)
+            <span class="shamar-input-group__affix shamar-input-group__affix--icon" aria-hidden="true" data-icon="{{ field.suffixIcon }}">
+              @include('shamar::partials/field-affix-icon')
+            </span>
+          @elseif(showInlineSuffix && field.suffix)
+            <span class="shamar-input-group__affix">{{ field.suffix }}</span>
+          @endif
+        </div>
+      @elseif(field.currency)
+        <input
+          id="field-{{ field.name }}"
+          type="text"
+          inputmode="decimal"
+          name="{{ field.name }}"
+          {{ field.required ? 'required' : '' }}
+          {{ field.readonly ? 'readonly' : '' }}
+          {{{ fieldInputAttrs(field) }}}
+          :value="currencyDisplay('{{ field.name }}')"
+          @focus="beginCurrencyEdit('{{ field.name }}')"
+          @input="onCurrencyInput('{{ field.name }}', $event)"
+          @change="onFieldChange('{{ field.name }}')"
+          @blur="endCurrencyEdit('{{ field.name }}'); onFieldBlur('{{ field.name }}')"
+          :disabled="isDisabled('{{ field.name }}')"
+          :placeholder='fieldMeta[{{ jsonAttr(field.name) }}]?.placeholder || {{ jsonAttr(field.placeholder ?? "") }}'
+          class="shamar-input{{ formErrors && formErrors[field.name] ? ' is-invalid' : '' }}"
+        />
+      @else
         <input
           id="field-{{ field.name }}"
           type="{{ formInputType(field) }}"
           name="{{ field.name }}"
           {{ field.required ? 'required' : '' }}
           {{ field.readonly ? 'readonly' : '' }}
+          {{{ fieldInputAttrs(field) }}}
           x-model="state['{{ field.name }}']"
           @input="onFieldInput('{{ field.name }}')"
           @change="onFieldChange('{{ field.name }}')"
@@ -199,25 +508,28 @@
           :placeholder='fieldMeta[{{ jsonAttr(field.name) }}]?.placeholder || {{ jsonAttr(field.placeholder ?? "") }}'
           class="shamar-input{{ formErrors && formErrors[field.name] ? ' is-invalid' : '' }}"
         />
-        @if(field.suffix)
-          <span class="shamar-input-group__affix">{{ field.suffix }}</span>
+      @endif
+
+      @if(showStackedSuffix)
+        @if(field.suffixIcon)
+          @let(icon = field.suffixIcon)
+          <span class="shamar-input-affixes__outside shamar-input-affixes__outside--icon" aria-hidden="true" data-icon="{{ field.suffixIcon }}">
+            @include('shamar::partials/field-affix-icon')
+          </span>
+        @else
+          <span class="shamar-input-affixes__outside">{{ field.suffix }}</span>
         @endif
-      </div>
-    @else
-      <input
-        id="field-{{ field.name }}"
-        type="{{ formInputType(field) }}"
-        name="{{ field.name }}"
-        {{ field.required ? 'required' : '' }}
-        {{ field.readonly ? 'readonly' : '' }}
-        x-model="state['{{ field.name }}']"
-        @input="onFieldInput('{{ field.name }}')"
-        @change="onFieldChange('{{ field.name }}')"
-        @blur="onFieldBlur('{{ field.name }}')"
-        :disabled="isDisabled('{{ field.name }}')"
-        :placeholder='fieldMeta[{{ jsonAttr(field.name) }}]?.placeholder || {{ jsonAttr(field.placeholder ?? "") }}'
-        class="shamar-input{{ formErrors && formErrors[field.name] ? ' is-invalid' : '' }}"
-      />
+      @endif
+    </div>
+    @if(field.datalist && field.datalist.length)
+      <datalist id="datalist-{{ field.name }}">
+        @each(option in field.datalist)
+          <option value="{{ option }}"></option>
+        @endeach
+      </datalist>
+    @endif
+    @if(field.maxLength)
+      <p class="shamar-field__counter" x-text="String(state['{{ field.name }}'] ?? '').length + ' / {{ field.maxLength }}'"></p>
     @endif
   @endif
 

@@ -1,7 +1,7 @@
 import type { ResourceMeta, ResourceRegistry } from '@shamar/core';
 import type { ShamarConfig } from '../config.js';
 import { resolveBranding, type ShamarBranding } from './branding.js';
-import { menuLayoutContext, type NavigationGroup } from './menu.js';
+import { menuLayoutContext, type NavigationGroup, type RecordBreadcrumbOptions } from './menu.js';
 import {
   buildPaginationContext,
   normalizeListQuery,
@@ -47,6 +47,7 @@ export function buildShellContext(options: {
   showEditButton?: boolean;
   showBackToList?: boolean;
   flash?: { type: string; message: string };
+  recordBreadcrumb?: RecordBreadcrumbOptions;
 }): AdminShellContext {
   const basePath = options.basePath ?? options.config.path ?? '/admin';
   const groups = navigationGroups(options.registry);
@@ -55,6 +56,7 @@ export function buildShellContext(options: {
     basePath,
     options.meta?.slug,
     options.pageTitle,
+    options.recordBreadcrumb,
   );
   const brandingInput = options.branding ?? options.config.branding;
   const branding = resolveBranding(brandingInput);

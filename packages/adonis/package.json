@@ -19,8 +19,9 @@
   "files": ["dist", "resources", "assets", "stubs"],
   "scripts": {
     "build": "tsc",
+    "build:css": "pnpm dlx @tailwindcss/cli@4.3.2 -i ./assets/input.css -o ./assets/admin.css --minify",
     "test": "tsx --test test/**/*.test.ts",
-    "prepublishOnly": "pnpm build"
+    "prepublishOnly": "pnpm build && pnpm build:css"
   },
   "dependencies": {
     "@shamar/core": "workspace:*",

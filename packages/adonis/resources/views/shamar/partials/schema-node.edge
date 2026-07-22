@@ -216,7 +216,7 @@
 
 @elseif(node.kind === 'section' || node.kind === 'tab' || node.kind === 'step')
   <section
-    class="shamar-form-section rounded-xl overflow-hidden{{ node.card !== false && node.kind === 'section' ? ' shamar-card' : '' }}{{ node.card === false && node.kind === 'section' ? ' shamar-form-section--plain' : '' }}"
+    class="shamar-form-section rounded-xl{{ node.card !== false && node.kind === 'section' ? ' shamar-card' : '' }}{{ node.card === false && node.kind === 'section' ? ' shamar-form-section--plain' : '' }}"
     style="{{ resolveGridItemStyle(node, 2) }}"
     @if(node.collapsible)
       x-data="{ open: {{ node.collapsed ? 'false' : 'true' }} }"

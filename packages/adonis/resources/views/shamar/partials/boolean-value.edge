@@ -1,0 +1,25 @@
+{{--
+  Boolean / icon status chip for detail and table views.
+  Expects: checked (bool), label? (string), icon? / falseIcon? (optional glyphs)
+--}}
+@let(isOn = !!checked)
+@let(customIcon = isOn ? icon : falseIcon)
+@let(showLabel = label !== undefined && label !== null && String(label).length > 0)
+<span class="shamar-boolean {{ isOn ? 'is-true' : 'is-false' }}{{ customIcon ? ' shamar-boolean--custom' : '' }}{{ showLabel ? '' : ' shamar-boolean--icon-only' }}">
+  <span class="shamar-boolean__mark" aria-hidden="true">
+    @if(customIcon)
+      <span class="shamar-boolean__glyph">{{ customIcon }}</span>
+    @elseif(isOn)
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" width="14" height="14">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+      </svg>
+    @else
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" width="14" height="14">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    @endif
+  </span>
+  @if(showLabel)
+    <span class="shamar-boolean__label">{{ label }}</span>
+  @endif
+</span>

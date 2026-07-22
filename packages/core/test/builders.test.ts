@@ -16,6 +16,7 @@ import {
   Radio,
   ColorPicker,
   TagsInput,
+  FileUpload,
   Section,
   Fieldset,
   Grid,
@@ -317,9 +318,19 @@ describe('@shamar/core Filament-style builders', () => {
             ]),
             ColorPicker.make('color'),
             TagsInput.make('tags'),
-            Textarea.make('bio').rows(6),
+            Textarea.make('bio').rows(6).maxLength(200),
             TextInput.make('slug').prefix('https://').suffix('.test'),
-            Select.make('roles').multiple().options([{ label: 'Admin', value: 'admin' }]),
+            TextInput.make('phone').tel().prefixIcon('phone').autocomplete('tel'),
+            TextInput.make('site').url().maxLength(80).datalist(['https://a.test']),
+            TextInput.make('secret').password().revealable(),
+            TextInput.make('ref').copyable(),
+            TextInput.make('qty').integer().min(1).max(10).step(1),
+            Select.make('roles')
+              .multiple()
+              .selectablePlaceholder(false)
+              .options([{ label: 'Admin', value: 'admin' }]),
+            Select.make('status').native().options([{ label: 'Open', value: 'open' }]),
+            FileUpload.make('avatar').image().accept('image/png'),
           ]);
         });
       }
@@ -339,8 +350,21 @@ describe('@shamar/core Filament-style builders', () => {
     assert.equal(byName.color?.type, 'color');
     assert.equal(byName.tags?.type, 'tags');
     assert.equal(byName.bio?.rows, 6);
+    assert.equal(byName.bio?.maxLength, 200);
     assert.equal(byName.slug?.prefix, 'https://');
+    assert.equal(byName.phone?.type, 'tel');
+    assert.equal(byName.phone?.prefixIcon, 'phone');
+    assert.equal(byName.site?.type, 'url');
+    assert.equal(byName.secret?.revealable, true);
+    assert.equal(byName.ref?.copyable, true);
+    assert.equal(byName.qty?.type, 'number');
+    assert.equal(byName.qty?.minValue, 1);
+    assert.equal(byName.qty?.step, 1);
     assert.equal(byName.roles?.multiple, true);
+    assert.equal(byName.roles?.selectablePlaceholder, false);
+    assert.equal(byName.status?.nativeSelect, true);
+    assert.equal(byName.avatar?.type, 'image');
+    assert.equal(byName.avatar?.accept, 'image/png');
   });
 
   it('falls back to infolist from form fields', () => {

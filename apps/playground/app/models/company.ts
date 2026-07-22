@@ -4,6 +4,10 @@ export interface CompanyAttrs {
   name: string
   code?: string | null
   email?: string | null
+  phone?: string | null
+  website?: string | null
+  industry?: string | null
+  notes?: string | null
   active?: boolean
 }
 
@@ -12,6 +16,10 @@ const companySchema = new Schema<CompanyAttrs>(
     name: { type: String, required: true, trim: true },
     code: { type: String, default: null, trim: true, unique: true },
     email: { type: String, default: null, trim: true, lowercase: true },
+    phone: { type: String, default: null, trim: true },
+    website: { type: String, default: null, trim: true },
+    industry: { type: String, default: null, trim: true },
+    notes: { type: String, default: null, trim: true },
     active: { type: Boolean, default: true },
   },
   {

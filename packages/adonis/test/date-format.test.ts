@@ -5,6 +5,8 @@ import {
   detailValue,
   formatDateValue,
   parseDateValue,
+  toFormDateInputValue,
+  badgeValues,
 } from '../src/shamar/list-query.js';
 
 describe('date display formatting', () => {
@@ -59,5 +61,46 @@ describe('date display formatting', () => {
     assert.equal(cellValue({ name: 'Acme' }, { name: 'name', type: 'text' }), 'Acme');
     assert.equal(cellValue({ active: true }, { name: 'active', type: 'boolean' }), 'Yes');
     assert.equal(detailValue({ empty: null }, { name: 'empty' }), '—');
+  });
+
+  it('joins array values for plain cell text', () => {
+    assert.equal(
+      cellValue({ tags: ['a', 'b'] }, { name: 'tags', type: 'tags' }),
+      'a, b',
+    );
+  });
+
+  it('splits array values into badge labels', () => {
+    assert.deepEqual(badgeValues({ tags: ['sale', 'new'] }, { name: 'tags' }), [
+      'sale',
+      'new',
+    ]);
+    assert.deepEqual(badgeValues({ status: 'open' }, { name: 'status' }), ['open']);
+    assert.deepEqual(badgeValues({ tags: [] }, { name: 'tags' }), []);
+  });
+
+  it('formats currency columns and entries', () => {
+    const formatted = cellValue(
+      { price: 19.99 },
+      { name: 'price', format: 'currency', currency: { code: 'USD', precision: 2 } },
+    );
+    assert.match(formatted, /19/);
+    assert.notEqual(formatted, '19.99');
+
+    const detail = detailValue(
+      { amount: 1000 },
+      { name: 'amount', currency: { code: 'USD', precision: 0 } },
+    );
+    assert.match(detail, /1/);
+    assert.equal(cellValue({ price: null }, { name: 'price', format: 'currency' }), '—');
+  });
+
+  it('normalizes ISO values for date / datetime-local inputs', () => {
+    const dateOnly = toFormDateInputValue('2024-03-01', 'date');
+    assert.equal(dateOnly, '2024-03-01');
+
+    const local = toFormDateInputValue('2024-01-15T14:30:00.000Z', 'datetime');
+    assert.match(local, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
+    assert.equal(toFormDateInputValue(null, 'datetime'), '');
   });
 });

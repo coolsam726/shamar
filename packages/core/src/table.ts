@@ -1,4 +1,10 @@
 import type { ColumnConfig, FieldType, SortDirection, TableSchema } from './types.js';
+import {
+  normalizeCurrencyOptions,
+  type CurrencyInput,
+  type CurrencyOptions,
+} from './currency.js';
+import type { Alignment, VerticalAlignment } from './alignment.js';
 
 /**
  * Filament `TextColumn::make('name')`.
@@ -58,6 +64,24 @@ export class TextColumn {
     return this;
   }
 
+  /**
+   * Format the column value as currency (Intl).
+   * Defaults alignment to end when unset.
+   * @example TextColumn.make('price').currency('USD').sortable()
+   */
+  currency(
+    codeOrOptions: CurrencyInput = 'USD',
+    options?: Omit<CurrencyOptions, 'code'>,
+  ): this {
+    this.config.type = 'number';
+    this.config.format = 'currency';
+    this.config.currency = normalizeCurrencyOptions(codeOrOptions, options);
+    if (this.config.alignment == null) {
+      this.config.alignment = 'end';
+    }
+    return this;
+  }
+
   email(): this {
     this.config.type = 'email';
     return this;
@@ -66,6 +90,56 @@ export class TextColumn {
   id(): this {
     this.config.type = 'id';
     return this;
+  }
+
+  /** Filament `alignment(Alignment::…)`. */
+  alignment(value: Alignment): this {
+    this.config.alignment = value;
+    return this;
+  }
+
+  alignStart(): this {
+    return this.alignment('start');
+  }
+
+  alignCenter(): this {
+    return this.alignment('center');
+  }
+
+  alignEnd(): this {
+    return this.alignment('end');
+  }
+
+  alignJustify(): this {
+    return this.alignment('justify');
+  }
+
+  /** Alias for LTR left. */
+  alignLeft(): this {
+    return this.alignment('left');
+  }
+
+  /** Alias for LTR right. */
+  alignRight(): this {
+    return this.alignment('right');
+  }
+
+  /** Filament `verticalAlignment(…)`. */
+  verticalAlignment(value: VerticalAlignment): this {
+    this.config.verticalAlignment = value;
+    return this;
+  }
+
+  verticallyAlignStart(): this {
+    return this.verticalAlignment('start');
+  }
+
+  verticallyAlignCenter(): this {
+    return this.verticalAlignment('center');
+  }
+
+  verticallyAlignEnd(): this {
+    return this.verticalAlignment('end');
   }
 
   /** @internal */
