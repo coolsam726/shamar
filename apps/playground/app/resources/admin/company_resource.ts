@@ -16,6 +16,7 @@ import {
   TextColumn,
   TextEntry,
   IconEntry,
+  RelationTable,
 } from '@shamar/core'
 import Company from '#models/company'
 
@@ -131,6 +132,14 @@ export default class CompanyResource extends Resource {
                 Toggle.make('active').label('Active (fieldset)'),
               ]),
             ]),
+          ]),
+        Section.make('Products')
+          .description('HasMany relationship table (edit after saving the company).')
+          .schema([
+            RelationTable.make('products')
+              .relationship('products', 'name', { foreignKey: 'companyId' })
+              .createAndEditOption()
+              .columnSpanFull(),
           ]),
       ])
     })

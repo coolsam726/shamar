@@ -12,3 +12,5 @@ export * from './validation.js';
 export * from './labels.js';
 export * from './currency.js';
 export * from './alignment.js';
+export * from './relation.js';
+export * from './record-value.js';

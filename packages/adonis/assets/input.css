@@ -1518,6 +1518,27 @@ select.shamar-input option {
   min-width: 100%;
 }
 
+.shamar-m2o__dropdown li[role="option"],
+.shamar-m2m__dropdown li[role="option"],
+.shamar-m2m-table li {
+  cursor: pointer;
+}
+
+.shamar-m2o__dropdown svg,
+.shamar-m2m__dropdown svg,
+.shamar-m2m-table svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+}
+
+.shamar-m2o__clear svg,
+.shamar-m2m .shamar-chip__remove svg {
+  width: 0.75rem;
+  height: 0.75rem;
+  flex-shrink: 0;
+}
+
 .shamar-m2o__open {
   align-self: stretch;
 }
@@ -1554,6 +1575,30 @@ select.shamar-input option {
 .shamar-m2m-checkboxes,
 .shamar-m2m-table {
   width: 100%;
+}
+
+.shamar-m2m-table__card {
+  overflow: visible;
+}
+
+.shamar-m2m-table__toolbar {
+  position: relative;
+  z-index: 2;
+}
+
+.shamar-m2m-table__add {
+  position: relative;
+}
+
+.shamar-m2m-table__add-dropdown {
+  z-index: 50;
+}
+
+/* Let relation dropdowns escape form section cards. */
+.shamar-form-section:has(.shamar-m2m-table),
+.shamar-form-section:has(.shamar-m2o),
+.shamar-form-section:has(.shamar-m2m) {
+  overflow: visible;
 }
 
 .shamar-m2m-checkboxes__body--framed {

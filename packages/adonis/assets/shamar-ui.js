@@ -182,6 +182,15 @@
     return true;
   }
 
+  function reloadParentView({ success, error } = {}) {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('success');
+    url.searchParams.delete('error');
+    if (success) url.searchParams.set('success', success);
+    else if (error) url.searchParams.set('error', error);
+    window.location.assign(`${url.pathname}${url.search}${url.hash}`);
+  }
+
   function consumeInitialFlash() {
     const flash = document.getElementById('shamar-initial-flash');
     if (!flash) return false;
@@ -572,6 +581,7 @@
 
       init() {
         this.query = this.label;
+        this.$nextTick?.(() => this.syncHiddenInput());
         this._pickHandler = (event) => {
           const detail = event.detail || {};
           if (detail.field === this.name) {
@@ -594,7 +604,7 @@
       },
 
       get createCandidate() {
-        if (this.readonly) return false;
+        if (this.readonly || !this.quickCreateUrl) return false;
         const q = this.query.trim();
         return q.length > 0 && !this.exactMatch;
       },
@@ -649,12 +659,12 @@
       onFocusOut(event) {
         const next = event.relatedTarget;
         if (next && this.$el.contains(next)) return;
-        // Defer so a click on a dropdown option can run before we hide it.
-        queueMicrotask(() => {
+        // Defer past the option mousedown/click so pick() can run first.
+        setTimeout(() => {
           if (!this.open) return;
           if (this.$el.contains(document.activeElement)) return;
           this.close();
-        });
+        }, 0);
       },
 
       moveCursor(delta) {
@@ -678,10 +688,20 @@
       },
 
       pick(item) {
-        this.value = item.id != null ? String(item.id) : null;
-        this.label = item.label || '';
+        if (!item || item.id == null) return;
+        this.value = String(item.id);
+        this.label = item.label || this.value;
         this.query = this.label;
         this.open = false;
+        this.syncHiddenInput();
+        notifyRelationFieldChange(this.$el, this.name);
+      },
+
+      syncHiddenInput() {
+        const hidden = this.$el.querySelector(`input[type="hidden"][name="${this.name}"]`);
+        if (hidden instanceof HTMLInputElement) {
+          hidden.value = this.value != null && this.value !== '' ? String(this.value) : '';
+        }
       },
 
       clearSelection() {
@@ -690,7 +710,9 @@
         this.query = '';
         this.cursor = 0;
         this.open = false;
+        this.syncHiddenInput();
         this.$refs.input?.focus();
+        notifyRelationFieldChange(this.$el, this.name);
       },
 
       openRecord() {
@@ -709,7 +731,11 @@
           const response = await fetch(this.quickCreateUrl, {
             method: 'POST',
             headers: csrfHeaders({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({ field: this.name, name }),
+            body: JSON.stringify({
+              field: this.name,
+              name,
+              parentId: this.parentId,
+            }),
           });
           if (response.status === 400) {
             if (this.canCreateAndEdit) {
@@ -771,6 +797,11 @@
       quickCreateUrl: cfg.quickCreateUrl,
       createUrl: cfg.createUrl,
       detailUrlBase: cfg.detailUrlBase,
+      attachUrl: cfg.attachUrl || null,
+      detachUrl: cfg.detachUrl || null,
+      kind: cfg.kind || 'manyToMany',
+      foreignKey: cfg.foreignKey || null,
+      parentId: cfg.parentId != null && cfg.parentId !== '' ? String(cfg.parentId) : null,
       readonly: !!cfg.readonly,
       required: !!cfg.required,
 
@@ -824,7 +855,7 @@
       },
 
       get createCandidate() {
-        if (this.readonly) return false;
+        if (this.readonly || !this.quickCreateUrl) return false;
         const q = this.query.trim();
         return q.length > 0 && !this.exactMatch;
       },
@@ -882,12 +913,12 @@
       onFocusOut(event) {
         const next = event.relatedTarget;
         if (next && this.$el.contains(next)) return;
-        // Defer so a click on a dropdown option can run before we hide it.
-        queueMicrotask(() => {
+        // Defer past the option mousedown/click so pick() can run first.
+        setTimeout(() => {
           if (!this.open) return;
           if (this.$el.contains(document.activeElement)) return;
           this.close();
-        });
+        }, 0);
       },
 
       moveCursor(delta) {
@@ -919,16 +950,67 @@
         if (!item || item.id == null) return;
         const id = String(item.id);
         if (this.selectedIds.has(id)) return;
+        if (this.kind === 'hasMany' && this.attachUrl && this.parentId) {
+          this.attachHasMany(item);
+          return;
+        }
         this.selected = [...this.selected, { id, label: item.label || id }];
         this.query = '';
         this.cursor = 0;
         this.fetchResults();
         this.$nextTick?.(() => this.$refs.input?.focus());
+        notifyRelationFieldChange(this.$el, this.name);
+      },
+
+      async attachHasMany(item) {
+        try {
+          const response = await fetch(this.attachUrl, {
+            method: 'POST',
+            headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({
+              field: this.name,
+              relatedId: item.id,
+              parentId: this.parentId,
+            }),
+          });
+          if (!response.ok) throw new Error('attach failed');
+          const linked = await response.json();
+          const id = String(linked.id);
+          this.selected = [
+            ...this.selected.filter((entry) => String(entry.id) !== id),
+            { id, label: linked.label || item.label || id },
+          ];
+          this.query = '';
+          this.cursor = 0;
+          this.fetchResults();
+          this.$nextTick?.(() => this.$refs.input?.focus());
+        } catch {
+          showToast('error', { title: 'Error', message: 'Unable to link record.' });
+        }
       },
 
       remove(id) {
         const target = String(id);
+        if (this.kind === 'hasMany' && this.detachUrl) {
+          this.detachHasMany(target);
+          return;
+        }
         this.selected = this.selected.filter((item) => String(item.id) !== target);
+        notifyRelationFieldChange(this.$el, this.name);
+      },
+
+      async detachHasMany(relatedId) {
+        try {
+          const response = await fetch(this.detachUrl, {
+            method: 'POST',
+            headers: csrfHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ field: this.name, relatedId }),
+          });
+          if (!response.ok) throw new Error('detach failed');
+          this.selected = this.selected.filter((item) => String(item.id) !== String(relatedId));
+        } catch {
+          showToast('error', { title: 'Error', message: 'Unable to unlink record.' });
+        }
       },
 
       openRecord(item) {
@@ -947,7 +1029,11 @@
           const response = await fetch(this.quickCreateUrl, {
             method: 'POST',
             headers: csrfHeaders({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({ field: this.name, name }),
+            body: JSON.stringify({
+              field: this.name,
+              name,
+              parentId: this.parentId,
+            }),
           });
           if (response.status === 400) {
             if (this.canCreateAndEdit) {
@@ -2163,7 +2249,7 @@
         }
         actions.remove();
         footer.querySelectorAll('[data-shamar-dialog-close]').forEach((btn) => {
-          btn.addEventListener('click', () => this.close());
+          btn.addEventListener('click', () => this.dismissDialog());
         });
         const form =
           body.querySelector('form[data-shamar-embed-form]') ||
@@ -2396,6 +2482,23 @@
         }
       },
 
+      async dismissDialog(options = {}) {
+        if (this.confirmMode) {
+          this.close();
+          return;
+        }
+        if (this.dialogStack.length > 0) {
+          const item = this.dialogStack.pop();
+          await this.restoreDialog(item);
+          return;
+        }
+        const shouldRefresh = !options.skipRefresh && !!this.currentEmbedUrl;
+        this.close();
+        if (shouldRefresh) {
+          reloadParentView();
+        }
+      },
+
       toggleFullscreen() {
         this.fullscreen = !this.fullscreen;
         if (this.fullscreen) {
@@ -2583,33 +2686,16 @@
 
         if (isEmbed && this.open) {
           if (success === 'updated' || (success === 'created' && !_dialogOnResult)) {
-            // Nested M2O dialog (create/edit related record): restore the parent form.
+            // Nested embed dialog: restore the parent dialog form.
             if (this.dialogStack.length > 0) {
               if (flash) showToast(flash);
               await this.restoreDialog(this.dialogStack.pop());
               return;
             }
-            // Top-level create/edit: close and refresh the list.
+            // Top-level embed: close and refresh the page that opened the dialog.
             this.dialogStack = [];
             this.close();
-            const record = parseAdminRecordPath(url.pathname);
-            const slug =
-              this.resourceSlug ||
-              record?.slug ||
-              resourceSlugFromUrl(basePath, url.pathname) ||
-              '';
-            if (slug) {
-              const target = new URL(
-                listPath(basePath, slug, getStoredListView(slug)),
-                window.location.origin,
-              );
-              if (success) target.searchParams.set('success', success);
-              if (error) target.searchParams.set('error', error);
-              window.location.assign(`${target.pathname}${target.search}`);
-              return;
-            }
-            if (flash) showToast(flash);
-            window.location.reload();
+            reloadParentView({ success: success || undefined, error: error || undefined });
             return;
           }
 
@@ -2629,28 +2715,11 @@
           }
         }
 
-        // Non-embed success while a dialog is open (e.g. update redirected to list).
+        // Non-embed success while a dialog is open.
         if (this.open && (success === 'updated' || success === 'created') && !_dialogOnResult) {
           this.dialogStack = [];
           this.close();
-          const record = parseAdminRecordPath(url.pathname);
-          const slug =
-            this.resourceSlug ||
-            record?.slug ||
-            resourceSlugFromUrl(basePath, url.pathname) ||
-            '';
-          if (slug) {
-            const target = new URL(
-              listPath(basePath, slug, getStoredListView(slug)),
-              window.location.origin,
-            );
-            if (success) target.searchParams.set('success', success);
-            if (error) target.searchParams.set('error', error);
-            window.location.assign(`${target.pathname}${target.search}`);
-            return;
-          }
-          if (flash) showToast(flash);
-          window.location.reload();
+          reloadParentView({ success: success || undefined, error: error || undefined });
           return;
         }
 
@@ -2660,23 +2729,7 @@
         }
 
         this.close();
-
-        const slug =
-          this.resourceSlug ||
-          parseAdminRecordPath(url.pathname)?.slug ||
-          resourceSlugFromUrl(basePath, url.pathname) ||
-          '';
-        if (slug) {
-          const target = new URL(
-            listPath(basePath, slug, getStoredListView(slug)),
-            window.location.origin,
-          );
-          if (success) target.searchParams.set('success', success);
-          if (error) target.searchParams.set('error', error);
-          window.location.assign(`${target.pathname}${target.search}`);
-          return;
-        }
-        window.location.assign(url.pathname + url.search);
+        reloadParentView({ success: success || undefined, error: error || undefined });
       },
 
       submitConfirm() {
@@ -2722,33 +2775,121 @@
     bindRecordPagerNav();
   });
 
+  function relationConfigsFromForm(form) {
+    const configs = [];
+    if (!(form instanceof HTMLFormElement)) return configs;
+    form.querySelectorAll('[data-shamar-m2o-config],[data-shamar-m2m-config]').forEach((el) => {
+      const raw =
+        el.getAttribute('data-shamar-m2o-config') ||
+        el.getAttribute('data-shamar-m2m-config');
+      if (!raw) return;
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed?.name) configs.push(parsed);
+      } catch {
+        /* ignore */
+      }
+    });
+    return configs;
+  }
+
+  function notifyRelationFieldChange(componentEl, fieldName) {
+    const form = componentEl?.closest?.('form');
+    if (!form) return;
+    queueMicrotask(() => {
+      const hidden =
+        componentEl.querySelector(`input[type="hidden"][name="${fieldName}"]`) ||
+        componentEl.querySelector(`input[type="hidden"][name="${fieldName}[]"]`);
+      if (hidden) {
+        hidden.dispatchEvent(new Event('input', { bubbles: true }));
+        hidden.dispatchEvent(new Event('change', { bubbles: true }));
+        return;
+      }
+      form.dispatchEvent(new Event('input', { bubbles: true }));
+      form.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  }
+
+  function syncRelationValuesToFormData(form, data) {
+    const alpine = window.Alpine;
+    if (!alpine?.$data) return;
+
+    form.querySelectorAll('[data-shamar-m2o-config]').forEach((el) => {
+      let cfg;
+      try {
+        cfg = JSON.parse(el.getAttribute('data-shamar-m2o-config') || '{}');
+      } catch {
+        return;
+      }
+      if (!cfg.name) return;
+      const component = alpine.$data(el);
+      const value =
+        component?.value != null && component.value !== ''
+          ? String(component.value)
+          : '';
+      data.set(cfg.name, value);
+    });
+
+    form.querySelectorAll('[data-shamar-m2m-config]').forEach((el) => {
+      let cfg;
+      try {
+        cfg = JSON.parse(el.getAttribute('data-shamar-m2m-config') || '{}');
+      } catch {
+        return;
+      }
+      if (!cfg.name || cfg.kind === 'hasMany') return;
+      const component = alpine.$data(el);
+      const selected = Array.isArray(component?.selected) ? component.selected : [];
+      data.delete(cfg.name);
+      data.delete(`${cfg.name}[]`);
+      if (selected.length === 0) {
+        if (cfg.kind === 'manyToMany') {
+          data.append(`${cfg.name}[]`, '');
+        }
+        return;
+      }
+      for (const item of selected) {
+        if (item?.id != null && String(item.id).trim() !== '') {
+          data.append(`${cfg.name}[]`, String(item.id));
+        }
+      }
+    });
+  }
+
   function formDataFrom(form) {
     const data = new FormData(form);
+    const relationConfigs = relationConfigsFromForm(form);
+    const relationFields = new Set(relationConfigs.map((cfg) => cfg.name));
     try {
       const alpine = window.Alpine?.$data?.(form);
       const state = alpine?.state;
-      if (!state || typeof state !== 'object') return data;
-      // Prefer Alpine state so `.disabled()` fields (excluded from FormData) still save.
-      for (const [key, value] of Object.entries(state)) {
-        if (value === undefined) continue;
-        if (typeof value === 'boolean') {
-          if (value) data.set(key, 'true');
-          else data.delete(key);
-          continue;
-        }
-        if (Array.isArray(value)) {
-          data.delete(key);
-          data.delete(`${key}[]`);
-          for (const item of value) {
-            data.append(`${key}[]`, item == null ? '' : String(item));
+      if (state && typeof state === 'object') {
+        // Prefer Alpine state so `.disabled()` fields (excluded from FormData) still save.
+        // Relation widgets manage their own hidden inputs — do not clobber them with stale state.
+        for (const [key, value] of Object.entries(state)) {
+          if (value === undefined || relationFields.has(key)) continue;
+          if (typeof value === 'boolean') {
+            if (value) data.set(key, 'true');
+            else data.delete(key);
+            continue;
           }
-          continue;
+          if (Array.isArray(value)) {
+            data.delete(key);
+            data.delete(`${key}[]`);
+            for (const item of value) {
+              data.append(`${key}[]`, item == null ? '' : String(item));
+            }
+            continue;
+          }
+          data.set(key, value == null ? '' : String(value));
         }
-        data.set(key, value == null ? '' : String(value));
       }
     } catch {
       /* ignore */
     }
+
+    syncRelationValuesToFormData(form, data);
+
     return data;
   }
 

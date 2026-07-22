@@ -9,6 +9,10 @@ export interface ProductAttrs {
   tags?: string[]
   color?: string | null
   featured?: boolean
+  /** BelongsTo Company */
+  companyId?: string | null
+  /** ManyToMany Category ids */
+  categoryIds?: string[]
 }
 
 const productSchema = new Schema<ProductAttrs>(
@@ -21,6 +25,8 @@ const productSchema = new Schema<ProductAttrs>(
     tags: { type: [String], default: [] },
     color: { type: String, default: null, trim: true },
     featured: { type: Boolean, default: false },
+    companyId: { type: String, default: null, index: true },
+    categoryIds: { type: [String], default: [] },
   },
   {
     timestamps: true,

@@ -99,21 +99,65 @@
     </label>
   @elseif(field.type === 'radio')
     <div class="shamar-radio{{ field.inline ? ' shamar-radio--inline' : '' }}">
-      @each(option in field.options)
-        <label class="shamar-radio__option">
-          <input
-            type="radio"
-            name="{{ field.name }}"
-            value="{{ option.value }}"
-            x-model="state['{{ field.name }}']"
-            @change="onFieldChange('{{ field.name }}')"
-            :disabled="isDisabled('{{ field.name }}')"
-            {{ field.required ? 'required' : '' }}
-          />
-          <span>{{ option.label }}</span>
-        </label>
-      @endeach
+      @if(relationUi && relationUi[field.name] && relationUi[field.name].options)
+        @each(option in relationUi[field.name].options)
+          <label class="shamar-radio__option">
+            <input
+              type="radio"
+              name="{{ field.name }}"
+              value="{{ option.id }}"
+              x-model="state['{{ field.name }}']"
+              @change="onFieldChange('{{ field.name }}')"
+              :disabled="isDisabled('{{ field.name }}')"
+              {{ field.required ? 'required' : '' }}
+            />
+            <span>{{ option.label }}</span>
+          </label>
+        @endeach
+        @if(relationUi[field.name].options.length === 0)
+          <p class="text-xs text-body-subtle">No options available.</p>
+        @endif
+      @else
+        @each(option in field.options)
+          <label class="shamar-radio__option">
+            <input
+              type="radio"
+              name="{{ field.name }}"
+              value="{{ option.value }}"
+              x-model="state['{{ field.name }}']"
+              @change="onFieldChange('{{ field.name }}')"
+              :disabled="isDisabled('{{ field.name }}')"
+              {{ field.required ? 'required' : '' }}
+            />
+            <span>{{ option.label }}</span>
+          </label>
+        @endeach
+      @endif
     </div>
+  @elseif(field.type === 'relation' || field.type === 'checkboxList' || field.type === 'relationTable')
+    @if(!(relationUi && relationUi[field.name]))
+      <p class="text-xs text-fg-danger">Relation field "{{ field.name }}" is missing UI config.</p>
+    @elseif(relationUi[field.name].widget === 'table' || field.type === 'relationTable')
+      @!component('shamar::partials/field-relation-table', {
+        field: field,
+        relationConfig: relationUi[field.name],
+      })
+    @elseif(relationUi[field.name].widget === 'checkboxList' || field.type === 'checkboxList')
+      @!component('shamar::partials/field-relation-checkbox', {
+        field: field,
+        relationConfig: relationUi[field.name],
+      })
+    @elseif(relationUi[field.name].kind === 'belongsTo' && !field.multiple)
+      @!component('shamar::partials/field-relation-m2o', {
+        field: field,
+        relationConfig: relationUi[field.name],
+      })
+    @else
+      @!component('shamar::partials/field-relation-m2m', {
+        field: field,
+        relationConfig: relationUi[field.name],
+      })
+    @endif
   @elseif(field.type === 'tags')
     <div class="shamar-tags">
       <div class="shamar-tags__list">

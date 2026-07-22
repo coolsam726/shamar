@@ -89,6 +89,11 @@ function matches(doc: Record<string, unknown>, filter: Record<string, unknown>):
       if (doc[key] === (value as { $ne: unknown }).$ne) return false;
       continue;
     }
+    if (value && typeof value === 'object' && '$in' in (value as object)) {
+      const list = (value as { $in: unknown[] }).$in.map(String);
+      if (!list.includes(String(doc[key] ?? doc._id ?? ''))) return false;
+      continue;
+    }
     if (value && typeof value === 'object' && '$exists' in (value as object)) {
       const exists = (value as { $exists: boolean }).$exists;
       if (exists ? doc[key] === undefined : doc[key] !== undefined) return false;
@@ -244,5 +249,46 @@ describe('@shamar/mongoose adapter', () => {
     const adapter = createMongooseAdapter({ connection });
     const result = await adapter.list(Temp.configure(), { page: 1, perPage: 10 });
     assert.equal(result.items[0]?.name, 'ViaConn');
+  });
+
+  it('searches relation options by q, ids, and scope', async () => {
+    const ID2 = '507f1f77bcf86cd799439012';
+    const Model = createMockModel([
+      { _id: ID, name: 'Acme Corp', companyId: 'c1' },
+      { _id: ID2, name: 'Beta Inc', companyId: 'c2' },
+    ]);
+    class Temp extends Resource {
+      static override slug = 'temps';
+      static override model = Model;
+      static override form() {
+        return form((f) => {
+          f.schema([TextInput.make('name').searchable()]);
+        });
+      }
+      static override table() {
+        return table((t) => {
+          t.schema([TextColumn.make('name').searchable()]);
+        });
+      }
+    }
+
+    const adapter = createMongooseAdapter();
+    const meta = Temp.configure();
+
+    const byQ = await adapter.search(meta, { q: 'acme', titleAttribute: 'name' });
+    assert.equal(byQ.length, 1);
+    assert.equal(byQ[0]?.id, ID);
+    assert.equal(byQ[0]?.label, 'Acme Corp');
+
+    const byIds = await adapter.search(meta, { ids: [ID2], titleAttribute: 'name' });
+    assert.equal(byIds.length, 1);
+    assert.equal(byIds[0]?.label, 'Beta Inc');
+
+    const byScope = await adapter.search(meta, {
+      titleAttribute: 'name',
+      scope: { companyId: 'c1' },
+    });
+    assert.equal(byScope.length, 1);
+    assert.equal(byScope[0]?.id, ID);
   });
 });

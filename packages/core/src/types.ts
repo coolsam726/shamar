@@ -24,9 +24,14 @@ export type FieldType =
   | 'hidden'
   | 'radio'
   | 'color'
-  | 'tags';
+  | 'tags'
+  | 'checkboxList'
+  | 'relationTable';
 
 export type RelationKind = 'belongsTo' | 'hasMany' | 'manyToMany';
+
+/** UI widget for a relationship field. */
+export type RelationWidget = 'combobox' | 'radio' | 'checkboxList' | 'table';
 
 export type ColumnSpan = number | 'full';
 
@@ -65,9 +70,24 @@ export type UnknownOrClosure = unknown | ((ctx: FieldContext) => unknown);
 
 export interface RelationConfig {
   kind: RelationKind;
+  /** Related resource slug (e.g. `companies`). */
   resource: string;
+  /** Column used for option labels (Filament `titleAttribute`). */
   labelField: string;
+  /** Alias of `labelField` (Filament naming). */
+  titleAttribute?: string;
+  /** Child FK for hasMany (e.g. `companyId`). */
   foreignKey?: string;
+  /** Presentation widget (defaults by kind). */
+  widget?: RelationWidget;
+  /** Inline quick-create from search query (PyVELM/Loom Create). */
+  createOption?: boolean;
+  /** Open related create form in a dialog, then pick (Create & Edit). */
+  createAndEditOption?: boolean;
+  /** Optional create modal schema override (falls back to related resource create URL). */
+  createOptionForm?: FieldConfig[];
+  /** Initial option load size for radio / checkbox list. */
+  preloadLimit?: number;
 }
 
 export interface FieldConfig {
@@ -398,6 +418,25 @@ export interface ShamarUser {
   roleIds?: string[];
 }
 
+/** Options for relation option search / label resolution. */
+export interface RelationSearchQuery {
+  /** Free-text search against the title attribute. */
+  q?: string;
+  /** Max results (default 25). */
+  limit?: number;
+  /** Resolve labels for specific ids (edit/show). */
+  ids?: string[];
+  /** Equality scope filters (e.g. hasMany `{ companyId: parentId }`). */
+  scope?: Record<string, unknown>;
+  /** Column used for labels. */
+  titleAttribute: string;
+}
+
+export interface RelationSearchResult {
+  id: string;
+  label: string;
+}
+
 export interface DataAdapter {
   list(meta: ResourceMeta, query: ListQuery): Promise<PaginatedResult>;
   findOne(meta: ResourceMeta, id: string): Promise<Record<string, unknown>>;
@@ -421,6 +460,13 @@ export interface DataAdapter {
     value: unknown,
     options?: { excludeId?: string },
   ): Promise<boolean>;
+  /**
+   * Search related records for relation fields (BelongsTo / M2M / HasMany widgets).
+   */
+  search(
+    meta: ResourceMeta,
+    query: RelationSearchQuery,
+  ): Promise<RelationSearchResult[]>;
 }
 
 export interface ConnectionRegistry {
