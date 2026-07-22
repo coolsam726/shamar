@@ -36,6 +36,6 @@ export class SessionMongooseUserProvider implements SessionUserProviderContract<
       return null
     }
 
-    return this.createUserForGuard(user)
+    return this.createUserForGuard(user as UserDocument)
   }
 }

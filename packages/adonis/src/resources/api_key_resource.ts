@@ -17,6 +17,7 @@ import {
   type PrepareCreateResult,
   type HandleActionContext,
   type HandleActionResult,
+  type ResourceModel,
   type ShamarUser,
 } from '@shamar/core'
 import { generateApiKey } from '@shamar/cherubim'
@@ -31,7 +32,8 @@ import { generateApiKey } from '@shamar/cherubim'
  * Abilities are picked from the registered `permissions` catalog by name.
  */
 export default class ApiKeyResource extends Resource {
-  static override model = 'ApiKey'
+  /** Keep as `ResourceModel` so apps can override with a Lucid/Mongoose model class. */
+  static override model: ResourceModel = 'ApiKey'
   static override slug = 'api-keys'
   static override label = 'API Keys'
   static override singularLabel = 'API Key'
