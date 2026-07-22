@@ -1,0 +1,76 @@
+name: Publish
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Dry run (validate without publishing to npm)
+        type: boolean
+        default: false
+
+concurrency:
+  group: publish-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      PUBLISH_FLAGS: --access public --no-git-checks
+      DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Test
+        run: pnpm test
+
+      - name: Pack @shamar/core (validate)
+        run: pnpm --filter @shamar/core pack --pack-destination /tmp/npm-pack
+
+      - name: Publish @shamar/core
+        run: pnpm --filter @shamar/core publish $PUBLISH_FLAGS $DRY_RUN
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @shamar/cherubim
+        run: pnpm --filter @shamar/cherubim publish $PUBLISH_FLAGS $DRY_RUN
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @shamar/lucid
+        run: pnpm --filter @shamar/lucid publish $PUBLISH_FLAGS $DRY_RUN
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @shamar/mongoose
+        run: pnpm --filter @shamar/mongoose publish $PUBLISH_FLAGS $DRY_RUN
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish @shamar/adonis
+        run: pnpm --filter @shamar/adonis publish $PUBLISH_FLAGS $DRY_RUN
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
