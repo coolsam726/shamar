@@ -1,6 +1,6 @@
 # Shamar
 
-**Filament-inspired admin panel for AdonisJS** — declarative resources, Lucid ORM, RBAC, and a JSON API.
+**Filament-inspired admin panel for AdonisJS** — declarative resources, Lucid or Mongoose, RBAC (Cherubim), and a JSON API.
 
 Inspired by [Filament](https://filamentphp.com/) (PHP) and architecturally aligned with [Loom](https://github.com/coolsam726/nodeweaver) (NestJS), but built natively for the latest AdonisJS stack.
 
@@ -8,15 +8,29 @@ Inspired by [Filament](https://filamentphp.com/) (PHP) and architecturally align
 
 | Package | Description |
 |---------|-------------|
-| `@shamar/core` | Resource DSL: forms, tables, actions, navigation, auth contracts |
-| `@shamar/lucid` | Lucid ORM adapter (SQL — list, CRUD, soft-delete, connections) |
-| `@shamar/mongoose` | Mongoose adapter (MongoDB — list, CRUD, soft-delete) |
-| `@shamar/adonis` | Service provider, routes, controllers, middleware, Edge views |
+| [`@shamar/core`](packages/core) | Resource DSL: forms, tables, actions, navigation, auth contracts |
+| [`@shamar/cherubim`](packages/cherubim) | Auth & access control: abilities, policies, API credentials |
+| [`@shamar/lucid`](packages/lucid) | Lucid ORM adapter (SQL — list, CRUD, soft-delete, connections) |
+| [`@shamar/mongoose`](packages/mongoose) | Mongoose adapter (MongoDB — list, CRUD, soft-delete) |
+| [`@shamar/adonis`](packages/adonis) | Service provider, routes, controllers, middleware, Edge views |
 
-## Quick start (target DX)
+## Install (Adonis app)
+
+```bash
+pnpm add @shamar/adonis
+# plus one of:
+pnpm add @adonisjs/lucid    # SQL
+pnpm add mongoose           # MongoDB
+
+node ace configure @shamar/adonis   # pick Lucid or Mongoose
+```
+
+Then define resources and open the panel path (default `/admin`). Full host docs: [`packages/adonis/README.md`](packages/adonis/README.md).
+
+## Quick start
 
 ```ts
-// app/resources/user_resource.ts
+// app/resources/admin/user_resource.ts
 import {
   Resource,
   form,
@@ -75,7 +89,7 @@ export default defineConfig({
 
 Single-panel apps can still use legacy `path` + `resources` (becomes one default panel).
 
-At configure time you pick **Lucid (SQL)** or **Mongoose (MongoDB)**. The Resource DSL is the same; only models and `orm` differ.
+At configure time you pick **Lucid (SQL)** or **Mongoose (MongoDB)**. The Resource DSL is the same; only models and `orm` differ. Your app owns the DB connection lifecycle.
 
 ### Forms, infolists, and tables (Filament-style)
 
@@ -159,9 +173,9 @@ static table() {
 | `TextColumn::make()` / `$table->columns()` | `TextColumn.make()` / `table((t) => t.schema([...]))` |
 | Multi-panel | `panel(id).path().discoverResources()` |
 | `ListRecords` / `CreateRecord` | Adonis controllers + Edge pages |
-| `Action` / `BulkAction` | `Action.header()` / `Action.bulk()` |
+| `Action` / `BulkAction` | `actions((a) => a.header(…) / a.bulkDelete(…) / a.row(…))` |
 | `RelationManager` | `Relation.field()` + relation widgets (phase 2) |
-| `Policy` | `Resource.policy` class + `Policy` base (Loom / Laravel) |
+| `Policy` | `Resource.policy` class + Cherubim `Policy` (Loom / Laravel) |
 | Panel navigation | `navigationGroup`, `navigationSort` |
 | Live form fields | `.live()` + `.afterStateUpdated()` → `POST …/form-state` |
 | Multi-tenancy | `companyScoped` + session company switcher (phase 2) |
@@ -176,6 +190,14 @@ export default class LegacyProductResource extends Resource {
   static model = LegacyProduct
 }
 ```
+
+## Playground
+
+[`apps/playground`](apps/playground) is the living Mongoose demo (dual panels `/admin` + `/app`, session auth, API keys, RBAC). See its README for run instructions and seed credentials.
+
+## Publishing
+
+GitHub Actions [`.github/workflows/publish.yml`](.github/workflows/publish.yml) builds, tests, and publishes `@shamar/*` packages when a GitHub Release is published (or via workflow_dispatch dry-run).
 
 ## Development
 

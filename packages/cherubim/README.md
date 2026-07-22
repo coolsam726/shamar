@@ -4,6 +4,22 @@ Authentication and access control for Shamar admin panels.
 
 Cherubim follows the [Loom](https://github.com/coolsam726/nodeweaver) RBAC model: **users ↔ roles ↔ permissions** with **policy classes** for record-level rules (Laravel / Adonis style).
 
+## Install
+
+```bash
+pnpm add @shamar/cherubim
+```
+
+Depends on [`@shamar/core`](../core). In Adonis apps, prefer installing [`@shamar/adonis`](../adonis) — it wires Cherubim into panel routes, navigation, and the JSON API.
+
+## Related packages
+
+| Package | Role |
+|---------|------|
+| [`@shamar/core`](../core) | Resource DSL + `ShamarUser` / permission catalog helpers |
+| [`@shamar/adonis`](../adonis) | Host: `auth.*` config, `ApiKeyResource`, middleware |
+| [`@shamar/lucid`](../lucid) / [`@shamar/mongoose`](../mongoose) | Persistence for roles, permissions, API keys |
+
 ## Model
 
 1. **Permissions** — string abilities: `products:viewAny`, `products:edit`, `products:*`, `*`
@@ -181,9 +197,11 @@ router
 
 ## Integration
 
-`@shamar/adonis` wires Cherubim into panel routes and `AdminController`:
+[`@shamar/adonis`](../adonis) wires Cherubim into panel routes and `AdminController`:
 
 - `auth.guard`, `auth.resolveUser`, `auth.roleResolver`, `auth.apiKeys`, `auth.policies`
 - Resource actions enforced on every admin/API handler
 - Navigation filtered by `viewAny`
 - `scopeList` applied to list queries and IDOR checks on show/edit/delete
+
+See the Adonis package README for full `defineConfig` auth options and middleware exports.

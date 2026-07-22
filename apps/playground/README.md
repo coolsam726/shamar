@@ -1,207 +1,68 @@
-<div align="center">
+# Shamar Playground
 
-  <!-- Add your cover image here -->
-  <img src="https://github.com/adonisjs/.github/blob/next/docs/hypermedia-adonisjs.png?raw=true" alt="AdonisJS Hypermedia Starter Kit" width="100%">
+Living demo app for the Shamar admin stack — **AdonisJS + Mongoose**, dual panels, session auth, Cherubim RBAC, and API credentials.
 
-  <h1>Hypermedia Starter Kit</h1>
+This is the reference integration for [`@shamar/adonis`](../../packages/adonis) with `orm: 'mongoose'`. Package docs live under [`packages/*/README.md`](../../packages).
 
-  <p>
-    <strong>A batteries-included AdonisJS starter kit for building modern server-rendered web applications.</strong>
-  </p>
+## What you get
 
-  <p>
-    Built for developers who believe in the power of hypermedia and want to ship fast without sacrificing DX.
-  </p>
+| Surface | Path | Notes |
+|---------|------|--------|
+| Admin panel | `/admin` | Full CRUD resources (companies, users, roles, permissions, products, API keys, …) |
+| App panel | `/app` | Smaller end-user panel (e.g. profile) |
+| JSON API | `/api/shamar` | Protected when `auth.apiKeys.protectApi` is enabled |
+| Login | `/login` | Session guard (`web`) |
 
-  <br>
+## Run locally
 
-<a href="#-whats-in-the-box">Features</a>
-<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-<a href="#-quick-start">Quick Start</a>
-<span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-<a href="https://adonisjs.com">Documentation</a>
-
-  <br>
-  <br>
-
-</div>
-
----
-
-## ✨ What's in the Box
-
-This starter kit is designed to help you build production-ready web applications with server-side rendering, progressive enhancement, and minimal JavaScript. It's perfect for building traditional web apps, admin panels, content sites, and SaaS applications.
-
-### 🎯 Core Features
-
-- **🔐 Authentication System** - Complete user signup, login, and session management out of the box
-- **📝 Pre-built UI Components** - Form inputs, buttons, alerts, avatars, and more ready to use
-- **⚡️ Server-Side Rendering** - Fast initial page loads with Edge.js templating
-- **🎨 Custom Design System** - Beautiful, accessible components with CSS variables (no framework bloat)
-- **✅ Form Validation** - Powered by VineJS with automatic error handling
-- **🌊 Flash Messages** - Success/error notifications built-in
-- **🛡️ Security First** - CSRF protection, Shield middleware, and secure session handling
-
-### 🔧 Tech Stack
-
-<table>
-  <tr>
-    <td><strong>Backend</strong></td>
-    <td>
-      <a href="https://adonisjs.com">AdonisJS 7.x</a> - Full-featured Node.js framework
-    </td>
-  </tr>
-  <tr>
-    <td><strong>Templates</strong></td>
-    <td>
-      <a href="https://edgejs.dev">Edge.js</a> - Powerful, expressive templating engine
-    </td>
-  </tr>
-  <tr>
-    <td><strong>Database</strong></td>
-    <td>
-      <a href="https://lucid.adonisjs.com">Lucid ORM</a> - SQL ORM with migrations (SQLite, PostgreSQL, MySQL, MSSQL)
-    </td>
-  </tr>
-  <tr>
-    <td><strong>Auth</strong></td>
-    <td>
-      Session-based authentication with secure cookie storage
-    </td>
-  </tr>
-  <tr>
-    <td><strong>Frontend</strong></td>
-    <td>
-      <a href="https://alpinejs.dev">Alpine.js</a> - Lightweight JavaScript for sprinkles of interactivity
-    </td>
-  </tr>
-  <tr>
-    <td><strong>Styling</strong></td>
-    <td>
-      Custom CSS with modern features (CSS variables, nesting support via Vite)
-    </td>
-  </tr>
-  <tr>
-    <td><strong>Build</strong></td>
-    <td>
-      <a href="https://vitejs.dev">Vite</a> - Lightning-fast HMR and optimized builds
-    </td>
-  </tr>
-  <tr>
-    <td><strong>Validation</strong></td>
-    <td>
-      <a href="https://vinejs.dev">VineJS</a> - Type-safe schema validation
-    </td>
-  </tr>
-  <tr>
-    <td><strong>Testing</strong></td>
-    <td>
-      <a href="https://japa.dev">Japa</a> - Delightful testing framework with browser testing support
-    </td>
-  </tr>
-  <tr>
-    <td><strong>TypeScript</strong></td>
-    <td>
-      Full TypeScript support with strict mode enabled
-    </td>
-  </tr>
-</table>
-
----
-
-## 🚀 Quick Start
-
-### Create a New Project
+From the monorepo root:
 
 ```bash
-npm init adonisjs@latest -- -K=hypermedia
+pnpm install
+pnpm docker:up    # MongoDB :27017 + Compass Web :8081 — see DOCKER.md
+pnpm build        # build @shamar/* packages
+pnpm dev          # ace serve — http://localhost:3333
 ```
 
-This command will:
-
-- Clone this starter kit
-- Install all dependencies
-- Set up your `.env` file
-- Generate your app encryption key
-- Configure your database
-- Configure authentication
-- Run migrations
-
-### Start Developing
+Or run the app inside Docker (with Mongo):
 
 ```bash
-# Run the development server with hot reload
-node ace serve --hmr
-
-# Run tests
-node ace test
-
-# Build for production
-npm run build
-
-# Start production server
-npm start
+pnpm docker:dev   # HMR on :3333
+# pnpm docker:prod
 ```
 
-Your app will be running at `http://localhost:3333`
+Ensure `apps/playground/.env` points at Mongo (default `mongodb://127.0.0.1:27017/shamar_playground`).
 
----
+## Seed login
 
-## 📚 Learn More
+On boot the Mongo provider seeds an admin user (if missing):
 
-<table>
-  <tr>
-    <td>
-      <a href="https://docs.adonisjs.com"><strong>📖 Documentation</strong></a>
-      <br>
-      <span>Complete guide to AdonisJS</span>
-    </td>
-    <td>
-      <a href="https://edgejs.dev"><strong>🎨 Edge.js Docs</strong></a>
-      <br>
-      <span>Learn about the template engine</span>
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <a href="https://lucid.adonisjs.com"><strong>💾 Lucid ORM</strong></a>
-      <br>
-      <span>Database queries and relationships</span>
-    </td>
-    <td>
-      <a href="https://vinejs.dev"><strong>✅ VineJS</strong></a>
-      <br>
-      <span>Schema validation guide</span>
-    </td>
-  </tr>
-</table>
+| Field | Value |
+|-------|--------|
+| Email | `admin@example.com` |
+| Password | `password` |
 
----
+## Try next
 
-## 🎨 Philosophy
+- Browse `/admin` — list filters, grouping, bulk actions, relation fields
+- **Roles / permissions** — catalog + `PermissionsAssignment` on roles
+- **API Keys** — create a PAT or machine key; secret shown once; dual headers `X-Api-Key` + `Authorization: Bearer`
+- Soft-deleted / locked resources and policies under `app/policies`
 
-This starter kit embraces the **hypermedia-driven** approach to web development:
+## Layout
 
-- **Server-Side Rendering First** - Fast initial loads, SEO-friendly, works without JavaScript
-- **Progressive Enhancement** - Sprinkle interactivity where needed with Alpine.js
-- **Convention Over Configuration** - Sensible defaults, escape hatches when you need them
-- **Developer Experience** - Hot reload, TypeScript, great error messages
-- **Production Ready** - Security, validation, and testing built-in
+```
+apps/playground/
+  app/resources/admin/   # Admin panel resources
+  app/resources/app/     # App panel resources
+  app/models/            # Mongoose models
+  app/auth/              # Session provider, API key store, role resolver
+  config/shamar.ts       # panels + auth wiring
+  providers/             # mongo connect + seed, RBAC boot
+```
 
----
+## Related
 
-## 🤝 Contributing
-
-This starter kit is maintained by the AdonisJS team. Found a bug or have a suggestion? [Open an issue](https://github.com/adonisjs/web-starter-kit/issues) or submit a pull request!
-
----
-
-## 📄 License
-
-This starter kit is open-sourced software licensed under the [MIT license](LICENSE).
-
----
-
-<div align="center">
-  <sub>Built with ❤️ by the AdonisJS team</sub>
-</div>
+- [Root README](../../README.md)
+- [DOCKER.md](../../DOCKER.md)
+- [@shamar/adonis](../../packages/adonis) · [@shamar/mongoose](../../packages/mongoose) · [@shamar/cherubim](../../packages/cherubim)
