@@ -1,0 +1,100 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: shamar-mongo
+    restart: unless-stopped
+    ports:
+      - '27017:27017'
+    environment:
+      MONGO_INITDB_DATABASE: shamar_playground
+    volumes:
+      - shamar_mongo_data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # Browser UI based on MongoDB Compass (community compass-web image)
+  compass:
+    image: haohanyang/compass-web
+    container_name: shamar-compass
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - '8081:8080'
+    environment:
+      CW_HOST: 0.0.0.0
+      CW_PORT: '8080'
+      CW_MONGO_URI: mongodb://mongo:27017/shamar_playground
+      CW_ENABLE_SHELL: 'true'
+
+  # Playground — HMR (opt-in: pnpm docker:dev)
+  app-dev:
+    profiles: ['dev']
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: shamar-app-dev
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - '3333:3333'
+    env_file:
+      - ./apps/playground/.env
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3333
+      NODE_ENV: development
+      APP_URL: http://localhost:3333
+      MONGO_URI: mongodb://mongo:27017/shamar_playground
+    volumes:
+      # Live-edit app + package sources; container keeps its own node_modules
+      - ./apps/playground/app:/workspace/apps/playground/app
+      - ./apps/playground/config:/workspace/apps/playground/config
+      - ./apps/playground/resources:/workspace/apps/playground/resources
+      - ./apps/playground/start:/workspace/apps/playground/start
+      - ./apps/playground/providers:/workspace/apps/playground/providers
+      - ./apps/playground/adonisrc.ts:/workspace/apps/playground/adonisrc.ts
+      - ./packages/core/src:/workspace/packages/core/src
+      - ./packages/core/dist:/workspace/packages/core/dist
+      - ./packages/adonis/src:/workspace/packages/adonis/src
+      - ./packages/adonis/dist:/workspace/packages/adonis/dist
+      - ./packages/adonis/resources:/workspace/packages/adonis/resources
+      - ./packages/adonis/assets:/workspace/packages/adonis/assets
+      - ./packages/lucid/src:/workspace/packages/lucid/src
+      - ./packages/lucid/dist:/workspace/packages/lucid/dist
+      - ./packages/mongoose/src:/workspace/packages/mongoose/src
+      - ./packages/mongoose/dist:/workspace/packages/mongoose/dist
+
+  # Playground — production build (opt-in: pnpm docker:prod)
+  app-prod:
+    profiles: ['prod']
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: shamar-app-prod
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - '3333:3333'
+    env_file:
+      - ./apps/playground/.env
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3333
+      NODE_ENV: production
+      APP_URL: http://localhost:3333
+      MONGO_URI: mongodb://mongo:27017/shamar_playground
+
+volumes:
+  shamar_mongo_data:

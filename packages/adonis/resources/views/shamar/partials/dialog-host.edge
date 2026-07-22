@@ -1,0 +1,111 @@
+<div
+  x-data="shamarDialogHost()"
+  @shamar-open-dialog.window="openModal($event.detail)"
+  @shamar-open-confirm.window="openConfirm($event.detail)"
+  @keydown.escape.window="if (open) close()"
+>
+  <div x-show="open" x-cloak style="display: none;">
+    <div class="shamar-dialog-backdrop" @click="close()"></div>
+
+    <div
+      class="shamar-dialog-panel"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="title"
+      :class="{ 'is-fullscreen': fullscreen, 'is-prompt': confirmMode }"
+      :style="panelStyle()"
+      @keydown.tab="trapFocus($event)"
+      x-ref="panel"
+    >
+      <div class="shamar-dialog-header" @mousedown="startDrag($event)">
+        <h2 class="min-w-0 flex-1 truncate text-sm font-semibold text-heading" id="shamar-dialog-title" x-text="title"></h2>
+        <div class="flex shrink-0 items-center gap-1">
+          <a
+            x-show="fullPageUrl"
+            :href="fullPageUrl"
+            class="rounded-md px-2 py-1 text-xs text-body-subtle hover:bg-surface-hover hover:text-heading"
+          >Open in full page</a>
+          <button
+            type="button"
+            class="rounded-md p-1.5 text-body-subtle hover:bg-surface-hover hover:text-heading"
+            x-show="!confirmMode"
+            @click="toggleFullscreen()"
+            :title="fullscreen ? 'Exit full screen' : 'Full screen'"
+          >
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"/>
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="rounded-md p-1.5 text-body-subtle hover:bg-surface-hover hover:text-heading"
+            @click="close()"
+            title="Close"
+            aria-label="Close"
+            x-ref="closeBtn"
+          >×</button>
+        </div>
+      </div>
+
+      <div class="shamar-dialog-body relative" :class="{ 'shamar-dialog-body--prompt': confirmMode }">
+        <div
+          x-show="loading"
+          class="absolute inset-0 z-10 flex items-center justify-center bg-neutral-primary/90 text-sm text-body-subtle"
+        >Loading…</div>
+
+        <div x-show="confirmMode && !loading" class="space-y-3">
+          <div class="flex items-start gap-3">
+            <div
+              class="shamar-dialog-prompt-icon"
+              :class="{
+                'is-danger': promptVariant === 'danger',
+                'is-warning': promptVariant === 'warning',
+                'is-info': promptVariant === 'info' || promptVariant === 'primary',
+                'is-success': promptVariant === 'success'
+              }"
+              aria-hidden="true"
+            >
+              <svg x-show="promptVariant === 'danger' || promptVariant === 'warning'" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+              </svg>
+            </div>
+            <p class="text-sm text-body" x-text="confirmMessage"></p>
+          </div>
+        </div>
+
+        <div x-show="!confirmMode">
+          <div data-shamar-dialog-body></div>
+        </div>
+      </div>
+
+      <div class="shamar-dialog-footer" x-show="confirmMode">
+        <button
+          type="button"
+          class="rounded-md px-4 py-2 text-sm hover:bg-surface-hover"
+          x-show="promptMode !== 'alert'"
+          @click="close()"
+          x-text="cancelLabel"
+        >Cancel</button>
+        <button
+          type="button"
+          class="rounded-md px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+          :class="confirmButtonClass()"
+          @click="submitConfirm()"
+          x-text="confirmLabel"
+        >Confirm</button>
+      </div>
+
+      <div
+        class="shamar-dialog-footer"
+        x-show="!confirmMode && hasContentFooter"
+        data-shamar-dialog-footer
+      ></div>
+
+      <div
+        class="shamar-dialog-resize-handle"
+        x-show="!confirmMode && !fullscreen"
+        @mousedown="startResize($event)"
+      ></div>
+    </div>
+  </div>
+</div>

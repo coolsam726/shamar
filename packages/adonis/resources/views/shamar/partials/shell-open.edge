@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ pageTitle }} · {{ panelTitle }}</title>
+  @if(branding.fontUrl)
+    <link rel="stylesheet" href="{{ branding.fontUrl }}" />
+  @endif
+  <link rel="stylesheet" href="{{ basePath }}/assets/admin.css" />
+  <link rel="stylesheet" href="{{ basePath }}/assets/branding.css" />
+  <meta name="csrf-token" content="{{ csrfToken }}" />
+  <script>
+    (function () {
+      const stored = localStorage.getItem('shamar-theme');
+      if (stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
+  <script defer src="{{ basePath }}/assets/shamar-ui.js"></script>
+  <script defer src="{{ basePath }}/assets/alpine.min.js"></script>
+  <style>[x-cloak] { display: none !important; }</style>
+</head>
+<body
+  class="min-h-screen bg-shamar-shell text-body antialiased flex md:flex-row"
+  x-data="shamarShell()"
+  data-shamar-base-path="{{ basePath }}"
+>
+  <div
+    x-show="sidebarOpen"
+    x-cloak
+    x-transition.opacity
+    class="fixed inset-0 z-20 bg-black/30 md:hidden"
+    @click="sidebarOpen = false"
+  ></div>
+
+  @include('shamar::partials/nav')
+
+  <div class="flex min-w-0 flex-1 flex-col min-h-screen w-full">
+    @include('shamar::partials/topbar')
+
+    <div class="flex-1 flex flex-col min-h-0 overflow-x-hidden w-full p-3 md:p-4 gap-4">
+
+      @include('shamar::partials/toast')
+
+      @if(pageTitle)
+        @include('shamar::partials/page-heading')
+      @endif
+
+      <main class="flex-1 min-h-0 overflow-auto">

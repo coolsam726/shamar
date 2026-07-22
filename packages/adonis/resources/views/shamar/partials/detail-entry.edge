@@ -1,0 +1,23 @@
+<div
+  class="shamar-detail-cell px-3 py-3 border-t border-card-border sm:border-t-0 sm:border-r sm:border-card-border last:border-r-0"
+  style="{{ resolveGridItemStyle(field, section.columns ?? 2) }}"
+>
+  <div class="shamar-detail__label-row">
+    <dt class="shamar-detail__label">{{ field.label ?? field.name }}</dt>
+    @if(field.hint)
+      <span class="shamar-field__hint">{{ field.hint }}</span>
+    @endif
+  </div>
+  <dd class="shamar-field__value mt-1">
+    @if(field.type === 'boolean')
+      <span class="shamar-boolean-badge {{ fieldChecked(record, field) ? 'is-true' : 'is-false' }}">
+        {{ detailValue(record, field) }}
+      </span>
+    @else
+      {{ detailValue(record, field) }}
+    @endif
+  </dd>
+  @if(field.help)
+    <p class="shamar-field__help">{{ field.help }}</p>
+  @endif
+</div>

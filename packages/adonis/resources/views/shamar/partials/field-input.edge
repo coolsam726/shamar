@@ -1,0 +1,107 @@
+<div class="shamar-field" data-field-type="{{ field.type }}">
+  @if(!(field.type === 'boolean' && field.inline))
+    <div class="shamar-field__label-row">
+      <label for="field-{{ field.name }}" class="shamar-field__label">
+        <span x-text='fieldLabel({{ jsonAttr(field.name) }}, {{ jsonAttr(field.label ?? field.name) }})'>{{ field.label ?? field.name }}</span>
+        @if(field.required)
+          <span class="shamar-field__required">*</span>
+        @endif
+      </label>
+      @if(field.hint)
+        <span
+          class="shamar-field__hint"
+          x-text='fieldMeta[{{ jsonAttr(field.name) }}]?.hint || {{ jsonAttr(field.hint) }}'
+        >{{ field.hint }}</span>
+      @endif
+    </div>
+  @endif
+
+  @if(field.type === 'boolean')
+    <label class="shamar-toggle{{ field.inline ? ' shamar-toggle--inline' : '' }}" for="field-{{ field.name }}" :class="{ 'is-disabled': isDisabled('{{ field.name }}') }">
+      <input
+        id="field-{{ field.name }}"
+        type="checkbox"
+        name="{{ field.name }}"
+        value="true"
+        class="shamar-toggle__input"
+        x-model="state['{{ field.name }}']"
+        @change="onFieldChange('{{ field.name }}')"
+        :disabled="isDisabled('{{ field.name }}')"
+        {{ field.required ? 'required' : '' }}
+      />
+      <span class="shamar-toggle__track" aria-hidden="true">
+        <span class="shamar-toggle__thumb"></span>
+      </span>
+      @if(field.inline)
+        <span class="shamar-toggle__text">
+          <span class="shamar-toggle__label">
+            <span x-text='fieldLabel({{ jsonAttr(field.name) }}, {{ jsonAttr(field.label ?? field.name) }})'>{{ field.label ?? field.name }}</span>
+            @if(field.required)
+              <span class="shamar-field__required">*</span>
+            @endif
+          </span>
+          @if(field.hint)
+            <span
+              class="shamar-field__hint"
+              x-text='fieldMeta[{{ jsonAttr(field.name) }}]?.hint || {{ jsonAttr(field.hint) }}'
+            >{{ field.hint }}</span>
+          @endif
+        </span>
+      @endif
+    </label>
+  @elseif(field.type === 'textarea')
+    <textarea
+      id="field-{{ field.name }}"
+      name="{{ field.name }}"
+      rows="{{ field.rows ?? 4 }}"
+      {{ field.required ? 'required' : '' }}
+      {{ field.readonly ? 'readonly' : '' }}
+      x-model="state['{{ field.name }}']"
+      @input="onFieldInput('{{ field.name }}')"
+      @change="onFieldChange('{{ field.name }}')"
+      @blur="onFieldBlur('{{ field.name }}')"
+      :disabled="isDisabled('{{ field.name }}')"
+      :placeholder='fieldMeta[{{ jsonAttr(field.name) }}]?.placeholder || {{ jsonAttr(field.placeholder ?? "") }}'
+      class="shamar-input{{ formErrors && formErrors[field.name] ? ' is-invalid' : '' }}"
+    ></textarea>
+  @elseif(field.type === 'select')
+    <select
+      id="field-{{ field.name }}"
+      name="{{ field.name }}"
+      {{ field.required ? 'required' : '' }}
+      x-model="state['{{ field.name }}']"
+      @change="onFieldChange('{{ field.name }}')"
+      :disabled="isDisabled('{{ field.name }}')"
+      class="shamar-select{{ formErrors && formErrors[field.name] ? ' is-invalid' : '' }}"
+    >
+      <option value="">{{ field.placeholder ?? 'Select...' }}</option>
+      @each(option in field.options)
+        <option value="{{ option.value }}">{{ option.label }}</option>
+      @endeach
+    </select>
+  @else
+    <div class="shamar-input-group">
+      <input
+        id="field-{{ field.name }}"
+        type="{{ formInputType(field) }}"
+        name="{{ field.name }}"
+        {{ field.required ? 'required' : '' }}
+        {{ field.readonly ? 'readonly' : '' }}
+        x-model="state['{{ field.name }}']"
+        @input="onFieldInput('{{ field.name }}')"
+        @change="onFieldChange('{{ field.name }}')"
+        @blur="onFieldBlur('{{ field.name }}')"
+        :disabled="isDisabled('{{ field.name }}')"
+        :placeholder='fieldMeta[{{ jsonAttr(field.name) }}]?.placeholder || {{ jsonAttr(field.placeholder ?? "") }}'
+        class="shamar-input{{ formErrors && formErrors[field.name] ? ' is-invalid' : '' }}"
+      />
+    </div>
+  @endif
+
+  @if(field.help)
+    <p class="shamar-field__help" x-text='fieldMeta[{{ jsonAttr(field.name) }}]?.help || {{ jsonAttr(field.help) }}'>{{ field.help }}</p>
+  @endif
+  @if(formErrors && formErrors[field.name])
+    <p class="shamar-field__error" role="alert">{{ formErrors[field.name] }}</p>
+  @endif
+</div>

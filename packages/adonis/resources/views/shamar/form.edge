@@ -1,0 +1,68 @@
+@if(embed)
+  <form
+    id="shamar-form"
+    data-shamar-embed-form
+    method="post"
+    action="{{ mode === 'create' ? `${basePath}/${resource.slug}` : `${basePath}/${resource.slug}/${record.id}` }}"
+    class="space-y-4"
+    x-data='shamarForm({
+      endpoint: {{ jsonAttr(formStateEndpoint) }},
+      operation: {{ jsonAttr(mode) }},
+      recordId: {{ jsonAttr(record ? record.id : null) }},
+      fields: {{ jsonAttr(formLiveFields) }},
+      state: {{ jsonAttr(formInitialState) }},
+    })'
+  >
+    @include('shamar::partials/csrf')
+    <input type="hidden" name="_shamar_embed" value="1" />
+
+    @each(section in formSections)
+      @include('shamar::partials/form-container')
+    @endeach
+
+    <div data-shamar-dialog-actions>
+      <button
+        type="button"
+        data-shamar-dialog-close
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-default text-body rounded-md hover:bg-surface-hover transition"
+      >Cancel</button>
+      <button
+        type="submit"
+        form="shamar-form"
+        data-shamar-form-save
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-md bg-fg-brand hover:opacity-90 transition"
+      >
+        {{ mode === 'create' ? 'Create' : 'Save' }}
+      </button>
+    </div>
+  </form>
+@else
+  @include('shamar::partials/shell-open')
+
+  <div class="mx-auto max-w-5xl space-y-6" data-shamar-record-view="{{ mode }}">
+    <form
+      id="shamar-form"
+      method="post"
+      action="{{ mode === 'create' ? `${basePath}/${resource.slug}` : `${basePath}/${resource.slug}/${record.id}${recordPager ? recordPager.navQuery : ''}` }}"
+      class="space-y-6"
+      @if(mode === 'edit')
+        data-shamar-autosave="{{ basePath }}/{{ resource.slug }}/{{ record.id }}{{ recordPager ? recordPager.navQuery : '' }}"
+      @endif
+      x-data='shamarForm({
+        endpoint: {{ jsonAttr(formStateEndpoint) }},
+        operation: {{ jsonAttr(mode) }},
+        recordId: {{ jsonAttr(record ? record.id : null) }},
+        fields: {{ jsonAttr(formLiveFields) }},
+        state: {{ jsonAttr(formInitialState) }},
+      })'
+    >
+      @include('shamar::partials/csrf')
+
+      @each(section in formSections)
+        @include('shamar::partials/form-container')
+      @endeach
+    </form>
+  </div>
+
+  @include('shamar::partials/shell-close')
+@endif

@@ -1,0 +1,20 @@
+      </main>
+    </div>
+  </div>
+
+  @include('shamar::partials/dialog-host')
+
+  <script>
+    function shamarShell() {
+      return {
+        sidebarOpen: false,
+        toggleTheme() {
+          const root = document.documentElement;
+          const next = root.classList.toggle('dark');
+          localStorage.setItem('shamar-theme', next ? 'dark' : 'light');
+        },
+      };
+    }
+  </script>
+</body>
+</html>

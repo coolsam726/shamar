@@ -1,0 +1,29 @@
+{{{
+  exports({ to: app.configPath('shamar.ts') })
+}}}
+import { defineConfig, panel } from '@shamar/adonis'
+// import UserResource from '#resources/user_resource'
+
+/**
+ * Persistence: {{ orm }}
+ * - lucid    → Lucid SQL models (@shamar/lucid)
+ * - mongoose → Mongoose models (@shamar/mongoose)
+ *
+ * App owns the DB connection lifecycle (Lucid database provider or mongoose.connect).
+ *
+ * Prefer panels + discoverResources. Legacy `path` + `resources` still works
+ * as a single default panel.
+ */
+export default defineConfig({
+  orm: '{{ orm }}',
+  branding: {
+    name: 'Shamar Admin',
+  },
+  panels: [
+    panel('admin')
+      .path('/admin')
+      .discoverResources('app/resources/admin')
+      // .resources([UserResource])
+      ,
+  ],
+})

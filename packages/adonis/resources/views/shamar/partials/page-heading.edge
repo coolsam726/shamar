@@ -1,0 +1,99 @@
+<div class="pt-1 pb-2">
+  @if(breadcrumbs && breadcrumbs.length)
+    <nav aria-label="Breadcrumb" class="mb-2 flex items-center gap-1.5 text-xs text-body-subtle flex-wrap">
+      @each(crumb in breadcrumbs)
+        @if(!$last)
+          @if(crumb.href)
+            <a href="{{ crumb.href }}" class="hover:text-fg-brand hover:underline transition-colors truncate max-w-[140px]">{{ crumb.label }}</a>
+          @else
+            <span class="truncate max-w-[140px]">{{ crumb.label }}</span>
+          @endif
+          <svg class="w-3 h-3 flex-shrink-0 text-body-subtle/50" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+          </svg>
+        @else
+          @if(crumb.href)
+            <a href="{{ crumb.href }}" class="text-body hover:text-fg-brand hover:underline transition-colors truncate max-w-[200px]">{{ crumb.label }}</a>
+          @else
+            <span class="text-body truncate max-w-[200px]">{{ crumb.label }}</span>
+          @endif
+        @endif
+      @endeach
+    </nav>
+  @endif
+
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div class="min-w-0 flex items-center gap-3 flex-wrap">
+      <div class="min-w-0">
+        <h1 class="text-xl font-semibold text-heading truncate">{{ pageTitle }}</h1>
+        @if(pageSubtitle)
+          <p class="mt-1 text-sm text-body-subtle">{{ pageSubtitle }}</p>
+        @endif
+      </div>
+      @if(mode === 'edit' || mode === 'create' || mode === 'show')
+        <span class="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full
+          {{ mode === 'edit' ? 'bg-warning-soft text-warning-strong' : mode === 'create' ? 'bg-success-soft text-success-strong' : 'bg-badge-neutral text-body-subtle' }}">
+          {{ mode === 'show' ? 'detail' : mode }}
+        </span>
+        @include('shamar::partials/record-pager')
+      @endif
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2 shrink-0">
+      @if(showCreateButton)
+        <a href="{{ basePath }}/{{ resource.slug }}/create" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-md bg-fg-brand hover:opacity-90 transition-opacity">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+          </svg>
+          New
+        </a>
+      @endif
+
+      @if(mode === 'edit' || mode === 'create')
+        <button
+          type="submit"
+          form="shamar-form"
+          data-shamar-form-save
+          title="Save (Ctrl+S)"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-md bg-fg-brand hover:opacity-90 transition"
+        >
+          {{ mode === 'create' ? 'Create' : 'Save' }}
+        </button>
+        @if(mode === 'edit')
+          <a
+            href="{{ basePath }}/{{ resource.slug }}/{{ record.id }}{{ recordPager ? recordPager.navQuery : '' }}"
+            data-shamar-skip-autosave
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-default text-body rounded-md hover:bg-surface-hover transition"
+          >Cancel</a>
+          <button
+            type="button"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-default text-fg-danger rounded-md hover:bg-danger-soft transition"
+            @click="$dispatch('shamar-open-confirm', { variant: 'danger', mode: 'confirm', title: 'Delete {{ resource.singularLabel }}?', message: 'This action cannot be undone.', confirmLabel: 'Delete', action: '{{ basePath }}/{{ resource.slug }}/{{ record.id }}/delete' })"
+          >Delete</button>
+        @else
+          <a
+            href="{{ basePath }}/{{ resource.slug }}"
+            data-shamar-list-href="{{ resource.slug }}"
+            data-shamar-skip-autosave
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-default text-body rounded-md hover:bg-surface-hover transition"
+          >Cancel</a>
+        @endif
+      @elseif(mode === 'show')
+        <a href="{{ basePath }}/{{ resource.slug }}/{{ record.id }}/edit{{ recordPager ? recordPager.navQuery : '' }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-md bg-fg-brand hover:opacity-90 transition">Edit</a>
+        <a href="{{ basePath }}/{{ resource.slug }}" data-shamar-list-href="{{ resource.slug }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-default text-body rounded-md hover:bg-surface-hover transition">Back to list</a>
+        <button
+          type="button"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-default text-fg-danger rounded-md hover:bg-danger-soft transition"
+          @click="$dispatch('shamar-open-confirm', { variant: 'danger', mode: 'confirm', title: 'Delete {{ resource.singularLabel }}?', message: 'This action cannot be undone.', confirmLabel: 'Delete', action: '{{ basePath }}/{{ resource.slug }}/{{ record.id }}/delete' })"
+        >Delete</button>
+      @else
+        @if(showEditButton)
+          <a href="{{ basePath }}/{{ resource.slug }}/{{ id }}/edit" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-md bg-fg-brand hover:opacity-90 transition-opacity">Edit</a>
+        @endif
+        @if(showBackToList)
+          <a href="{{ basePath }}/{{ resource.slug }}" data-shamar-list-href="{{ resource.slug }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-default text-body rounded-md hover:bg-surface-hover transition">Back to list</a>
+        @endif
+      @endif
+    </div>
+  </div>
+</div>

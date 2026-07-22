@@ -1,0 +1,82 @@
+{{--
+  Renders one form container: Section card, Fieldset legend, or plain grid.
+  Expects: section, mode
+--}}
+@if((section.kind ?? 'section') === 'plain')
+  <div class="shamar-form-plain">
+    <div class="shamar-form-grid" style="--shamar-form-cols: {{ section.columns ?? 2 }}">
+      @each(field in section.fields)
+        @if(!field.hiddenOnForm && !(field.createOnly && mode === 'edit'))
+          <div
+            class="shamar-field-cell"
+            style="{{ resolveGridItemStyle(field, section.columns ?? 2) }}"
+            x-show="isVisible('{{ field.name }}')"
+          >
+            @include('shamar::partials/field-input')
+          </div>
+        @endif
+      @endeach
+    </div>
+  </div>
+@elseif((section.kind ?? 'section') === 'fieldset')
+  <fieldset class="shamar-form-fieldset{{ section.card ? ' shamar-form-fieldset--card' : '' }}">
+    @if(section.title)
+      <legend class="shamar-form-fieldset__legend">{{ section.title }}</legend>
+    @endif
+    @if(section.description)
+      <p class="shamar-form-fieldset__description">{{ section.description }}</p>
+    @endif
+    <div class="shamar-form-grid" style="--shamar-form-cols: {{ section.columns ?? 2 }}">
+      @each(field in section.fields)
+        @if(!field.hiddenOnForm && !(field.createOnly && mode === 'edit'))
+          <div
+            class="shamar-field-cell"
+            style="{{ resolveGridItemStyle(field, section.columns ?? 2) }}"
+            x-show="isVisible('{{ field.name }}')"
+          >
+            @include('shamar::partials/field-input')
+          </div>
+        @endif
+      @endeach
+    </div>
+  </fieldset>
+@else
+  <section class="shamar-form-section rounded-xl overflow-hidden{{ section.card !== false ? ' shamar-card' : ' shamar-form-section--plain' }}">
+    @if(section.title || section.icon || section.description)
+      <header class="shamar-form-section__header{{ section.description ? '' : ' shamar-form-section__header--centered' }}">
+        @if(section.icon)
+          <span class="shamar-form-section__icon" aria-hidden="true" data-icon="{{ section.icon }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          </span>
+        @endif
+        @if(section.title || section.description)
+          <div class="shamar-form-section__titles min-w-0">
+            @if(section.title)
+              <h3 class="shamar-form-section__title">{{ section.title }}</h3>
+            @endif
+            @if(section.description)
+              <p class="shamar-form-section__description">{{ section.description }}</p>
+            @endif
+          </div>
+        @endif
+      </header>
+    @endif
+    <div class="shamar-form-section__body">
+      <div class="shamar-form-grid" style="--shamar-form-cols: {{ section.columns ?? 2 }}">
+        @each(field in section.fields)
+          @if(!field.hiddenOnForm && !(field.createOnly && mode === 'edit'))
+            <div
+              class="shamar-field-cell"
+              style="{{ resolveGridItemStyle(field, section.columns ?? 2) }}"
+              x-show="isVisible('{{ field.name }}')"
+            >
+              @include('shamar::partials/field-input')
+            </div>
+          @endif
+        @endeach
+      </div>
+    </div>
+  </section>
+@endif

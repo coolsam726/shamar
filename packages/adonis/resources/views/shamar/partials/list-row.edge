@@ -1,0 +1,20 @@
+<tr class="hover:bg-surface-row-hover transition-colors" data-shamar-record-id="{{ record.id }}">
+  <td class="px-3 py-3"></td>
+  @each(column in resource.columns)
+    <td class="px-4 py-3 text-body">
+      @if(column.type === 'boolean')
+        <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium {{ record[column.name] ? 'bg-success-soft text-success-strong' : 'bg-badge-neutral text-body-subtle' }}">
+          {{ cellValue(record, column) }}
+        </span>
+      @else
+        <a href="{{ basePath }}/{{ resource.slug }}/{{ record.id }}{{ recordNavQuery(query) }}" class="text-heading hover:text-fg-brand hover:underline">{{ cellValue(record, column) }}</a>
+      @endif
+    </td>
+  @endeach
+  <td class="px-4 py-3 text-right">
+    <div class="inline-flex flex-wrap items-center justify-end gap-1 text-xs">
+      <a href="{{ basePath }}/{{ resource.slug }}/{{ record.id }}{{ recordNavQuery(query) }}" class="px-2 py-1 rounded-md text-body hover:bg-surface-hover">View</a>
+      <a href="{{ basePath }}/{{ resource.slug }}/{{ record.id }}/edit{{ recordNavQuery(query) }}" class="px-2 py-1 rounded-md text-body hover:bg-surface-hover">Edit</a>
+    </div>
+  </td>
+</tr>
