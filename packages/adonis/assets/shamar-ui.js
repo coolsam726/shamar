@@ -1445,6 +1445,42 @@
     window.shamarForm = createShamarForm;
     Alpine.data('shamarForm', (cfg) => createShamarForm(cfg));
 
+    window.shamarTabs = (active = 1) => ({ active: Number(active) || 1 });
+    Alpine.data('shamarTabs', (active = 1) => window.shamarTabs(active));
+
+    window.shamarWizard = (total = 1) => ({
+      step: 1,
+      total: Math.max(1, Number(total) || 1),
+      next() {
+        if (this.step < this.total) this.step += 1;
+      },
+      prev() {
+        if (this.step > 1) this.step -= 1;
+      },
+    });
+    Alpine.data('shamarWizard', (total = 1) => window.shamarWizard(total));
+
+    window.shamarTags = (name) => ({
+      name,
+      add(input) {
+        const value = String(input?.value || '').trim().replace(/,$/, '');
+        if (!value) return;
+        const current = Array.isArray(this.state?.[name]) ? [...this.state[name]] : [];
+        if (!current.includes(value)) {
+          this.state[name] = [...current, value];
+          if (typeof this.onFieldChange === 'function') this.onFieldChange(name);
+        }
+        if (input) input.value = '';
+      },
+      remove(index) {
+        const current = Array.isArray(this.state?.[name]) ? [...this.state[name]] : [];
+        current.splice(index, 1);
+        this.state[name] = current;
+        if (typeof this.onFieldChange === 'function') this.onFieldChange(name);
+      },
+    });
+    Alpine.data('shamarTags', (name) => window.shamarTags(name));
+
     Alpine.data('shamarListToolbar', (cfg = {}) => ({
       searchInput: '',
       chips: [],

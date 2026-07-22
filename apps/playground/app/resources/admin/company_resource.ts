@@ -5,21 +5,26 @@ import {
   infolist,
   Section,
   Fieldset,
+  Grid,
+  Tabs,
+  Tab,
+  Callout,
   TextInput,
   Toggle,
   TextColumn,
   TextEntry,
+  IconEntry,
 } from '@shamar/core'
 import Company from '#models/company'
 
 function acronymCode(value: unknown): string {
-  // e.g if I have SavannaBiotech, the acronym should be SB
   return String(value ?? '')
     .split(' ')
-    .map(word => word[0])
+    .map((word) => word[0])
     .join('')
     .toUpperCase()
 }
+
 export default class CompanyResource extends Resource {
   static override model = Company
   static override slug = 'companies'
@@ -32,34 +37,53 @@ export default class CompanyResource extends Resource {
   static override form() {
     return form((f) => {
       f.schema([
-        Section.make()
-          // .icon('building')
-          .columns(2)
+        Callout.make('Tip')
+          .info()
+          .description('Code is generated from the company name when you leave the name field.'),
+        Section.make('Company')
+          .icon('building')
+          .collapsible()
           .schema([
-            TextInput.make('id').disabled().label('ID'),
-            TextInput.make('name')
-              .required()
-              .searchable()
-              .placeholder('Enter company name')
-              .hint('Required')
-              .helperText('Legal name as registered with the company registry.')
-              .live({ onBlur: true })
-              .afterStateUpdated(({ get, set }) => {
-                set('code', acronymCode(get('name')))
-              }),
-            TextInput.make('code')
-              .required()
-              .searchable()
-              .unique()
-              .hint('Auto-filled')
-              .helperText('Short unique code used in references and URLs.'),
-            TextInput.make('email')
-              .email()
-              .required()
-              .searchable()
-              .helperText('Primary contact email for this company.'),
-            Toggle.make('active')
-              .helperText('Inactive companies are hidden from most pickers.'),
+            Grid.make(4)
+            .columnSpanFull()
+            .schema([
+              TextInput.make('id').disabled().label('ID'),
+              TextInput.make('name')
+                .required()
+                .searchable()
+                .placeholder('Enter company name')
+                .hint('Required')
+                .helperText('Legal name as registered with the company registry.')
+                .live({ onBlur: true })
+                .afterStateUpdated(({ get, set }) => {
+                  set('code', acronymCode(get('name')))
+                }),
+              TextInput.make('code')
+                .required()
+                .searchable()
+                .unique()
+                .prefix('#')
+                .hint('Auto-filled')
+                .helperText('Short unique code used in references and URLs.'),
+              TextInput.make('email')
+                .email()
+                .required()
+                .searchable()
+                .helperText('Primary contact email for this company.'),
+            ]),
+          ]),
+        Tabs.make()
+          .tabs([
+            Tab.make('Status').schema([
+              Toggle.make('active')
+                .inline()
+                .helperText('Inactive companies are hidden from most pickers.'),
+            ]),
+            Tab.make('Notes').schema([
+              Fieldset.make('Flags').card(false).schema([
+                Toggle.make('active').label('Active (fieldset)'),
+              ]),
+            ]),
           ]),
       ])
     })
@@ -83,33 +107,15 @@ export default class CompanyResource extends Resource {
         Section.make('Company')
           .columns(3)
           .schema([
-            TextEntry.make('id').label('ID'),
-            TextEntry.make('name')
-              .label('Name')
-              .hint('Legal')
-              .helperText('Legal name as registered with the company registry.'),
-            TextEntry.make('code')
-              .label('Code')
-              .hint('Unique')
-              .helperText('Short unique code used in references and URLs.'),
-            TextEntry.make('email')
-              .label('Email')
-              .helperText('Primary contact email for this company.'),
-            TextEntry.make('active')
-              .boolean()
-              .label('Active')
-              .hint('Status')
-              .helperText('Inactive companies are hidden from most pickers.'),
+            TextEntry.make('id').label('ID').copyable(),
+            TextEntry.make('name').label('Name').hint('Legal').badge(),
+            TextEntry.make('code').label('Code').hint('Unique'),
+            TextEntry.make('email').label('Email').columnSpanFull(),
+            IconEntry.make('active').label('Active').boolean().icon('✓').falseIcon('✗'),
           ]),
-        Fieldset.make("Metadata").card().schema([
-          TextEntry.make('createdAt')
-            .label('Created At')
-            .dateTime()
-            .helperText('The date and time the company was created.'),
-          TextEntry.make('updatedAt')
-            .label('Updated At')
-            .dateTime()
-            .helperText('The date and time the company was last updated.'),
+        Fieldset.make('Metadata').card().schema([
+          TextEntry.make('createdAt').label('Created At').dateTime(),
+          TextEntry.make('updatedAt').label('Updated At').dateTime(),
         ]),
       ])
     })

@@ -1,5 +1,12 @@
+@if(field.type === 'hidden')
+  <input
+    type="hidden"
+    name="{{ field.name }}"
+    x-model="state['{{ field.name }}']"
+  />
+@else
 <div class="shamar-field" data-field-type="{{ field.type }}">
-  @if(!(field.type === 'boolean' && field.inline))
+  @if(!(field.type === 'boolean' && field.inline) && field.type !== 'checkbox')
     <div class="shamar-field__label-row">
       <label for="field-{{ field.name }}" class="shamar-field__label">
         <span x-text='fieldLabel({{ jsonAttr(field.name) }}, {{ jsonAttr(field.label ?? field.name) }})'>{{ field.label ?? field.name }}</span>
@@ -49,6 +56,96 @@
         </span>
       @endif
     </label>
+  @elseif(field.type === 'checkbox')
+    <label class="shamar-checkbox{{ field.inline ? ' shamar-checkbox--inline' : '' }}" for="field-{{ field.name }}" :class="{ 'is-disabled': isDisabled('{{ field.name }}') }">
+      <input
+        id="field-{{ field.name }}"
+        type="checkbox"
+        name="{{ field.name }}"
+        value="true"
+        class="shamar-checkbox__input"
+        x-model="state['{{ field.name }}']"
+        @change="onFieldChange('{{ field.name }}')"
+        :disabled="isDisabled('{{ field.name }}')"
+        {{ field.required ? 'required' : '' }}
+      />
+      <span class="shamar-checkbox__label">
+        <span x-text='fieldLabel({{ jsonAttr(field.name) }}, {{ jsonAttr(field.label ?? field.name) }})'>{{ field.label ?? field.name }}</span>
+        @if(field.required)
+          <span class="shamar-field__required">*</span>
+        @endif
+      </span>
+    </label>
+  @elseif(field.type === 'radio')
+    <div class="shamar-radio{{ field.inline ? ' shamar-radio--inline' : '' }}">
+      @each(option in field.options)
+        <label class="shamar-radio__option">
+          <input
+            type="radio"
+            name="{{ field.name }}"
+            value="{{ option.value }}"
+            x-model="state['{{ field.name }}']"
+            @change="onFieldChange('{{ field.name }}')"
+            :disabled="isDisabled('{{ field.name }}')"
+            {{ field.required ? 'required' : '' }}
+          />
+          <span>{{ option.label }}</span>
+        </label>
+      @endeach
+    </div>
+  @elseif(field.type === 'tags')
+    <div class="shamar-tags">
+      <div class="shamar-tags__list">
+        <template x-for="(tag, tagIndex) in (Array.isArray(state['{{ field.name }}']) ? state['{{ field.name }}'] : [])" :key="tagIndex">
+          <span class="shamar-tags__chip">
+            <span x-text="tag"></span>
+            <button
+              type="button"
+              class="shamar-tags__remove"
+              @click="state['{{ field.name }}'] = (state['{{ field.name }}'] || []).filter((_, i) => i !== tagIndex); onFieldChange('{{ field.name }}')"
+              aria-label="Remove"
+            >&times;</button>
+          </span>
+        </template>
+      </div>
+      <input
+        type="text"
+        class="shamar-input"
+        :placeholder='fieldMeta[{{ jsonAttr(field.name) }}]?.placeholder || {{ jsonAttr(field.placeholder ?? "Add tag…") }}'
+        @keydown.enter.prevent="
+          const v = String($event.target.value || '').trim();
+          if (!v) return;
+          const cur = Array.isArray(state['{{ field.name }}']) ? [...state['{{ field.name }}']] : [];
+          if (!cur.includes(v)) { state['{{ field.name }}'] = [...cur, v]; onFieldChange('{{ field.name }}'); }
+          $event.target.value = '';
+        "
+        :disabled="isDisabled('{{ field.name }}')"
+      />
+      <template x-for="(tag, tagIndex) in (Array.isArray(state['{{ field.name }}']) ? state['{{ field.name }}'] : [])" :key="'h'+tagIndex">
+        <input type="hidden" name="{{ field.name }}[]" :value="tag" />
+      </template>
+    </div>
+  @elseif(field.type === 'color')
+    <div class="shamar-color">
+      <input
+        id="field-{{ field.name }}"
+        type="color"
+        class="shamar-color__swatch"
+        x-model="state['{{ field.name }}']"
+        @change="onFieldChange('{{ field.name }}')"
+        :disabled="isDisabled('{{ field.name }}')"
+      />
+      <input
+        type="text"
+        name="{{ field.name }}"
+        class="shamar-input"
+        x-model="state['{{ field.name }}']"
+        @input="onFieldInput('{{ field.name }}')"
+        @change="onFieldChange('{{ field.name }}')"
+        :disabled="isDisabled('{{ field.name }}')"
+        placeholder="#000000"
+      />
+    </div>
   @elseif(field.type === 'textarea')
     <textarea
       id="field-{{ field.name }}"
@@ -67,20 +164,46 @@
   @elseif(field.type === 'select')
     <select
       id="field-{{ field.name }}"
-      name="{{ field.name }}"
+      name="{{ field.name }}{{ field.multiple ? '[]' : '' }}"
       {{ field.required ? 'required' : '' }}
+      {{ field.multiple ? 'multiple' : '' }}
       x-model="state['{{ field.name }}']"
       @change="onFieldChange('{{ field.name }}')"
       :disabled="isDisabled('{{ field.name }}')"
       class="shamar-select{{ formErrors && formErrors[field.name] ? ' is-invalid' : '' }}"
     >
-      <option value="">{{ field.placeholder ?? 'Select...' }}</option>
+      @if(!field.multiple)
+        <option value="">{{ field.placeholder ?? 'Select...' }}</option>
+      @endif
       @each(option in field.options)
         <option value="{{ option.value }}">{{ option.label }}</option>
       @endeach
     </select>
   @else
-    <div class="shamar-input-group">
+    @if(field.prefix || field.suffix)
+      <div class="shamar-input-group{{ field.prefix ? ' has-prefix' : '' }}{{ field.suffix ? ' has-suffix' : '' }}">
+        @if(field.prefix)
+          <span class="shamar-input-group__affix">{{ field.prefix }}</span>
+        @endif
+        <input
+          id="field-{{ field.name }}"
+          type="{{ formInputType(field) }}"
+          name="{{ field.name }}"
+          {{ field.required ? 'required' : '' }}
+          {{ field.readonly ? 'readonly' : '' }}
+          x-model="state['{{ field.name }}']"
+          @input="onFieldInput('{{ field.name }}')"
+          @change="onFieldChange('{{ field.name }}')"
+          @blur="onFieldBlur('{{ field.name }}')"
+          :disabled="isDisabled('{{ field.name }}')"
+          :placeholder='fieldMeta[{{ jsonAttr(field.name) }}]?.placeholder || {{ jsonAttr(field.placeholder ?? "") }}'
+          class="shamar-input{{ formErrors && formErrors[field.name] ? ' is-invalid' : '' }}"
+        />
+        @if(field.suffix)
+          <span class="shamar-input-group__affix">{{ field.suffix }}</span>
+        @endif
+      </div>
+    @else
       <input
         id="field-{{ field.name }}"
         type="{{ formInputType(field) }}"
@@ -95,7 +218,7 @@
         :placeholder='fieldMeta[{{ jsonAttr(field.name) }}]?.placeholder || {{ jsonAttr(field.placeholder ?? "") }}'
         class="shamar-input{{ formErrors && formErrors[field.name] ? ' is-invalid' : '' }}"
       />
-    </div>
+    @endif
   @endif
 
   @if(field.help)
@@ -105,3 +228,4 @@
     <p class="shamar-field__error" role="alert">{{ formErrors[field.name] }}</p>
   @endif
 </div>
+@endif

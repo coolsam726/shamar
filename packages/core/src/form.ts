@@ -5,13 +5,19 @@ import type {
   FormSchema,
   FormSection,
   LiveMode,
+  SchemaNode,
   StringOrClosure,
   UniqueOptions,
   UnknownOrClosure,
   FieldContext,
   ColumnSpan,
 } from './types.js';
-import { isLayoutComponent, type SchemaItem } from './schemas.js';
+import {
+  buildSchemaNodes,
+  collectFields,
+  isLayoutComponent,
+  type SchemaItem,
+} from './schemas.js';
 
 /**
  * Base for form field components (`TextInput::make()` style).
@@ -127,13 +133,28 @@ export abstract class FormComponent {
     return this;
   }
 
+  inline(value = true): this {
+    this.config.inline = value;
+    return this;
+  }
+
+  rows(value: number): this {
+    this.config.rows = value;
+    return this;
+  }
+
+  prefix(value: string): this {
+    this.config.prefix = value;
+    return this;
+  }
+
+  suffix(value: string): this {
+    this.config.suffix = value;
+    return this;
+  }
+
   /**
    * Re-evaluate form state while typing (Filament-style).
-   *
-   * @example
-   * TextInput.make('name').live()
-   * TextInput.make('name').live({ debounce: '750ms' })
-   * TextInput.make('name').live({ onBlur: true })
    */
   live(mode: LiveMode = true): this {
     this.config.live = mode;
@@ -145,14 +166,6 @@ export abstract class FormComponent {
     return this;
   }
 
-  /**
-   * Require the value to be unique on the resource model.
-   *
-   * @example
-   * TextInput.make('code').unique()
-   * TextInput.make('code').unique({ ignoreRecord: true })
-   * TextInput.make('email').unique({ column: 'email', message: 'Email already used' })
-   */
   unique(options: boolean | UniqueOptions = true): this {
     this.config.unique = options;
     return this;
@@ -220,9 +233,14 @@ export class Select extends FormComponent {
     this.config.options = entries;
     return this;
   }
+
+  multiple(value = true): this {
+    this.config.multiple = value;
+    return this;
+  }
 }
 
-/** Filament `Toggle::make()` / Checkbox. */
+/** Filament `Toggle::make()` — switch UI. */
 export class Toggle extends FormComponent {
   static make(name: string): Toggle {
     return new Toggle(name);
@@ -230,6 +248,67 @@ export class Toggle extends FormComponent {
 
   private constructor(name: string) {
     super(name, 'boolean');
+  }
+}
+
+/** Filament `Checkbox::make()` — native checkbox (distinct from Toggle). */
+export class Checkbox extends FormComponent {
+  static make(name: string): Checkbox {
+    return new Checkbox(name);
+  }
+
+  private constructor(name: string) {
+    super(name, 'checkbox');
+  }
+}
+
+/** Filament `Radio::make()`. */
+export class Radio extends FormComponent {
+  static make(name: string): Radio {
+    return new Radio(name);
+  }
+
+  private constructor(name: string) {
+    super(name, 'radio');
+    this.config.options = [];
+  }
+
+  options(entries: Array<{ label: string; value: string | number }>): this {
+    this.config.options = entries;
+    return this;
+  }
+}
+
+/** Filament `Hidden::make()`. */
+export class Hidden extends FormComponent {
+  static make(name: string): Hidden {
+    return new Hidden(name);
+  }
+
+  private constructor(name: string) {
+    super(name, 'hidden');
+  }
+}
+
+/** Filament `ColorPicker::make()`. */
+export class ColorPicker extends FormComponent {
+  static make(name: string): ColorPicker {
+    return new ColorPicker(name);
+  }
+
+  private constructor(name: string) {
+    super(name, 'color');
+  }
+}
+
+/** Filament `TagsInput::make()` — state is `string[]`. */
+export class TagsInput extends FormComponent {
+  static make(name: string): TagsInput {
+    return new TagsInput(name);
+  }
+
+  private constructor(name: string) {
+    super(name, 'tags');
   }
 }
 
@@ -291,47 +370,61 @@ export class FormBuilder {
   }
 
   build(): FormSchema {
-    const sections: FormSection[] = [];
-    const loose: FieldConfig[] = [];
+    let schema: SchemaNode[] = buildSchemaNodes(this.children);
 
-    for (const child of this.children) {
-      if (isLayoutComponent(child)) {
-        sections.push(child.buildFormSection());
-      } else if (child._schemaLeaf === 'field') {
-        loose.push(child.build() as FieldConfig);
+    // Wrap bare fields in a plain container when only leaves at root.
+    const onlyLeaves =
+      schema.length > 0 && schema.every((n) => n.kind === 'field' || n.kind === 'entry');
+    if (onlyLeaves || schema.length === 0) {
+      schema = [
+        {
+          kind: 'plain',
+          name: '_fields',
+          title: '',
+          columns: this.rootColumns,
+          children: schema.filter((n) => n.kind === 'field'),
+        },
+      ];
+    }
+
+    const fields = collectFields(schema);
+    const sections: FormSection[] = schema.map((node) => {
+      if (node.kind === 'section' || node.kind === 'fieldset' || node.kind === 'plain') {
+        return {
+          name: node.name ?? 'section',
+          title: node.title ?? '',
+          description: node.description,
+          icon: node.icon,
+          kind: node.kind === 'fieldset' ? 'fieldset' : node.kind === 'plain' ? 'plain' : 'section',
+          card: node.card,
+          columns: node.columns,
+          fields: collectFields([node]),
+          collapsible: node.collapsible,
+          collapsed: node.collapsed,
+          dense: node.dense,
+          gap: node.gap,
+          extraAttributes: node.extraAttributes,
+        };
       }
-      // Infolist entries nested in a form schema are ignored for form state.
-    }
-
-    if (loose.length > 0) {
-      sections.push({
-        name: '_fields',
-        title: '',
-        kind: 'plain',
-        columns: this.rootColumns,
-        fields: loose,
-      });
-    }
-
-    if (sections.length === 0) {
-      sections.push({
-        name: '_fields',
-        title: '',
-        kind: 'plain',
-        columns: this.rootColumns,
-        fields: [],
-      });
-    }
-
-    const fields = sections.flatMap((s) => s.fields);
-    const seen = new Set<string>();
-    const unique = fields.filter((f) => {
-      if (seen.has(f.name)) return false;
-      seen.add(f.name);
-      return true;
+      // Non-section root layouts still expose a synthetic section for BC consumers.
+      return {
+        name: node.name ?? 'layout',
+        title: node.title ?? '',
+        description: node.description,
+        icon: node.icon,
+        kind: 'section' as const,
+        card: node.card,
+        columns: node.columns ?? this.rootColumns,
+        fields: collectFields([node]),
+        collapsible: node.collapsible,
+        collapsed: node.collapsed,
+        dense: node.dense,
+        gap: node.gap,
+        extraAttributes: node.extraAttributes,
+      };
     });
 
-    return { sections, fields: unique };
+    return { schema, sections, fields };
   }
 }
 

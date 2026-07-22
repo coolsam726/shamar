@@ -5,24 +5,26 @@ import type {
   InfolistEntryConfig,
   InfolistSchema,
   InfolistSectionConfig,
+  SchemaNode,
 } from './types.js';
-import { isLayoutComponent, Section, type SchemaItem } from './schemas.js';
+import {
+  buildSchemaNodes,
+  collectEntries,
+  Section,
+  type SchemaItem,
+} from './schemas.js';
 
 /**
- * Filament `TextEntry::make('name')` — entry chains are isolated.
+ * Shared base for infolist entries.
  */
-export class TextEntry {
+abstract class InfolistEntry {
   /** Shared schema leaf marker (Filament 5 schemas). */
   readonly _schemaLeaf = 'entry' as const;
 
-  private config: InfolistEntryConfig;
+  protected config: InfolistEntryConfig;
 
-  private constructor(name: string) {
-    this.config = { name, type: 'text' };
-  }
-
-  static make(name: string): TextEntry {
-    return new TextEntry(name);
+  protected constructor(name: string, type: InfolistEntryConfig['type'] = 'text') {
+    this.config = { name, type };
   }
 
   label(value: string): this {
@@ -30,18 +32,15 @@ export class TextEntry {
     return this;
   }
 
-  /** Helper text below the value. Alias: `helperText()`. */
   help(value: string): this {
     this.config.help = value;
     return this;
   }
 
-  /** Filament-style alias for `help()`. */
   helperText(value: string): this {
     return this.help(value);
   }
 
-  /** Short text beside the label. */
   hint(value: string): this {
     this.config.hint = value;
     return this;
@@ -75,6 +74,24 @@ export class TextEntry {
     return this;
   }
 
+  /** @internal */
+  build(): InfolistEntryConfig {
+    return { ...this.config };
+  }
+}
+
+/**
+ * Filament `TextEntry::make('name')`.
+ */
+export class TextEntry extends InfolistEntry {
+  private constructor(name: string) {
+    super(name, 'text');
+  }
+
+  static make(name: string): TextEntry {
+    return new TextEntry(name);
+  }
+
   boolean(): this {
     this.config.type = 'boolean';
     this.config.format = 'boolean';
@@ -100,12 +117,72 @@ export class TextEntry {
 
   email(): this {
     this.config.type = 'email';
+    this.config.url = true;
     return this;
   }
 
-  /** @internal */
-  build(): InfolistEntryConfig {
-    return { ...this.config };
+  url(value: boolean | string = true): this {
+    this.config.url = value;
+    return this;
+  }
+
+  copyable(value = true): this {
+    this.config.copyable = value;
+    return this;
+  }
+
+  markdown(value = true): this {
+    if (value) this.config.format = 'markdown';
+    return this;
+  }
+}
+
+/** Filament `IconEntry::make()`. */
+export class IconEntry extends InfolistEntry {
+  private constructor(name: string) {
+    super(name, 'icon');
+    this.config.format = 'boolean';
+  }
+
+  static make(name: string): IconEntry {
+    return new IconEntry(name);
+  }
+
+  boolean(): this {
+    this.config.format = 'boolean';
+    return this;
+  }
+
+  icon(value: string): this {
+    this.config.icon = value;
+    return this;
+  }
+
+  falseIcon(value: string): this {
+    this.config.falseIcon = value;
+    return this;
+  }
+}
+
+/** Filament `ColorEntry::make()`. */
+export class ColorEntry extends InfolistEntry {
+  private constructor(name: string) {
+    super(name, 'color');
+  }
+
+  static make(name: string): ColorEntry {
+    return new ColorEntry(name);
+  }
+}
+
+/** Filament `ImageEntry::make()`. */
+export class ImageEntry extends InfolistEntry {
+  private constructor(name: string) {
+    super(name, 'image');
+  }
+
+  static make(name: string): ImageEntry {
+    return new ImageEntry(name);
   }
 }
 
@@ -134,47 +211,59 @@ export class InfolistBuilder {
   }
 
   build(): InfolistSchema {
-    const sections: InfolistSectionConfig[] = [];
-    const loose: InfolistEntryConfig[] = [];
+    let schema: SchemaNode[] = buildSchemaNodes(this.children);
 
-    for (const child of this.children) {
-      if (isLayoutComponent(child)) {
-        sections.push(child.buildInfolistSection());
-      } else if (child._schemaLeaf === 'entry') {
-        loose.push(child.build() as InfolistEntryConfig);
+    const onlyLeaves =
+      schema.length > 0 && schema.every((n) => n.kind === 'field' || n.kind === 'entry');
+    if (onlyLeaves || schema.length === 0) {
+      schema = [
+        {
+          kind: 'plain',
+          name: '_entries',
+          title: '',
+          columns: this.rootColumns,
+          children: schema.filter((n) => n.kind === 'entry'),
+        },
+      ];
+    }
+
+    const entries = collectEntries(schema);
+    const sections: InfolistSectionConfig[] = schema.map((node) => {
+      if (node.kind === 'section' || node.kind === 'fieldset' || node.kind === 'plain') {
+        return {
+          name: node.name ?? 'section',
+          title: node.title ?? '',
+          description: node.description,
+          icon: node.icon,
+          kind: node.kind === 'fieldset' ? 'fieldset' : node.kind === 'plain' ? 'plain' : 'section',
+          card: node.card,
+          columns: node.columns,
+          entries: collectEntries([node]),
+          collapsible: node.collapsible,
+          collapsed: node.collapsed,
+          dense: node.dense,
+          gap: node.gap,
+          extraAttributes: node.extraAttributes,
+        };
       }
-      // Form fields nested in an infolist schema are ignored for detail view.
-    }
-
-    if (loose.length > 0) {
-      sections.push({
-        name: '_entries',
-        title: '',
-        kind: 'plain',
-        columns: this.rootColumns,
-        entries: loose,
-      });
-    }
-
-    if (sections.length === 0) {
-      sections.push({
-        name: '_entries',
-        title: '',
-        kind: 'plain',
-        columns: this.rootColumns,
-        entries: [],
-      });
-    }
-
-    const entries = sections.flatMap((s) => s.entries);
-    const seen = new Set<string>();
-    const unique = entries.filter((e) => {
-      if (seen.has(e.name)) return false;
-      seen.add(e.name);
-      return true;
+      return {
+        name: node.name ?? 'layout',
+        title: node.title ?? '',
+        description: node.description,
+        icon: node.icon,
+        kind: 'section' as const,
+        card: node.card,
+        columns: node.columns ?? this.rootColumns,
+        entries: collectEntries([node]),
+        collapsible: node.collapsible,
+        collapsed: node.collapsed,
+        dense: node.dense,
+        gap: node.gap,
+        extraAttributes: node.extraAttributes,
+      };
     });
 
-    return { sections, entries: unique };
+    return { schema, sections, entries };
   }
 }
 
@@ -192,10 +281,13 @@ export function infolistFromFields(fields: FieldConfig[]): InfolistSchema {
         .map((field) => {
           const entry = TextEntry.make(field.name).label(String(field.label ?? field.name));
           const type = field.type as FieldType;
-          if (type === 'boolean') entry.boolean();
+          if (type === 'boolean' || type === 'checkbox') entry.boolean();
           else if (type === 'email') entry.email();
           else if (type === 'date') entry.date();
           else if (type === 'datetime') entry.dateTime();
+          else if (type === 'color') {
+            /* keep text; ColorEntry used explicitly */
+          }
           return entry;
         }),
     );
