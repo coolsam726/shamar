@@ -1,4 +1,5 @@
 import type { DataAdapter, FieldConfig, ResourceMeta, UniqueOptions } from './types.js';
+import { humanizeLabel } from './labels.js';
 
 export class ValidationException extends Error {
   readonly errors: Record<string, string>;
@@ -30,7 +31,104 @@ function fieldLabel(field: FieldConfig): string {
   if (typeof field.label === 'string' && field.label.trim()) {
     return field.label;
   }
-  return field.name.charAt(0).toUpperCase() + field.name.slice(1);
+  return humanizeLabel(field.name);
+}
+
+function asString(value: unknown): string {
+  return value == null ? '' : String(value);
+}
+
+/**
+ * Validate Filament-style length / value / pattern constraints (and required).
+ */
+export function validateFieldConstraints(
+  meta: ResourceMeta,
+  data: Record<string, unknown>,
+  options: { recordId?: string } = {},
+): void {
+  const errors: Record<string, string> = {};
+  const isEdit = Boolean(options.recordId);
+
+  for (const field of meta.fields) {
+    if (field.hiddenOnForm) continue;
+    if (field.dehydrated === false) continue;
+    if (isEdit && field.createOnly) continue;
+    if (!(field.name in data) && !field.required) continue;
+
+    const raw = data[field.name];
+    const label = fieldLabel(field);
+
+    if (field.required && isBlank(raw)) {
+      errors[field.name] = `The ${label} field is required.`;
+      continue;
+    }
+
+    if (isBlank(raw)) continue;
+
+    const str = asString(raw);
+
+    if (field.minLength != null && str.length < field.minLength) {
+      errors[field.name] = `The ${label} must be at least ${field.minLength} characters.`;
+      continue;
+    }
+    if (field.maxLength != null && str.length > field.maxLength) {
+      errors[field.name] = `The ${label} must not be greater than ${field.maxLength} characters.`;
+      continue;
+    }
+    if (field.length != null && str.length !== field.length) {
+      errors[field.name] = `The ${label} must be ${field.length} characters.`;
+      continue;
+    }
+
+    if (field.pattern) {
+      try {
+        const re = new RegExp(`^(?:${field.pattern})$`);
+        if (!re.test(str)) {
+          errors[field.name] = `The ${label} format is invalid.`;
+          continue;
+        }
+      } catch {
+        // Invalid pattern in resource config — skip rather than crash.
+      }
+    }
+
+    if (field.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str)) {
+      errors[field.name] = `The ${label} must be a valid email address.`;
+      continue;
+    }
+
+    if (field.type === 'url') {
+      try {
+        // Require an absolute URL.
+        new URL(str);
+      } catch {
+        errors[field.name] = `The ${label} must be a valid URL.`;
+        continue;
+      }
+    }
+
+    if (field.type === 'number' || field.minValue != null || field.maxValue != null) {
+      const num = typeof raw === 'number' ? raw : Number(str);
+      if (field.type === 'number' && Number.isNaN(num)) {
+        errors[field.name] = `The ${label} must be a number.`;
+        continue;
+      }
+      if (!Number.isNaN(num)) {
+        if (field.minValue != null && typeof field.minValue === 'number' && num < field.minValue) {
+          errors[field.name] = `The ${label} must be at least ${field.minValue}.`;
+          continue;
+        }
+        if (field.maxValue != null && typeof field.maxValue === 'number' && num > field.maxValue) {
+          errors[field.name] = `The ${label} must not be greater than ${field.maxValue}.`;
+          continue;
+        }
+      }
+    }
+  }
+
+  if (Object.keys(errors).length > 0) {
+    throw new ValidationException(errors);
+  }
 }
 
 /**
@@ -66,4 +164,17 @@ export async function validateUniqueFields(
   if (Object.keys(errors).length > 0) {
     throw new ValidationException(errors);
   }
+}
+
+/**
+ * Run required/length/pattern checks then uniqueness.
+ */
+export async function validateFormData(
+  meta: ResourceMeta,
+  data: Record<string, unknown>,
+  adapter: DataAdapter,
+  options: { recordId?: string } = {},
+): Promise<void> {
+  validateFieldConstraints(meta, data, options);
+  await validateUniqueFields(meta, data, adapter, options);
 }

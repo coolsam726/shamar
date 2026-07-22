@@ -43,6 +43,15 @@ export interface NavigationGroup {
   items: ResourceMeta[];
 }
 
+/** Extra crumbs for create / show / edit record pages. */
+export interface RecordBreadcrumbOptions {
+  mode?: 'create' | 'edit' | 'show';
+  /** Human record title (e.g. company name). */
+  recordTitle?: string;
+  /** Show/detail URL — linked from the record crumb on edit. */
+  recordHref?: string;
+}
+
 const GROUP_ICONS: Record<string, string> = {
   Administration: 'cog',
   General: 'squares-2x2',
@@ -67,6 +76,7 @@ export function menuLayoutContext(
   basePath: string,
   currentSlug?: string,
   pageTitle?: string,
+  record?: RecordBreadcrumbOptions,
 ): MenuLayoutContext {
   const menuRoots: MenuRoot[] = [
     {
@@ -126,7 +136,21 @@ export function menuLayoutContext(
     }
   }
 
-  if (pageTitle && breadcrumbs[breadcrumbs.length - 1]?.label !== pageTitle) {
+  const mode = record?.mode;
+  const recordTitle = record?.recordTitle?.trim();
+  const recordHref = record?.recordHref;
+
+  if (mode === 'create') {
+    breadcrumbs.push({ label: pageTitle || 'New' });
+  } else if (mode === 'edit' && recordTitle) {
+    breadcrumbs.push({
+      label: recordTitle,
+      href: recordHref,
+    });
+    breadcrumbs.push({ label: 'Edit' });
+  } else if (mode === 'show' && recordTitle) {
+    breadcrumbs.push({ label: recordTitle });
+  } else if (pageTitle && breadcrumbs[breadcrumbs.length - 1]?.label !== pageTitle) {
     breadcrumbs.push({ label: pageTitle });
   }
 

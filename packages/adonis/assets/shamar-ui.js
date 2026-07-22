@@ -1280,6 +1280,8 @@
       state: { ...(cfg.state || {}) },
       fieldMeta: {},
       liveMap: {},
+      currencyMap: {},
+      _currencyEditing: {},
       _timers: {},
       _abort: null,
 
@@ -1295,6 +1297,9 @@
             help: field.help,
             placeholder: field.placeholder,
           };
+          if (field.currency) {
+            this.currencyMap[field.name] = field.currency;
+          }
           if (!(field.name in this.state) && field.value !== undefined) {
             this.state[field.name] = field.value;
           }
@@ -1312,6 +1317,51 @@
 
       fieldLabel(name, fallback) {
         return this.fieldMeta[name]?.label || fallback || name;
+      },
+
+      beginCurrencyEdit(name) {
+        this._currencyEditing[name] = true;
+      },
+
+      endCurrencyEdit(name) {
+        this._currencyEditing[name] = false;
+        const parsed = this.parseCurrencyValue(this.state[name]);
+        this.state[name] = parsed;
+      },
+
+      onCurrencyInput(name, event) {
+        const raw = event?.target?.value ?? '';
+        this.state[name] = this.parseCurrencyValue(raw);
+        this.onFieldInput(name);
+      },
+
+      parseCurrencyValue(value) {
+        if (value == null || value === '') return '';
+        if (typeof value === 'number') return Number.isFinite(value) ? value : '';
+        const cleaned = String(value).replace(/[^\d.-]/g, '');
+        if (!cleaned || cleaned === '-' || cleaned === '.' || cleaned === '-.') return '';
+        const num = Number(cleaned);
+        return Number.isFinite(num) ? num : '';
+      },
+
+      currencyDisplay(name) {
+        const value = this.state[name];
+        if (this._currencyEditing[name]) {
+          return value == null || value === '' ? '' : String(value);
+        }
+        const cfg = this.currencyMap[name];
+        if (!cfg) return value == null || value === '' ? '' : String(value);
+        if (value == null || value === '') return '';
+        const num = typeof value === 'number' ? value : Number(value);
+        if (!Number.isFinite(num)) return String(value);
+        try {
+          return new Intl.NumberFormat(cfg.locale, {
+            minimumFractionDigits: cfg.precision ?? 2,
+            maximumFractionDigits: cfg.precision ?? 2,
+          }).format(num);
+        } catch {
+          return num.toFixed(cfg.precision ?? 2);
+        }
       },
 
       parseLive(mode) {
@@ -1413,6 +1463,9 @@
                 help: field.help,
                 placeholder: field.placeholder,
               };
+              if (field.currency) {
+                this.currencyMap[field.name] = field.currency;
+              }
               if (field.live != null) {
                 this.liveMap[field.name] = field.live;
               }
@@ -1430,6 +1483,238 @@
   // Available before Alpine boots (defer scripts run before Alpine.start).
   window.shamarForm = createShamarForm;
 
+  function createShamarCombobox(cfg = {}) {
+    const options = Array.isArray(cfg.options)
+      ? cfg.options.map((opt) => ({
+          label: String(opt?.label ?? opt?.value ?? ''),
+          value: opt?.value != null ? String(opt.value) : '',
+        }))
+      : [];
+
+    return {
+      name: cfg.name || '',
+      multiple: !!cfg.multiple,
+      options,
+      placeholder: cfg.placeholder || 'Select...',
+      selectablePlaceholder: cfg.selectablePlaceholder !== false,
+      getValue: typeof cfg.getValue === 'function' ? cfg.getValue : () => (cfg.multiple ? [] : ''),
+      setValue: typeof cfg.setValue === 'function' ? cfg.setValue : () => {},
+      isDisabled: typeof cfg.isDisabled === 'function' ? cfg.isDisabled : () => false,
+
+      query: '',
+      open: false,
+      cursor: 0,
+      _syncing: false,
+
+      init() {
+        this.syncFromValue();
+        this.$watch(
+          () => this.getValue(),
+          () => {
+            if (this._syncing) return;
+            this.syncFromValue();
+          },
+        );
+      },
+
+      get disabled() {
+        return !!this.isDisabled();
+      },
+
+      get selectedValues() {
+        const raw = this.getValue();
+        if (this.multiple) {
+          if (Array.isArray(raw)) return raw.map((item) => String(item));
+          if (raw == null || raw === '') return [];
+          return [String(raw)];
+        }
+        if (raw == null || raw === '') return [];
+        return [String(raw)];
+      },
+
+      get selectedOptions() {
+        const selected = new Set(this.selectedValues);
+        return this.options.filter((opt) => selected.has(String(opt.value)));
+      },
+
+      get selectedLabel() {
+        return this.selectedOptions.map((opt) => opt.label).join(', ');
+      },
+
+      get filteredOptions() {
+        const q = this.query.trim().toLowerCase();
+        if (!q) return this.options;
+        return this.options.filter(
+          (opt) =>
+            opt.label.toLowerCase().includes(q) ||
+            String(opt.value).toLowerCase().includes(q),
+        );
+      },
+
+      syncFromValue() {
+        if (this.multiple) return;
+        if (this.open && this.query && this.query !== this.selectedLabel) return;
+        this.query = this.selectedLabel;
+      },
+
+      optionLabel(value) {
+        const found = this.options.find((opt) => String(opt.value) === String(value));
+        return found?.label ?? String(value ?? '');
+      },
+
+      isSelected(opt) {
+        return this.selectedValues.includes(String(opt.value));
+      },
+
+      commit(next) {
+        this._syncing = true;
+        this.setValue(next);
+        queueMicrotask(() => {
+          this._syncing = false;
+        });
+      },
+
+      openDropdown() {
+        if (this.disabled) return;
+        this.open = true;
+        this.cursor = 0;
+        if (!this.multiple) {
+          this.query = '';
+        }
+        this.$nextTick(() => this.$refs.search?.focus());
+      },
+
+      close() {
+        this.open = false;
+        this.cursor = 0;
+        if (!this.multiple) {
+          this.query = this.selectedLabel;
+        } else {
+          this.query = '';
+        }
+      },
+
+      toggleOpen() {
+        if (this.open) this.close();
+        else this.openDropdown();
+      },
+
+      onControlClick() {
+        if (this.disabled) return;
+        if (!this.open) this.openDropdown();
+        else this.$refs.search?.focus();
+      },
+
+      onFocusOut(event) {
+        const next = event.relatedTarget;
+        if (next && this.$el.contains(next)) return;
+        queueMicrotask(() => {
+          if (!this.open) return;
+          if (this.$el.contains(document.activeElement)) return;
+          this.close();
+        });
+      },
+
+      onInput() {
+        if (this.disabled) return;
+        this.open = true;
+        this.cursor = 0;
+        if (!this.multiple && this.selectablePlaceholder && this.query !== this.selectedLabel) {
+          // Typing clears the current single selection until an option is picked.
+          this.commit('');
+        }
+      },
+
+      onKeydown(event) {
+        if (this.disabled) return;
+        const key = event.key;
+        if (key === 'ArrowDown') {
+          event.preventDefault();
+          if (!this.open) {
+            this.openDropdown();
+            return;
+          }
+          this.moveCursor(1);
+        } else if (key === 'ArrowUp') {
+          event.preventDefault();
+          if (!this.open) {
+            this.openDropdown();
+            return;
+          }
+          this.moveCursor(-1);
+        } else if (key === 'Enter') {
+          if (!this.open) return;
+          event.preventDefault();
+          const opt = this.filteredOptions[this.cursor];
+          if (opt) this.pick(opt);
+        } else if (key === 'Escape') {
+          if (this.open) {
+            event.preventDefault();
+            this.close();
+          }
+        } else if (key === 'Backspace' && this.multiple && !this.query) {
+          const values = this.selectedValues;
+          if (values.length) {
+            event.preventDefault();
+            this.remove(values[values.length - 1]);
+          }
+        } else if (key === 'Tab') {
+          this.close();
+        }
+      },
+
+      moveCursor(delta) {
+        const max = this.filteredOptions.length - 1;
+        if (max < 0) {
+          this.cursor = 0;
+          return;
+        }
+        this.cursor = Math.max(0, Math.min(max, this.cursor + delta));
+        this.$nextTick(() => {
+          const el = this.$refs.list?.querySelector(`[data-combobox-index="${this.cursor}"]`);
+          el?.scrollIntoView?.({ block: 'nearest' });
+        });
+      },
+
+      pick(opt) {
+        if (this.disabled || !opt) return;
+        const value = String(opt.value);
+        if (this.multiple) {
+          const current = this.selectedValues;
+          if (current.includes(value)) {
+            this.commit(current.filter((item) => item !== value));
+          } else {
+            this.commit([...current, value]);
+          }
+          this.query = '';
+          this.open = true;
+          this.cursor = 0;
+          this.$nextTick(() => this.$refs.search?.focus());
+        } else {
+          this.commit(value);
+          this.query = opt.label;
+          this.open = false;
+        }
+      },
+
+      remove(value) {
+        if (this.disabled || !this.multiple) return;
+        this.commit(this.selectedValues.filter((item) => item !== String(value)));
+        this.$nextTick(() => this.$refs.search?.focus());
+      },
+
+      clearSelection() {
+        if (this.disabled) return;
+        this.commit(this.multiple ? [] : '');
+        this.query = '';
+        this.open = false;
+        this.$nextTick(() => this.$refs.search?.focus());
+      },
+    };
+  }
+
+  window.shamarCombobox = createShamarCombobox;
+
   function registerShamarAlpineComponents() {
     if (registerShamarAlpineComponents._done) return;
     registerShamarAlpineComponents._done = true;
@@ -1444,6 +1729,7 @@
     // Alpine.data registration races; Alpine.data still preferred when available.
     window.shamarForm = createShamarForm;
     Alpine.data('shamarForm', (cfg) => createShamarForm(cfg));
+    Alpine.data('shamarCombobox', (cfg) => createShamarCombobox(cfg));
 
     window.shamarTabs = (active = 1) => ({ active: Number(active) || 1 });
     Alpine.data('shamarTabs', (active = 1) => window.shamarTabs(active));
@@ -2450,6 +2736,14 @@
           else data.delete(key);
           continue;
         }
+        if (Array.isArray(value)) {
+          data.delete(key);
+          data.delete(`${key}[]`);
+          for (const item of value) {
+            data.append(`${key}[]`, item == null ? '' : String(item));
+          }
+          continue;
+        }
         data.set(key, value == null ? '' : String(value));
       }
     } catch {
@@ -2471,12 +2765,15 @@
       }
       const form = document.querySelector('#shamar-form');
       if (!form) return;
+      event.preventDefault();
+      if (typeof window.shamarSave === 'function') {
+        window.shamarSave();
+        return;
+      }
       const btn =
         document.querySelector('[data-shamar-form-save]:not([disabled])') ||
         form.querySelector('button[type="submit"]:not([disabled])');
-      if (!btn) return;
-      event.preventDefault();
-      btn.click();
+      if (btn) btn.click();
     });
   }
 
@@ -2484,6 +2781,10 @@
     function getForm() {
       return document.querySelector('#shamar-form[data-shamar-autosave]');
     }
+
+    let allowUnload = false;
+    let savingInPlace = false;
+    let savingForHref = null;
 
     function takeSnapshot(form) {
       try {
@@ -2521,9 +2822,6 @@
       window.setTimeout(() => takeSnapshot(initial), 50);
     }
 
-    let savingForHref = null;
-    let savingInPlace = false;
-
     function clearFieldErrors(form) {
       form.querySelectorAll('.shamar-field__error').forEach((el) => el.remove());
       form.querySelectorAll('.is-invalid').forEach((el) => el.classList.remove('is-invalid'));
@@ -2546,6 +2844,16 @@
         p.textContent = String(message);
         host.appendChild(p);
       }
+    }
+
+    function editUrlAfterCreate(form, record) {
+      const base =
+        form.getAttribute('data-shamar-after-create') ||
+        form.getAttribute('action') ||
+        '';
+      const id = record?.id ?? record?._id;
+      if (!base || id == null) return null;
+      return `${base.replace(/\/$/, '')}/${id}/edit`;
     }
 
     async function saveFormInPlace(form, { silent = false } = {}) {
@@ -2589,8 +2897,27 @@
         }
         return false;
       }
+
+      let record = null;
+      try {
+        record = await res.json();
+      } catch {
+        /* ignore non-JSON success */
+      }
+
       clearFieldErrors(form);
       takeSnapshot(form);
+
+      const mode = form.getAttribute('data-shamar-save-mode') || 'edit';
+      if (mode === 'create') {
+        const next = editUrlAfterCreate(form, record);
+        if (next) {
+          allowUnload = true;
+          window.location.href = next;
+          return true;
+        }
+      }
+
       if (!silent) {
         showToast({
           type: 'success',
@@ -2601,33 +2928,55 @@
       return true;
     }
 
+    async function runSave() {
+      const form = getForm() || document.querySelector('#shamar-form');
+      if (!form || savingInPlace) return false;
+      if (!form.hasAttribute('data-shamar-autosave') && !form.getAttribute('action')) {
+        return false;
+      }
+      savingInPlace = true;
+      const btn = document.querySelector('[data-shamar-form-save]');
+      if (btn instanceof HTMLButtonElement) btn.disabled = true;
+      try {
+        return await saveFormInPlace(form);
+      } catch (error) {
+        console.error('shamar save failed', error);
+        showToast({
+          type: 'error',
+          title: 'Save failed',
+          message: 'Could not save your changes.',
+        });
+        return false;
+      } finally {
+        savingInPlace = false;
+        if (btn instanceof HTMLButtonElement) btn.disabled = false;
+      }
+    }
+
+    window.shamarSave = runSave;
+
+    document.addEventListener(
+      'click',
+      (event) => {
+        const btn = event.target?.closest?.('[data-shamar-form-save]');
+        if (!btn) return;
+        // Embed dialog keep native submit unless autosave is present.
+        const form = document.querySelector('#shamar-form');
+        if (!form?.hasAttribute('data-shamar-autosave')) return;
+        event.preventDefault();
+        runSave();
+      },
+      true,
+    );
+
     document.addEventListener(
       'submit',
       (event) => {
         const form = event.target;
         if (!(form instanceof HTMLFormElement)) return;
         if (form.id !== 'shamar-form' || !form.hasAttribute('data-shamar-autosave')) return;
-        if (savingInPlace) {
-          event.preventDefault();
-          return;
-        }
         event.preventDefault();
-        savingInPlace = true;
-        const btn = document.querySelector('[data-shamar-form-save]');
-        if (btn instanceof HTMLButtonElement) btn.disabled = true;
-        saveFormInPlace(form)
-          .catch((error) => {
-            console.error('shamar save failed', error);
-            showToast({
-              type: 'error',
-              title: 'Save failed',
-              message: 'Could not save your changes.',
-            });
-          })
-          .finally(() => {
-            savingInPlace = false;
-            if (btn instanceof HTMLButtonElement) btn.disabled = false;
-          });
+        runSave();
       },
       true,
     );
@@ -2635,15 +2984,18 @@
     async function autosaveThenNavigate(href) {
       const form = getForm();
       if (!form || !isDirty(form)) {
+        allowUnload = true;
         window.location.href = href;
         return;
       }
       try {
         const ok = await saveFormInPlace(form, { silent: true });
         if (!ok) return;
+        allowUnload = true;
         window.location.href = href;
       } catch (error) {
         console.error('shamar autosave failed', error);
+        allowUnload = true;
         window.location.href = href;
       }
     }
@@ -2656,13 +3008,22 @@
       });
     };
 
+    /** Allow the next navigation without a dirty-form beforeunload prompt (e.g. Cancel). */
+    window.shamarAllowUnload = function shamarAllowUnload() {
+      allowUnload = true;
+    };
+
     document.addEventListener(
       'click',
       (event) => {
         if (savingForHref) return;
         const anchor = event.target?.closest?.('a[href]');
         if (!anchor) return;
-        if (anchor.hasAttribute('data-shamar-skip-autosave')) return;
+        if (anchor.hasAttribute('data-shamar-skip-autosave')) {
+          // Intentional discard / leave without saving — don't trap in beforeunload.
+          allowUnload = true;
+          return;
+        }
         const href = anchor.getAttribute('href');
         if (
           !href ||
@@ -2687,6 +3048,7 @@
     );
 
     window.addEventListener('beforeunload', (event) => {
+      if (allowUnload) return;
       const form = getForm();
       if (form && isDirty(form)) {
         event.preventDefault();

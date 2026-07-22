@@ -20,13 +20,13 @@
           <tr>
             <th class="w-9 px-3 py-3" aria-hidden="true"></th>
             @each(column in resource.columns)
-              <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-body-subtle whitespace-nowrap">
+              <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-body-subtle whitespace-nowrap {{ resolveAlignmentClass(column) }}">
                 @if(column.sortable !== false)
                   <a
                     href="{{ sortColumnUrl(basePath, resource.slug, query, column.name) }}"
-                    class="inline-flex items-center gap-1 hover:text-heading transition-colors"
+                    class="inline-flex items-center gap-1 hover:text-heading transition-colors {{ column.alignment === 'end' || column.alignment === 'right' ? 'justify-end w-full' : (column.alignment === 'center' ? 'justify-center w-full' : '') }}"
                   >
-                    {{ column.label ?? column.name }}
+                    {{ column.label ?? humanizeLabel(column.name) }}
                     @if(query.sort === column.name)
                       <svg class="w-3 h-3 text-fg-brand {{ query.direction === 'desc' ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5"/>
@@ -34,7 +34,7 @@
                     @endif
                   </a>
                 @else
-                  {{ column.label ?? column.name }}
+                  {{ column.label ?? humanizeLabel(column.name) }}
                 @endif
               </th>
             @endeach

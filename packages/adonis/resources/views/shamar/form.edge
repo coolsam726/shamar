@@ -51,8 +51,10 @@
       method="post"
       action="{{ mode === 'create' ? `${basePath}/${resource.slug}` : `${basePath}/${resource.slug}/${record.id}${recordPager ? recordPager.navQuery : ''}` }}"
       class="space-y-6"
-      @if(mode === 'edit')
-        data-shamar-autosave="{{ basePath }}/{{ resource.slug }}/{{ record.id }}{{ recordPager ? recordPager.navQuery : '' }}"
+      data-shamar-autosave="{{ mode === 'create' ? `${basePath}/${resource.slug}` : `${basePath}/${resource.slug}/${record.id}${recordPager ? recordPager.navQuery : ''}` }}"
+      data-shamar-save-mode="{{ mode }}"
+      @if(mode === 'create')
+        data-shamar-after-create="{{ basePath }}/{{ resource.slug }}"
       @endif
       x-data='shamarForm({
         endpoint: {{ jsonAttr(formStateEndpoint) }},

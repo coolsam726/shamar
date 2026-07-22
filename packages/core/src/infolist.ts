@@ -13,6 +13,12 @@ import {
   Section,
   type SchemaItem,
 } from './schemas.js';
+import {
+  normalizeCurrencyOptions,
+  type CurrencyInput,
+  type CurrencyOptions,
+} from './currency.js';
+import type { Alignment } from './alignment.js';
 
 /**
  * Shared base for infolist entries.
@@ -74,6 +80,36 @@ abstract class InfolistEntry {
     return this;
   }
 
+  /** Filament-style horizontal alignment of the entry value. */
+  alignment(value: Alignment): this {
+    this.config.alignment = value;
+    return this;
+  }
+
+  alignStart(): this {
+    return this.alignment('start');
+  }
+
+  alignCenter(): this {
+    return this.alignment('center');
+  }
+
+  alignEnd(): this {
+    return this.alignment('end');
+  }
+
+  alignJustify(): this {
+    return this.alignment('justify');
+  }
+
+  alignLeft(): this {
+    return this.alignment('left');
+  }
+
+  alignRight(): this {
+    return this.alignment('right');
+  }
+
   /** @internal */
   build(): InfolistEntryConfig {
     return { ...this.config };
@@ -133,6 +169,20 @@ export class TextEntry extends InfolistEntry {
 
   markdown(value = true): this {
     if (value) this.config.format = 'markdown';
+    return this;
+  }
+
+  /**
+   * Format the entry value as currency (Intl).
+   * @example TextEntry.make('price').currency('USD')
+   */
+  currency(
+    codeOrOptions: CurrencyInput = 'USD',
+    options?: Omit<CurrencyOptions, 'code'>,
+  ): this {
+    this.config.type = 'number';
+    this.config.format = 'currency';
+    this.config.currency = normalizeCurrencyOptions(codeOrOptions, options);
     return this;
   }
 }

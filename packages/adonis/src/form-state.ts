@@ -1,5 +1,5 @@
 import type { FieldConfig, FormOperation, ResourceMeta } from '@shamar/core';
-import { evaluateAfterStateUpdated, resolveClosure } from '@shamar/core';
+import { evaluateAfterStateUpdated, humanizeLabel, resolveClosure } from '@shamar/core';
 
 export interface FormStateRequest {
   operation: FormOperation;
@@ -18,6 +18,7 @@ export interface FormFieldClientMeta {
   disabled?: boolean;
   visible?: boolean;
   value?: unknown;
+  currency?: FieldConfig['currency'];
 }
 
 export interface FormStateResponse {
@@ -66,8 +67,7 @@ export async function evaluateFormState(
       const visible = resolveClosure(field.visible, ctx, true) ?? true;
       const disabled = resolveClosure(field.disabled, ctx, false) ?? false;
       const label =
-        resolveClosure(field.label, ctx) ??
-        field.name.charAt(0).toUpperCase() + field.name.slice(1);
+        resolveClosure(field.label, ctx) ?? humanizeLabel(field.name);
       const help = resolveClosure(field.help, ctx);
       const hint = resolveClosure(field.hint, ctx);
       const placeholder = resolveClosure(field.placeholder, ctx);
@@ -82,6 +82,7 @@ export async function evaluateFormState(
         disabled: Boolean(disabled),
         visible: Boolean(visible),
         value: state[field.name],
+        currency: field.currency,
       };
     });
 
@@ -127,8 +128,7 @@ export function formClientFields(
       const visible = resolveClosure(field.visible, ctx, true) ?? true;
       const disabled = resolveClosure(field.disabled, ctx, false) ?? false;
       const label =
-        resolveClosure(field.label, ctx) ??
-        field.name.charAt(0).toUpperCase() + field.name.slice(1);
+        resolveClosure(field.label, ctx) ?? humanizeLabel(field.name);
       const help = resolveClosure(field.help, ctx);
       const hint = resolveClosure(field.hint, ctx);
       const placeholder = resolveClosure(field.placeholder, ctx);
@@ -143,6 +143,7 @@ export function formClientFields(
         disabled: Boolean(disabled),
         visible: Boolean(visible),
         value: state[field.name],
+        currency: field.currency,
       };
     });
 }

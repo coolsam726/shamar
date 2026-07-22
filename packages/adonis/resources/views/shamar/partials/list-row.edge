@@ -1,11 +1,23 @@
 <tr class="hover:bg-surface-row-hover transition-colors" data-shamar-record-id="{{ record.id }}">
   <td class="px-3 py-3"></td>
   @each(column in resource.columns)
-    <td class="px-4 py-3 text-body">
-      @if(column.type === 'boolean')
-        <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium {{ record[column.name] ? 'bg-success-soft text-success-strong' : 'bg-badge-neutral text-body-subtle' }}">
-          {{ cellValue(record, column) }}
-        </span>
+    <td class="px-4 py-3 text-body {{ resolveAlignmentClass(column) }}">
+      @if(column.type === 'boolean' || column.format === 'boolean' || column.format === 'toggle')
+        @!component('shamar::partials/boolean-value', {
+          checked: !!record[column.name],
+          label: cellValue(record, column),
+        })
+      @elseif(column.format === 'badge' || column.type === 'tags')
+        @let(badges = badgeValues(record, column))
+        @if(badges.length)
+          <div class="shamar-badges">
+            @each(badge in badges)
+              <span class="shamar-badge">{{ badge }}</span>
+            @endeach
+          </div>
+        @else
+          —
+        @endif
       @else
         <a href="{{ basePath }}/{{ resource.slug }}/{{ record.id }}{{ recordNavQuery(query) }}" class="text-heading hover:text-fg-brand hover:underline">{{ cellValue(record, column) }}</a>
       @endif

@@ -1,5 +1,10 @@
 export type SortDirection = 'asc' | 'desc';
 
+export type { CurrencyOptions } from './currency.js';
+export type { Alignment, VerticalAlignment } from './alignment.js';
+import type { CurrencyOptions } from './currency.js';
+import type { Alignment, VerticalAlignment } from './alignment.js';
+
 export type FieldType =
   | 'text'
   | 'textarea'
@@ -12,6 +17,8 @@ export type FieldType =
   | 'relation'
   | 'email'
   | 'password'
+  | 'tel'
+  | 'url'
   | 'file'
   | 'image'
   | 'hidden'
@@ -99,8 +106,62 @@ export interface FieldConfig {
   /** Text input affixes. */
   prefix?: string;
   suffix?: string;
+  /**
+   * When true (default), prefix sits inside the input border.
+   * When false, prefix renders beside/outside the control.
+   */
+  inlinePrefix?: boolean;
+  /**
+   * When true (default), suffix sits inside the input border.
+   * When false, suffix renders beside/outside the control.
+   */
+  inlineSuffix?: boolean;
+  /** Affix icons (heroicon-style slug or short glyph). */
+  prefixIcon?: string;
+  suffixIcon?: string;
+  /**
+   * Currency formatting for numeric inputs (Intl).
+   * Stored value remains numeric; UI formats for display.
+   */
+  currency?: CurrencyOptions;
   /** Multi-select. */
   multiple?: boolean;
+  /** Native autocomplete attribute. */
+  autocomplete?: string;
+  /** Native inputmode attribute. */
+  inputMode?: string;
+  /** Exact / min / max string length (Filament length helpers). */
+  length?: number;
+  minLength?: number;
+  maxLength?: number;
+  /** Numeric / date bounds (maps to min/max). */
+  minValue?: number | string;
+  maxValue?: number | string;
+  step?: number | string;
+  /** Regex pattern (HTML pattern + server check). */
+  pattern?: string;
+  /** Password reveal toggle (Filament `revealable()`). */
+  revealable?: boolean;
+  /** Copy-to-clipboard control beside the input. */
+  copyable?: boolean;
+  /** `<datalist>` suggestions. */
+  datalist?: string[];
+  /**
+   * Select: whether the empty placeholder option stays selectable.
+   * Default `true`. When `false`, the blank option is omitted.
+   */
+  selectablePlaceholder?: boolean;
+  /**
+   * Select: use a native `<select>` instead of the Shamar combobox.
+   * Default `false` (combobox).
+   */
+  nativeSelect?: boolean;
+  /** Extra native attributes on the control. */
+  extraInputAttributes?: Record<string, string>;
+  /** File input accept filter (e.g. `image/*`). */
+  accept?: string;
+  /** Horizontal alignment of the field control (Filament-style). */
+  alignment?: Alignment;
 }
 
 /**
@@ -122,7 +183,13 @@ export interface ColumnConfig {
   label?: string;
   searchable?: boolean;
   sortable?: boolean;
-  format?: 'date' | 'datetime' | 'boolean' | 'badge' | 'toggle';
+  format?: 'date' | 'datetime' | 'boolean' | 'badge' | 'toggle' | 'currency';
+  /** Currency display options when `format` is `currency`. */
+  currency?: CurrencyOptions;
+  /** Horizontal alignment (Filament `alignStart` / `alignEnd` / …). */
+  alignment?: Alignment;
+  /** Vertical alignment (Filament `verticallyAlignStart` / …). */
+  verticalAlignment?: VerticalAlignment;
 }
 
 export interface ActionConfig {
@@ -184,7 +251,7 @@ export interface InfolistEntryConfig {
   help?: string;
   /** Short text beside the label (Filament `hint`). */
   hint?: string;
-  format?: 'date' | 'datetime' | 'boolean' | 'badge' | 'toggle' | 'markdown';
+  format?: 'date' | 'datetime' | 'boolean' | 'badge' | 'toggle' | 'markdown' | 'currency';
   columnSpan?: ColumnSpan;
   columnStart?: number;
   hiddenOnDetail?: boolean;
@@ -193,6 +260,10 @@ export interface InfolistEntryConfig {
   /** True icon name when value is truthy (IconEntry). */
   icon?: string;
   falseIcon?: string;
+  /** Currency display options when `format` is `currency`. */
+  currency?: CurrencyOptions;
+  /** Horizontal alignment of the entry value. */
+  alignment?: Alignment;
 }
 
 export interface InfolistSectionConfig {

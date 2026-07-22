@@ -5,6 +5,8 @@ import {
   form,
   TextInput,
   validateUniqueFields,
+  validateFieldConstraints,
+  validateFormData,
   ValidationException,
   type DataAdapter,
   type ResourceMeta,
@@ -103,5 +105,66 @@ describe('@shamar/core unique validation', () => {
     const meta = CompanyResource.configure();
     const adapter = stubAdapter([{ id: '1', code: 'ACME' }]);
     await validateUniqueFields(meta, { code: '', name: 'Acme' }, adapter);
+  });
+});
+
+describe('@shamar/core field constraints', () => {
+  class ConstraintsResource extends Resource {
+    static override slug = 'constraints';
+    static override label = 'Constraints';
+    static override singularLabel = 'Constraint';
+    static override model = 'Constraint';
+
+    static override form() {
+      return form((f) => {
+        f.schema([
+          TextInput.make('name').required().minLength(3).maxLength(8),
+          TextInput.make('code').length(4).pattern('[A-Z]+'),
+          TextInput.make('qty').numeric().min(2).max(5),
+          TextInput.make('site').url(),
+          TextInput.make('secret').password().dehydrated(false),
+        ]);
+      });
+    }
+  }
+
+  it('enforces required and length', () => {
+    const meta = ConstraintsResource.configure();
+    assert.throws(
+      () => validateFieldConstraints(meta, { name: 'ab', code: 'ABCD', qty: 3, site: 'https://x.test' }),
+      ValidationException,
+    );
+    assert.throws(
+      () => validateFieldConstraints(meta, { name: 'abcdefghi', code: 'ABCD', qty: 3, site: 'https://x.test' }),
+      ValidationException,
+    );
+    validateFieldConstraints(meta, {
+      name: 'abcd',
+      code: 'ABCD',
+      qty: 3,
+      site: 'https://x.test',
+    });
+  });
+
+  it('enforces pattern and numeric bounds', () => {
+    const meta = ConstraintsResource.configure();
+    assert.throws(
+      () => validateFieldConstraints(meta, { name: 'abcd', code: 'ab', qty: 3, site: 'https://x.test' }),
+      ValidationException,
+    );
+    assert.throws(
+      () => validateFieldConstraints(meta, { name: 'abcd', code: 'ABCD', qty: 9, site: 'https://x.test' }),
+      ValidationException,
+    );
+  });
+
+  it('skips dehydrated(false) fields and validates via validateFormData', async () => {
+    const meta = ConstraintsResource.configure();
+    const adapter = stubAdapter([]);
+    await validateFormData(
+      meta,
+      { name: 'abcd', code: 'ABCD', qty: 3, site: 'https://x.test', secret: 'x' },
+      adapter,
+    );
   });
 });

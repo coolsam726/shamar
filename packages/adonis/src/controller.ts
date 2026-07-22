@@ -1,5 +1,5 @@
 import type { DataAdapter, ResourceMeta } from '@shamar/core';
-import { validateUniqueFields } from '@shamar/core';
+import { validateFormData } from '@shamar/core';
 
 /**
  * Resource controller that handles admin CRUD for a single resource.
@@ -36,13 +36,13 @@ export class ResourceController {
 
   /** POST /admin/:slug — create. */
   async store(meta: ResourceMeta, data: Record<string, unknown>) {
-    await validateUniqueFields(meta, data, this.adapter);
+    await validateFormData(meta, data, this.adapter);
     return this.adapter.create(meta, data);
   }
 
   /** PUT /admin/:slug/:id — update. */
   async update(meta: ResourceMeta, id: string, data: Record<string, unknown>) {
-    await validateUniqueFields(meta, data, this.adapter, { recordId: id });
+    await validateFormData(meta, data, this.adapter, { recordId: id });
     return this.adapter.update(meta, id, data);
   }
 

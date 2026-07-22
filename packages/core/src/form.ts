@@ -18,6 +18,13 @@ import {
   isLayoutComponent,
   type SchemaItem,
 } from './schemas.js';
+import {
+  currencySymbol,
+  normalizeCurrencyOptions,
+  type CurrencyInput,
+  type CurrencyOptions,
+} from './currency.js';
+import type { Alignment } from './alignment.js';
 
 /**
  * Base for form field components (`TextInput::make()` style).
@@ -133,6 +140,36 @@ export abstract class FormComponent {
     return this;
   }
 
+  /** Filament-style horizontal alignment of the field control. */
+  alignment(value: Alignment): this {
+    this.config.alignment = value;
+    return this;
+  }
+
+  alignStart(): this {
+    return this.alignment('start');
+  }
+
+  alignCenter(): this {
+    return this.alignment('center');
+  }
+
+  alignEnd(): this {
+    return this.alignment('end');
+  }
+
+  alignJustify(): this {
+    return this.alignment('justify');
+  }
+
+  alignLeft(): this {
+    return this.alignment('left');
+  }
+
+  alignRight(): this {
+    return this.alignment('right');
+  }
+
   inline(value = true): this {
     this.config.inline = value;
     return this;
@@ -150,6 +187,119 @@ export abstract class FormComponent {
 
   suffix(value: string): this {
     this.config.suffix = value;
+    return this;
+  }
+
+  /** Filament-style: prefix inside (default) or outside the input border. */
+  inlinePrefix(value = true): this {
+    this.config.inlinePrefix = value;
+    return this;
+  }
+
+  /** Filament-style: suffix inside (default) or outside the input border. */
+  inlineSuffix(value = true): this {
+    this.config.inlineSuffix = value;
+    return this;
+  }
+
+  /** Set both prefix and suffix inline mode. */
+  inlineAffixes(value = true): this {
+    this.config.inlinePrefix = value;
+    this.config.inlineSuffix = value;
+    return this;
+  }
+
+  prefixIcon(value: string): this {
+    this.config.prefixIcon = value;
+    return this;
+  }
+
+  suffixIcon(value: string): this {
+    this.config.suffixIcon = value;
+    return this;
+  }
+
+  autocomplete(value: string): this {
+    this.config.autocomplete = value;
+    return this;
+  }
+
+  inputMode(value: string): this {
+    this.config.inputMode = value;
+    return this;
+  }
+
+  /** Exact string length (also sets minLength + maxLength). */
+  length(value: number): this {
+    this.config.length = value;
+    this.config.minLength = value;
+    this.config.maxLength = value;
+    return this;
+  }
+
+  minLength(value: number): this {
+    this.config.minLength = value;
+    return this;
+  }
+
+  maxLength(value: number): this {
+    this.config.maxLength = value;
+    return this;
+  }
+
+  minValue(value: number | string): this {
+    this.config.minValue = value;
+    return this;
+  }
+
+  /** Filament alias for numeric/date lower bound. */
+  min(value: number | string): this {
+    return this.minValue(value);
+  }
+
+  maxValue(value: number | string): this {
+    this.config.maxValue = value;
+    return this;
+  }
+
+  /** Filament alias for numeric/date upper bound. */
+  max(value: number | string): this {
+    return this.maxValue(value);
+  }
+
+  step(value: number | string): this {
+    this.config.step = value;
+    return this;
+  }
+
+  /** HTML `pattern` + server-side RegExp check. */
+  pattern(value: string): this {
+    this.config.pattern = value;
+    return this;
+  }
+
+  /** Alias for `pattern()`. */
+  regex(value: string): this {
+    return this.pattern(value);
+  }
+
+  copyable(value = true): this {
+    this.config.copyable = value;
+    return this;
+  }
+
+  datalist(values: string[]): this {
+    this.config.datalist = [...values];
+    return this;
+  }
+
+  extraInputAttributes(
+    attrs: Record<string, string>,
+    options?: { merge?: boolean },
+  ): this {
+    this.config.extraInputAttributes = options?.merge
+      ? { ...this.config.extraInputAttributes, ...attrs }
+      : { ...attrs };
     return this;
   }
 
@@ -197,13 +347,52 @@ export class TextInput extends FormComponent {
     return this;
   }
 
+  /** Filament `revealable()` — show/hide password toggle. */
+  revealable(value = true): this {
+    this.config.revealable = value;
+    return this;
+  }
+
+  tel(): this {
+    this.config.type = 'tel';
+    this.config.inputMode = this.config.inputMode ?? 'tel';
+    return this;
+  }
+
+  url(): this {
+    this.config.type = 'url';
+    return this;
+  }
+
   numeric(): this {
     this.config.type = 'number';
+    this.config.inputMode = this.config.inputMode ?? 'decimal';
     return this;
   }
 
   integer(): this {
-    return this.numeric();
+    this.config.type = 'number';
+    this.config.step = this.config.step ?? 1;
+    this.config.inputMode = this.config.inputMode ?? 'numeric';
+    return this;
+  }
+
+  /**
+   * Format a numeric field as currency (display via Intl; value stays numeric).
+   * Sets `numeric()` and a currency-symbol prefix when none is set.
+   */
+  currency(
+    codeOrOptions: CurrencyInput = 'USD',
+    options?: Omit<CurrencyOptions, 'code'>,
+  ): this {
+    this.numeric();
+    const currency = normalizeCurrencyOptions(codeOrOptions, options);
+    this.config.currency = currency;
+    this.config.step = this.config.step ?? (currency.precision === 0 ? 1 : 0.01);
+    if (this.config.prefix == null && this.config.prefixIcon == null) {
+      this.config.prefix = currencySymbol(currency.code, currency.locale);
+    }
+    return this;
   }
 }
 
@@ -236,6 +425,23 @@ export class Select extends FormComponent {
 
   multiple(value = true): this {
     this.config.multiple = value;
+    return this;
+  }
+
+  /**
+   * When `false`, omit the blank placeholder option (Filament `selectablePlaceholder(false)`).
+   */
+  selectablePlaceholder(value = true): this {
+    this.config.selectablePlaceholder = value;
+    return this;
+  }
+
+  /**
+   * Use a native `<select>` instead of the Shamar combobox.
+   * Useful for simple forms or when custom OS select behaviour is preferred.
+   */
+  native(value = true): this {
+    this.config.nativeSelect = value;
     return this;
   }
 }
@@ -321,6 +527,14 @@ export class DatePicker extends FormComponent {
   private constructor(name: string) {
     super(name, 'date');
   }
+
+  minDate(value: string): this {
+    return this.minValue(value);
+  }
+
+  maxDate(value: string): this {
+    return this.maxValue(value);
+  }
 }
 
 /** Filament `DateTimePicker::make()`. */
@@ -331,6 +545,14 @@ export class DateTimePicker extends FormComponent {
 
   private constructor(name: string) {
     super(name, 'datetime');
+  }
+
+  minDate(value: string): this {
+    return this.minValue(value);
+  }
+
+  maxDate(value: string): this {
+    return this.maxValue(value);
   }
 }
 
@@ -346,6 +568,17 @@ export class FileUpload extends FormComponent {
 
   image(): this {
     this.config.type = 'image';
+    this.config.accept = this.config.accept ?? 'image/*';
+    return this;
+  }
+
+  accept(value: string): this {
+    this.config.accept = value;
+    return this;
+  }
+
+  multiple(value = true): this {
+    this.config.multiple = value;
     return this;
   }
 }

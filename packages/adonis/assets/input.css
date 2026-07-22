@@ -1,6 +1,16 @@
 @import "tailwindcss";
 
-@source "../views/**/*.hbs";
+/* Package UI (Edge templates + client JS). */
+@source "../resources/views/**/*.edge";
+@source "./shamar-ui.js";
+
+/*
+ * App schemas may inject Tailwind via:
+ *   .extraAttributes({ class: '…' })
+ *   .extraInputAttributes({ class: '…' })
+ * Scan consumer apps in this monorepo so those utilities are not purged.
+ */
+@source "../../../apps/**/*.{ts,js,edge}";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -342,7 +352,15 @@ fieldset.shamar-card {
 }
 
 .shamar-form-section__body {
-  padding: 1.25rem;
+  padding: 1.25rem 1.25rem 1.75rem;
+}
+
+.shamar-wizard__panel {
+  padding-bottom: 0.5rem;
+}
+
+.shamar-radio {
+  padding-bottom: 0.15rem;
 }
 
 /* Form Fieldset — legend grouping (lighter than Section card) */
@@ -773,8 +791,8 @@ fieldset.shamar-card {
   outline: none;
 }
 
-/** Themed checkbox — use on any `input[type=checkbox]` outside toggles. */
-@utility shamar-checkbox {
+/** Themed checkbox input — do not put this class on the field label wrapper. */
+@utility shamar-checkbox-input {
   width: 1rem;
   height: 1rem;
   flex-shrink: 0;
@@ -1070,11 +1088,40 @@ select.shamar-input option {
   border-bottom-right-radius: 0.5rem;
 }
 
+.shamar-input-group__affix--icon,
+.shamar-input-group__affix--action {
+  padding: 0 0.65rem;
+}
+
+.shamar-input-group__affix--action {
+  cursor: pointer;
+  background: var(--color-neutral-primary);
+  color: var(--color-body-subtle);
+}
+
+.shamar-input-group__affix--action:hover {
+  color: var(--color-heading);
+  background: var(--color-surface-hover, var(--color-neutral-secondary));
+}
+
+.shamar-field__counter {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  color: var(--color-body-subtle);
+  text-align: right;
+}
+
+.shamar-input--file {
+  padding: 0.4rem 0.5rem;
+}
+
 .shamar-toggle {
   position: relative;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
   cursor: pointer;
   user-select: none;
 }
@@ -1082,6 +1129,14 @@ select.shamar-input option {
 .shamar-toggle--inline {
   min-height: 2.5rem;
   padding: 0.375rem 0;
+}
+
+.shamar-toggle__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .shamar-toggle.is-disabled {
@@ -1148,6 +1203,277 @@ select.shamar-input option {
   color: var(--color-heading);
 }
 
+.shamar-boolean {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 100%;
+  border-radius: 9999px;
+  padding: 0.2rem 0.65rem 0.2rem 0.3rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.2;
+  border: 1px solid transparent;
+}
+
+.shamar-boolean--custom {
+  padding-left: 0.35rem;
+}
+
+.shamar-boolean--icon-only {
+  padding: 0.3rem;
+}
+
+.shamar-boolean__mark {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 9999px;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.shamar-boolean__glyph {
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.shamar-boolean__label {
+  padding-right: 0.15rem;
+  letter-spacing: 0.01em;
+}
+
+.shamar-boolean.is-true {
+  background: var(--color-success-soft);
+  color: var(--color-success-strong);
+  border-color: color-mix(in srgb, var(--color-success-strong) 18%, transparent);
+}
+
+.shamar-boolean.is-false {
+  background: var(--color-badge-neutral);
+  color: var(--color-body-subtle);
+  border-color: color-mix(in srgb, var(--color-card-border) 80%, transparent);
+}
+
+.shamar-field .shamar-select,
+.shamar-field-cell .shamar-select {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Custom select combobox (single + multi with chips). */
+.shamar-combobox {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.shamar-combobox__control {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.5rem;
+  width: 100%;
+  padding: 0.25rem 0.35rem 0.25rem 0.65rem;
+  border: 1px solid var(--color-default);
+  border-radius: 0.5rem;
+  background: var(--color-neutral-primary);
+  cursor: text;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.shamar-combobox.is-open .shamar-combobox__control,
+.shamar-combobox__control:focus-within {
+  border-color: var(--color-fg-brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-fg-brand) 28%, transparent);
+}
+
+.shamar-combobox.is-invalid .shamar-combobox__control {
+  border-color: var(--color-fg-danger);
+}
+
+.shamar-combobox.is-disabled .shamar-combobox__control {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: var(--color-surface-inset, var(--color-neutral-secondary));
+}
+
+.shamar-combobox__chips {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.shamar-combobox__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  max-width: 100%;
+  padding: 0.15rem 0.2rem 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-brand-soft);
+  color: var(--color-fg-brand);
+  font-size: 0.75rem;
+  font-weight: 550;
+  line-height: 1.25;
+}
+
+.shamar-combobox__chip-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shamar-combobox__chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.shamar-combobox__chip-remove:hover {
+  background: color-mix(in srgb, var(--color-fg-brand) 18%, transparent);
+}
+
+.shamar-combobox__search {
+  flex: 1 1 6rem;
+  min-width: 4rem;
+  width: auto;
+  margin: 0;
+  padding: 0.3rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-heading);
+  font-size: 0.875rem;
+  outline: none;
+  box-shadow: none;
+}
+
+.shamar-combobox__search--single {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.shamar-combobox__search:disabled {
+  cursor: not-allowed;
+}
+
+.shamar-combobox__clear,
+.shamar-combobox__toggle {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 0;
+  border-radius: 0.375rem;
+  background: transparent;
+  color: var(--color-body-subtle);
+  cursor: pointer;
+}
+
+.shamar-combobox__clear:hover,
+.shamar-combobox__toggle:hover {
+  color: var(--color-heading);
+  background: var(--color-surface-hover, var(--color-neutral-secondary));
+}
+
+.shamar-combobox__toggle {
+  color: var(--color-body-subtle);
+}
+
+.shamar-combobox.is-open .shamar-combobox__toggle {
+  color: var(--color-fg-brand);
+}
+
+.shamar-combobox__dropdown {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  right: 0;
+  max-height: 16rem;
+  overflow: auto;
+  padding: 0.35rem;
+  border: 1px solid var(--color-default);
+  border-radius: 0.5rem;
+  background: var(--color-neutral-primary);
+  box-shadow: 0 10px 30px color-mix(in srgb, #000 12%, transparent);
+}
+
+.shamar-combobox__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: 0;
+  border-radius: 0.375rem;
+  background: transparent;
+  color: var(--color-heading);
+  font-size: 0.875rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.shamar-combobox__option:hover,
+.shamar-combobox__option.is-active {
+  background: var(--color-surface-hover, var(--color-neutral-secondary));
+}
+
+.shamar-combobox__option.is-selected {
+  color: var(--color-fg-brand);
+  font-weight: 550;
+}
+
+.shamar-combobox__option-check {
+  flex-shrink: 0;
+  color: var(--color-fg-brand);
+}
+
+.shamar-combobox__empty {
+  padding: 0.65rem 0.6rem;
+  color: var(--color-body-subtle);
+  font-size: 0.8125rem;
+}
+
+
+.shamar-field.text-right .shamar-input,
+.shamar-field.text-right .shamar-select,
+.shamar-field.text-right .shamar-combobox__search {
+  text-align: right;
+}
+
+.shamar-field.text-center .shamar-input,
+.shamar-field.text-center .shamar-select,
+.shamar-field.text-center .shamar-combobox__search {
+  text-align: center;
+}
+
+.shamar-field.text-justify .shamar-input,
+.shamar-field.text-justify .shamar-select,
+.shamar-field.text-justify .shamar-combobox__search {
+  text-align: justify;
+}
+
+
+/* Backward-compatible alias */
 .shamar-boolean-badge {
   display: inline-flex;
   align-items: center;
@@ -1426,12 +1752,89 @@ select.shamar-input option {
 .shamar-placeholder__label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--color-heading); }
 .shamar-placeholder__content { margin-top: 0.25rem; font-size: 0.875rem; color: var(--color-body); }
 
-.shamar-checkbox, .shamar-radio__option { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; }
+/* Checkbox field control (label wrapper) — fills grid cell width. */
+.shamar-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
+  font-size: 0.875rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.shamar-checkbox--inline {
+  min-height: 2.5rem;
+  padding: 0.375rem 0;
+}
+
+.shamar-checkbox.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.shamar-checkbox__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.shamar-checkbox__label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-heading);
+}
+
+.shamar-radio__option { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; }
 .shamar-radio { display: flex; flex-direction: column; gap: 0.5rem; }
 .shamar-radio--inline { flex-direction: row; flex-wrap: wrap; gap: 0.75rem 1.25rem; }
 
 .shamar-color { display: flex; align-items: center; gap: 0.5rem; }
-.shamar-color__swatch { width: 2.25rem; height: 2.25rem; padding: 0; border: 1px solid var(--color-card-border); border-radius: 0.4rem; background: transparent; }
+.shamar-color__swatch { width: 2.25rem; height: 2.25rem; padding: 0; border: 1px solid var(--color-card-border); border-radius: 0.4rem; background: transparent; cursor: pointer; }
+.shamar-color__value {
+  flex: 1 1 auto;
+  min-width: 0;
+  cursor: default;
+  color: var(--color-body-subtle);
+}
+.shamar-color__value:read-only {
+  background: var(--color-surface-inset, var(--color-neutral-secondary));
+}
+
+.shamar-input-affixes {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
+}
+.shamar-input-affixes > .shamar-input-group,
+.shamar-input-affixes > .shamar-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.shamar-input-affixes--stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+}
+.shamar-input-affixes__outside {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-body-subtle);
+  white-space: nowrap;
+}
+.shamar-input-affixes__outside--icon {
+  color: var(--color-heading);
+}
+.shamar-input-affixes:not(.shamar-input-affixes--stacked) .shamar-input-affixes__outside {
+  align-self: center;
+}
 .shamar-color-entry { display: inline-flex; align-items: center; gap: 0.4rem; }
 .shamar-color-entry__swatch { width: 1rem; height: 1rem; border-radius: 0.25rem; border: 1px solid var(--color-card-border); }
 
@@ -1472,6 +1875,7 @@ select.shamar-input option {
 }
 
 .shamar-badge { display: inline-flex; padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.75rem; font-weight: 550; background: var(--color-brand-soft); color: var(--color-fg-brand); }
+.shamar-badges { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
 .shamar-copyable { display: inline-flex; align-items: center; gap: 0.5rem; }
 .shamar-copyable__btn { font-size: 0.75rem; border: 1px solid var(--color-card-border); border-radius: 0.35rem; padding: 0.15rem 0.4rem; background: var(--color-neutral-primary); cursor: pointer; }
 .shamar-image-entry { max-width: 8rem; max-height: 8rem; border-radius: 0.5rem; object-fit: cover; border: 1px solid var(--color-card-border); }

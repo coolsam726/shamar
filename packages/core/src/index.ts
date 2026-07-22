@@ -9,3 +9,6 @@ export * from './registry.js';
 export * from './panel.js';
 export * from './reactivity.js';
 export * from './validation.js';
+export * from './labels.js';
+export * from './currency.js';
+export * from './alignment.js';

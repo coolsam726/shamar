@@ -1,4 +1,5 @@
 import type { ListQuery, PaginatedResult, ResourceMeta } from '@shamar/core';
+import { formatCurrencyValue } from '@shamar/core';
 
 export interface ListViewQuery {
   search?: string;
@@ -244,7 +245,12 @@ export function buildRecordPager(options: {
 
 export function cellValue(
   record: Record<string, unknown>,
-  column: { name: string; type?: string; format?: string },
+  column: {
+    name: string;
+    type?: string;
+    format?: string;
+    currency?: { code: string; locale?: string; precision?: number };
+  },
 ): string {
   const value = record[column.name];
   if (
@@ -256,6 +262,18 @@ export function cellValue(
   }
   if (value == null || value === '') return '—';
 
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item)).filter(Boolean).join(', ') || '—';
+  }
+
+  if (column.format === 'currency' || column.currency) {
+    const formatted = formatCurrencyValue(
+      value,
+      column.currency ?? { code: 'USD', precision: 2 },
+    );
+    if (formatted != null) return formatted;
+  }
+
   const dateMode = resolveDateFormat(column);
   if (dateMode) {
     return formatDateValue(value, dateMode) ?? String(value);
@@ -266,9 +284,28 @@ export function cellValue(
 
 export function detailValue(
   record: Record<string, unknown>,
-  field: { name: string; type?: string; format?: string },
+  field: {
+    name: string;
+    type?: string;
+    format?: string;
+    currency?: { code: string; locale?: string; precision?: number };
+  },
 ): string {
   return cellValue(record, field);
+}
+
+/** Labels for badge rendering — one entry per array item (tags, multi-select, etc.). */
+export function badgeValues(
+  record: Record<string, unknown>,
+  field: { name: string },
+): string[] {
+  const value = record[field.name];
+  if (value == null || value === '') return [];
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter(Boolean);
+  }
+  const text = String(value).trim();
+  return text ? [text] : [];
 }
 
 function resolveDateFormat(column: {
@@ -358,6 +395,59 @@ export function formatDateValue(
   }).format(date);
 }
 
+/**
+ * Normalize stored dates for native `date` / `datetime-local` inputs (local calendar).
+ */
+export function toFormDateInputValue(
+  value: unknown,
+  mode: 'date' | 'datetime',
+): string {
+  const date = parseDateValue(value);
+  if (!date) return '';
+
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  if (mode === 'date') return `${y}-${m}-${d}`;
+
+  const hh = String(date.getHours()).padStart(2, '0');
+  const mm = String(date.getMinutes()).padStart(2, '0');
+  return `${y}-${m}-${d}T${hh}:${mm}`;
+}
+
+/** Coerce adapter values into form-control-friendly state. */
+export function toFormControlValue(
+  value: unknown,
+  field: { type: string; currency?: { precision?: number } },
+): unknown {
+  if (field.type === 'date') return toFormDateInputValue(value, 'date');
+  if (field.type === 'datetime') return toFormDateInputValue(value, 'datetime');
+  if (field.type === 'number' || field.currency) {
+    if (value == null || value === '') return '';
+    const num = typeof value === 'number' ? value : Number(value);
+    return Number.isFinite(num) ? num : value;
+  }
+  if (field.type === 'color' && (value == null || value === '')) {
+    return '#000000';
+  }
+  if (field.type === 'select' && (field as { multiple?: boolean }).multiple) {
+    if (Array.isArray(value)) return value.map((item) => String(item));
+    if (value == null || value === '') return [];
+    return [String(value)];
+  }
+  return value;
+}
+
+/** Parse currency-ish user input into a finite number (or empty string). */
+export function parseCurrencyInput(value: unknown): number | '' {
+  if (value == null || value === '') return '';
+  if (typeof value === 'number') return Number.isFinite(value) ? value : '';
+  const cleaned = String(value).replace(/[^\d.-]/g, '');
+  if (!cleaned || cleaned === '-' || cleaned === '.' || cleaned === '-.') return '';
+  const num = Number(cleaned);
+  return Number.isFinite(num) ? num : '';
+}
+
 export function recordTitle(
   meta: ResourceMeta,
   record: Record<string, unknown>,
@@ -368,7 +458,7 @@ export function recordTitle(
   return id != null ? `#${id}` : meta.singularLabel;
 }
 
-export function formInputType(field: { type: string }): string {
+export function formInputType(field: { type: string; revealable?: boolean }): string {
   switch (field.type) {
     case 'email':
       return 'email';
@@ -376,6 +466,10 @@ export function formInputType(field: { type: string }): string {
       return 'password';
     case 'number':
       return 'number';
+    case 'tel':
+      return 'tel';
+    case 'url':
+      return 'url';
     case 'date':
       return 'date';
     case 'datetime':
@@ -384,9 +478,65 @@ export function formInputType(field: { type: string }): string {
       return 'color';
     case 'hidden':
       return 'hidden';
+    case 'file':
+    case 'image':
+      return 'file';
     default:
       return 'text';
   }
+}
+
+function escapeAttr(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+/**
+ * Extra native attributes for text-like controls (min/max/length/pattern/etc.).
+ * Returned as a raw HTML attribute string for Edge `{{{ fieldInputAttrs(field) }}}`.
+ */
+export function fieldInputAttrs(field: {
+  autocomplete?: string;
+  inputMode?: string;
+  minLength?: number;
+  maxLength?: number;
+  minValue?: number | string;
+  maxValue?: number | string;
+  step?: number | string;
+  pattern?: string;
+  accept?: string;
+  datalist?: string[];
+  name?: string;
+  extraInputAttributes?: Record<string, string>;
+}): string {
+  const parts: string[] = [];
+
+  if (field.autocomplete) parts.push(`autocomplete="${escapeAttr(field.autocomplete)}"`);
+  if (field.inputMode) parts.push(`inputmode="${escapeAttr(field.inputMode)}"`);
+  if (field.minLength != null) parts.push(`minlength="${field.minLength}"`);
+  if (field.maxLength != null) parts.push(`maxlength="${field.maxLength}"`);
+  if (field.minValue != null) parts.push(`min="${escapeAttr(String(field.minValue))}"`);
+  if (field.maxValue != null) parts.push(`max="${escapeAttr(String(field.maxValue))}"`);
+  if (field.step != null) parts.push(`step="${escapeAttr(String(field.step))}"`);
+  if (field.pattern) parts.push(`pattern="${escapeAttr(field.pattern)}"`);
+  if (field.accept) parts.push(`accept="${escapeAttr(field.accept)}"`);
+  if (field.datalist?.length && field.name) {
+    parts.push(`list="datalist-${escapeAttr(field.name)}"`);
+  }
+  if (field.extraInputAttributes) {
+    for (const [key, value] of Object.entries(field.extraInputAttributes)) {
+      if (value == null || value === '') {
+        parts.push(escapeAttr(key));
+      } else {
+        parts.push(`${escapeAttr(key)}="${escapeAttr(value)}"`);
+      }
+    }
+  }
+
+  return parts.join(' ');
 }
 
 export function fieldChecked(record: Record<string, unknown> | null, field: { name: string }): boolean {
@@ -553,6 +703,8 @@ function entryToDetailField(entry: {
   copyable?: boolean;
   icon?: string;
   falseIcon?: string;
+  currency?: { code: string; locale?: string; precision?: number };
+  alignment?: string;
 }) {
   return {
     name: entry.name,
@@ -567,6 +719,8 @@ function entryToDetailField(entry: {
     copyable: entry.copyable,
     icon: entry.icon,
     falseIcon: entry.falseIcon,
+    currency: entry.currency,
+    alignment: entry.alignment,
   };
 }
 

@@ -8,15 +8,12 @@
       <span class="shamar-field__hint">{{ field.hint }}</span>
     @endif
   </div>
-  <dd class="shamar-field__value mt-1">
-    @if(field.type === 'boolean' || field.type === 'checkbox')
-      <span class="shamar-boolean-badge {{ fieldChecked(record, field) ? 'is-true' : 'is-false' }}">
-        {{ detailValue(record, field) }}
-      </span>
-    @elseif(field.type === 'icon')
-      <span class="shamar-icon-entry" data-true="{{ fieldChecked(record, field) ? '1' : '0' }}">
-        {{ fieldChecked(record, field) ? (field.icon ?? '✓') : (field.falseIcon ?? '✗') }}
-      </span>
+  <dd class="shamar-field__value mt-1 {{ alignmentTextClass(field.alignment) }}">
+    @if(field.type === 'icon' || field.type === 'boolean' || field.type === 'checkbox' || field.format === 'boolean' || field.format === 'toggle')
+      @!component('shamar::partials/boolean-value', {
+        checked: fieldChecked(record, field),
+        label: detailValue(record, field),
+      })
     @elseif(field.type === 'color')
       <span class="shamar-color-entry">
         <span class="shamar-color-entry__swatch" style="background: {{ record[field.name] || '#ccc' }}"></span>
@@ -28,8 +25,17 @@
       @else
         —
       @endif
-    @elseif(field.format === 'badge')
-      <span class="shamar-badge">{{ detailValue(record, field) }}</span>
+    @elseif(field.format === 'badge' || field.type === 'tags')
+      @let(badges = badgeValues(record, field))
+      @if(badges.length)
+        <div class="shamar-badges">
+          @each(badge in badges)
+            <span class="shamar-badge">{{ badge }}</span>
+          @endeach
+        </div>
+      @else
+        —
+      @endif
     @elseif(field.copyable)
       <span class="shamar-copyable" x-data>
         <span>{{ detailValue(record, field) }}</span>
