@@ -33,6 +33,9 @@ export interface RelationUiConfig {
   checkboxColumns?: number;
   checkboxFramed?: boolean;
   cascadeWildcards?: boolean;
+  groupBy?: string;
+  /** Attribute used as dehydrated form values (default `id`). */
+  valueAttribute?: string;
   /** True when hasMany on create — show empty state until parent is saved */
   requiresParent?: boolean;
 }
@@ -56,7 +59,7 @@ export function buildRelationUiConfig(options: {
   record: Record<string, unknown> | null;
   initialItems?: RelationSearchResult[];
   preloadedOptions?: RelationSearchResult[];
-  operation: 'create' | 'edit';
+  operation: 'create' | 'edit' | 'show';
 }): RelationUiConfig {
   const { field, parentMeta, relatedMeta, basePath, record, operation } = options;
   const relation = field.relation!;
@@ -100,7 +103,7 @@ export function buildRelationUiConfig(options: {
     detailUrlBase: `${basePath}/${relatedMeta.slug}`,
     attachUrl,
     detachUrl,
-    readonly: !!field.readonly,
+    readonly: options.operation === 'show' || !!field.readonly,
     required: !!field.required,
     kind: relation.kind,
     widget,
@@ -113,9 +116,11 @@ export function buildRelationUiConfig(options: {
     initialLabel: relation.kind === 'belongsTo' ? first?.label ?? '' : undefined,
     initialItems: relation.kind === 'belongsTo' ? undefined : initialItems,
     options: options.preloadedOptions,
-    checkboxColumns: 2,
-    checkboxFramed: true,
-    cascadeWildcards: false,
+    checkboxColumns: field.checkboxColumns ?? relation.checkboxColumns ?? 2,
+    checkboxFramed: field.checkboxFramed ?? relation.checkboxFramed ?? true,
+    cascadeWildcards: field.cascadeWildcards ?? relation.cascadeWildcards ?? false,
+    groupBy: field.groupBy ?? relation.groupBy ?? '',
+    valueAttribute: relation.valueAttribute ?? 'id',
     requiresParent: relation.kind === 'hasMany' && (operation === 'create' || !parentId),
   };
 }

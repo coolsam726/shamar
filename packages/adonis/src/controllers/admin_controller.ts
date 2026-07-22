@@ -1,14 +1,32 @@
 import type { ShamarHttpContext } from '../context.js';
 import type { ResourceRegistry, ResourceMeta } from '@shamar/core';
-import { resolveGridItemStyle, ValidationException } from '@shamar/core';
+import { resolveGridItemStyle, isValidationException } from '@shamar/core';
+import type { Authorizer } from '@shamar/cherubim';
+import { Authorizer as AuthorizerClass } from '@shamar/cherubim';
+import type { AuthorizationContext, ResourceAction } from '@shamar/cherubim';
 import type { ShamarConfig } from '../config.js';
 import type { PanelRuntime } from '../runtime.js';
 import { ResourceController } from '../controller.js';
+import {
+  authRequired,
+  assertResourceAccess,
+  buildAuthContext,
+  ForbiddenError,
+  resourcePolicyFlags,
+  respondForbidden,
+  respondUnauthorized,
+  UnauthorizedError,
+} from '../shamar/auth.js';
 import {
   buildListContext,
   buildShellContext,
   readFlash,
 } from '../shamar/view-context.js';
+import {
+  decorateRevokedStatus,
+  resourceActionsFor,
+  visibleRowActions,
+} from '../shamar/resource-actions.js';
 import {
   formSections,
   formSchemaTree,
@@ -42,41 +60,136 @@ export class AdminController {
   private readonly basePath: string;
   private readonly registry: ResourceRegistry;
   private readonly panelBranding: ShamarConfig['branding'];
+  private readonly authorizer: Authorizer;
 
   constructor(
     private readonly panel: PanelRuntime,
     private readonly config: ShamarConfig,
+    authorizer?: Authorizer,
   ) {
     this.registry = panel.registry;
     this.basePath = panel.path;
     this.panelBranding = panel.config.branding ?? config.branding;
     this.resources = new ResourceController(panel.adapter);
+    this.authorizer = authorizer ?? new AuthorizerClass();
   }
 
-  private shellOpts(ctx: ShamarHttpContext, extras: {
+  private isAuthContext(
+    value: AuthorizationContext | unknown,
+  ): value is AuthorizationContext {
+    return typeof value === 'object' && value !== null && 'user' in value;
+  }
+
+  private async resolveAuth(ctx: ShamarHttpContext): Promise<AuthorizationContext> {
+    return buildAuthContext(ctx, this.config, this.panel.id);
+  }
+
+  private async ensureAuthenticated(
+    ctx: ShamarHttpContext,
+    asJson = false,
+  ): Promise<AuthorizationContext | unknown> {
+    const authCtx = await this.resolveAuth(ctx);
+    const json = asJson || this.wantsJson(ctx);
+
+    if (authRequired(this.config) && !authCtx.user) {
+      return respondUnauthorized(ctx, this.config, json);
+    }
+    return authCtx;
+  }
+
+  private async ensureResourceAction(
+    ctx: ShamarHttpContext,
+    meta: ResourceMeta,
+    action: ResourceAction,
+    record?: Record<string, unknown>,
+    asJson = false,
+  ): Promise<AuthorizationContext | unknown> {
+    const authResult = await this.ensureAuthenticated(ctx, asJson);
+    if (!this.isAuthContext(authResult)) return authResult;
+    const authCtx = authResult;
+
+    if (!authRequired(this.config)) return authCtx;
+
+    try {
+      assertResourceAccess(this.authorizer, authCtx, this.registry, meta, action, record);
+    } catch (error) {
+      if (error instanceof ForbiddenError) {
+        return respondForbidden(
+          ctx,
+          error.message,
+          asJson || this.wantsJson(ctx),
+          this.basePath,
+        );
+      }
+      if (error instanceof UnauthorizedError) {
+        return respondUnauthorized(ctx, this.config, asJson || this.wantsJson(ctx));
+      }
+      throw error;
+    }
+
+    return authCtx;
+  }
+
+  private shellOpts(
+    ctx: ShamarHttpContext,
+    authCtx: AuthorizationContext,
+    extras: {
     meta?: ResourceMeta;
     pageTitle: string;
     showCreateButton?: boolean;
     showEditButton?: boolean;
+    showDeleteButton?: boolean;
     showBackToList?: boolean;
+    record?: Record<string, unknown> | null;
     recordBreadcrumb?: {
       mode?: 'create' | 'edit' | 'show';
       recordTitle?: string;
       recordHref?: string;
     };
   }) {
+    const policy =
+      extras.meta && authCtx.user
+        ? resourcePolicyFlags(
+            this.authorizer,
+            authCtx,
+            this.registry,
+            extras.meta,
+            extras.record,
+          )
+        : null;
+
+    const {
+      showCreateButton,
+      showEditButton,
+      showDeleteButton,
+      record,
+      ...rest
+    } = extras;
+
     return buildShellContext({
       config: this.config,
       registry: this.registry,
       basePath: this.basePath,
       branding: this.panelBranding,
+      authorizer: this.authorizer,
+      authCtx,
       flash: readFlash(ctx),
-      ...extras,
+      showCreateButton:
+        showCreateButton === true ? policy?.create ?? true : showCreateButton,
+      showEditButton:
+        showEditButton === true ? policy?.update ?? true : showEditButton,
+      showDeleteButton:
+        showDeleteButton === true ? policy?.delete ?? true : showDeleteButton,
+      ...rest,
     });
   }
 
   async dashboard(ctx: ShamarHttpContext) {
-    const shell = this.shellOpts(ctx, { pageTitle: 'Dashboard' });
+    const authResult = await this.ensureAuthenticated(ctx);
+    if (!this.isAuthContext(authResult)) return authResult;
+    const authCtx = authResult;
+
+    const shell = this.shellOpts(ctx, authCtx, { pageTitle: 'Dashboard' });
     const dashboardCards = shell.menuRoots.filter((root) => root.label !== 'Dashboard');
 
     return ctx.view.render('shamar::dashboard', {
@@ -87,17 +200,27 @@ export class AdminController {
 
   async index(ctx: ShamarHttpContext, options?: { asJson?: boolean }) {
     const meta = this.requireResource(ctx);
+    const authResult = await this.ensureResourceAction(ctx, meta, 'viewAny', undefined, options?.asJson);
+    if (!this.isAuthContext(authResult)) return authResult;
+    const authCtx = authResult;
+
     const rawQuery = this.listQuery(ctx);
-    const query = normalizeListQuery(rawQuery);
+    const query = this.withPolicyScope(
+      authCtx,
+      meta,
+      normalizeListQuery(rawQuery),
+    );
 
     if (this.wantsJson(ctx, options?.asJson)) {
       const result = await this.resources.index(meta, query);
       await hydrateRecordsForDisplay(meta, result.items, this.registry, this.panel.adapter);
+      decorateRevokedStatus(result.items);
       return ctx.response.json(result);
     }
 
     const result = await this.resources.index(meta, query);
     await hydrateRecordsForDisplay(meta, result.items, this.registry, this.panel.adapter);
+    decorateRevokedStatus(result.items);
     const { query: viewQuery, pagination, perPageValue } = buildListContext({
       basePath: this.basePath,
       meta,
@@ -105,10 +228,13 @@ export class AdminController {
       result,
     });
 
-    const shell = this.shellOpts(ctx, {
+    const policy = resourcePolicyFlags(this.authorizer, authCtx, this.registry, meta);
+    const shell = this.shellOpts(ctx, authCtx, {
       meta,
       pageTitle: meta.label,
-      showCreateButton: true,
+      showCreateButton: policy.create,
+      showEditButton: policy.update,
+      showDeleteButton: policy.delete,
     });
 
     return ctx.view.render('shamar::index', {
@@ -120,18 +246,24 @@ export class AdminController {
       pagination,
       listHeaders: [],
       listAllPerPage: LIST_ALL_RECORDS_PER_PAGE,
+      bulkActions: resourceActionsFor(meta, 'bulk', policy),
+      rowActions: resourceActionsFor(meta, 'row', policy),
     });
   }
 
   async create(ctx: ShamarHttpContext, options?: { asJson?: boolean }) {
     const meta = this.requireResource(ctx);
+    const authResult = await this.ensureResourceAction(ctx, meta, 'create', undefined, options?.asJson);
+    if (!this.isAuthContext(authResult)) return authResult;
+    const authCtx = authResult;
 
     if (this.wantsJson(ctx, options?.asJson)) {
       return ctx.response.json({ meta, fields: meta.fields });
     }
 
     const embed = this.isEmbed(ctx);
-    const shell = this.shellOpts(ctx, {
+    const policy = resourcePolicyFlags(this.authorizer, authCtx, this.registry, meta);
+    const shell = this.shellOpts(ctx, authCtx, {
       meta,
       pageTitle: `New ${meta.singularLabel}`,
       showBackToList: false,
@@ -149,6 +281,8 @@ export class AdminController {
       record: null,
       mode: 'create',
       embed,
+      /** Create-once resources (canEdit false) redirect to show after AJAX create. */
+      redirectAfterCreateToShow: !policy.update,
       formSchema: formSchemaTree(meta),
       formSections: formSections(meta),
       formLiveFields: formClientFields(meta, {
@@ -167,22 +301,51 @@ export class AdminController {
 
   async store(ctx: ShamarHttpContext, options?: { asJson?: boolean }) {
     const meta = this.requireResource(ctx);
-    const data = this.resourcePayload(meta, ctx, 'create');
+    const authResult = await this.ensureResourceAction(ctx, meta, 'create', undefined, options?.asJson);
+    if (!this.isAuthContext(authResult)) return authResult;
+
+    let data = this.resourcePayload(meta, ctx, 'create');
+    let flashPlainText: string | undefined;
+    let flashMessage: string | undefined;
 
     try {
+      const ResourceClass = this.registry.resourceClass(meta.slug);
+      if (ResourceClass?.prepareCreate) {
+        const prepared = await ResourceClass.prepareCreate(data, {
+          adapter: this.panel.adapter,
+          meta,
+          userId: authResult.user?.id ?? null,
+        });
+        data = prepared.data;
+        flashPlainText = prepared.flashPlainText;
+        flashMessage = prepared.flashMessage;
+      }
+
       const record = await this.resources.store(meta, data);
 
       if (this.wantsJson(ctx, options?.asJson)) {
-        return ctx.response.created(record);
+        // AJAX create shows a copy-and-confirm modal; only flash a short success for after.
+        if (flashPlainText) {
+          ctx.session.flash('success', `${meta.singularLabel} created`);
+        }
+        return ctx.response.created({
+          ...record,
+          ...(flashPlainText ? { plainText: flashPlainText } : {}),
+        });
       }
 
-      return this.redirectAfterSave(ctx, meta, String(record.id), 'created');
+      return this.redirectAfterSave(ctx, meta, String(record.id), 'created', {
+        flashPlainText,
+        flashMessage,
+        authCtx: authResult,
+      });
     } catch (error) {
       return this.handleFormValidationError(ctx, meta, error, {
         mode: 'create',
         record: null,
         data,
         asJson: options?.asJson,
+        authCtx: authResult,
       });
     }
   }
@@ -191,23 +354,33 @@ export class AdminController {
     const meta = this.requireResource(ctx);
     const { id } = ctx.params;
     const record = await this.resources.show(meta, id);
+    const authResult = await this.ensureResourceAction(ctx, meta, 'view', record, options?.asJson);
+    if (!this.isAuthContext(authResult)) return authResult;
+    const authCtx = authResult;
+
     await hydrateRecordsForDisplay(meta, [record], this.registry, this.panel.adapter);
+    decorateRevokedStatus([record]);
 
     if (this.wantsJson(ctx, options?.asJson)) {
       return ctx.response.json(record);
     }
 
     const title = recordTitle(meta, record);
-    const shell = this.shellOpts(ctx, {
+    const policy = resourcePolicyFlags(this.authorizer, authCtx, this.registry, meta, record);
+    const shell = this.shellOpts(ctx, authCtx, {
       meta,
+      record,
       pageTitle: title,
-      showEditButton: false,
+      showEditButton: policy.update,
+      showDeleteButton: policy.delete,
       showBackToList: false,
       recordBreadcrumb: {
         mode: 'show',
         recordTitle: title,
       },
     });
+
+    const relationUi = await this.buildRelationUiMap(meta, record, 'show', record);
 
     return ctx.view.render('shamar::show', {
       ...shell,
@@ -217,9 +390,11 @@ export class AdminController {
       id: record.id,
       detailSchema: detailSchemaTree(meta),
       detailSections: detailSections(meta),
+      relationUi,
       formErrors: {},
       recordPager: await this.resolveRecordPager(ctx, meta, String(record.id), 'show'),
       resolveGridItemStyle,
+      recordActions: visibleRowActions(meta, policy, record),
     });
   }
 
@@ -227,6 +402,9 @@ export class AdminController {
     const meta = this.requireResource(ctx);
     const { id } = ctx.params;
     const record = await this.resources.show(meta, id);
+    const authResult = await this.ensureResourceAction(ctx, meta, 'update', record, options?.asJson);
+    if (!this.isAuthContext(authResult)) return authResult;
+    const authCtx = authResult;
 
     if (this.wantsJson(ctx, options?.asJson)) {
       return ctx.response.json(record);
@@ -235,9 +413,12 @@ export class AdminController {
     const embed = this.isEmbed(ctx);
     const title = recordTitle(meta, record);
     const navQuery = recordNavQuery(this.listQuery(ctx));
-    const shell = this.shellOpts(ctx, {
+    const policy = resourcePolicyFlags(this.authorizer, authCtx, this.registry, meta, record);
+    const shell = this.shellOpts(ctx, authCtx, {
       meta,
+      record,
       pageTitle: `Edit ${title}`,
+      showDeleteButton: policy.delete,
       showBackToList: false,
       recordBreadcrumb: {
         mode: 'edit',
@@ -298,6 +479,17 @@ export class AdminController {
       }
     }
 
+    const action: ResourceAction =
+      operation === 'create' ? 'create' : operation === 'view' ? 'view' : 'update';
+    const authResult = await this.ensureResourceAction(
+      ctx,
+      meta,
+      action,
+      record ?? undefined,
+      true,
+    );
+    if (!this.isAuthContext(authResult)) return authResult;
+
     const result = await evaluateFormState(meta, {
       operation,
       changed: body.changed,
@@ -312,6 +504,9 @@ export class AdminController {
     const meta = this.requireResource(ctx);
     const { id } = ctx.params;
     const record = await this.resources.show(meta, id);
+    const authResult = await this.ensureResourceAction(ctx, meta, 'view', record, true);
+    if (!this.isAuthContext(authResult)) return authResult;
+
     return ctx.response.json({
       id: String(record.id),
       label: recordSummaryLabel(meta, record),
@@ -320,6 +515,9 @@ export class AdminController {
 
   async relationSearch(ctx: ShamarHttpContext) {
     const meta = this.requireResource(ctx);
+    const authResult = await this.ensureResourceAction(ctx, meta, 'viewAny', undefined, true);
+    if (!this.isAuthContext(authResult)) return authResult;
+
     const fieldName = String(ctx.request.input('field') ?? '');
     const field = meta.fields.find((entry) => entry.name === fieldName);
     if (!field?.relation) {
@@ -359,6 +557,9 @@ export class AdminController {
 
   async relationQuickCreate(ctx: ShamarHttpContext) {
     const meta = this.requireResource(ctx);
+    const authResult = await this.ensureResourceAction(ctx, meta, 'create', undefined, true);
+    if (!this.isAuthContext(authResult)) return authResult;
+
     const body = ctx.request.body() as {
       field?: string;
       name?: string;
@@ -410,6 +611,25 @@ export class AdminController {
       relatedId?: string;
       parentId?: string;
     };
+
+    let parentRecord: Record<string, unknown> | undefined;
+    if (body.parentId) {
+      try {
+        parentRecord = await this.resources.show(meta, String(body.parentId));
+      } catch {
+        parentRecord = undefined;
+      }
+    }
+
+    const authResult = await this.ensureResourceAction(
+      ctx,
+      meta,
+      'update',
+      parentRecord,
+      true,
+    );
+    if (!this.isAuthContext(authResult)) return authResult;
+
     const field = meta.fields.find((entry) => entry.name === String(body.field ?? ''));
     if (!field?.relation || field.relation.kind !== 'hasMany' || !field.relation.foreignKey) {
       return ctx.response.badRequest({ message: 'Attach requires a hasMany relation field' });
@@ -434,7 +654,27 @@ export class AdminController {
     const body = ctx.request.body() as {
       field?: string;
       relatedId?: string;
+      parentId?: string;
     };
+
+    let parentRecord: Record<string, unknown> | undefined;
+    if (body.parentId) {
+      try {
+        parentRecord = await this.resources.show(meta, String(body.parentId));
+      } catch {
+        parentRecord = undefined;
+      }
+    }
+
+    const authResult = await this.ensureResourceAction(
+      ctx,
+      meta,
+      'update',
+      parentRecord,
+      true,
+    );
+    if (!this.isAuthContext(authResult)) return authResult;
+
     const field = meta.fields.find((entry) => entry.name === String(body.field ?? ''));
     if (!field?.relation || field.relation.kind !== 'hasMany' || !field.relation.foreignKey) {
       return ctx.response.badRequest({ message: 'Detach requires a hasMany relation field' });
@@ -453,6 +693,23 @@ export class AdminController {
   async update(ctx: ShamarHttpContext, options?: { asJson?: boolean }) {
     const meta = this.requireResource(ctx);
     const { id } = ctx.params;
+
+    let existing: Record<string, unknown> | null = null;
+    try {
+      existing = await this.resources.show(meta, id);
+    } catch {
+      existing = null;
+    }
+
+    const authResult = await this.ensureResourceAction(
+      ctx,
+      meta,
+      'update',
+      existing ?? undefined,
+      options?.asJson,
+    );
+    if (!this.isAuthContext(authResult)) return authResult;
+
     const data = this.resourcePayload(meta, ctx, 'update');
 
     try {
@@ -464,17 +721,20 @@ export class AdminController {
 
       return this.redirectAfterSave(ctx, meta, String(record.id), 'updated');
     } catch (error) {
-      let record: Record<string, unknown> | null = null;
-      try {
-        record = await this.resources.show(meta, id);
-      } catch {
-        record = { id, ...data };
+      let record: Record<string, unknown> | null = existing;
+      if (!record) {
+        try {
+          record = await this.resources.show(meta, id);
+        } catch {
+          record = { id, ...data };
+        }
       }
       return this.handleFormValidationError(ctx, meta, error, {
         mode: 'edit',
         record,
         data,
         asJson: options?.asJson,
+        authCtx: authResult,
       });
     }
   }
@@ -482,6 +742,16 @@ export class AdminController {
   async destroy(ctx: ShamarHttpContext, options?: { asJson?: boolean }) {
     const meta = this.requireResource(ctx);
     const { id } = ctx.params;
+    const record = await this.resources.show(meta, id);
+    const authResult = await this.ensureResourceAction(
+      ctx,
+      meta,
+      'delete',
+      record,
+      options?.asJson,
+    );
+    if (!this.isAuthContext(authResult)) return authResult;
+
     await this.resources.destroy(meta, id);
 
     if (this.wantsJson(ctx, options?.asJson)) {
@@ -492,8 +762,223 @@ export class AdminController {
     return ctx.response.redirect(`${this.basePath}/${meta.slug}`);
   }
 
+  /** POST /:slug/bulk — bulk delete or custom bulk actions. */
+  async bulk(ctx: ShamarHttpContext, options?: { asJson?: boolean }) {
+    const meta = this.requireResource(ctx);
+    const action = String(ctx.request.input('action') ?? '').trim();
+    if (!action) {
+      return ctx.response.badRequest({ message: 'Missing action.' });
+    }
+
+    const authGate = this.actionAuthGate(meta, action);
+    const authResult = await this.ensureAuthenticated(ctx, options?.asJson);
+    if (!this.isAuthContext(authResult)) return authResult;
+    const authCtx = authResult;
+
+    const ids = this.collectBulkIds(ctx);
+    if (ids.length === 0 && !ctx.request.input('selectAll')) {
+      ctx.session.flash('error', 'No records selected.');
+      return ctx.response.redirect(`${this.basePath}/${meta.slug}`);
+    }
+
+    let records: Record<string, unknown>[] = [];
+    if (ctx.request.input('selectAll')) {
+      const query = this.withPolicyScope(authCtx, meta, normalizeListQuery(this.listQuery(ctx)));
+      const result = await this.resources.index(meta, {
+        ...query,
+        page: 1,
+        perPage: LIST_ALL_RECORDS_PER_PAGE,
+      });
+      records = result.items;
+    } else {
+      for (const id of ids) {
+        try {
+          records.push(await this.resources.show(meta, id));
+        } catch {
+          /* skip missing */
+        }
+      }
+    }
+
+    if (records.length === 0) {
+      ctx.session.flash('error', 'No matching records found.');
+      return ctx.response.redirect(`${this.basePath}/${meta.slug}`);
+    }
+
+    if (action === 'delete') {
+      for (const record of records) {
+        try {
+          assertResourceAccess(
+            this.authorizer,
+            authCtx,
+            this.registry,
+            meta,
+            'delete',
+            record,
+          );
+        } catch (error) {
+          if (error instanceof ForbiddenError) {
+            return respondForbidden(
+              ctx,
+              error.message,
+              options?.asJson || this.wantsJson(ctx),
+              this.basePath,
+            );
+          }
+          throw error;
+        }
+        await this.resources.destroy(meta, String(record.id));
+      }
+      const message =
+        records.length === 1
+          ? `${meta.singularLabel} deleted`
+          : `${records.length} ${meta.label.toLowerCase()} deleted`;
+      if (this.wantsJson(ctx, options?.asJson)) {
+        return ctx.response.json({ message, count: records.length });
+      }
+      ctx.session.flash('success', message);
+      return ctx.response.redirect(`${this.basePath}/${meta.slug}`);
+    }
+
+    return this.runCustomAction(ctx, meta, authCtx, action, records, authGate, options?.asJson);
+  }
+
+  /** POST /:slug/:id/action/:action — single-record custom action. */
+  async recordAction(ctx: ShamarHttpContext, options?: { asJson?: boolean }) {
+    const meta = this.requireResource(ctx);
+    const { id, action: actionParam } = ctx.params;
+    const action = String(actionParam ?? ctx.request.input('action') ?? '').trim();
+    if (!action) {
+      return ctx.response.badRequest({ message: 'Missing action.' });
+    }
+
+    const record = await this.resources.show(meta, id);
+    const authGate = this.actionAuthGate(meta, action);
+    const authResult = await this.ensureResourceAction(
+      ctx,
+      meta,
+      authGate,
+      record,
+      options?.asJson,
+    );
+    if (!this.isAuthContext(authResult)) return authResult;
+
+    if (action === 'delete') {
+      await this.resources.destroy(meta, id);
+      if (this.wantsJson(ctx, options?.asJson)) {
+        return ctx.response.noContent();
+      }
+      ctx.session.flash('success', `${meta.singularLabel} deleted`);
+      return ctx.response.redirect(`${this.basePath}/${meta.slug}`);
+    }
+
+    return this.runCustomAction(
+      ctx,
+      meta,
+      authResult,
+      action,
+      [record],
+      authGate,
+      options?.asJson,
+      String(record.id),
+    );
+  }
+
+  private actionAuthGate(meta: ResourceMeta, action: string): ResourceAction {
+    const config = (meta.actions ?? []).find((entry) => entry.name === action);
+    const gate = config?.ability ?? action;
+    if (gate === 'create') return 'create';
+    if (gate === 'edit' || gate === 'update') return 'update';
+    if (gate === 'view') return 'view';
+    if (gate === 'viewAny') return 'viewAny';
+    return 'delete';
+  }
+
+  private collectBulkIds(ctx: ShamarHttpContext): string[] {
+    const raw = ctx.request.input('ids');
+    if (Array.isArray(raw)) {
+      return raw.map(String).map((id) => id.trim()).filter(Boolean);
+    }
+    if (raw != null && String(raw).trim() !== '') {
+      return [String(raw).trim()];
+    }
+    return [];
+  }
+
+  private async runCustomAction(
+    ctx: ShamarHttpContext,
+    meta: ResourceMeta,
+    authCtx: AuthorizationContext,
+    action: string,
+    records: Record<string, unknown>[],
+    authGate: ResourceAction,
+    asJson?: boolean,
+    redirectId?: string,
+  ) {
+    for (const record of records) {
+      try {
+        assertResourceAccess(this.authorizer, authCtx, this.registry, meta, authGate, record);
+      } catch (error) {
+        if (error instanceof ForbiddenError) {
+          return respondForbidden(
+            ctx,
+            error.message,
+            asJson || this.wantsJson(ctx),
+            this.basePath,
+          );
+        }
+        throw error;
+      }
+    }
+
+    const ResourceClass = this.registry.resourceClass(meta.slug);
+    if (!ResourceClass?.handleAction) {
+      return ctx.response.badRequest({ message: `Unknown action: ${action}` });
+    }
+
+    const result = await ResourceClass.handleAction(action, records, {
+      adapter: this.panel.adapter,
+      meta,
+      userId: authCtx.user?.id ?? null,
+      user: authCtx.user ?? null,
+    });
+
+    if (result == null) {
+      return ctx.response.badRequest({ message: `Unknown action: ${action}` });
+    }
+
+    const message =
+      result.message ??
+      `${meta.singularLabel} ${action}${records.length > 1 ? ` (${records.length})` : ''}`;
+
+    if (this.wantsJson(ctx, asJson)) {
+      return ctx.response.json({ message, count: records.length });
+    }
+
+    ctx.session.flash('success', message);
+    if (redirectId) {
+      return ctx.response.redirect(`${this.basePath}/${meta.slug}/${redirectId}`);
+    }
+    return ctx.response.redirect(`${this.basePath}/${meta.slug}`);
+  }
+
   private requireResource(ctx: ShamarHttpContext): ResourceMeta {
     return this.registry.require(ctx.params.slug);
+  }
+
+  private withPolicyScope(
+    authCtx: AuthorizationContext,
+    meta: ResourceMeta,
+    query: ReturnType<typeof normalizeListQuery>,
+  ): ReturnType<typeof normalizeListQuery> {
+    const ResourceClass = this.registry.resourceClass(meta.slug);
+    if (!ResourceClass) return query;
+    const scope = this.authorizer.listScope(authCtx, ResourceClass);
+    if (!scope) return query;
+    return {
+      ...query,
+      scope: { ...(query.scope ?? {}), ...scope },
+    };
   }
 
   private listQuery(ctx: ShamarHttpContext): ListViewQuery {
@@ -527,6 +1012,11 @@ export class AdminController {
     meta: ResourceMeta,
     recordId: string | number,
     action: 'created' | 'updated',
+    options?: {
+      flashPlainText?: string;
+      flashMessage?: string;
+      authCtx?: AuthorizationContext;
+    },
   ) {
     if (this.isEmbed(ctx)) {
       return ctx.response.redirect(
@@ -534,15 +1024,39 @@ export class AdminController {
       );
     }
 
-    ctx.session.flash(
-      'success',
-      action === 'created'
-        ? `${meta.singularLabel} created`
-        : `${meta.singularLabel} updated`,
-    );
+    if (options?.flashPlainText) {
+      ctx.session.flash(
+        'success',
+        options.flashMessage ??
+          `${meta.singularLabel} created. Copy it now — it will not be shown again:\n${options.flashPlainText}`,
+      );
+      ctx.session.flash('apiKeyPlainText', options.flashPlainText);
+    } else {
+      ctx.session.flash(
+        'success',
+        options?.flashMessage ??
+          (action === 'created'
+            ? `${meta.singularLabel} created`
+            : `${meta.singularLabel} updated`),
+      );
+    }
+
+    const navQuery = recordNavQuery(this.listQuery(ctx));
+
+    // Create-once resources (canEdit false) land on show, not edit.
+    if (action === 'created' && options?.authCtx) {
+      const ResourceClass = this.registry.resourceClass(meta.slug);
+      const editable =
+        !ResourceClass ||
+        ResourceClass.canEdit(options.authCtx.user ?? { id: '', name: '' });
+      if (!editable) {
+        return ctx.response.redirect(
+          `${this.basePath}/${meta.slug}/${recordId}${navQuery}`,
+        );
+      }
+    }
 
     // Stay on the edit form so Ctrl+S / continued editing keeps context.
-    const navQuery = recordNavQuery(this.listQuery(ctx));
     return ctx.response.redirect(
       `${this.basePath}/${meta.slug}/${recordId}/edit${navQuery}`,
     );
@@ -557,19 +1071,26 @@ export class AdminController {
       record: Record<string, unknown> | null;
       data: Record<string, unknown>;
       asJson?: boolean;
+      authCtx?: AuthorizationContext;
     },
   ) {
-    if (!(error instanceof ValidationException)) {
+    if (!isValidationException(error)) {
       throw error;
     }
 
     if (this.wantsJson(ctx, options.asJson)) {
-      return ctx.response.status(422).json({ errors: error.errors });
+      return ctx.response.status(422).json({
+        message: error.message,
+        errors: error.errors,
+      });
     }
+
+    const authCtx = options.authCtx ?? (await this.resolveAuth(ctx));
 
     return this.renderForm(ctx, meta, {
       mode: options.mode,
       record: options.record,
+      authCtx,
       formErrors: error.errors,
       formInitialState: {
         ...this.initialFormState(meta, options.record, options.mode),
@@ -584,10 +1105,12 @@ export class AdminController {
     options: {
       mode: 'create' | 'edit';
       record: Record<string, unknown> | null;
+      authCtx?: AuthorizationContext;
       formErrors?: Record<string, string>;
       formInitialState?: Record<string, unknown>;
     },
   ) {
+    const authCtx = options.authCtx ?? (await this.resolveAuth(ctx));
     const embed = this.isEmbed(ctx);
     const title =
       options.mode === 'create'
@@ -596,9 +1119,18 @@ export class AdminController {
 
     const navQuery = recordNavQuery(this.listQuery(ctx));
     const recordId = options.record?.id;
-    const shell = this.shellOpts(ctx, {
+    const policy = resourcePolicyFlags(
+      this.authorizer,
+      authCtx,
+      this.registry,
       meta,
+      options.record,
+    );
+    const shell = this.shellOpts(ctx, authCtx, {
+      meta,
+      record: options.record,
       pageTitle: title,
+      showDeleteButton: options.mode === 'edit' ? policy.delete : undefined,
       showBackToList: false,
       recordBreadcrumb:
         options.mode === 'create'
@@ -631,6 +1163,8 @@ export class AdminController {
       id: options.record?.id,
       mode: options.mode,
       embed,
+      /** Create-once resources (canEdit false) redirect to show after AJAX create. */
+      redirectAfterCreateToShow: options.mode === 'create' && !policy.update,
       formSchema: formSchemaTree(meta),
       formSections: formSections(meta),
       formLiveFields: formClientFields(meta, {
@@ -748,7 +1282,7 @@ export class AdminController {
   private async buildRelationUiMap(
     meta: ResourceMeta,
     record: Record<string, unknown> | null,
-    operation: 'create' | 'edit',
+    operation: 'create' | 'edit' | 'show',
     state: Record<string, unknown>,
   ): Promise<Record<string, RelationUiConfig>> {
     const map: Record<string, RelationUiConfig> = {};

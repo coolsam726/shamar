@@ -7,6 +7,8 @@ import {
 import { createLucidAdapter } from '@shamar/lucid';
 import { createMongooseAdapter } from '@shamar/mongoose';
 import { defineConfig, type ShamarConfig, type ShamarOrm } from './config.js';
+import { createAuthorizer } from './shamar/auth.js';
+import { PolicyRegistry, type Authorizer } from '@shamar/cherubim';
 import { discoverResources } from './discover.js';
 
 export interface PanelRuntime {
@@ -19,6 +21,7 @@ export interface PanelRuntime {
 
 export interface ShamarRuntime {
   config: ShamarConfig & { panels: PanelConfig[] };
+  authorizer: Authorizer;
   /** @deprecated First panel registry — prefer `panels`. */
   registry: ResourceRegistry;
   /** @deprecated First panel adapter — prefer `panels`. */
@@ -33,6 +36,11 @@ export async function createShamarRuntime(
   options: { appRoot?: string } = {},
 ): Promise<ShamarRuntime> {
   const resolved = defineConfig(config);
+  const policyRegistry = new PolicyRegistry();
+  if (resolved.auth?.policies) {
+    policyRegistry.registerMany(resolved.auth.policies);
+  }
+  const authorizer = createAuthorizer(resolved, policyRegistry);
   const panels: PanelRuntime[] = [];
 
   for (const panelConfig of resolved.panels) {
@@ -43,6 +51,7 @@ export async function createShamarRuntime(
     }
 
     const panelResolved: PanelConfig = { ...panelConfig, resources };
+    policyRegistry.registerResources(resources);
     panels.push({
       id: panelResolved.id,
       path: panelResolved.path,
@@ -60,6 +69,7 @@ export async function createShamarRuntime(
 
   return {
     config: resolved,
+    authorizer,
     registry: first.registry,
     adapter: first.adapter,
     panels,

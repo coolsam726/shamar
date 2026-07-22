@@ -17,6 +17,8 @@ export interface FormFieldClientMeta {
   placeholder?: string;
   disabled?: boolean;
   visible?: boolean;
+  required?: boolean;
+  readonly?: boolean;
   value?: unknown;
   currency?: FieldConfig['currency'];
 }
@@ -24,6 +26,51 @@ export interface FormFieldClientMeta {
 export interface FormStateResponse {
   state: Record<string, unknown>;
   fields: FormFieldClientMeta[];
+}
+
+function fieldClientMeta(
+  field: FieldConfig,
+  state: Record<string, unknown>,
+  record: Record<string, unknown> | null | undefined,
+  operation: FormOperation,
+): FormFieldClientMeta {
+  const ctx = {
+    get state() {
+      return state[field.name];
+    },
+    record: record ?? null,
+    operation,
+    get(name: string) {
+      return state[name];
+    },
+    set(name: string, value: unknown) {
+      state[name] = value;
+    },
+  };
+
+  const visible = resolveClosure(field.visible, ctx, true) ?? true;
+  const disabled = resolveClosure(field.disabled, ctx, false) ?? false;
+  const required = resolveClosure(field.required, ctx, false) ?? false;
+  const readonly = resolveClosure(field.readonly, ctx, false) ?? false;
+  const label = resolveClosure(field.label, ctx) ?? humanizeLabel(field.name);
+  const help = resolveClosure(field.help, ctx);
+  const hint = resolveClosure(field.hint, ctx);
+  const placeholder = resolveClosure(field.placeholder, ctx);
+
+  return {
+    name: field.name,
+    live: field.live,
+    label: typeof label === 'string' ? label : String(label ?? field.name),
+    help: help != null ? String(help) : undefined,
+    hint: hint != null ? String(hint) : undefined,
+    placeholder: placeholder != null ? String(placeholder) : undefined,
+    disabled: Boolean(disabled),
+    visible: Boolean(visible),
+    required: Boolean(required),
+    readonly: Boolean(readonly),
+    value: state[field.name],
+    currency: field.currency,
+  };
 }
 
 /**
@@ -49,42 +96,7 @@ export async function evaluateFormState(
 
   const fields: FormFieldClientMeta[] = meta.fields
     .filter((f) => !f.hiddenOnForm)
-    .map((field) => {
-      const ctx = {
-        get state() {
-          return state[field.name];
-        },
-        record: request.record ?? null,
-        operation: request.operation,
-        get(name: string) {
-          return state[name];
-        },
-        set(name: string, value: unknown) {
-          state[name] = value;
-        },
-      };
-
-      const visible = resolveClosure(field.visible, ctx, true) ?? true;
-      const disabled = resolveClosure(field.disabled, ctx, false) ?? false;
-      const label =
-        resolveClosure(field.label, ctx) ?? humanizeLabel(field.name);
-      const help = resolveClosure(field.help, ctx);
-      const hint = resolveClosure(field.hint, ctx);
-      const placeholder = resolveClosure(field.placeholder, ctx);
-
-      return {
-        name: field.name,
-        live: field.live,
-        label: typeof label === 'string' ? label : String(label ?? field.name),
-        help: help != null ? String(help) : undefined,
-        hint: hint != null ? String(hint) : undefined,
-        placeholder: placeholder != null ? String(placeholder) : undefined,
-        disabled: Boolean(disabled),
-        visible: Boolean(visible),
-        value: state[field.name],
-        currency: field.currency,
-      };
-    });
+    .map((field) => fieldClientMeta(field, state, request.record, request.operation));
 
   return { state, fields };
 }
@@ -94,8 +106,8 @@ export function liveClientFields(meta: ResourceMeta): FormFieldClientMeta[] {
 }
 
 /**
- * Client meta for all form-visible fields (disabled/visible/live).
- * Passed into Alpine so static `.disabled()` is honored without a form-state roundtrip.
+ * Client meta for all form-visible fields (disabled/visible/required/readonly/live).
+ * Passed into Alpine so static closures are honored without a form-state roundtrip.
  */
 export function formClientFields(
   meta: ResourceMeta,
@@ -110,40 +122,5 @@ export function formClientFields(
 
   return meta.fields
     .filter((f) => !f.hiddenOnForm)
-    .map((field) => {
-      const ctx = {
-        get state() {
-          return state[field.name];
-        },
-        record: options.record ?? null,
-        operation,
-        get(name: string) {
-          return state[name];
-        },
-        set(name: string, value: unknown) {
-          state[name] = value;
-        },
-      };
-
-      const visible = resolveClosure(field.visible, ctx, true) ?? true;
-      const disabled = resolveClosure(field.disabled, ctx, false) ?? false;
-      const label =
-        resolveClosure(field.label, ctx) ?? humanizeLabel(field.name);
-      const help = resolveClosure(field.help, ctx);
-      const hint = resolveClosure(field.hint, ctx);
-      const placeholder = resolveClosure(field.placeholder, ctx);
-
-      return {
-        name: field.name,
-        live: field.live,
-        label: typeof label === 'string' ? label : String(label ?? field.name),
-        help: help != null ? String(help) : undefined,
-        hint: hint != null ? String(hint) : undefined,
-        placeholder: placeholder != null ? String(placeholder) : undefined,
-        disabled: Boolean(disabled),
-        visible: Boolean(visible),
-        value: state[field.name],
-        currency: field.currency,
-      };
-    });
+    .map((field) => fieldClientMeta(field, state, options.record, operation));
 }

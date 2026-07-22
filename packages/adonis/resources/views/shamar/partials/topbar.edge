@@ -100,6 +100,14 @@
         </div>
         <div class="py-1 text-sm">
           <a href="{{ basePath }}" class="block px-4 py-1.5 text-body hover:bg-surface-hover hover:text-heading">Admin</a>
+          @if(logoutPath)
+            <form method="post" action="{{ logoutPath }}" class="block">
+              @include('shamar::partials/csrf')
+              <button type="submit" class="w-full text-left px-4 py-1.5 text-body hover:bg-surface-hover hover:text-heading">
+                Sign out
+              </button>
+            </form>
+          @endif
         </div>
       </div>
     </div>

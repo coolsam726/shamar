@@ -39,6 +39,7 @@
           <button
             type="button"
             class="rounded-md p-1.5 text-body-subtle hover:bg-surface-hover hover:text-heading"
+            x-show="promptMode !== 'secret'"
             @click="dismissDialog()"
             title="Close"
             aria-label="Close"
@@ -65,11 +66,24 @@
               }"
               aria-hidden="true"
             >
-              <svg x-show="promptVariant === 'danger' || promptVariant === 'warning'" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <svg x-show="promptMode !== 'secret' && (promptVariant === 'danger' || promptVariant === 'warning')" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+              </svg>
+              <svg x-show="promptMode === 'secret'" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z"/>
               </svg>
             </div>
             <p class="text-sm text-body" x-text="confirmMessage"></p>
+          </div>
+
+          <div x-show="promptMode === 'secret' && secretText" class="shamar-secret-reveal">
+            <code class="shamar-secret-reveal__value" x-text="secretText"></code>
+            <button
+              type="button"
+              class="shamar-secret-reveal__copy"
+              @click="copySecret()"
+              x-text="secretCopied ? 'Copied' : 'Copy'"
+            >Copy</button>
           </div>
         </div>
 
@@ -82,7 +96,7 @@
         <button
           type="button"
           class="rounded-md px-4 py-2 text-sm hover:bg-surface-hover"
-          x-show="promptMode !== 'alert'"
+          x-show="promptMode !== 'alert' && promptMode !== 'secret'"
           @click="close()"
           x-text="cancelLabel"
         >Cancel</button>

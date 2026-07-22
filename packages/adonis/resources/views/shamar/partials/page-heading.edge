@@ -75,11 +75,13 @@
             data-shamar-skip-autosave
             class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-default text-body rounded-md hover:bg-surface-hover transition"
           >Cancel</a>
+          @if(showDeleteButton)
           <button
             type="button"
             class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-default text-fg-danger rounded-md hover:bg-danger-soft transition"
             @click="$dispatch('shamar-open-confirm', { variant: 'danger', mode: 'confirm', title: 'Delete {{ resource.singularLabel }}?', message: 'This action cannot be undone.', confirmLabel: 'Delete', action: '{{ basePath }}/{{ resource.slug }}/{{ record.id }}/delete' })"
           >Delete</button>
+          @endif
         @else
           <a
             href="{{ basePath }}/{{ resource.slug }}"
@@ -89,13 +91,29 @@
           >Cancel</a>
         @endif
       @elseif(mode === 'show')
+        @if(showEditButton !== false && showEditButton)
         <a href="{{ basePath }}/{{ resource.slug }}/{{ record.id }}/edit{{ recordPager ? recordPager.navQuery : '' }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-md bg-fg-brand hover:opacity-90 transition">Edit</a>
+        @endif
+        @if(recordActions)
+          @each(action in recordActions)
+            @if(action.name !== 'view' && action.name !== 'edit' && action.name !== 'delete')
+              <button
+                type="button"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-default rounded-md transition
+                  {{ action.color === 'danger' ? 'text-fg-danger hover:bg-danger-soft' : 'text-body hover:bg-surface-hover' }}"
+                @click="$dispatch('shamar-open-confirm', { variant: {{ jsonAttr(action.color === 'danger' ? 'danger' : 'primary') }}, mode: 'confirm', title: {{ jsonAttr(action.label) }}, message: {{ jsonAttr(action.confirm || 'Are you sure?') }}, confirmLabel: {{ jsonAttr(action.label) }}, action: '{{ basePath }}/{{ resource.slug }}/{{ record.id }}/action/{{ action.name }}' })"
+              >{{ action.label }}</button>
+            @endif
+          @endeach
+        @endif
         <a href="{{ basePath }}/{{ resource.slug }}" data-shamar-list-href="{{ resource.slug }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-default text-body rounded-md hover:bg-surface-hover transition">Back to list</a>
+        @if(showDeleteButton)
         <button
           type="button"
           class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-default text-fg-danger rounded-md hover:bg-danger-soft transition"
           @click="$dispatch('shamar-open-confirm', { variant: 'danger', mode: 'confirm', title: 'Delete {{ resource.singularLabel }}?', message: 'This action cannot be undone.', confirmLabel: 'Delete', action: '{{ basePath }}/{{ resource.slug }}/{{ record.id }}/delete' })"
         >Delete</button>
+        @endif
       @else
         @if(showEditButton)
           <a href="{{ basePath }}/{{ resource.slug }}/{{ id }}/edit" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-md bg-fg-brand hover:opacity-90 transition-opacity">Edit</a>

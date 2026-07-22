@@ -16,14 +16,12 @@
 @let(showStackedPrefix = hasTextPrefix && !prefixInline)
 @let(showStackedSuffix = hasTextSuffix && !suffixInline)
 @let(useGroup = showInlinePrefix || showInlineSuffix)
-<div class="shamar-field {{ alignmentTextClass(field.alignment) }}" data-field-type="{{ field.type }}">
+<div class="shamar-field {{ alignmentTextClass(field.alignment) }}" data-field-type="{{ field.type }}" data-field-name="{{ field.name }}">
   @if(!((field.type === 'boolean' || field.type === 'checkbox') && field.inline))
     <div class="shamar-field__label-row">
       <label for="field-{{ field.name }}" class="shamar-field__label">
         <span x-text='fieldLabel({{ jsonAttr(field.name) }}, {{ jsonAttr(fieldLabelText) }})'>{{ fieldLabelText }}</span>
-        @if(field.required)
-          <span class="shamar-field__required">*</span>
-        @endif
+        <span class="shamar-field__required" x-show="isRequired('{{ field.name }}')" x-cloak>*</span>
       </label>
       @if(field.hint)
         <span
@@ -237,12 +235,12 @@
       <select
         id="field-{{ field.name }}"
         name="{{ field.name }}{{ field.multiple ? '[]' : '' }}"
-        {{ field.required ? 'required' : '' }}
         {{ field.multiple ? 'multiple' : '' }}
         {{{ fieldInputAttrs(field) }}}
         x-model="state['{{ field.name }}']"
         @change="onFieldChange('{{ field.name }}')"
         :disabled="isDisabled('{{ field.name }}')"
+        :required="isRequired('{{ field.name }}')"
         class="shamar-select{{ formErrors && formErrors[field.name] ? ' is-invalid' : '' }}"
       >
         @if(!field.multiple && field.selectablePlaceholder !== false)

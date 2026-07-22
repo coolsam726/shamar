@@ -12,3 +12,12 @@ export interface ShamarHttpContext extends HttpContext {
     };
   };
 }
+
+export type AuthCapableContext = ShamarHttpContext & {
+  auth?: {
+    use(guard: string): {
+      check(): Promise<boolean>;
+      user?: Record<string, unknown>;
+    };
+  };
+};

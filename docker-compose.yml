@@ -64,6 +64,8 @@ services:
       - ./apps/playground/adonisrc.ts:/workspace/apps/playground/adonisrc.ts
       - ./packages/core/src:/workspace/packages/core/src
       - ./packages/core/dist:/workspace/packages/core/dist
+      - ./packages/cherubim/src:/workspace/packages/cherubim/src
+      - ./packages/cherubim/dist:/workspace/packages/cherubim/dist
       - ./packages/adonis/src:/workspace/packages/adonis/src
       - ./packages/adonis/dist:/workspace/packages/adonis/dist
       - ./packages/adonis/resources:/workspace/packages/adonis/resources

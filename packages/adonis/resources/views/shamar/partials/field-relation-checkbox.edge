@@ -4,8 +4,10 @@
   data-shamar-m2m-config="{{ jsonAttr(relationConfig) }}"
   x-data="shamarM2mCheckboxFromEl($el)"
 >
-  <template x-for="item in selected" :key="'h-' + item.id">
-    <input type="hidden" name="{{ relationConfig.name }}[]" :value="item.id" />
+  <template x-if="!readonly">
+    <template x-for="item in selected" :key="'h-' + itemValue(item)">
+      <input type="hidden" name="{{ relationConfig.name }}[]" :value="itemValue(item)" />
+    </template>
   </template>
 
   <div class="shamar-m2m-checkboxes__toolbar mb-2 flex items-center gap-2" x-show="!readonly">
@@ -52,16 +54,16 @@
               <label
                 class="shamar-m2m-checkboxes__item flex items-center gap-2 rounded px-1.5 py-1 text-sm"
                 :class="{
-                  'opacity-50 cursor-not-allowed': isCovered(item) && !isSelected(item.id),
-                  'cursor-pointer hover:bg-neutral-secondary': !readonly && !(isCovered(item) && !isSelected(item.id)),
+                  'opacity-50 cursor-not-allowed': isCovered(item) && !isSelected(item),
+                  'cursor-pointer hover:bg-neutral-secondary': !readonly && !(isCovered(item) && !isSelected(item)),
                   'opacity-60': readonly
                 }"
               >
                 <input
                   type="checkbox"
                   class="shamar-checkbox__input"
-                  :checked="isSelected(item.id)"
-                  :disabled="readonly || (isCovered(item) && !isSelected(item.id))"
+                  :checked="isSelected(item)"
+                  :disabled="readonly || (isCovered(item) && !isSelected(item))"
                   @change="toggle(item)"
                 />
                 <span class="min-w-0 truncate text-body" x-text="itemDisplay(item)"></span>
@@ -82,16 +84,16 @@
         <label
           class="shamar-m2m-checkboxes__item flex items-center gap-2 rounded px-2 py-1.5 text-sm"
           :class="{
-            'opacity-50 cursor-not-allowed': isCovered(item) && !isSelected(item.id),
-            'cursor-pointer hover:bg-neutral-secondary': !readonly && !(isCovered(item) && !isSelected(item.id)),
+            'opacity-50 cursor-not-allowed': isCovered(item) && !isSelected(item),
+            'cursor-pointer hover:bg-neutral-secondary': !readonly && !(isCovered(item) && !isSelected(item)),
             'opacity-60': readonly
           }"
         >
           <input
             type="checkbox"
             class="shamar-checkbox__input"
-            :checked="isSelected(item.id)"
-            :disabled="readonly || (isCovered(item) && !isSelected(item.id))"
+            :checked="isSelected(item)"
+            :disabled="readonly || (isCovered(item) && !isSelected(item))"
             @change="toggle(item)"
           />
           <span class="min-w-0 truncate text-body" x-text="itemDisplay(item)"></span>

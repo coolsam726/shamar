@@ -6,6 +6,9 @@ export interface UserAttrs {
   fullName?: string | null
   email: string
   password: string
+  /** ManyToMany Role ids. */
+  roleIds?: string[]
+  permissions?: string[]
 }
 
 async function hasher() {
@@ -20,6 +23,8 @@ const userSchema = new Schema<UserAttrs>(
     fullName: { type: String, default: null, trim: true },
     email: { type: String, required: true, unique: true, trim: true, lowercase: true },
     password: { type: String, required: true, select: false },
+    roleIds: { type: [String], default: [], index: true },
+    permissions: { type: [String], default: [] },
   },
   {
     timestamps: true,

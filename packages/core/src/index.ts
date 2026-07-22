@@ -14,3 +14,5 @@ export * from './currency.js';
 export * from './alignment.js';
 export * from './relation.js';
 export * from './record-value.js';
+export * from './permissions.js';
+export * from './policy-types.js';

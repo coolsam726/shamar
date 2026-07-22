@@ -14,11 +14,80 @@
   <div class="shamar-card rounded-xl overflow-hidden">
     @include('shamar::partials/list-toolbar')
 
+    @if(bulkActions && bulkActions.length)
+      <div
+        x-show="selected.length || selectAllMatching"
+        x-cloak
+        class="shamar-bulk-bar"
+        @keydown.escape.window="if (bulkOpen) bulkOpen = false"
+      >
+        <div class="shamar-bulk-menu" @click.outside="bulkOpen = false">
+          <button
+            type="button"
+            class="shamar-bulk-menu__trigger"
+            :aria-expanded="bulkOpen.toString()"
+            aria-haspopup="menu"
+            @click="bulkOpen = !bulkOpen"
+          >
+            Bulk actions
+            <svg class="shamar-bulk-menu__chevron" :class="{ 'is-open': bulkOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+            </svg>
+          </button>
+          <div
+            x-show="bulkOpen"
+            x-cloak
+            x-transition.opacity.duration.120ms
+            class="shamar-bulk-menu__panel"
+            role="menu"
+            aria-label="Bulk actions"
+          >
+            @each(action in bulkActions)
+              <button
+                type="button"
+                role="menuitem"
+                class="shamar-bulk-menu__item {{ action.color === 'danger' ? 'is-danger' : '' }}"
+                @click="bulkOpen = false; submitBulk({{ jsonAttr(`${basePath}/${resource.slug}/bulk`) }}, {{ jsonAttr(action.name) }}, {{ jsonAttr(action.confirm || '') }})"
+              >{{ action.label }}</button>
+            @endeach
+          </div>
+        </div>
+
+        <div class="shamar-bulk-bar__meta">
+          <span class="shamar-bulk-bar__count">
+            <span x-text="selectAllMatching ? total : selected.length"></span>
+            selected
+          </span>
+          <button
+            type="button"
+            class="shamar-bulk-bar__link"
+            x-show="pageFullySelected && !selectAllMatching && total > selected.length"
+            @click="selectAllInResultSet()"
+          >Select all <span x-text="total"></span></button>
+          <button
+            type="button"
+            class="shamar-bulk-bar__link"
+            @click="clearSelection(); bulkOpen = false"
+          >Clear</button>
+        </div>
+      </div>
+    @endif
+
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead class="bg-surface-header">
           <tr>
-            <th class="w-9 px-3 py-3" aria-hidden="true"></th>
+            <th class="w-9 px-3 py-3">
+              @if(bulkActions && bulkActions.length)
+                <input
+                  type="checkbox"
+                  class="rounded border-default"
+                  :checked="pageFullySelected"
+                  @change="toggleAll($event.target.checked)"
+                  aria-label="Select all on page"
+                />
+              @endif
+            </th>
             @each(column in resource.columns)
               <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-body-subtle whitespace-nowrap {{ resolveAlignmentClass(column) }}">
                 @if(column.sortable !== false)
@@ -55,7 +124,11 @@
   </div>
 
   @if(pagination)
-    @include('shamar::partials/pagination')
+    <div data-shamar-list-pagination>
+      @include('shamar::partials/pagination')
+    </div>
+  @else
+    <div data-shamar-list-pagination hidden></div>
   @endif
 </section>
 

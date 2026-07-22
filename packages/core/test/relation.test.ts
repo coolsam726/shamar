@@ -1,7 +1,9 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  AbilitiesAssignment,
   CheckboxList,
+  PermissionsAssignment,
   Radio,
   RelationTable,
   Select,
@@ -59,6 +61,38 @@ describe('relationship builders', () => {
     assert.equal(field.relation?.kind, 'manyToMany');
     assert.equal(field.relation?.widget, 'checkboxList');
     assert.equal(field.relation?.createOption, true);
+  });
+
+  it('builds PermissionsAssignment with Loom defaults', () => {
+    const field = PermissionsAssignment.make().build();
+
+    assert.equal(field.name, 'permissionIds');
+    assert.equal(field.type, 'checkboxList');
+    assert.equal(field.label, 'Permissions');
+    assert.equal(field.multiple, true);
+    assert.equal(field.columnSpan, 'full');
+    assert.equal(field.checkboxColumns, 4);
+    assert.equal(field.checkboxFramed, false);
+    assert.equal(field.cascadeWildcards, true);
+    assert.equal(field.groupBy, 'resource');
+    assert.equal(field.relation?.resource, 'permissions');
+    assert.equal(field.relation?.labelField, 'label');
+    assert.equal(field.relation?.kind, 'manyToMany');
+    assert.equal(field.relation?.widget, 'checkboxList');
+    assert.equal(field.relation?.cascadeWildcards, true);
+    assert.equal(field.relation?.groupBy, 'resource');
+  });
+
+  it('builds AbilitiesAssignment with name valueAttribute', () => {
+    const field = AbilitiesAssignment.make().build();
+
+    assert.equal(field.name, 'abilities');
+    assert.equal(field.type, 'checkboxList');
+    assert.equal(field.label, 'Abilities');
+    assert.equal(field.relation?.resource, 'permissions');
+    assert.equal(field.relation?.valueAttribute, 'name');
+    assert.equal(field.relation?.cascadeWildcards, true);
+    assert.equal(field.relation?.groupBy, 'resource');
   });
 
   it('builds RelationTable hasMany as non-dehydrated', () => {

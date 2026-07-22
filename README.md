@@ -161,7 +161,7 @@ static table() {
 | `ListRecords` / `CreateRecord` | Adonis controllers + Edge pages |
 | `Action` / `BulkAction` | `Action.header()` / `Action.bulk()` |
 | `RelationManager` | `Relation.field()` + relation widgets (phase 2) |
-| `Policy` | `Resource.policy` + `can*` hooks |
+| `Policy` | `Resource.policy` class + `Policy` base (Loom / Laravel) |
 | Panel navigation | `navigationGroup`, `navigationSort` |
 | Live form fields | `.live()` + `.afterStateUpdated()` → `POST …/form-state` |
 | Multi-tenancy | `companyScoped` + session company switcher (phase 2) |

@@ -13,6 +13,7 @@ RUN apt-get update \
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/playground/package.json ./apps/playground/
 COPY packages/core/package.json ./packages/core/
+COPY packages/cherubim/package.json ./packages/cherubim/
 COPY packages/adonis/package.json ./packages/adonis/
 COPY packages/lucid/package.json ./packages/lucid/
 COPY packages/mongoose/package.json ./packages/mongoose/

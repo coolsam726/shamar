@@ -11,12 +11,12 @@ import {
   TextColumn,
   TextEntry,
   IconEntry,
-  type ShamarUser,
 } from '@shamar/core'
 import LockedItem from '#models/locked_item'
+import LockedItemPolicy from '#policies/locked_item_policy'
 
 /**
- * Demos: canEdit / canDelete policy hooks based on `locked`.
+ * Demos: `LockedItemPolicy` denies edit/delete when `locked` is true.
  */
 export default class LockedItemResource extends Resource {
   static override model = LockedItem
@@ -26,21 +26,14 @@ export default class LockedItemResource extends Resource {
   static override recordTitleField = 'title'
   static override navigationGroup = 'Settings'
   static override navigationSort = 20
-
-  static override canEdit(_user: ShamarUser, record?: Record<string, unknown>): boolean {
-    return !record?.locked
-  }
-
-  static override canDelete(_user: ShamarUser, record?: Record<string, unknown>): boolean {
-    return !record?.locked
-  }
+  static override policy = LockedItemPolicy
 
   static override form() {
     return form((f) => {
       f.schema([
         Callout.make('Policy demo')
           .danger()
-          .description('When Locked is on, edit and delete are denied by canEdit/canDelete.'),
+          .description('When Locked is on, edit and delete are denied by LockedItemPolicy.'),
         Section.make('Item')
           .columns(2)
           .schema([

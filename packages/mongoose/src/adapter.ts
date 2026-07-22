@@ -337,9 +337,19 @@ async function searchMongoose(
 
   return rows.map((row) => {
     const record = finalizeRecord(row);
-    return {
+    const result: RelationSearchResult = {
       id: String(record.id ?? ''),
       label: String(record[titleAttribute] ?? record.id ?? ''),
     };
+    if (record.name != null && record.name !== '') {
+      result.name = String(record.name);
+    }
+    if (record.resource != null && record.resource !== '') {
+      result.group = String(record.resource);
+    }
+    if (record.ability != null && record.ability !== '') {
+      result.ability = String(record.ability);
+    }
+    return result;
   });
 }

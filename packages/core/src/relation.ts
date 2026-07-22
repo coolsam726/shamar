@@ -12,6 +12,12 @@ export interface RelationshipOptions {
   createOption?: boolean;
   createAndEditOption?: boolean;
   preloadLimit?: number;
+  groupBy?: string;
+  checkboxColumns?: number;
+  checkboxFramed?: boolean;
+  cascadeWildcards?: boolean;
+  /** Dehydrated value attribute (default `id`). Use `name` for ability keys. */
+  valueAttribute?: string;
 }
 
 /** Default widget for each relation kind. */
@@ -46,6 +52,11 @@ export function buildRelationConfig(
     createOption: options.createOption,
     createAndEditOption: options.createAndEditOption,
     preloadLimit: options.preloadLimit,
+    groupBy: options.groupBy,
+    checkboxColumns: options.checkboxColumns,
+    checkboxFramed: options.checkboxFramed,
+    cascadeWildcards: options.cascadeWildcards,
+    valueAttribute: options.valueAttribute,
   };
 }
 

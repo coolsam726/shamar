@@ -47,4 +47,6 @@ router.use([
 export const middleware = router.named({
   guest: () => import('#middleware/guest_middleware'),
   auth: () => import('#middleware/auth_middleware'),
+  /** Optional — use on custom routes; /api/shamar already uses protectApi. */
+  shamarApiKey: () => import('@shamar/adonis/require_api_key_middleware'),
 })

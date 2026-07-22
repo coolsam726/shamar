@@ -37,7 +37,7 @@ export async function registerShamarRoutes(
   const primary = runtime.panels[0]!;
   const apiHandler = (action: AdminAction) => {
     return async (ctx: HttpContext) => {
-      const controller = new AdminController(primary, runtime.config);
+      const controller = new AdminController(primary, runtime.config, runtime.authorizer);
       const method = controller[action] as (
         context: ShamarHttpContext,
         options?: { asJson?: boolean },
@@ -55,6 +55,13 @@ export async function registerShamarRoutes(
   });
 
   api.prefix(apiPrefix);
+
+  if (runtime.config.auth?.apiKeys?.protectApi) {
+    const { createRequireApiKeyMiddleware } = await import(
+      './middleware/require_api_key_middleware.js'
+    );
+    api.use(createRequireApiKeyMiddleware(runtime.config));
+  }
 }
 
 function registerPanelRoutes(
@@ -68,7 +75,7 @@ function registerPanelRoutes(
 
   const handler = (action: AdminAction, asJson = false) => {
     return async (ctx: HttpContext) => {
-      const controller = new AdminController(panel, runtime.config);
+      const controller = new AdminController(panel, runtime.config, runtime.authorizer);
       const method = controller[action] as (
         context: ShamarHttpContext,
         options?: { asJson?: boolean },
@@ -113,10 +120,14 @@ function registerPanelRoutes(
       .post('/:slug/relation-detach', handler('relationDetach', true))
       .as(`${routePrefix}.resources.relationDetach`);
     router.post('/:slug', handler('store')).as(`${routePrefix}.resources.store`);
+    router.post('/:slug/bulk', handler('bulk')).as(`${routePrefix}.resources.bulk`);
     router.get('/:slug/:id/edit', handler('edit')).as(`${routePrefix}.resources.edit`);
     router
       .get('/:slug/:id/summary', handler('summary', true))
       .as(`${routePrefix}.resources.summary`);
+    router
+      .post('/:slug/:id/action/:action', handler('recordAction'))
+      .as(`${routePrefix}.resources.recordAction`);
     router.post('/:slug/:id/delete', handler('destroy')).as(`${routePrefix}.resources.destroy`);
     router.post('/:slug/:id', handler('update')).as(`${routePrefix}.resources.update`);
     router.put('/:slug/:id', handler('update')).as(`${routePrefix}.resources.update.put`);

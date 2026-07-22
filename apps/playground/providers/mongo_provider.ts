@@ -72,14 +72,22 @@ export default class MongoProvider {
   }
 
   private async seedAdminUser() {
-    const count = await User.countDocuments()
-    if (count > 0) return
+    const existing = await User.find({})
+    if (existing.length === 0) {
+      await User.create({
+        fullName: 'Admin User',
+        email: 'admin@example.com',
+        password: 'password',
+        permissions: [],
+      })
 
-    await User.create({
-      fullName: 'Admin User',
-      email: 'admin@example.com',
-      password: 'password',
-    })
+      await User.create({
+        fullName: 'Viewer User',
+        email: 'viewer@example.com',
+        password: 'password',
+        permissions: [],
+      })
+    }
   }
 
   private async seedCategories() {

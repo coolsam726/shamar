@@ -36,6 +36,11 @@
       @else
         —
       @endif
+    @elseif(relationUi && relationUi[field.name] && relationUi[field.name].widget === 'checkboxList')
+      @!component('shamar::partials/field-relation-checkbox', {
+        field: field,
+        relationConfig: relationUi[field.name],
+      })
     @elseif(field.copyable)
       <span class="shamar-copyable" x-data>
         <span>{{ detailValue(record, field) }}</span>

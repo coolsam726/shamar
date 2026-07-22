@@ -31,6 +31,11 @@ export default class ShamarProvider {
       return runtime.adapter;
     });
 
+    this.app.container.singleton('shamar.authorizer', async () => {
+      const runtime = await this.app.container.make('shamar.runtime');
+      return runtime.authorizer;
+    });
+
     this.app.container.singleton('shamar.panels', async () => {
       const runtime = await this.app.container.make('shamar.runtime');
       return runtime.panels;

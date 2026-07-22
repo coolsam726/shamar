@@ -97,7 +97,7 @@ export abstract class FormComponent {
     return this;
   }
 
-  required(value = true): this {
+  required(value: BoolOrClosure = true): this {
     this.config.required = value;
     return this;
   }
@@ -139,7 +139,7 @@ export abstract class FormComponent {
     return this;
   }
 
-  readonly(value = true): this {
+  readonly(value: BoolOrClosure = true): this {
     this.config.readonly = value;
     return this;
   }
@@ -151,6 +151,20 @@ export abstract class FormComponent {
 
   visible(value: BoolOrClosure = true): this {
     this.config.visible = value;
+    return this;
+  }
+
+  /**
+   * Hide when true (inverse of {@link visible}).
+   * Closures receive the same FieldContext as `visible` / `required`.
+   */
+  hidden(value: BoolOrClosure = true): this {
+    if (typeof value === 'function') {
+      const predicate = value;
+      this.config.visible = (ctx) => !predicate(ctx);
+    } else {
+      this.config.visible = !value;
+    }
     return this;
   }
 
@@ -603,7 +617,7 @@ export class CheckboxList extends FormComponent {
     return new CheckboxList(name);
   }
 
-  private constructor(name: string) {
+  protected constructor(name: string) {
     super(name, 'checkboxList');
     this.config.options = [];
     this.config.multiple = true;
@@ -635,6 +649,82 @@ export class CheckboxList extends FormComponent {
   createAndEditOption(value = true): this {
     this.setCreateAndEditOption(value);
     return this;
+  }
+
+  checkboxColumns(count: number): this {
+    this.config.checkboxColumns = count;
+    if (this.config.relation) this.config.relation.checkboxColumns = count;
+    return this;
+  }
+
+  checkboxFramed(value = true): this {
+    this.config.checkboxFramed = value;
+    if (this.config.relation) this.config.relation.checkboxFramed = value;
+    return this;
+  }
+
+  cascadeWildcards(value = true): this {
+    this.config.cascadeWildcards = value;
+    if (this.config.relation) this.config.relation.cascadeWildcards = value;
+    return this;
+  }
+
+  groupBy(field: string): this {
+    this.config.groupBy = field;
+    if (this.config.relation) this.config.relation.groupBy = field;
+    return this;
+  }
+}
+
+/**
+ * Loom-style permission assignment for Role forms (ORM-agnostic).
+ *
+ * Requires a registered `permissions` resource whose records expose
+ * `name`, `resource`, `ability`, and `label`. Adapters enrich relation
+ * search with `name` / `group` / `ability` for grouping and wildcard cascade.
+ *
+ * @example
+ * PermissionsAssignment.make('permissionIds')
+ * PermissionsAssignment.make('permissionIds').relationship('perms', 'name')
+ */
+export class PermissionsAssignment extends CheckboxList {
+  static override make(name = 'permissionIds'): PermissionsAssignment {
+    return new PermissionsAssignment(name);
+  }
+
+  private constructor(name: string) {
+    super(name);
+    this.label('Permissions')
+      .relationship('permissions', 'label')
+      .checkboxColumns(4)
+      .groupBy('resource')
+      .cascadeWildcards()
+      .checkboxFramed(false)
+      .columnSpanFull();
+  }
+}
+
+/**
+ * Catalog-backed ability picker — same UI as {@link PermissionsAssignment},
+ * but dehydrates permission **names** (`products:view`, `*`) instead of ids.
+ *
+ * @example
+ * AbilitiesAssignment.make('abilities')
+ */
+export class AbilitiesAssignment extends CheckboxList {
+  static override make(name = 'abilities'): AbilitiesAssignment {
+    return new AbilitiesAssignment(name);
+  }
+
+  private constructor(name: string) {
+    super(name);
+    this.label('Abilities')
+      .relationship('permissions', 'label', { valueAttribute: 'name' })
+      .checkboxColumns(4)
+      .groupBy('resource')
+      .cascadeWildcards()
+      .checkboxFramed(false)
+      .columnSpanFull();
   }
 }
 

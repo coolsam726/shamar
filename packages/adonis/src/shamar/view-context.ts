@@ -1,5 +1,8 @@
 import type { ResourceMeta, ResourceRegistry } from '@shamar/core';
+import type { AuthorizationContext } from '@shamar/cherubim';
+import type { Authorizer } from '@shamar/cherubim';
 import type { ShamarConfig } from '../config.js';
+import { canViewResource } from './auth.js';
 import { resolveBranding, type ShamarBranding } from './branding.js';
 import { menuLayoutContext, type NavigationGroup, type RecordBreadcrumbOptions } from './menu.js';
 import {
@@ -22,18 +25,34 @@ export interface AdminShellContext {
   breadcrumbs: ReturnType<typeof menuLayoutContext>['breadcrumbs'];
   user: { name: string; email?: string };
   userInitial: string;
+  logoutPath?: string;
   showCreateButton?: boolean;
   showEditButton?: boolean;
+  showDeleteButton?: boolean;
   showBackToList?: boolean;
   flash?: { type: string; message: string };
   flashJson?: string;
 }
 
-export function navigationGroups(registry: ResourceRegistry): NavigationGroup[] {
-  return registry.navigationGroups().map((group) => ({
-    name: group.name,
-    items: group.items,
-  }));
+export function navigationGroups(
+  registry: ResourceRegistry,
+  options?: {
+    authorizer?: Authorizer;
+    authCtx?: AuthorizationContext;
+  },
+): NavigationGroup[] {
+  const canView = (slug: string) => {
+    if (!options?.authorizer || !options.authCtx) return true;
+    return canViewResource(options.authorizer, options.authCtx, registry, slug);
+  };
+
+  return registry
+    .navigationGroups()
+    .map((group) => ({
+      name: group.name,
+      items: group.items.filter((item) => canView(item.slug)),
+    }))
+    .filter((group) => group.items.length > 0);
 }
 
 export function buildShellContext(options: {
@@ -43,14 +62,20 @@ export function buildShellContext(options: {
   pageTitle: string;
   basePath?: string;
   branding?: ShamarConfig['branding'];
+  authorizer?: Authorizer;
+  authCtx?: AuthorizationContext;
   showCreateButton?: boolean;
   showEditButton?: boolean;
+  showDeleteButton?: boolean;
   showBackToList?: boolean;
   flash?: { type: string; message: string };
   recordBreadcrumb?: RecordBreadcrumbOptions;
 }): AdminShellContext {
   const basePath = options.basePath ?? options.config.path ?? '/admin';
-  const groups = navigationGroups(options.registry);
+  const groups = navigationGroups(options.registry, {
+    authorizer: options.authorizer,
+    authCtx: options.authCtx,
+  });
   const menu = menuLayoutContext(
     groups,
     basePath,
@@ -60,7 +85,8 @@ export function buildShellContext(options: {
   );
   const brandingInput = options.branding ?? options.config.branding;
   const branding = resolveBranding(brandingInput);
-  const userName = brandingInput?.name ?? branding.brandName;
+  const authUser = options.authCtx?.user;
+  const userName = authUser?.name ?? brandingInput?.name ?? branding.brandName;
   const flash = options.flash;
   const flashJson = flash ? JSON.stringify(flash).replace(/</g, '\\u003c') : undefined;
 
@@ -74,10 +100,15 @@ export function buildShellContext(options: {
     menuActiveRoot: menu.menuActiveRoot,
     menuSecondary: menu.menuSecondary,
     breadcrumbs: menu.breadcrumbs,
-    user: { name: userName },
+    user: {
+      name: userName,
+      email: authUser?.email,
+    },
     userInitial: userName.slice(0, 2).toUpperCase(),
+    logoutPath: options.config.auth?.logoutPath,
     showCreateButton: options.showCreateButton,
     showEditButton: options.showEditButton,
+    showDeleteButton: options.showDeleteButton,
     showBackToList: options.showBackToList,
     flash,
     flashJson,

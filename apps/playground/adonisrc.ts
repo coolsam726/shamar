@@ -55,6 +55,7 @@ export default defineConfig({
     () => import('@adonisjs/auth/auth_provider'),
     () => import('#providers/mongo_provider'),
     () => import('@shamar/adonis/provider'),
+    () => import('#providers/rbac_provider'),
   ],
 
   /*

@@ -34,6 +34,9 @@ importers:
       '@shamar/adonis':
         specifier: workspace:*
         version: link:../../packages/adonis
+      '@shamar/cherubim':
+        specifier: workspace:*
+        version: link:../../packages/cherubim
       '@shamar/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -128,6 +131,9 @@ importers:
       '@adonisjs/lucid':
         specifier: '>=21.0.0'
         version: 22.4.2(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@adonisjs/core@7.3.5(@adonisjs/assembler@8.4.0(typescript@5.9.3))(@vinejs/vine@4.4.0)(edge.js@6.5.1)(pino-pretty@13.1.3)(youch@4.1.1))(@vinejs/vine@4.4.0)(luxon@3.7.2)
+      '@shamar/cherubim':
+        specifier: workspace:*
+        version: link:../cherubim
       '@shamar/core':
         specifier: workspace:*
         version: link:../core
@@ -150,6 +156,22 @@ importers:
       edge.js:
         specifier: ^6.5.1
         version: 6.5.1
+      tsx:
+        specifier: ^4.20.0
+        version: 4.23.1
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+
+  packages/cherubim:
+    dependencies:
+      '@shamar/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.20.1
       tsx:
         specifier: ^4.20.0
         version: 4.23.1
