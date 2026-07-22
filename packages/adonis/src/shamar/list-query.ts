@@ -380,6 +380,10 @@ export function formInputType(field: { type: string }): string {
       return 'date';
     case 'datetime':
       return 'datetime-local';
+    case 'color':
+      return 'color';
+    case 'hidden':
+      return 'hidden';
     default:
       return 'text';
   }
@@ -401,6 +405,11 @@ export function formSections(meta: ResourceMeta) {
       icon: section.icon,
       card: section.card ?? ((section.kind ?? 'section') === 'section'),
       columns: section.columns ?? 2,
+      collapsible: section.collapsible,
+      collapsed: section.collapsed,
+      dense: section.dense,
+      gap: section.gap,
+      extraAttributes: section.extraAttributes,
       fields: section.fields.filter((field) => !field.hiddenOnForm),
     }));
   }
@@ -416,6 +425,53 @@ export function formSections(meta: ResourceMeta) {
   ];
 }
 
+/** Nested schema tree for form rendering (Filament 5). */
+export function formSchemaTree(meta: ResourceMeta) {
+  const tree = meta.form?.schema;
+  if (tree?.length) return pruneFormNodes(tree);
+  return formSections(meta).map((section) => {
+    const s = section as unknown as {
+      name: string;
+      title?: string;
+      description?: string;
+      kind?: string;
+      icon?: string;
+      card?: boolean;
+      columns?: number;
+      fields?: import('@shamar/core').FieldConfig[];
+    };
+    return {
+      kind: (s.kind ?? 'section') as 'section' | 'fieldset' | 'plain',
+      name: s.name,
+      title: s.title,
+      description: s.description,
+      icon: s.icon,
+      card: s.card,
+      columns: (s.columns ?? 2) as 1 | 2 | 3 | 4,
+      children: (s.fields ?? []).map((field) => ({
+        kind: 'field' as const,
+        name: field.name,
+        columnSpan: field.columnSpan,
+        columnStart: field.columnStart,
+        field,
+      })),
+    };
+  });
+}
+
+function pruneFormNodes(nodes: import('@shamar/core').SchemaNode[]): import('@shamar/core').SchemaNode[] {
+  return nodes
+    .map((node) => {
+      if (node.kind === 'field') {
+        if (node.field?.hiddenOnForm) return null;
+        return node;
+      }
+      const children = node.children ? pruneFormNodes(node.children) : undefined;
+      return { ...node, children };
+    })
+    .filter((n): n is import('@shamar/core').SchemaNode => n != null);
+}
+
 export function detailSections(meta: ResourceMeta) {
   if (meta.infolist?.sections?.length) {
     return meta.infolist.sections.map((section) => ({
@@ -426,19 +482,15 @@ export function detailSections(meta: ResourceMeta) {
       icon: section.icon,
       card: section.card ?? ((section.kind ?? 'section') === 'section'),
       columns: section.columns ?? 2,
+      collapsible: section.collapsible,
+      collapsed: section.collapsed,
+      dense: section.dense,
+      gap: section.gap,
+      extraAttributes: section.extraAttributes,
       entries: section.entries.filter((entry) => !entry.hiddenOnDetail),
       fields: section.entries
         .filter((entry) => !entry.hiddenOnDetail)
-        .map((entry) => ({
-          name: entry.name,
-          type: entry.type,
-          label: entry.label ?? entry.name,
-          help: entry.help,
-          hint: entry.hint,
-          columnSpan: entry.columnSpan,
-          columnStart: entry.columnStart,
-          format: entry.format,
-        })),
+        .map((entry) => entryToDetailField(entry)),
     }));
   }
 
@@ -453,6 +505,85 @@ export function detailSections(meta: ResourceMeta) {
     },
   ];
 }
+
+/** Nested schema tree for detail/infolist rendering. */
+export function detailSchemaTree(meta: ResourceMeta) {
+  const tree = meta.infolist?.schema;
+  if (tree?.length) return pruneDetailNodes(tree);
+  return detailSections(meta).map((section) => {
+    const s = section as unknown as {
+      name: string;
+      title?: string;
+      description?: string;
+      kind?: string;
+      icon?: string;
+      card?: boolean;
+      columns?: number;
+      fields?: import('@shamar/core').InfolistEntryConfig[];
+    };
+    return {
+      kind: (s.kind ?? 'section') as 'section' | 'fieldset' | 'plain',
+      name: s.name,
+      title: s.title,
+      description: s.description,
+      icon: s.icon,
+      card: s.card,
+      columns: (s.columns ?? 2) as 1 | 2 | 3 | 4,
+      children: (s.fields ?? []).map((field) => ({
+        kind: 'entry' as const,
+        name: field.name,
+        columnSpan: field.columnSpan,
+        columnStart: field.columnStart,
+        entry: field,
+      })),
+    };
+  });
+}
+
+function entryToDetailField(entry: {
+  name: string;
+  type: string;
+  label?: string;
+  help?: string;
+  hint?: string;
+  columnSpan?: unknown;
+  columnStart?: number;
+  format?: string;
+  url?: boolean | string;
+  copyable?: boolean;
+  icon?: string;
+  falseIcon?: string;
+}) {
+  return {
+    name: entry.name,
+    type: entry.type,
+    label: entry.label ?? entry.name,
+    help: entry.help,
+    hint: entry.hint,
+    columnSpan: entry.columnSpan,
+    columnStart: entry.columnStart,
+    format: entry.format,
+    url: entry.url,
+    copyable: entry.copyable,
+    icon: entry.icon,
+    falseIcon: entry.falseIcon,
+  };
+}
+
+function pruneDetailNodes(nodes: import('@shamar/core').SchemaNode[]): import('@shamar/core').SchemaNode[] {
+  return nodes
+    .map((node) => {
+      if (node.kind === 'entry') {
+        if (node.entry?.hiddenOnDetail) return null;
+        return node;
+      }
+      if (node.kind === 'field') return null;
+      const children = node.children ? pruneDetailNodes(node.children) : undefined;
+      return { ...node, children };
+    })
+    .filter((n): n is import('@shamar/core').SchemaNode => n != null);
+}
+
 
 export { resolveGridItemStyle } from '@shamar/core';
 

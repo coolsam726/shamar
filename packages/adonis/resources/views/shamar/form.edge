@@ -16,8 +16,14 @@
     @include('shamar::partials/csrf')
     <input type="hidden" name="_shamar_embed" value="1" />
 
-    @each(section in formSections)
-      @include('shamar::partials/form-container')
+    @each(node in formSchema)
+      @!component('shamar::partials/schema-node', {
+        node: node,
+        schemaMode: 'form',
+        mode: mode,
+        record: record,
+        formErrors: formErrors,
+      })
     @endeach
 
     <div data-shamar-dialog-actions>
@@ -58,8 +64,14 @@
     >
       @include('shamar::partials/csrf')
 
-      @each(section in formSections)
-        @include('shamar::partials/form-container')
+      @each(node in formSchema)
+        @!component('shamar::partials/schema-node', {
+          node: node,
+          schemaMode: 'form',
+          mode: mode,
+          record: record,
+          formErrors: formErrors,
+        })
       @endeach
     </form>
   </div>

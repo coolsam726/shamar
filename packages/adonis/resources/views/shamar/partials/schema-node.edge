@@ -1,0 +1,282 @@
+{{--
+  Recursive Filament-style schema node.
+  Expects: node, schemaMode ('form' | 'detail'), mode (create|edit for forms), record (for detail)
+--}}
+@if(node.kind === 'field' && schemaMode === 'form' && node.field)
+  @let(field = node.field)
+  @if(!field.hiddenOnForm && !(field.createOnly && mode === 'edit'))
+    <div
+      class="shamar-field-cell"
+      style="{{ resolveGridItemStyle(field, 2) }}"
+      x-show="isVisible('{{ field.name }}')"
+    >
+      @include('shamar::partials/field-input')
+    </div>
+  @endif
+
+@elseif(node.kind === 'entry' && schemaMode === 'detail' && node.entry)
+  @let(field = node.entry)
+  @include('shamar::partials/detail-entry')
+
+@elseif(node.kind === 'placeholder')
+  <div class="shamar-placeholder" style="{{ resolveGridItemStyle(node, 2) }}">
+    @if(node.title)
+      <div class="shamar-placeholder__label">{{ node.title }}</div>
+    @endif
+    @if(node.content)
+      <div class="shamar-placeholder__content">{{ node.content }}</div>
+    @endif
+  </div>
+
+@elseif(node.kind === 'callout')
+  <div class="shamar-callout shamar-callout--{{ node.status ?? 'info' }}" style="{{ resolveGridItemStyle(node, 2) }}">
+    @if(node.title)
+      <div class="shamar-callout__title">{{ node.title }}</div>
+    @endif
+    @if(node.content || node.description)
+      <div class="shamar-callout__body">{{ node.content ?? node.description }}</div>
+    @endif
+    @if(node.children && node.children.length)
+      <div class="shamar-callout__children">
+        @each(childNode in node.children)
+          @!component('shamar::partials/schema-node', {
+            node: childNode,
+            schemaMode: schemaMode,
+            mode: mode,
+            record: record,
+            formErrors: formErrors,
+          })
+        @endeach
+      </div>
+    @endif
+  </div>
+
+@elseif(node.kind === 'empty_state')
+  <div class="shamar-empty-state" style="{{ resolveGridItemStyle(node, 2) }}">
+    @if(node.title)
+      <h3 class="shamar-empty-state__title">{{ node.title }}</h3>
+    @endif
+    @if(node.description)
+      <p class="shamar-empty-state__description">{{ node.description }}</p>
+    @endif
+  </div>
+
+@elseif(node.kind === 'tabs')
+  <div
+    class="shamar-tabs{{ node.card !== false ? ' shamar-tabs--contained' : '' }}{{ node.vertical ? ' shamar-tabs--vertical' : '' }}"
+    style="{{ resolveGridItemStyle(node, 2) }}"
+    x-data='shamarTabs({{ node.activeTab ?? 1 }})'
+  >
+    <div class="shamar-tabs__list" role="tablist">
+      @each((tab, tabIndex) in (node.children || []))
+        <button
+          type="button"
+          class="shamar-tabs__tab"
+          role="tab"
+          :class="{ 'is-active': active === {{ tabIndex + 1 }} }"
+          @click="active = {{ tabIndex + 1 }}"
+        >
+          <span>{{ tab.title || ('Tab ' + (tabIndex + 1)) }}</span>
+          @if(tab.badge !== undefined && tab.badge !== null)
+            <span class="shamar-tabs__badge">{{ tab.badge }}</span>
+          @endif
+        </button>
+      @endeach
+    </div>
+    <div class="shamar-tabs__panels">
+      @each((tab, tabIndex) in (node.children || []))
+        <div class="shamar-tabs__panel" x-show="active === {{ tabIndex + 1 }}" role="tabpanel">
+          <div
+            class="shamar-form-grid{{ tab.dense ? ' is-dense' : '' }}{{ tab.gap === false ? ' is-gapless' : '' }}"
+            style="--shamar-form-cols: {{ tab.columns ?? node.columns ?? 2 }}"
+          >
+            @each(childNode in (tab.children || []))
+              @!component('shamar::partials/schema-node', {
+            node: childNode,
+            schemaMode: schemaMode,
+            mode: mode,
+            record: record,
+            formErrors: formErrors,
+          })
+            @endeach
+          </div>
+        </div>
+      @endeach
+    </div>
+  </div>
+
+@elseif(node.kind === 'wizard')
+  <div
+    class="shamar-wizard{{ node.card !== false ? ' shamar-card rounded-xl' : '' }}"
+    style="{{ resolveGridItemStyle(node, 2) }}"
+    x-data='shamarWizard({{ (node.children || []).length }})'
+  >
+    <ol class="shamar-wizard__steps">
+      @each((step, stepIndex) in (node.children || []))
+        <li class="shamar-wizard__step" :class="{ 'is-active': step === {{ stepIndex + 1 }}, 'is-done': step > {{ stepIndex + 1 }} }">
+          <span class="shamar-wizard__index">{{ stepIndex + 1 }}</span>
+          <span class="shamar-wizard__label">{{ step.title || ('Step ' + (stepIndex + 1)) }}</span>
+        </li>
+      @endeach
+    </ol>
+    <div class="shamar-wizard__panels">
+      @each((step, stepIndex) in (node.children || []))
+        <div class="shamar-wizard__panel" x-show="step === {{ stepIndex + 1 }}">
+          @if(step.description)
+            <p class="shamar-wizard__description">{{ step.description }}</p>
+          @endif
+          <div
+            class="shamar-form-grid{{ step.dense ? ' is-dense' : '' }}{{ step.gap === false ? ' is-gapless' : '' }}"
+            style="--shamar-form-cols: {{ step.columns ?? 2 }}"
+          >
+            @each(childNode in (step.children || []))
+              @!component('shamar::partials/schema-node', {
+            node: childNode,
+            schemaMode: schemaMode,
+            mode: mode,
+            record: record,
+            formErrors: formErrors,
+          })
+            @endeach
+          </div>
+        </div>
+      @endeach
+    </div>
+    <div class="shamar-wizard__nav">
+      <button type="button" class="shamar-wizard__btn" x-show="step > 1" @click="prev()">Previous</button>
+      <button type="button" class="shamar-wizard__btn shamar-wizard__btn--primary" x-show="step < total" @click="next()">Next</button>
+    </div>
+  </div>
+
+@elseif(node.kind === 'flex')
+  <div
+    class="shamar-flex shamar-flex--from-{{ node.from ?? 'md' }}"
+    style="{{ resolveGridItemStyle(node, 2) }}"
+  >
+    @each(childNode in (node.children || []))
+      <div class="shamar-flex__item{{ childNode.grow === false ? ' shamar-flex__item--fixed' : '' }}">
+        @!component('shamar::partials/schema-node', {
+            node: childNode,
+            schemaMode: schemaMode,
+            mode: mode,
+            record: record,
+            formErrors: formErrors,
+          })
+      </div>
+    @endeach
+  </div>
+
+@elseif(node.kind === 'grid' || node.kind === 'group' || node.kind === 'plain')
+  <div
+    class="{{ node.kind === 'group' ? 'shamar-group' : (node.kind === 'grid' ? 'shamar-grid-wrap' : 'shamar-form-plain') }}"
+    style="{{ resolveGridItemStyle(node, 2) }}"
+  >
+    <div
+      class="{{ schemaMode === 'detail' ? 'shamar-detail-grid' : 'shamar-form-grid' }}{{ node.dense ? ' is-dense' : '' }}{{ node.gap === false ? ' is-gapless' : '' }}"
+      style="--shamar-form-cols: {{ node.columns || 2 }}; --shamar-detail-cols: {{ node.columns || 2 }}"
+    >
+      @each(childNode in (node.children || []))
+        @!component('shamar::partials/schema-node', {
+            node: childNode,
+            schemaMode: schemaMode,
+            mode: mode,
+            record: record,
+            formErrors: formErrors,
+          })
+      @endeach
+    </div>
+  </div>
+
+@elseif(node.kind === 'fieldset')
+  <fieldset
+    class="shamar-form-fieldset{{ node.card ? ' shamar-form-fieldset--card' : '' }}{{ node.dense ? ' is-dense' : '' }}"
+    style="{{ resolveGridItemStyle(node, 2) }}"
+  >
+    @if(node.title)
+      <legend class="shamar-form-fieldset__legend">{{ node.title }}</legend>
+    @endif
+    @if(node.description)
+      <p class="shamar-form-fieldset__description">{{ node.description }}</p>
+    @endif
+    <div
+      class="{{ schemaMode === 'detail' ? 'shamar-detail-grid' : 'shamar-form-grid' }}{{ node.gap === false ? ' is-gapless' : '' }}"
+      style="--shamar-form-cols: {{ node.columns || 2 }}; --shamar-detail-cols: {{ node.columns || 2 }}"
+    >
+      @each(childNode in (node.children || []))
+        @!component('shamar::partials/schema-node', {
+            node: childNode,
+            schemaMode: schemaMode,
+            mode: mode,
+            record: record,
+            formErrors: formErrors,
+          })
+      @endeach
+    </div>
+  </fieldset>
+
+@elseif(node.kind === 'section' || node.kind === 'tab' || node.kind === 'step')
+  <section
+    class="shamar-form-section rounded-xl overflow-hidden{{ node.card !== false && node.kind === 'section' ? ' shamar-card' : '' }}{{ node.card === false && node.kind === 'section' ? ' shamar-form-section--plain' : '' }}"
+    style="{{ resolveGridItemStyle(node, 2) }}"
+    @if(node.collapsible)
+      x-data="{ open: {{ node.collapsed ? 'false' : 'true' }} }"
+    @endif
+  >
+    @if(node.title || node.icon || node.description || node.collapsible)
+      <header
+        class="shamar-form-section__header{{ node.description ? '' : ' shamar-form-section__header--centered' }}{{ node.collapsible ? ' shamar-form-section__header--collapsible' : '' }}"
+        @if(node.collapsible)
+          @click="open = !open"
+          role="button"
+          :aria-expanded="open"
+        @endif
+      >
+        @if(node.icon)
+          <span class="shamar-form-section__icon" aria-hidden="true" data-icon="{{ node.icon }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          </span>
+        @endif
+        @if(node.title || node.description)
+          <div class="shamar-form-section__titles min-w-0">
+            @if(node.title)
+              <h3 class="shamar-form-section__title">{{ node.title }}</h3>
+            @endif
+            @if(node.description)
+              <p class="shamar-form-section__description">{{ node.description }}</p>
+            @endif
+          </div>
+        @endif
+        @if(node.collapsible)
+          <span class="shamar-form-section__chevron" aria-hidden="true" :class="{ 'is-open': open }">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </span>
+        @endif
+      </header>
+    @endif
+    <div
+      class="shamar-form-section__body"
+      @if(node.collapsible)
+        x-show="open"
+      @endif
+    >
+      <div
+        class="{{ schemaMode === 'detail' ? 'shamar-detail-grid' : 'shamar-form-grid' }}{{ node.dense ? ' is-dense' : '' }}{{ node.gap === false ? ' is-gapless' : '' }}"
+        style="--shamar-form-cols: {{ node.columns || 2 }}; --shamar-detail-cols: {{ node.columns || 2 }}"
+      >
+        @each(childNode in (node.children || []))
+          @!component('shamar::partials/schema-node', {
+            node: childNode,
+            schemaMode: schemaMode,
+            mode: mode,
+            record: record,
+            formErrors: formErrors,
+          })
+        @endeach
+      </div>
+    </div>
+  </section>
+@endif

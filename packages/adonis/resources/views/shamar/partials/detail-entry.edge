@@ -1,6 +1,6 @@
 <div
   class="shamar-detail-cell px-3 py-3 border-t border-card-border sm:border-t-0 sm:border-r sm:border-card-border last:border-r-0"
-  style="{{ resolveGridItemStyle(field, section.columns ?? 2) }}"
+  style="{{ resolveGridItemStyle(field, 2) }}"
 >
   <div class="shamar-detail__label-row">
     <dt class="shamar-detail__label">{{ field.label ?? field.name }}</dt>
@@ -9,10 +9,48 @@
     @endif
   </div>
   <dd class="shamar-field__value mt-1">
-    @if(field.type === 'boolean')
+    @if(field.type === 'boolean' || field.type === 'checkbox')
       <span class="shamar-boolean-badge {{ fieldChecked(record, field) ? 'is-true' : 'is-false' }}">
         {{ detailValue(record, field) }}
       </span>
+    @elseif(field.type === 'icon')
+      <span class="shamar-icon-entry" data-true="{{ fieldChecked(record, field) ? '1' : '0' }}">
+        {{ fieldChecked(record, field) ? (field.icon ?? '✓') : (field.falseIcon ?? '✗') }}
+      </span>
+    @elseif(field.type === 'color')
+      <span class="shamar-color-entry">
+        <span class="shamar-color-entry__swatch" style="background: {{ record[field.name] || '#ccc' }}"></span>
+        <span>{{ record[field.name] || '—' }}</span>
+      </span>
+    @elseif(field.type === 'image')
+      @if(record[field.name])
+        <img src="{{ record[field.name] }}" alt="{{ field.label ?? field.name }}" class="shamar-image-entry" />
+      @else
+        —
+      @endif
+    @elseif(field.format === 'badge')
+      <span class="shamar-badge">{{ detailValue(record, field) }}</span>
+    @elseif(field.copyable)
+      <span class="shamar-copyable" x-data>
+        <span>{{ detailValue(record, field) }}</span>
+        <button
+          type="button"
+          class="shamar-copyable__btn"
+          @click="navigator.clipboard.writeText({{ jsonAttr(String(record[field.name] ?? '')) }})"
+        >Copy</button>
+      </span>
+    @elseif(field.url || field.type === 'email')
+      @if(record[field.name])
+        @if(field.type === 'email')
+          <a href="mailto:{{ record[field.name] }}" class="text-fg-brand hover:underline">{{ detailValue(record, field) }}</a>
+        @elseif(field.url === true)
+          <a href="{{ record[field.name] }}" class="text-fg-brand hover:underline" target="_blank" rel="noopener">{{ detailValue(record, field) }}</a>
+        @else
+          <a href="{{ field.url }}" class="text-fg-brand hover:underline" target="_blank" rel="noopener">{{ detailValue(record, field) }}</a>
+        @endif
+      @else
+        —
+      @endif
     @else
       {{ detailValue(record, field) }}
     @endif

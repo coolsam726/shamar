@@ -20,3 +20,134 @@
 /* fieldset/section card toggle */
 .shamar-form-fieldset--card{background-color:var(--color-neutral-primary)}
 .shamar-form-section--plain{border:1px solid var(--color-card-border);background-color:transparent}
+/* Schema layout: tabs, wizard, flex, callout, tags, etc. */
+.shamar-form-grid.is-dense,
+.shamar-detail-grid.is-dense { gap: 0.5rem; }
+.shamar-form-grid.is-gapless,
+.shamar-detail-grid.is-gapless { gap: 0; }
+
+.shamar-tabs { display: flex; flex-direction: column; gap: 0; }
+.shamar-tabs--contained { border: 1px solid var(--color-card-border); border-radius: 0.75rem; overflow: hidden; background: var(--color-neutral-primary); }
+.shamar-tabs--vertical { flex-direction: row; align-items: stretch; }
+.shamar-tabs__list { display: flex; gap: 0.25rem; padding: 0.5rem; border-bottom: 1px solid var(--color-card-border); background: var(--color-surface-header, var(--color-neutral-secondary)); overflow-x: auto; }
+.shamar-tabs--vertical .shamar-tabs__list { flex-direction: column; border-bottom: 0; border-right: 1px solid var(--color-card-border); min-width: 10rem; }
+.shamar-tabs__tab { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.45rem 0.75rem; border-radius: 0.5rem; font-size: 0.8125rem; font-weight: 550; color: var(--color-body-subtle); background: transparent; border: 0; cursor: pointer; }
+.shamar-tabs__tab.is-active { color: var(--color-heading); background: var(--color-neutral-primary); box-shadow: 0 0 0 1px var(--color-card-border); }
+.shamar-tabs__badge { font-size: 0.7rem; padding: 0.1rem 0.4rem; border-radius: 999px; background: var(--color-brand-soft); color: var(--color-fg-brand); }
+.shamar-tabs__panels { padding: 1rem; flex: 1; }
+
+.shamar-wizard { padding: 1rem; }
+.shamar-wizard__steps { display: flex; gap: 0.75rem; list-style: none; margin: 0 0 1rem; padding: 0; flex-wrap: wrap; }
+.shamar-wizard__step { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8125rem; color: var(--color-body-subtle); }
+.shamar-wizard__step.is-active { color: var(--color-heading); font-weight: 600; }
+.shamar-wizard__step.is-done { color: var(--color-fg-brand); }
+.shamar-wizard__index { width: 1.5rem; height: 1.5rem; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: var(--color-neutral-secondary); font-size: 0.75rem; }
+.shamar-wizard__step.is-active .shamar-wizard__index { background: var(--color-fg-brand); color: #fff; }
+.shamar-wizard__description { margin: 0 0 0.75rem; font-size: 0.875rem; color: var(--color-body-subtle); }
+.shamar-wizard__nav { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
+.shamar-wizard__btn { padding: 0.4rem 0.85rem; border-radius: 0.5rem; border: 1px solid var(--color-card-border); background: var(--color-neutral-primary); font-size: 0.8125rem; cursor: pointer; }
+.shamar-wizard__btn--primary { background: var(--color-fg-brand); border-color: transparent; color: #fff; }
+
+.shamar-flex { display: flex; flex-direction: column; gap: 1rem; }
+@media (min-width: 768px) {
+  .shamar-flex--from-md { flex-direction: row; align-items: flex-start; }
+}
+.shamar-flex__item { flex: 1 1 0; min-width: 0; }
+.shamar-flex__item--fixed { flex: 0 0 auto; }
+
+.shamar-callout { border-radius: 0.75rem; padding: 0.85rem 1rem; border: 1px solid var(--color-card-border); }
+.shamar-callout__title { font-weight: 600; font-size: 0.875rem; color: var(--color-heading); }
+.shamar-callout__body { margin-top: 0.25rem; font-size: 0.8125rem; color: var(--color-body-subtle); }
+.shamar-callout--info { background: color-mix(in srgb, var(--color-fg-brand) 8%, transparent); border-color: color-mix(in srgb, var(--color-fg-brand) 30%, transparent); }
+.shamar-callout--success { background: color-mix(in srgb, #16a34a 10%, transparent); }
+.shamar-callout--warning { background: color-mix(in srgb, #d97706 10%, transparent); }
+.shamar-callout--danger { background: color-mix(in srgb, var(--color-fg-danger) 10%, transparent); }
+
+.shamar-empty-state { text-align: center; padding: 2rem 1rem; color: var(--color-body-subtle); }
+.shamar-empty-state__title { margin: 0; font-size: 1rem; color: var(--color-heading); }
+.shamar-empty-state__description { margin: 0.35rem 0 0; font-size: 0.875rem; }
+
+.shamar-placeholder__label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--color-heading); }
+.shamar-placeholder__content { margin-top: 0.25rem; font-size: 0.875rem; color: var(--color-body); }
+
+.shamar-checkbox, .shamar-radio__option { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; }
+.shamar-radio { display: flex; flex-direction: column; gap: 0.5rem; }
+.shamar-radio--inline { flex-direction: row; flex-wrap: wrap; gap: 0.75rem 1.25rem; }
+
+.shamar-color { display: flex; align-items: center; gap: 0.5rem; }
+.shamar-color__swatch { width: 2.25rem; height: 2.25rem; padding: 0; border: 1px solid var(--color-card-border); border-radius: 0.4rem; background: transparent; }
+.shamar-color-entry { display: inline-flex; align-items: center; gap: 0.4rem; }
+.shamar-color-entry__swatch { width: 1rem; height: 1rem; border-radius: 0.25rem; border: 1px solid var(--color-card-border); }
+
+.shamar-tags { display: flex; flex-direction: column; gap: 0.5rem; }
+.shamar-tags__list { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.shamar-tags__chip { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.15rem 0.45rem; border-radius: 999px; background: var(--color-brand-soft); color: var(--color-fg-brand); font-size: 0.75rem; }
+.shamar-tags__remove { border: 0; background: transparent; cursor: pointer; color: inherit; line-height: 1; }
+
+.shamar-input-group { display: flex; align-items: stretch; width: 100%; }
+.shamar-input-group .shamar-input { flex: 1; min-width: 0; }
+.shamar-input-group.has-prefix .shamar-input {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.shamar-input-group.has-suffix .shamar-input {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.shamar-input-group__affix {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0.75rem;
+  border: 1px solid var(--color-card-border);
+  background: var(--color-surface-header, var(--color-neutral-secondary));
+  font-size: 0.8125rem;
+  color: var(--color-body-subtle);
+  white-space: nowrap;
+}
+.shamar-input-group.has-prefix .shamar-input-group__affix:first-child {
+  border-right: 0;
+  border-top-left-radius: 0.5rem;
+  border-bottom-left-radius: 0.5rem;
+}
+.shamar-input-group.has-suffix .shamar-input-group__affix:last-child {
+  border-left: 0;
+  border-top-right-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+}
+
+.shamar-badge { display: inline-flex; padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.75rem; font-weight: 550; background: var(--color-brand-soft); color: var(--color-fg-brand); }
+.shamar-copyable { display: inline-flex; align-items: center; gap: 0.5rem; }
+.shamar-copyable__btn { font-size: 0.75rem; border: 1px solid var(--color-card-border); border-radius: 0.35rem; padding: 0.15rem 0.4rem; background: var(--color-neutral-primary); cursor: pointer; }
+.shamar-image-entry { max-width: 8rem; max-height: 8rem; border-radius: 0.5rem; object-fit: cover; border: 1px solid var(--color-card-border); }
+
+.shamar-form-section__header--collapsible { cursor: pointer; user-select: none; }
+.shamar-form-section__header--collapsible:hover .shamar-form-section__chevron {
+  color: var(--color-heading);
+  background: var(--color-neutral-primary);
+  border-color: var(--color-card-border);
+}
+.shamar-form-section__chevron {
+  margin-left: auto;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  color: var(--color-body-subtle);
+  background: transparent;
+  transition:
+    transform 0.18s ease,
+    color 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+.shamar-form-section__chevron svg {
+  display: block;
+  transition: transform 0.18s ease;
+}
+.shamar-form-section__chevron.is-open svg {
+  transform: rotate(180deg);
+}

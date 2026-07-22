@@ -11,7 +11,9 @@ import {
 } from '../shamar/view-context.js';
 import {
   formSections,
+  formSchemaTree,
   detailSections,
+  detailSchemaTree,
   normalizeListQuery,
   recordTitle,
   LIST_ALL_RECORDS_PER_PAGE,
@@ -124,6 +126,7 @@ export class AdminController {
       record: null,
       mode: 'create',
       embed,
+      formSchema: formSchemaTree(meta),
       formSections: formSections(meta),
       formLiveFields: formClientFields(meta, {
         state: initialState,
@@ -183,7 +186,9 @@ export class AdminController {
       resource: meta,
       record,
       id: record.id,
+      detailSchema: detailSchemaTree(meta),
       detailSections: detailSections(meta),
+      formErrors: {},
       recordPager: await this.resolveRecordPager(ctx, meta, String(record.id), 'show'),
       resolveGridItemStyle,
     });
@@ -215,6 +220,7 @@ export class AdminController {
       id: record.id,
       mode: 'edit',
       embed,
+      formSchema: formSchemaTree(meta),
       formSections: formSections(meta),
       formLiveFields: formClientFields(meta, {
         state: formInitialState,
@@ -424,6 +430,7 @@ export class AdminController {
       id: options.record?.id,
       mode: options.mode,
       embed,
+      formSchema: formSchemaTree(meta),
       formSections: formSections(meta),
       formLiveFields: formClientFields(meta, {
         state: formInitialState,

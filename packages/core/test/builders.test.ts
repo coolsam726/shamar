@@ -9,8 +9,19 @@ import {
   resolveGridItemStyle,
   evaluateAfterStateUpdated,
   TextInput,
+  Textarea,
+  Select,
+  Hidden,
+  Checkbox,
+  Radio,
+  ColorPicker,
+  TagsInput,
   Section,
   Fieldset,
+  Grid,
+  Tabs,
+  Tab,
+  Callout,
   TextEntry,
   TextColumn,
 } from '../src/index.js';
@@ -236,6 +247,100 @@ describe('@shamar/core Filament-style builders', () => {
     assert.equal(meta.form.sections[0]!.description, undefined);
     assert.notEqual(meta.form.sections[0]!.title, 'Details');
     assert.equal(meta.infolist.sections[0]!.title, '');
+  });
+
+  it('preserves nested Grid/Tabs chrome in schema tree', () => {
+    class NestedLayoutResource extends Resource {
+      static override slug = 'nested-layout';
+      static override label = 'Nested';
+      static override singularLabel = 'Nested';
+      static override model = 'Nested';
+
+      static override form() {
+        return form((f) => {
+          f.schema([
+            Section.make('Outer')
+              .collapsible()
+              .schema([
+                Grid.make(2).schema([
+                  TextInput.make('a'),
+                  TextInput.make('b'),
+                ]),
+                Tabs.make()
+                  .tabs([
+                    Tab.make('One').schema([TextInput.make('c')]),
+                    Tab.make('Two').badge(2).schema([TextInput.make('d')]),
+                  ]),
+                Callout.make('Note').info().description('Hello'),
+              ]),
+          ]);
+        });
+      }
+
+      static override table() {
+        return table((t) => {
+          t.schema([TextColumn.make('a')]);
+        });
+      }
+    }
+
+    const meta = NestedLayoutResource.configure();
+    assert.equal(meta.form.schema[0]!.kind, 'section');
+    assert.equal(meta.form.schema[0]!.collapsible, true);
+    const kids = meta.form.schema[0]!.children ?? [];
+    assert.equal(kids[0]!.kind, 'grid');
+    assert.equal(kids[0]!.children?.[0]!.kind, 'field');
+    assert.equal(kids[1]!.kind, 'tabs');
+    assert.equal(kids[1]!.children?.[1]!.badge, 2);
+    assert.equal(kids[2]!.kind, 'callout');
+    assert.deepEqual(
+      meta.form.fields.map((f) => f.name).sort(),
+      ['a', 'b', 'c', 'd'],
+    );
+  });
+
+  it('builds new form field types', () => {
+    class ExtraFieldsResource extends Resource {
+      static override slug = 'extra';
+      static override label = 'Extra';
+      static override singularLabel = 'Extra';
+      static override model = 'Extra';
+
+      static override form() {
+        return form((f) => {
+          f.schema([
+            Hidden.make('token'),
+            Checkbox.make('agree'),
+            Radio.make('plan').options([
+              { label: 'A', value: 'a' },
+              { label: 'B', value: 'b' },
+            ]),
+            ColorPicker.make('color'),
+            TagsInput.make('tags'),
+            Textarea.make('bio').rows(6),
+            TextInput.make('slug').prefix('https://').suffix('.test'),
+            Select.make('roles').multiple().options([{ label: 'Admin', value: 'admin' }]),
+          ]);
+        });
+      }
+
+      static override table() {
+        return table((t) => {
+          t.schema([TextColumn.make('slug')]);
+        });
+      }
+    }
+
+    const meta = ExtraFieldsResource.configure();
+    const byName = Object.fromEntries(meta.fields.map((f) => [f.name, f]));
+    assert.equal(byName.token?.type, 'hidden');
+    assert.equal(byName.agree?.type, 'checkbox');
+    assert.equal(byName.plan?.type, 'radio');
+    assert.equal(byName.color?.type, 'color');
+    assert.equal(byName.tags?.type, 'tags');
+    assert.equal(byName.bio?.rows, 6);
+    assert.equal(byName.slug?.prefix, 'https://');
+    assert.equal(byName.roles?.multiple, true);
   });
 
   it('falls back to infolist from form fields', () => {

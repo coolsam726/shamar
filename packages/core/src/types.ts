@@ -5,6 +5,7 @@ export type FieldType =
   | 'textarea'
   | 'number'
   | 'boolean'
+  | 'checkbox'
   | 'date'
   | 'datetime'
   | 'select'
@@ -12,7 +13,11 @@ export type FieldType =
   | 'email'
   | 'password'
   | 'file'
-  | 'image';
+  | 'image'
+  | 'hidden'
+  | 'radio'
+  | 'color'
+  | 'tags';
 
 export type RelationKind = 'belongsTo' | 'hasMany' | 'manyToMany';
 
@@ -87,6 +92,15 @@ export interface FieldConfig {
   afterStateUpdated?: (ctx: FieldContext) => void | Promise<void>;
   /** Enforce uniqueness against the resource model (Filament-style). */
   unique?: boolean | UniqueOptions;
+  /** Textarea row count. */
+  rows?: number;
+  /** Toggle/checkbox/radio inline layout. */
+  inline?: boolean;
+  /** Text input affixes. */
+  prefix?: string;
+  suffix?: string;
+  /** Multi-select. */
+  multiple?: boolean;
 }
 
 /**
@@ -141,10 +155,19 @@ export interface FormSection {
   card?: boolean;
   columns?: 1 | 2 | 3 | 4;
   fields: FieldConfig[];
+  collapsible?: boolean;
+  collapsed?: boolean;
+  dense?: boolean;
+  gap?: boolean;
+  extraAttributes?: Record<string, string>;
 }
 
 export interface FormSchema {
+  /** Nested Filament-style schema tree (preferred for rendering). */
+  schema: SchemaNode[];
+  /** Legacy flat containers derived from root layout nodes. */
   sections: FormSection[];
+  /** Flat field list for state, validation, and payloads. */
   fields: FieldConfig[];
 }
 
@@ -155,16 +178,21 @@ export interface TableSchema {
 
 export interface InfolistEntryConfig {
   name: string;
-  type: FieldType;
+  type: FieldType | 'icon' | 'color' | 'image';
   label?: string;
   /** Helper text below the value (Filament `helperText`). */
   help?: string;
   /** Short text beside the label (Filament `hint`). */
   hint?: string;
-  format?: 'date' | 'datetime' | 'boolean' | 'badge' | 'toggle';
+  format?: 'date' | 'datetime' | 'boolean' | 'badge' | 'toggle' | 'markdown';
   columnSpan?: ColumnSpan;
   columnStart?: number;
   hiddenOnDetail?: boolean;
+  url?: boolean | string;
+  copyable?: boolean;
+  /** True icon name when value is truthy (IconEntry). */
+  icon?: string;
+  falseIcon?: string;
 }
 
 export interface InfolistSectionConfig {
@@ -182,11 +210,71 @@ export interface InfolistSectionConfig {
   card?: boolean;
   columns?: 1 | 2 | 3 | 4;
   entries: InfolistEntryConfig[];
+  collapsible?: boolean;
+  collapsed?: boolean;
+  dense?: boolean;
+  gap?: boolean;
+  extraAttributes?: Record<string, string>;
 }
 
 export interface InfolistSchema {
+  /** Nested Filament-style schema tree (preferred for rendering). */
+  schema: SchemaNode[];
   sections: InfolistSectionConfig[];
   entries: InfolistEntryConfig[];
+}
+
+/** Filament 5 shared schema node (layout + leaves). */
+export type SchemaNodeKind =
+  | 'section'
+  | 'fieldset'
+  | 'grid'
+  | 'group'
+  | 'flex'
+  | 'tabs'
+  | 'tab'
+  | 'wizard'
+  | 'step'
+  | 'callout'
+  | 'empty_state'
+  | 'placeholder'
+  | 'plain'
+  | 'field'
+  | 'entry';
+
+export type CalloutStatus = 'info' | 'success' | 'warning' | 'danger';
+
+export interface SchemaNode {
+  kind: SchemaNodeKind;
+  name?: string;
+  title?: string;
+  description?: string;
+  icon?: string;
+  card?: boolean;
+  columns?: 1 | 2 | 3 | 4;
+  dense?: boolean;
+  /** When false, remove gap between children. */
+  gap?: boolean;
+  collapsible?: boolean;
+  collapsed?: boolean;
+  /** Flex: grow to fill space (default true). */
+  grow?: boolean;
+  /** Flex: horizontal split from this Tailwind breakpoint. */
+  from?: string;
+  /** Callout status. */
+  status?: CalloutStatus;
+  /** Tabs: 1-based active tab index. */
+  activeTab?: number;
+  vertical?: boolean;
+  /** Placeholder / callout body text. */
+  content?: string;
+  badge?: string | number;
+  columnSpan?: ColumnSpan;
+  columnStart?: number;
+  extraAttributes?: Record<string, string>;
+  field?: FieldConfig;
+  entry?: InfolistEntryConfig;
+  children?: SchemaNode[];
 }
 
 export interface ResourceMeta {
