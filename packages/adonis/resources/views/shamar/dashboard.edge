@@ -1,0 +1,24 @@
+@include('shamar::partials/shell-open')
+
+<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+  @each(root in dashboardCards)
+    <a
+      href="{{ root.href }}"
+      class="group shamar-card rounded-xl p-5 transition hover:bg-surface-row-hover"
+    >
+      <div class="mb-3 flex items-center gap-2.5">
+        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-inset text-fg-brand">
+          @include('shamar::partials/icon')
+        </span>
+        <h3 class="text-base font-semibold text-heading group-hover:text-fg-brand">{{ root.label }}</h3>
+      </div>
+      <p class="text-sm text-body-subtle">Open {{ root.label }}</p>
+    </a>
+  @else
+    <div class="shamar-card rounded-xl p-6 sm:col-span-2 xl:col-span-3">
+      <p class="text-sm text-body-subtle">No resources registered yet.</p>
+    </div>
+  @endeach
+</div>
+
+@include('shamar::partials/shell-close')

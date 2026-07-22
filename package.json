@@ -1,0 +1,20 @@
+{
+  "name": "shamar",
+  "private": true,
+  "description": "Filament-inspired admin panel for AdonisJS — @shamar monorepo",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm --filter './packages/*' test",
+    "dev": "pnpm --filter @shamar/playground dev",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "docker:dev": "docker compose --profile dev up -d --build",
+    "docker:prod": "docker compose --profile prod up -d --build"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,73 @@
+@if(pagination)
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-sm text-body-subtle">
+    <p>
+      Page {{ pagination.page }} of {{ pagination.pageCount }}
+      · {{ pagination.total }} records
+    </p>
+
+    @if(pagination.pageCount > 1)
+      <div class="flex flex-wrap items-center gap-1.5">
+        @if(pagination.prevHref)
+          <a
+            href="{{ pagination.prevHref }}"
+            class="rounded-md border border-default bg-neutral-primary px-3 py-1.5 text-sm text-body hover:bg-surface-hover"
+          >Previous</a>
+        @else
+          <span class="rounded-md border border-default bg-neutral-primary/50 px-3 py-1.5 text-sm text-body-subtle cursor-not-allowed">Previous</span>
+        @endif
+
+        @each(link in pagination.links)
+          @if(link.type === 'ellipsis')
+            <span class="px-1.5 text-body-subtle select-none">…</span>
+          @else
+            <a
+              href="{{ link.href }}"
+              class="min-w-[2.25rem] rounded-md border px-2.5 py-1.5 text-center text-sm transition-colors {{ link.active ? 'border-brand bg-surface-inset font-medium text-fg-brand' : 'border-default bg-neutral-primary text-body hover:bg-surface-hover' }}"
+              {{ link.active ? 'aria-current="page"' : '' }}
+            >{{ link.label }}</a>
+          @endif
+        @endeach
+
+        @if(pagination.nextHref)
+          <a
+            href="{{ pagination.nextHref }}"
+            class="rounded-md border border-default bg-neutral-primary px-3 py-1.5 text-sm text-body hover:bg-surface-hover"
+          >Next</a>
+        @else
+          <span class="rounded-md border border-default bg-neutral-primary/50 px-3 py-1.5 text-sm text-body-subtle cursor-not-allowed">Next</span>
+        @endif
+
+        <form
+          method="get"
+          action="{{ pagination.formAction }}"
+          class="ml-1 flex items-center gap-1.5"
+        >
+          @if(query.search)
+            <input type="hidden" name="search" value="{{ query.search }}" />
+          @endif
+          @if(query.sort)
+            <input type="hidden" name="sort" value="{{ query.sort }}" />
+            <input type="hidden" name="direction" value="{{ query.direction }}" />
+          @endif
+          @if(query.perPage !== '15' && query.perPage !== 15)
+            <input type="hidden" name="perPage" value="{{ query.perPage }}" />
+          @endif
+          <label for="pagination-jump-page" class="sr-only">Jump to page</label>
+          <input
+            id="pagination-jump-page"
+            type="number"
+            name="page"
+            min="1"
+            max="{{ pagination.pageCount }}"
+            value="{{ pagination.page }}"
+            class="shamar-input w-16 px-2 py-1.5 text-center text-sm"
+          />
+          <button
+            type="submit"
+            class="rounded-md border border-default bg-neutral-primary px-2.5 py-1.5 text-sm text-body hover:bg-surface-hover"
+          >Go</button>
+        </form>
+      </div>
+    @endif
+  </div>
+@endif

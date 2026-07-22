@@ -1,0 +1,58 @@
+<aside
+  class="fixed md:relative inset-y-0 left-0 z-30 w-64 min-h-screen bg-shamar-shell flex flex-col flex-shrink-0 md:translate-x-0 transition-transform duration-200 ease-in-out"
+  :class="{ '-translate-x-full': !sidebarOpen }"
+>
+  <div class="relative px-4 shrink-0 flex items-center min-h-[60px]">
+    <a href="{{ basePath }}" class="flex min-w-0 items-center gap-2.5">
+      @if(branding.logoUrl)
+        <img
+          src="{{ branding.logoUrl }}"
+          alt="{{ branding.brandName }}"
+          class="h-8 w-auto max-w-[9rem] object-contain dark:hidden"
+        />
+        <img
+          src="{{ branding.logoDarkUrl ?? branding.logoUrl }}"
+          alt="{{ branding.brandName }}"
+          class="hidden h-8 w-auto max-w-[9rem] object-contain dark:block"
+        />
+      @endif
+      <span class="truncate text-base font-semibold text-heading">{{ panelTitle }}</span>
+    </a>
+    <button
+      type="button"
+      @click="sidebarOpen = false"
+      aria-label="Close sidebar"
+      class="absolute right-3 top-1/2 -translate-y-1/2 md:hidden p-1 rounded-md text-body-subtle hover:text-heading hover:bg-surface-hover"
+    >
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
+  </div>
+
+  <nav class="hidden md:block flex-1 px-2 py-3 space-y-0.5 overflow-y-auto" aria-label="Applications">
+    @each(root in menuRoots)
+      <a
+        href="{{ root.href }}"
+        class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md text-sm {{ root.active ? 'nav-active' : '' }}"
+        @click="sidebarOpen = false"
+      >
+        <span class="shrink-0 w-4 h-4">
+          @include('shamar::partials/icon')
+        </span>
+        <span class="truncate">{{ root.label }}</span>
+      </a>
+    @endeach
+  </nav>
+
+  <div class="md:hidden flex-1 min-h-0 flex flex-col overflow-hidden">
+    @include('shamar::partials/nav-mobile')
+  </div>
+
+  <div class="mt-auto px-4 py-3 text-xs text-body-subtle hidden md:block">
+    @if(branding.copyrightText)
+      <p class="mb-2 leading-relaxed">{{ branding.copyrightText }}</p>
+    @endif
+    <p class="truncate">Signed in as <span class="font-semibold text-heading">{{ user.name }}</span></p>
+  </div>
+</aside>

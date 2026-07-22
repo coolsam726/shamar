@@ -1,0 +1,37 @@
+{{-- Cyclic prev/next record pager (PyVELM-style). Expects `recordPager`. --}}
+@if(recordPager)
+  <div
+    class="inline-flex items-center gap-2 shrink-0"
+    data-shamar-record-pager
+    data-shamar-pager-prev="{{ recordPager.prevUrl }}"
+    data-shamar-pager-next="{{ recordPager.nextUrl }}"
+  >
+    <div class="inline-flex rounded-md border border-default overflow-hidden bg-neutral-primary">
+      <a
+        href="{{ recordPager.prevUrl }}"
+        class="inline-flex items-center justify-center w-8 h-8 text-body-subtle hover:bg-surface-hover hover:text-heading transition-colors"
+        title="Previous record (wraps at start)"
+        aria-label="Previous record"
+        data-shamar-pager-link
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
+        </svg>
+      </a>
+      <a
+        href="{{ recordPager.nextUrl }}"
+        class="inline-flex items-center justify-center w-8 h-8 text-body-subtle border-l border-default hover:bg-surface-hover hover:text-heading transition-colors"
+        title="Next record (wraps at end)"
+        aria-label="Next record"
+        data-shamar-pager-link
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+        </svg>
+      </a>
+    </div>
+    <span class="text-xs text-body-subtle tabular-nums whitespace-nowrap" title="Position in the current list">
+      {{ recordPager.index }} / {{ recordPager.total }}
+    </span>
+  </div>
+@endif

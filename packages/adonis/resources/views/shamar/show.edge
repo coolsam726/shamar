@@ -1,0 +1,48 @@
+@let(mode = 'show')
+@include('shamar::partials/shell-open')
+
+<div class="mx-auto max-w-5xl space-y-6" data-shamar-record-view="show">
+  @each(section in detailSections)
+    @if((section.kind ?? 'section') === 'plain')
+      <dl class="shamar-detail-grid shamar-card rounded-xl overflow-hidden" style="--shamar-detail-cols: {{ section.columns ?? 2 }}">
+        @each(field in section.fields)
+          @include('shamar::partials/detail-entry')
+        @endeach
+      </dl>
+    @elseif((section.kind ?? 'section') === 'fieldset')
+      <fieldset class="shamar-form-fieldset{{ section.card ? ' shamar-form-fieldset--card' : '' }}">
+        @if(section.title)
+          <legend class="shamar-form-fieldset__legend">{{ section.title }}</legend>
+        @endif
+        @if(section.description)
+          <p class="shamar-form-fieldset__description">{{ section.description }}</p>
+        @endif
+        <dl class="shamar-detail-grid" style="--shamar-detail-cols: {{ section.columns ?? 2 }}">
+          @each(field in section.fields)
+            @include('shamar::partials/detail-entry')
+          @endeach
+        </dl>
+      </fieldset>
+    @else
+      <div class="rounded-xl overflow-hidden{{ section.card !== false ? ' shamar-card' : ' shamar-form-section--plain' }}">
+        @if(section.title || section.icon || section.description)
+          <div class="px-3 py-3 bg-surface-header">
+            @if(section.title)
+              <h2 class="font-semibold text-heading">{{ section.title }}</h2>
+            @endif
+            @if(section.description)
+              <p class="mt-1 text-sm text-body-subtle">{{ section.description }}</p>
+            @endif
+          </div>
+        @endif
+        <dl class="shamar-detail-grid" style="--shamar-detail-cols: {{ section.columns ?? 2 }}">
+          @each(field in section.fields)
+            @include('shamar::partials/detail-entry')
+          @endeach
+        </dl>
+      </div>
+    @endif
+  @endeach
+</div>
+
+@include('shamar::partials/shell-close')

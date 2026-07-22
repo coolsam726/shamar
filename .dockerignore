@@ -1,0 +1,16 @@
+.git
+.cursor
+**/node_modules
+**/dist
+**/build
+**/tmp
+**/.adonisjs
+**/*.md
+!DOCKER.md
+.env
+.env.*
+!.env.example
+**/.DS_Store
+**/coverage
+**/*.log
+agent-transcripts

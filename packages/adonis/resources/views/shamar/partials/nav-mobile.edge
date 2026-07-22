@@ -1,0 +1,21 @@
+<nav class="flex-1 px-2 py-3 overflow-y-auto space-y-4" aria-label="Navigation">
+  @each(group in navGroups)
+    <div>
+      <p class="px-3 mb-1 text-[11px] font-semibold uppercase tracking-wider text-body-subtle">{{ group.name }}</p>
+      <div class="space-y-0.5">
+        @each(item in group.items)
+          <a
+            href="{{ basePath }}/{{ item.slug }}"
+            class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md text-sm {{ resource && item.slug === resource.slug ? 'nav-active' : '' }}"
+            @click="sidebarOpen = false"
+          >
+            <span class="shrink-0 w-4 h-4">
+              @include('shamar::partials/icon')
+            </span>
+            <span class="truncate">{{ item.label }}</span>
+          </a>
+        @endeach
+      </div>
+    </div>
+  @endeach
+</nav>
