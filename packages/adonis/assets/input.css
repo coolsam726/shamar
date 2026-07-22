@@ -632,6 +632,173 @@ fieldset.shamar-card {
   color: var(--color-fg-danger);
 }
 
+.shamar-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 100%;
+  padding: 0.125rem 0.25rem 0.125rem 0.5rem;
+  border-radius: 0.375rem;
+  background-color: var(--color-brand-soft);
+  color: var(--color-fg-brand);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.shamar-chip--group {
+  background-color: var(--color-badge-neutral, var(--color-surface-hover));
+  color: var(--color-heading);
+}
+
+.shamar-chip__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 0.25rem;
+  padding: 0.125rem;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.shamar-chip__remove:hover {
+  background-color: color-mix(in srgb, currentColor 16%, transparent);
+}
+
+.shamar-toolbar-menu {
+  position: relative;
+}
+
+.shamar-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border: 1px solid var(--color-card-border);
+  border-radius: 0.375rem;
+  background-color: var(--color-neutral-primary);
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-body);
+  cursor: pointer;
+}
+
+.shamar-toolbar-btn:hover {
+  background-color: var(--color-surface-hover);
+}
+
+.shamar-toolbar-btn.is-active {
+  border-color: var(--color-fg-brand);
+  color: var(--color-heading);
+}
+
+.shamar-toolbar-btn__badge {
+  display: inline-flex;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background-color: var(--color-fg-brand);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0 0.35rem;
+}
+
+.shamar-toolbar-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.35rem);
+  z-index: 40;
+  width: min(18rem, calc(100vw - 2rem));
+  border: 1px solid var(--color-card-border);
+  border-radius: 0.625rem;
+  background-color: var(--color-neutral-primary);
+  box-shadow: 0 12px 28px color-mix(in srgb, #000 14%, transparent);
+  overflow: hidden;
+}
+
+.shamar-toolbar-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.875rem 0.5rem;
+}
+
+.shamar-toolbar-panel__list {
+  padding: 0.25rem;
+  max-height: 18rem;
+  overflow: auto;
+}
+
+.shamar-toolbar-panel__item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 0;
+  border-radius: 0.375rem;
+  background: transparent;
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+  font-size: 0.875rem;
+  color: var(--color-body);
+  cursor: pointer;
+}
+
+.shamar-toolbar-panel__item:hover,
+.shamar-toolbar-panel__item.is-selected {
+  background-color: var(--color-surface-hover);
+  color: var(--color-heading);
+}
+
+.shamar-toolbar-panel__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--color-card-border);
+  background: transparent;
+  padding: 0.65rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-heading);
+  cursor: pointer;
+}
+
+.shamar-toolbar-panel__back:hover {
+  background-color: var(--color-surface-hover);
+}
+
+.shamar-list-group__cell {
+  padding: 0.5rem 1rem;
+  background: color-mix(in srgb, var(--color-surface-header, #f5f5f5) 88%, transparent);
+  border-top: 1px solid var(--color-card-border);
+}
+
+.shamar-list-group__label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-heading);
+}
+
+.shamar-list-group__count {
+  margin-left: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--color-body-subtle);
+}
+
+.shamar-list-group__count::before {
+  content: '· ';
+}
+
 .shamar-secret-reveal {
   display: flex;
   align-items: stretch;

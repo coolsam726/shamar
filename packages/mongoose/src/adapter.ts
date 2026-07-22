@@ -112,6 +112,29 @@ function buildMongoSearch(meta: ResourceMeta, search?: string): Record<string, u
   };
 }
 
+function buildMongoListFilters(query: ListQuery): Record<string, unknown> {
+  const filters = query.filters ?? [];
+  if (filters.length === 0) return {};
+  const parts: Record<string, unknown>[] = [];
+  for (const filter of filters) {
+    const field = String(filter.field ?? '').trim();
+    if (!field || field.includes('.')) continue;
+    const op = filter.op ?? '=';
+    if (op === 'ilike') {
+      parts.push({
+        [field]: { $regex: String(filter.value ?? ''), $options: 'i' },
+      });
+      continue;
+    }
+    if (op === '!=') {
+      parts.push({ [field]: { $ne: filter.value } });
+      continue;
+    }
+    parts.push({ [field]: filter.value });
+  }
+  return mergeFilter(parts);
+}
+
 function assertMongoId(id: string): void {
   if (!id?.trim() || !/^[a-f\d]{24}$/i.test(id)) {
     throw new Error('Record not found');
@@ -207,17 +230,24 @@ async function listMongoose(
   const Model = resolveModel(meta, connection);
   const filter = mergeFilter([
     buildMongoSearch(meta, query.search),
+    buildMongoListFilters(query),
     query.scope ? { ...query.scope } : {},
     softDeleteWhere(meta),
   ]);
 
-  const sortField = query.sort ?? meta.defaultSort?.field ?? 'createdAt';
+  const sortField = query.groupBy
+    ? query.groupBy
+    : (query.sort ?? meta.defaultSort?.field ?? 'createdAt');
   const sortDir = (query.direction ?? meta.defaultSort?.direction ?? 'desc') === 'asc' ? 1 : -1;
+  const sort: Record<string, number> = { [sortField]: sortDir };
+  if (query.groupBy && query.sort && query.sort !== query.groupBy) {
+    sort[query.sort] = sortDir;
+  }
   const skip = (query.page - 1) * query.perPage;
 
   const [items, total] = await Promise.all([
     Model.find(filter)
-      .sort({ [sortField]: sortDir })
+      .sort(sort)
       .skip(skip)
       .limit(query.perPage)
       .lean(),

@@ -1,4 +1,10 @@
-import type { ColumnConfig, FieldType, SortDirection, TableSchema } from './types.js';
+import type {
+  ColumnConfig,
+  FieldType,
+  ListFilter,
+  SortDirection,
+  TableSchema,
+} from './types.js';
 import {
   normalizeCurrencyOptions,
   type CurrencyInput,
@@ -32,6 +38,18 @@ export class TextColumn {
 
   sortable(value = true): this {
     this.config.sortable = value;
+    return this;
+  }
+
+  /** Include in the list Filters menu. */
+  filterable(value = true): this {
+    this.config.filterable = value;
+    return this;
+  }
+
+  /** Allow grouping the index table by this column. */
+  groupable(value = true): this {
+    this.config.groupable = value;
     return this;
   }
 
@@ -155,6 +173,8 @@ export class TextColumn {
 export class TableBuilder {
   private columnList: TextColumn[] = [];
   private sort?: { field: string; direction: SortDirection };
+  private filters?: ListFilter[];
+  private groupBy?: string;
 
   schema(cols: TextColumn[]): this {
     this.columnList = [...cols];
@@ -166,10 +186,27 @@ export class TableBuilder {
     return this;
   }
 
+  /**
+   * Filters applied on first visit (when the URL has no `filters` param).
+   * @example t.defaultFilters([{ field: 'resolved', value: false, label: 'Resolved: No' }])
+   */
+  defaultFilters(filters: ListFilter[]): this {
+    this.filters = filters.map((filter) => ({ ...filter }));
+    return this;
+  }
+
+  /** Grouping applied on first visit (when the URL has no `groupBy` param). */
+  defaultGroupBy(field: string): this {
+    this.groupBy = field;
+    return this;
+  }
+
   build(): TableSchema {
     return {
       columns: this.columnList.map((c) => c.build()),
       defaultSort: this.sort,
+      defaultFilters: this.filters,
+      defaultGroupBy: this.groupBy,
     };
   }
 }

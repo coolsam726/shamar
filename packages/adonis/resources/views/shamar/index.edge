@@ -111,13 +111,27 @@
           </tr>
         </thead>
         <tbody>
-          @each(record in result.items)
-            @include('shamar::partials/list-row')
+          @if(groups && groups.length)
+            @each(group in groups)
+              <tr class="shamar-list-group">
+                <td colspan="100" class="shamar-list-group__cell">
+                  <span class="shamar-list-group__label">{{ group.label }}</span>
+                  <span class="shamar-list-group__count">{{ group.items.length }}</span>
+                </td>
+              </tr>
+              @each(record in group.items)
+                @include('shamar::partials/list-row')
+              @endeach
+            @endeach
+          @elseif(result.items && result.items.length)
+            @each(record in result.items)
+              @include('shamar::partials/list-row')
+            @endeach
           @else
             <tr>
               <td colspan="100" class="px-4 py-12 text-center text-body-subtle">No records found.</td>
             </tr>
-          @endeach
+          @endif
         </tbody>
       </table>
     </div>

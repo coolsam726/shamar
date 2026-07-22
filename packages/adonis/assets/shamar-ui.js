@@ -2009,6 +2009,8 @@
       searchInput: '',
       chips: [],
       groupBy: cfg.groupBy || null,
+      filtersLockedEmpty: cfg.filtersLockedEmpty === true,
+      groupLockedEmpty: cfg.groupLockedEmpty === true,
       sort: cfg.sort || '',
       direction: cfg.direction || '',
       perPage:
@@ -2022,6 +2024,7 @@
       view: cfg.view || 'table',
       allPerPage: cfg.allPerPage || 1000,
       panelOpen: false,
+      groupOpen: false,
       openFilterField: null,
       m2oQuery: {},
       m2oResults: {},
@@ -2053,8 +2056,17 @@
           }
         }
         if (this.perPage && this.perPage !== '15') params.set('perPage', String(this.perPage));
-        if (fieldChips.length) params.set('filters', JSON.stringify(fieldChips));
-        if (this.groupBy) params.set('groupBy', this.groupBy);
+        if (fieldChips.length) {
+          params.set('filters', JSON.stringify(fieldChips));
+        } else if (this.filtersLockedEmpty) {
+          // Explicit empty — do not re-apply resource defaultFilters.
+          params.set('filters', '[]');
+        }
+        if (this.groupBy) {
+          params.set('groupBy', this.groupBy);
+        } else if (this.groupLockedEmpty) {
+          params.set('groupBy', '');
+        }
         if (this.trashed === true || this.trashed === 'only' || this.trashed === '1') {
           params.set('trashed', '1');
         }
@@ -2063,6 +2075,10 @@
       },
       reload() {
         window.location.assign(this.buildUrl());
+      },
+      applyFilters() {
+        const gen = ++this._searchGen;
+        this.softReload(gen);
       },
       async softReload(gen) {
         const url = this.buildUrl();
@@ -2180,13 +2196,25 @@
       },
       removeChip(i) {
         this.chips.splice(i, 1);
-        this.reload();
+        this.filtersLockedEmpty = this.chips.length === 0;
+        this.applyFilters();
       },
       clearAll() {
         this.chips = [];
         this.searchInput = '';
         this.groupBy = null;
+        this.filtersLockedEmpty = true;
+        this.groupLockedEmpty = true;
+        this.panelOpen = false;
+        this.groupOpen = false;
+        this.openFilterField = null;
         this.reload();
+      },
+      clearGroupBy() {
+        this.groupBy = null;
+        this.groupLockedEmpty = true;
+        this.groupOpen = false;
+        this.applyFilters();
       },
       filterableHeaders() {
         return this.headers.filter(
@@ -2202,26 +2230,32 @@
         this.openFilterField = this.openFilterField === name ? null : name;
       },
       addBooleanFilter(h, value) {
+        const field = h.filterField || h.name;
+        this.chips = this.chips.filter((chip) => chip.field !== field);
         this.chips.push({
-          field: h.name,
+          field,
           op: '=',
           value,
           label: `${h.label}: ${value ? 'Yes' : 'No'}`,
         });
+        this.filtersLockedEmpty = false;
         this.openFilterField = null;
         this.panelOpen = false;
-        this.reload();
+        this.applyFilters();
       },
       addSelectFilter(h, opt) {
+        const field = h.filterField || h.name;
+        this.chips = this.chips.filter((chip) => chip.field !== field);
         this.chips.push({
-          field: h.name,
+          field,
           op: '=',
           value: opt.value,
           label: `${h.label}: ${opt.label}`,
         });
+        this.filtersLockedEmpty = false;
         this.openFilterField = null;
         this.panelOpen = false;
-        this.reload();
+        this.applyFilters();
       },
       async searchM2o(h) {
         const q = this.m2oQuery[h.name] || '';
@@ -2237,22 +2271,27 @@
         }
       },
       addM2oFilter(h, opt) {
+        const field = h.filterField || h.name;
+        this.chips = this.chips.filter((chip) => chip.field !== field);
         this.chips.push({
-          field: h.name,
+          field,
           op: '=',
           value: opt.id,
           label: `${h.label}: ${opt.label}`,
         });
+        this.filtersLockedEmpty = false;
         this.openFilterField = null;
         this.panelOpen = false;
         this.m2oQuery[h.name] = '';
         this.m2oResults[h.name] = [];
-        this.reload();
+        this.applyFilters();
       },
       setGroupBy(name) {
         this.groupBy = name;
+        this.groupLockedEmpty = false;
+        this.groupOpen = false;
         this.panelOpen = false;
-        this.reload();
+        this.applyFilters();
       },
       groupByLabel() {
         const h = this.headers.find((item) => item.name === this.groupBy);

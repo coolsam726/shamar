@@ -128,10 +128,12 @@ export default class ApiKeyResource extends Resource {
 
   static override table() {
     return table((t) => {
-      t.defaultSort('createdAt', 'desc').schema([
+      t.defaultSort('createdAt', 'desc')
+        .defaultFilters([{ field: 'kind', value: 'machine' }])
+        .schema([
         TextColumn.make('name').searchable().sortable(),
         TextColumn.make('description'),
-        TextColumn.make('kind').label('Type').sortable(),
+        TextColumn.make('kind').label('Type').sortable().filterable().groupable(),
         TextColumn.make('tokenPrefix').label('Prefix'),
         TextColumn.make('status').label('Status').badge(),
         TextColumn.make('user.email').label('User'),

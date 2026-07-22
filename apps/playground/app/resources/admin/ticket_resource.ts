@@ -76,13 +76,15 @@ export default class TicketResource extends Resource {
 
   static override table() {
     return table((t) => {
-      t.defaultSort('createdAt', 'desc').schema([
+      t.defaultSort('createdAt', 'desc')
+        .defaultFilters([{ field: 'resolved', value: false, label: 'Resolved: No' }])
+        .schema([
         TextColumn.make('code').searchable().sortable(),
         TextColumn.make('subject').searchable().sortable(),
-        TextColumn.make('priority').badge().sortable(),
+        TextColumn.make('priority').badge().sortable().filterable().groupable(),
         TextColumn.make('assigneeEmail').email().searchable(),
         TextColumn.make('dueOn').date().sortable(),
-        TextColumn.make('resolved').toggle(),
+        TextColumn.make('resolved').toggle().filterable().groupable(),
         TextColumn.make('createdAt').dateTime().label('Opened').sortable(),
       ])
     })

@@ -123,6 +123,30 @@ async function listLucid(
     }
   }
 
+  // List toolbar filters
+  if (query.filters?.length) {
+    for (const filter of query.filters) {
+      const field = String(filter.field ?? '').trim();
+      if (!field || field.includes('.')) continue;
+      const op = filter.op ?? '=';
+      if (op === 'ilike') {
+        if (typeof qb.whereILike === 'function') {
+          qb.whereILike(field, `%${String(filter.value ?? '')}%`);
+        } else {
+          qb.where(field, 'LIKE', `%${String(filter.value ?? '')}%`);
+        }
+      } else if (op === '!=') {
+        if (typeof qb.whereNot === 'function') {
+          qb.whereNot(field, filter.value);
+        } else {
+          qb.where(field, '!=', filter.value);
+        }
+      } else {
+        qb.where(field, filter.value);
+      }
+    }
+  }
+
   // Soft-delete: exclude trashed by default
   if (meta.softDelete) {
     const field =
@@ -132,10 +156,13 @@ async function listLucid(
     }
   }
 
-  // Sort
-  const sortField = query.sort ?? meta.defaultSort?.field ?? 'id';
+  // Sort — groupBy wins as primary key so sections stay contiguous
+  const sortField = query.groupBy ?? query.sort ?? meta.defaultSort?.field ?? 'id';
   const sortDir = query.direction ?? meta.defaultSort?.direction ?? 'desc';
   qb.orderBy(sortField, sortDir);
+  if (query.groupBy && query.sort && query.sort !== query.groupBy) {
+    qb.orderBy(query.sort, sortDir);
+  }
 
   const paginated = await qb.paginate(query.page, query.perPage);
   const items = paginated.all().map(toRecord);
