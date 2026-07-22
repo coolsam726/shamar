@@ -4,6 +4,11 @@
   "description": "AdonisJS service provider for Shamar admin — routes, controllers, middleware, Edge views.",
   "license": "MIT",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/coolsam726/shamar.git",
+    "directory": "packages/adonis"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -20,7 +25,12 @@
       "import": "./dist/middleware/require_api_key_middleware.js"
     }
   },
-  "files": ["dist", "resources", "assets", "stubs"],
+  "files": [
+    "dist",
+    "resources",
+    "assets",
+    "stubs"
+  ],
   "scripts": {
     "build": "tsc",
     "build:css": "pnpm dlx @tailwindcss/cli@4.3.2 -i ./assets/input.css -o ./assets/admin.css --minify",
@@ -40,9 +50,15 @@
     "mongoose": ">=8.0.0"
   },
   "peerDependenciesMeta": {
-    "edge.js": { "optional": true },
-    "mongoose": { "optional": true },
-    "@adonisjs/lucid": { "optional": true }
+    "edge.js": {
+      "optional": true
+    },
+    "mongoose": {
+      "optional": true
+    },
+    "@adonisjs/lucid": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@adonisjs/core": "^7.3.5",
@@ -51,5 +67,7 @@
     "tsx": "^4.20.0",
     "typescript": "^5.7.0"
   },
-  "publishConfig": { "access": "public" }
+  "publishConfig": {
+    "access": "public"
+  }
 }

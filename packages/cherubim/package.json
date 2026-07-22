@@ -4,6 +4,11 @@
   "description": "Authentication and access control for Shamar admin (abilities, policies, RBAC).",
   "license": "MIT",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/coolsam726/shamar.git",
+    "directory": "packages/cherubim"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -12,7 +17,9 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "test": "tsx --test test/**/*.test.ts",
@@ -26,5 +33,7 @@
     "tsx": "^4.20.0",
     "typescript": "^5.7.0"
   },
-  "publishConfig": { "access": "public" }
+  "publishConfig": {
+    "access": "public"
+  }
 }

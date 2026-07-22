@@ -4,6 +4,11 @@
   "description": "Lucid ORM adapter for Shamar admin — list, CRUD, soft-delete, multi-connection.",
   "license": "MIT",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/coolsam726/shamar.git",
+    "directory": "packages/lucid"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -12,7 +17,9 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "test": "tsx --test test/**/*.test.ts",
@@ -25,12 +32,16 @@
     "@adonisjs/lucid": ">=21.0.0"
   },
   "peerDependenciesMeta": {
-    "@adonisjs/lucid": { "optional": true }
+    "@adonisjs/lucid": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "tsx": "^4.20.0",
     "typescript": "^5.7.0"
   },
-  "publishConfig": { "access": "public" }
+  "publishConfig": {
+    "access": "public"
+  }
 }
