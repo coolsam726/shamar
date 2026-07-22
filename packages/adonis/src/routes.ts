@@ -100,8 +100,23 @@ function registerPanelRoutes(
     router.get('/', handler('dashboard')).as(`${routePrefix}.dashboard`);
     router.get('/:slug/create', handler('create')).as(`${routePrefix}.resources.create`);
     router.post('/:slug/form-state', handler('formState')).as(`${routePrefix}.resources.formState`);
+    router
+      .get('/:slug/relation-search', handler('relationSearch', true))
+      .as(`${routePrefix}.resources.relationSearch`);
+    router
+      .post('/:slug/relation-quick-create', handler('relationQuickCreate', true))
+      .as(`${routePrefix}.resources.relationQuickCreate`);
+    router
+      .post('/:slug/relation-attach', handler('relationAttach', true))
+      .as(`${routePrefix}.resources.relationAttach`);
+    router
+      .post('/:slug/relation-detach', handler('relationDetach', true))
+      .as(`${routePrefix}.resources.relationDetach`);
     router.post('/:slug', handler('store')).as(`${routePrefix}.resources.store`);
     router.get('/:slug/:id/edit', handler('edit')).as(`${routePrefix}.resources.edit`);
+    router
+      .get('/:slug/:id/summary', handler('summary', true))
+      .as(`${routePrefix}.resources.summary`);
     router.post('/:slug/:id/delete', handler('destroy')).as(`${routePrefix}.resources.destroy`);
     router.post('/:slug/:id', handler('update')).as(`${routePrefix}.resources.update`);
     router.put('/:slug/:id', handler('update')).as(`${routePrefix}.resources.update.put`);

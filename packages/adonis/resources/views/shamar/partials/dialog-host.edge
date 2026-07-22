@@ -2,10 +2,10 @@
   x-data="shamarDialogHost()"
   @shamar-open-dialog.window="openModal($event.detail)"
   @shamar-open-confirm.window="openConfirm($event.detail)"
-  @keydown.escape.window="if (open) close()"
+  @keydown.escape.window="if (open && !confirmMode) dismissDialog()"
 >
   <div x-show="open" x-cloak style="display: none;">
-    <div class="shamar-dialog-backdrop" @click="close()"></div>
+    <div class="shamar-dialog-backdrop" @click="dismissDialog()"></div>
 
     <div
       class="shamar-dialog-panel"
@@ -39,7 +39,7 @@
           <button
             type="button"
             class="rounded-md p-1.5 text-body-subtle hover:bg-surface-hover hover:text-heading"
-            @click="close()"
+            @click="dismissDialog()"
             title="Close"
             aria-label="Close"
             x-ref="closeBtn"

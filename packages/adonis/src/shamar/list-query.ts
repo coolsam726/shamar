@@ -1,5 +1,5 @@
 import type { ListQuery, PaginatedResult, ResourceMeta } from '@shamar/core';
-import { formatCurrencyValue } from '@shamar/core';
+import { formatCurrencyValue, getRecordValue } from '@shamar/core';
 
 export interface ListViewQuery {
   search?: string;
@@ -252,7 +252,7 @@ export function cellValue(
     currency?: { code: string; locale?: string; precision?: number };
   },
 ): string {
-  const value = record[column.name];
+  const value = getRecordValue(record, column.name);
   if (
     column.type === 'boolean' ||
     column.format === 'boolean' ||
@@ -299,7 +299,7 @@ export function badgeValues(
   record: Record<string, unknown>,
   field: { name: string },
 ): string[] {
-  const value = record[field.name];
+  const value = getRecordValue(record, field.name);
   if (value == null || value === '') return [];
   if (Array.isArray(value)) {
     return value.map((item) => String(item).trim()).filter(Boolean);

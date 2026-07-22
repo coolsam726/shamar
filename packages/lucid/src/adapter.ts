@@ -2,6 +2,8 @@ import type {
   DataAdapter,
   ListQuery,
   PaginatedResult,
+  RelationSearchQuery,
+  RelationSearchResult,
   ResourceMeta,
 } from '@shamar/core';
 
@@ -20,12 +22,14 @@ interface LucidQueryBuilder {
   where(key: string, value: unknown): this;
   where(key: string, op: string, value: unknown): this;
   whereNot?(key: string, value: unknown): this;
+  whereIn?(key: string, values: unknown[]): this;
   whereILike?(key: string, value: string): this;
   orWhere?(key: string, op: string, value: unknown): this;
   orWhereILike?(key: string, value: string): this;
   whereNull?(key: string): this;
   whereNotNull?(key: string): this;
   orderBy(field: string, direction: string): this;
+  limit?(value: number): this;
   paginate(page: number, perPage: number): Promise<{ total: number; all(): LucidRow[] }>;
   first(): Promise<LucidRow | null>;
   delete(): Promise<void>;
@@ -78,6 +82,9 @@ export function createLucidAdapter(): DataAdapter {
     },
     async exists(meta, column, value, options) {
       return existsLucid(meta, column, value, options);
+    },
+    async search(meta, query) {
+      return searchLucid(meta, query);
     },
   };
 }
@@ -221,4 +228,58 @@ async function deleteLucid(
   } else {
     await row.delete();
   }
+}
+
+async function searchLucid(
+  meta: ResourceMeta,
+  query: RelationSearchQuery,
+): Promise<RelationSearchResult[]> {
+  const Model = resolveModel(meta);
+  const qb = Model.query({ connection: meta.connection });
+  const titleAttribute = query.titleAttribute;
+  const limit = Math.min(250, Math.max(1, query.limit ?? 25));
+
+  if (query.ids && query.ids.length > 0) {
+    if (typeof qb.whereIn === 'function') {
+      qb.whereIn('id', query.ids);
+    } else {
+      qb.where('id', query.ids[0]);
+      for (const id of query.ids.slice(1)) {
+        if (typeof qb.orWhere === 'function') {
+          qb.orWhere('id', '=', id);
+        }
+      }
+    }
+  } else if (query.q?.trim()) {
+    const term = `%${query.q.trim()}%`;
+    if (typeof qb.whereILike === 'function') {
+      qb.whereILike(titleAttribute, term);
+    } else {
+      qb.where(titleAttribute, 'LIKE', term);
+    }
+  }
+
+  if (query.scope) {
+    for (const [key, value] of Object.entries(query.scope)) {
+      qb.where(key, value);
+    }
+  }
+
+  if (meta.softDelete) {
+    const field =
+      typeof meta.softDelete === 'object' ? meta.softDelete.field ?? 'deletedAt' : 'deletedAt';
+    if (typeof qb.whereNull === 'function') {
+      qb.whereNull(field);
+    }
+  }
+
+  qb.orderBy(titleAttribute, 'asc');
+  const paginated = await qb.paginate(1, limit);
+  return paginated.all().map((row) => {
+    const record = toRecord(row);
+    return {
+      id: String(record.id ?? ''),
+      label: String(record[titleAttribute] ?? record.id ?? ''),
+    };
+  });
 }

@@ -2,6 +2,8 @@ import type {
   DataAdapter,
   ListQuery,
   PaginatedResult,
+  RelationSearchQuery,
+  RelationSearchResult,
   ResourceMeta,
 } from '@shamar/core';
 
@@ -191,6 +193,9 @@ export function createMongooseAdapter(
     async exists(meta, column, value, options) {
       return existsMongoose(meta, column, value, options, connection);
     },
+    async search(meta, query) {
+      return searchMongoose(meta, query, connection);
+    },
   };
 }
 
@@ -297,4 +302,44 @@ async function deleteMongoose(
   }
   const Model = resolveModel(meta, connection);
   await Model.findByIdAndDelete(id);
+}
+
+async function searchMongoose(
+  meta: ResourceMeta,
+  query: RelationSearchQuery,
+  connection?: MongooseConnectionLike,
+): Promise<RelationSearchResult[]> {
+  const Model = resolveModel(meta, connection);
+  const titleAttribute = query.titleAttribute;
+  const limit = Math.min(250, Math.max(1, query.limit ?? 25));
+  const parts: Record<string, unknown>[] = [softDeleteWhere(meta)];
+
+  if (query.ids && query.ids.length > 0) {
+    const validIds = query.ids.filter((id) => /^[a-f\d]{24}$/i.test(id));
+    if (validIds.length === 0) return [];
+    parts.push({ _id: { $in: validIds } });
+  } else if (query.q?.trim()) {
+    parts.push({
+      [titleAttribute]: { $regex: query.q.trim(), $options: 'i' },
+    });
+  }
+
+  if (query.scope) {
+    parts.push({ ...query.scope });
+  }
+
+  const filter = mergeFilter(parts);
+  const rows = await Model.find(filter)
+    .sort({ [titleAttribute]: 1 })
+    .skip(0)
+    .limit(limit)
+    .lean();
+
+  return rows.map((row) => {
+    const record = finalizeRecord(row);
+    return {
+      id: String(record.id ?? ''),
+      label: String(record[titleAttribute] ?? record.id ?? ''),
+    };
+  });
 }

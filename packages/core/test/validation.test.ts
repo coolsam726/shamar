@@ -36,6 +36,9 @@ function stubAdapter(existing: Array<Record<string, unknown>>): DataAdapter {
         return true;
       });
     },
+    async search() {
+      return [];
+    },
   };
 }
 

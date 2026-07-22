@@ -26,6 +26,16 @@ import {
   type RecordPager,
 } from '../shamar/list-query.js';
 import { evaluateFormState, formClientFields } from '../form-state.js';
+import {
+  buildRelationUiConfig,
+  collectRelationIds,
+  isRelationField,
+  recordSummaryLabel,
+  resolveRelatedMeta,
+  relationTitleAttribute,
+  type RelationUiConfig,
+} from '../shamar/relation-fields.js';
+import { hydrateRecordsForDisplay } from '../shamar/display-relations.js';
 
 export class AdminController {
   private readonly resources: ResourceController;
@@ -81,10 +91,13 @@ export class AdminController {
     const query = normalizeListQuery(rawQuery);
 
     if (this.wantsJson(ctx, options?.asJson)) {
-      return ctx.response.json(await this.resources.index(meta, query));
+      const result = await this.resources.index(meta, query);
+      await hydrateRecordsForDisplay(meta, result.items, this.registry, this.panel.adapter);
+      return ctx.response.json(result);
     }
 
     const result = await this.resources.index(meta, query);
+    await hydrateRecordsForDisplay(meta, result.items, this.registry, this.panel.adapter);
     const { query: viewQuery, pagination, perPageValue } = buildListContext({
       basePath: this.basePath,
       meta,
@@ -126,6 +139,8 @@ export class AdminController {
     });
 
     const initialState = this.initialFormState(meta, null, 'create');
+    this.applyCreateQueryDefaults(ctx, meta, initialState);
+    const relationUi = await this.buildRelationUiMap(meta, null, 'create', initialState);
 
     return ctx.view.render('shamar::form', {
       ...shell,
@@ -144,6 +159,7 @@ export class AdminController {
       formStateEndpoint: `${this.basePath}/${meta.slug}/form-state`,
       formInitialState: initialState,
       formErrors: {},
+      relationUi,
       recordPager: null,
       resolveGridItemStyle,
     });
@@ -175,6 +191,7 @@ export class AdminController {
     const meta = this.requireResource(ctx);
     const { id } = ctx.params;
     const record = await this.resources.show(meta, id);
+    await hydrateRecordsForDisplay(meta, [record], this.registry, this.panel.adapter);
 
     if (this.wantsJson(ctx, options?.asJson)) {
       return ctx.response.json(record);
@@ -230,6 +247,7 @@ export class AdminController {
     });
 
     const formInitialState = this.initialFormState(meta, record, 'edit');
+    const relationUi = await this.buildRelationUiMap(meta, record, 'edit', formInitialState);
 
     return ctx.view.render('shamar::form', {
       ...shell,
@@ -249,6 +267,7 @@ export class AdminController {
       formStateEndpoint: `${this.basePath}/${meta.slug}/form-state`,
       formInitialState,
       formErrors: {},
+      relationUi,
       recordPager: embed
         ? null
         : await this.resolveRecordPager(ctx, meta, String(record.id), 'edit'),
@@ -287,6 +306,148 @@ export class AdminController {
     });
 
     return ctx.response.json(result);
+  }
+
+  async summary(ctx: ShamarHttpContext) {
+    const meta = this.requireResource(ctx);
+    const { id } = ctx.params;
+    const record = await this.resources.show(meta, id);
+    return ctx.response.json({
+      id: String(record.id),
+      label: recordSummaryLabel(meta, record),
+    });
+  }
+
+  async relationSearch(ctx: ShamarHttpContext) {
+    const meta = this.requireResource(ctx);
+    const fieldName = String(ctx.request.input('field') ?? '');
+    const field = meta.fields.find((entry) => entry.name === fieldName);
+    if (!field?.relation) {
+      return ctx.response.badRequest({ message: 'Unknown relation field' });
+    }
+
+    const related = resolveRelatedMeta(this.registry, field.relation);
+    const titleAttribute = relationTitleAttribute(field.relation);
+    const q = ctx.request.input('q');
+    const limitRaw = Number(ctx.request.input('limit') ?? field.relation.preloadLimit ?? 25);
+    const limit = Number.isFinite(limitRaw) ? limitRaw : 25;
+    const parentId = ctx.request.input('parentId');
+    const linkedOnly =
+      ctx.request.input('linked') === '1' ||
+      ctx.request.input('linked') === 1 ||
+      ctx.request.input('linked') === true;
+
+    const scope: Record<string, unknown> = {};
+    if (
+      linkedOnly &&
+      field.relation.kind === 'hasMany' &&
+      field.relation.foreignKey &&
+      parentId
+    ) {
+      scope[field.relation.foreignKey] = String(parentId);
+    }
+
+    const results = await this.panel.adapter.search(related, {
+      q: q != null ? String(q) : undefined,
+      limit,
+      titleAttribute,
+      scope: Object.keys(scope).length ? scope : undefined,
+    });
+
+    return ctx.response.json({ results });
+  }
+
+  async relationQuickCreate(ctx: ShamarHttpContext) {
+    const meta = this.requireResource(ctx);
+    const body = ctx.request.body() as {
+      field?: string;
+      name?: string;
+      parentId?: string;
+    };
+    const fieldName = String(body.field ?? '');
+    const field = meta.fields.find((entry) => entry.name === fieldName);
+    if (!field?.relation) {
+      return ctx.response.badRequest({ message: 'Unknown relation field' });
+    }
+    if (!field.relation.createOption) {
+      return ctx.response.badRequest({ message: 'Inline create is not enabled for this field' });
+    }
+
+    const name = String(body.name ?? '').trim();
+    if (!name) {
+      return ctx.response.badRequest({ message: 'Name is required' });
+    }
+
+    const related = resolveRelatedMeta(this.registry, field.relation);
+    const titleAttribute = relationTitleAttribute(field.relation);
+    const payload: Record<string, unknown> = { [titleAttribute]: name };
+
+    if (
+      field.relation.kind === 'hasMany' &&
+      field.relation.foreignKey &&
+      body.parentId
+    ) {
+      payload[field.relation.foreignKey] = String(body.parentId);
+    }
+
+    try {
+      const record = await this.panel.adapter.create(related, payload);
+      return ctx.response.json({
+        id: String(record.id),
+        label: recordSummaryLabel(related, record, titleAttribute),
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Cannot create this record inline.';
+      return ctx.response.badRequest({ message });
+    }
+  }
+
+  async relationAttach(ctx: ShamarHttpContext) {
+    const meta = this.requireResource(ctx);
+    const body = ctx.request.body() as {
+      field?: string;
+      relatedId?: string;
+      parentId?: string;
+    };
+    const field = meta.fields.find((entry) => entry.name === String(body.field ?? ''));
+    if (!field?.relation || field.relation.kind !== 'hasMany' || !field.relation.foreignKey) {
+      return ctx.response.badRequest({ message: 'Attach requires a hasMany relation field' });
+    }
+    if (!body.relatedId || !body.parentId) {
+      return ctx.response.badRequest({ message: 'relatedId and parentId are required' });
+    }
+
+    const related = resolveRelatedMeta(this.registry, field.relation);
+    const titleAttribute = relationTitleAttribute(field.relation);
+    const record = await this.panel.adapter.update(related, String(body.relatedId), {
+      [field.relation.foreignKey]: String(body.parentId),
+    });
+    return ctx.response.json({
+      id: String(record.id),
+      label: recordSummaryLabel(related, record, titleAttribute),
+    });
+  }
+
+  async relationDetach(ctx: ShamarHttpContext) {
+    const meta = this.requireResource(ctx);
+    const body = ctx.request.body() as {
+      field?: string;
+      relatedId?: string;
+    };
+    const field = meta.fields.find((entry) => entry.name === String(body.field ?? ''));
+    if (!field?.relation || field.relation.kind !== 'hasMany' || !field.relation.foreignKey) {
+      return ctx.response.badRequest({ message: 'Detach requires a hasMany relation field' });
+    }
+    if (!body.relatedId) {
+      return ctx.response.badRequest({ message: 'relatedId is required' });
+    }
+
+    const related = resolveRelatedMeta(this.registry, field.relation);
+    await this.panel.adapter.update(related, String(body.relatedId), {
+      [field.relation.foreignKey]: null,
+    });
+    return ctx.response.json({ ok: true });
   }
 
   async update(ctx: ShamarHttpContext, options?: { asJson?: boolean }) {
@@ -368,7 +529,9 @@ export class AdminController {
     action: 'created' | 'updated',
   ) {
     if (this.isEmbed(ctx)) {
-      return ctx.response.redirect(`${this.basePath}/${meta.slug}?success=${action}`);
+      return ctx.response.redirect(
+        `${this.basePath}/${meta.slug}/${recordId}?success=${action}&embed=1`,
+      );
     }
 
     ctx.session.flash(
@@ -453,6 +616,12 @@ export class AdminController {
     const formInitialState =
       options.formInitialState ??
       this.initialFormState(meta, options.record, options.mode);
+    const relationUi = await this.buildRelationUiMap(
+      meta,
+      options.record,
+      options.mode,
+      formInitialState,
+    );
 
     return ctx.view.render('shamar::form', {
       ...shell,
@@ -472,6 +641,7 @@ export class AdminController {
       formStateEndpoint: `${this.basePath}/${meta.slug}/form-state`,
       formInitialState,
       formErrors: options.formErrors ?? {},
+      relationUi,
       recordPager:
         !embed && options.mode === 'edit' && options.record?.id != null
           ? await this.resolveRecordPager(ctx, meta, String(options.record.id), 'edit')
@@ -516,6 +686,30 @@ export class AdminController {
     }
   }
 
+  private applyCreateQueryDefaults(
+    ctx: ShamarHttpContext,
+    meta: ResourceMeta,
+    state: Record<string, unknown>,
+  ): void {
+    const qs = ctx.request.qs() as Record<string, unknown>;
+    for (const field of meta.fields) {
+      if (!(field.name in qs)) continue;
+      const raw = qs[field.name];
+      if (raw == null || raw === '') continue;
+      state[field.name] = toFormControlValue(raw, field);
+    }
+    // Create & Edit often passes `?name=` for the title attribute.
+    if ('name' in qs && qs.name != null && qs.name !== '') {
+      const titleField =
+        meta.recordTitleField ??
+        meta.fields.find((field) => field.name === 'name')?.name ??
+        null;
+      if (titleField && (state[titleField] === '' || state[titleField] == null)) {
+        state[titleField] = String(qs.name);
+      }
+    }
+  }
+
   private initialFormState(
     meta: ResourceMeta,
     record: Record<string, unknown> | null,
@@ -531,6 +725,16 @@ export class AdminController {
         state[field.name] = false;
       } else if (field.type === 'color') {
         state[field.name] = '#000000';
+      } else if (field.type === 'relation' && field.relation?.kind === 'belongsTo') {
+        // BelongsTo values are owned by the M2O combobox widget, not form state.
+      } else if (
+        field.multiple ||
+        field.type === 'tags' ||
+        field.type === 'checkboxList' ||
+        field.type === 'relationTable' ||
+        (field.type === 'relation' && field.relation?.kind !== 'belongsTo')
+      ) {
+        state[field.name] = [];
       } else if (field.type === 'select' && field.multiple) {
         state[field.name] = [];
       } else {
@@ -539,6 +743,74 @@ export class AdminController {
     }
     void operation;
     return state;
+  }
+
+  private async buildRelationUiMap(
+    meta: ResourceMeta,
+    record: Record<string, unknown> | null,
+    operation: 'create' | 'edit',
+    state: Record<string, unknown>,
+  ): Promise<Record<string, RelationUiConfig>> {
+    const map: Record<string, RelationUiConfig> = {};
+
+    for (const field of meta.fields) {
+      if (!isRelationField(field) || !field.relation) continue;
+
+      const related = resolveRelatedMeta(this.registry, field.relation);
+      const titleAttribute = relationTitleAttribute(field.relation);
+      const widget = field.relation.widget ?? 'combobox';
+
+      let initialItems: Awaited<ReturnType<typeof this.panel.adapter.search>> = [];
+
+      if (field.relation.kind === 'hasMany' && record?.id != null && field.relation.foreignKey) {
+        initialItems = await this.panel.adapter.search(related, {
+          titleAttribute,
+          limit: field.relation.preloadLimit ?? 100,
+          scope: { [field.relation.foreignKey]: String(record.id) },
+        });
+      } else {
+        const ids = collectRelationIds(field, {
+          ...(record ?? {}),
+          ...state,
+        });
+        if (ids.length > 0) {
+          initialItems = await this.panel.adapter.search(related, {
+            ids,
+            titleAttribute,
+            limit: Math.max(ids.length, 25),
+          });
+        }
+      }
+
+      let preloadedOptions: typeof initialItems | undefined;
+      if (widget === 'radio' || widget === 'checkboxList') {
+        preloadedOptions = await this.panel.adapter.search(related, {
+          titleAttribute,
+          limit: field.relation.preloadLimit ?? 100,
+          q: '',
+        });
+        // Ensure selected items appear in the option list.
+        const seen = new Set(preloadedOptions.map((item) => item.id));
+        for (const item of initialItems) {
+          if (!seen.has(item.id)) {
+            preloadedOptions = [item, ...preloadedOptions];
+          }
+        }
+      }
+
+      map[field.name] = buildRelationUiConfig({
+        field,
+        parentMeta: meta,
+        relatedMeta: related,
+        basePath: this.basePath,
+        record,
+        initialItems,
+        preloadedOptions,
+        operation,
+      });
+    }
+
+    return map;
   }
 
   private resourcePayload(
@@ -571,12 +843,20 @@ export class AdminController {
         continue;
       }
 
-      if (field.type === 'tags') {
+      if (
+        field.type === 'tags' ||
+        field.type === 'checkboxList' ||
+        (field.relation &&
+          (field.relation.kind === 'manyToMany' || field.multiple))
+      ) {
         const raw = input[field.name] ?? input[`${field.name}[]`];
         if (Array.isArray(raw)) {
-          data[field.name] = raw.map((item) => String(item));
+          data[field.name] = raw.map((item) => String(item)).filter(Boolean);
         } else if (typeof raw === 'string' && raw.trim()) {
-          data[field.name] = raw.split(',').map((item) => item.trim()).filter(Boolean);
+          data[field.name] =
+            field.type === 'tags'
+              ? raw.split(',').map((item) => item.trim()).filter(Boolean)
+              : [raw.trim()];
         } else if (field.name in input || `${field.name}[]` in input) {
           data[field.name] = [];
         }

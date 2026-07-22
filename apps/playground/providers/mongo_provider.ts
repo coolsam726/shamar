@@ -11,6 +11,7 @@ import Ticket from '#models/ticket'
 import Asset from '#models/asset'
 import Campaign from '#models/campaign'
 import LockedItem from '#models/locked_item'
+import Category from '#models/category'
 
 /**
  * Connects Mongoose for Shamar resources and app auth (User).
@@ -28,6 +29,7 @@ export default class MongoProvider {
   async ready() {
     await this.seedCompanies()
     await this.seedAdminUser()
+    await this.seedCategories()
     await this.seedProducts()
     await this.seedEvents()
     await this.seedArticles()
@@ -80,8 +82,23 @@ export default class MongoProvider {
     })
   }
 
+  private async seedCategories() {
+    if ((await Category.countDocuments()) > 0) return
+    await Category.create([
+      { name: 'Outdoor', slug: 'outdoor', description: 'Gear for the trail.' },
+      { name: 'Office', slug: 'office', description: 'Desk and workspace.' },
+      { name: 'Accessories', slug: 'accessories', description: 'Small goods.' },
+    ])
+  }
+
   private async seedProducts() {
     if ((await Product.countDocuments()) > 0) return
+    const company = await Company.findOne({ code: 'SAV' }).lean()
+    const categories = await Category.find({}).lean()
+    const outdoor = categories.find((item) => item.slug === 'outdoor')
+    const office = categories.find((item) => item.slug === 'office')
+    const companyId = company?._id ? String(company._id) : null
+
     await Product.create([
       {
         sku: 'SKU-100',
@@ -92,6 +109,8 @@ export default class MongoProvider {
         tags: ['outdoor', 'hydration'],
         color: '#0ea5e9',
         featured: true,
+        companyId,
+        categoryIds: outdoor?._id ? [String(outdoor._id)] : [],
       },
       {
         sku: 'SKU-200',
@@ -102,6 +121,8 @@ export default class MongoProvider {
         tags: ['office'],
         color: '#111827',
         featured: false,
+        companyId,
+        categoryIds: office?._id ? [String(office._id)] : [],
       },
     ])
   }

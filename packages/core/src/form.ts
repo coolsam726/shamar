@@ -25,6 +25,11 @@ import {
   type CurrencyOptions,
 } from './currency.js';
 import type { Alignment } from './alignment.js';
+import {
+  applyRelationship,
+  type RelationshipOptions,
+} from './relation.js';
+import type { RelationWidget } from './types.js';
 
 /**
  * Base for form field components (`TextInput::make()` style).
@@ -38,6 +43,53 @@ export abstract class FormComponent {
 
   protected constructor(name: string, type: FieldType) {
     this.config = { name, type };
+  }
+
+  /** Apply Filament-style relationship binding. */
+  protected applyRelationship(
+    resource: string,
+    titleAttribute: string,
+    options?: RelationshipOptions,
+  ): void {
+    applyRelationship(this.config, resource, titleAttribute, options);
+  }
+
+  protected setCreateOption(value: boolean): void {
+    if (!this.config.relation) {
+      throw new Error(
+        `Call .relationship() before .createOption() on field "${this.config.name}"`,
+      );
+    }
+    this.config.relation.createOption = value;
+  }
+
+  protected setCreateAndEditOption(value: boolean): void {
+    if (!this.config.relation) {
+      throw new Error(
+        `Call .relationship() before .createAndEditOption() on field "${this.config.name}"`,
+      );
+    }
+    this.config.relation.createAndEditOption = value;
+  }
+
+  protected setRelationWidget(widget: RelationWidget): void {
+    if (!this.config.relation) {
+      throw new Error(
+        `Call .relationship() before .widget() on field "${this.config.name}"`,
+      );
+    }
+    this.config.relation.widget = widget;
+    if (widget === 'radio') {
+      this.config.type = 'radio';
+    } else if (widget === 'checkboxList') {
+      this.config.type = 'checkboxList';
+      this.config.multiple = true;
+    } else if (widget === 'table') {
+      this.config.type = 'relationTable';
+      this.config.multiple = true;
+    } else {
+      this.config.type = 'relation';
+    }
   }
 
   label(value: StringOrClosure): this {
@@ -444,6 +496,43 @@ export class Select extends FormComponent {
     this.config.nativeSelect = value;
     return this;
   }
+
+  /**
+   * Filament-style relationship binding.
+   * @example Select.make('companyId').relationship('companies', 'name')
+   * @example Select.make('categoryIds').relationship('categories', 'name', { kind: 'manyToMany' }).multiple()
+   */
+  relationship(
+    resource: string,
+    titleAttribute: string,
+    options?: RelationshipOptions,
+  ): this {
+    this.applyRelationship(resource, titleAttribute, options);
+    return this;
+  }
+
+  /** Presentation widget (`combobox` default for BelongsTo / M2M). */
+  widget(value: RelationWidget): this {
+    this.setRelationWidget(value);
+    return this;
+  }
+
+  /** Use radio buttons for a BelongsTo relationship. */
+  radio(): this {
+    return this.widget('radio');
+  }
+
+  /** Enable inline Create from the search query (quick-create). */
+  createOption(value = true): this {
+    this.setCreateOption(value);
+    return this;
+  }
+
+  /** Enable Create & Edit (open related create dialog, then pick). */
+  createAndEditOption(value = true): this {
+    this.setCreateAndEditOption(value);
+    return this;
+  }
 }
 
 /** Filament `Toggle::make()` — switch UI. */
@@ -481,6 +570,109 @@ export class Radio extends FormComponent {
 
   options(entries: Array<{ label: string; value: string | number }>): this {
     this.config.options = entries;
+    return this;
+  }
+
+  relationship(
+    resource: string,
+    titleAttribute: string,
+    options?: RelationshipOptions,
+  ): this {
+    this.applyRelationship(resource, titleAttribute, {
+      ...options,
+      kind: options?.kind ?? 'belongsTo',
+      widget: options?.widget ?? 'radio',
+    });
+    return this;
+  }
+
+  createOption(value = true): this {
+    this.setCreateOption(value);
+    return this;
+  }
+
+  createAndEditOption(value = true): this {
+    this.setCreateAndEditOption(value);
+    return this;
+  }
+}
+
+/** Multi-option checkbox list (static options or manyToMany relationship). */
+export class CheckboxList extends FormComponent {
+  static make(name: string): CheckboxList {
+    return new CheckboxList(name);
+  }
+
+  private constructor(name: string) {
+    super(name, 'checkboxList');
+    this.config.options = [];
+    this.config.multiple = true;
+  }
+
+  options(entries: Array<{ label: string; value: string | number }>): this {
+    this.config.options = entries;
+    return this;
+  }
+
+  relationship(
+    resource: string,
+    titleAttribute: string,
+    options?: RelationshipOptions,
+  ): this {
+    this.applyRelationship(resource, titleAttribute, {
+      ...options,
+      kind: options?.kind ?? 'manyToMany',
+      widget: options?.widget ?? 'checkboxList',
+    });
+    return this;
+  }
+
+  createOption(value = true): this {
+    this.setCreateOption(value);
+    return this;
+  }
+
+  createAndEditOption(value = true): this {
+    this.setCreateAndEditOption(value);
+    return this;
+  }
+}
+
+/**
+ * Inline relationship table for HasMany / ManyToMany (attach, create, create & edit).
+ * HasMany fields are not dehydrated — children own the foreign key.
+ */
+export class RelationTable extends FormComponent {
+  static make(name: string): RelationTable {
+    return new RelationTable(name);
+  }
+
+  private constructor(name: string) {
+    super(name, 'relationTable');
+    this.config.multiple = true;
+    this.config.dehydrated = false;
+  }
+
+  relationship(
+    resource: string,
+    titleAttribute: string,
+    options?: RelationshipOptions,
+  ): this {
+    this.applyRelationship(resource, titleAttribute, {
+      ...options,
+      kind: options?.kind ?? 'hasMany',
+      widget: options?.widget ?? 'table',
+    });
+    return this;
+  }
+
+  createOption(value = true): this {
+    this.setCreateOption(value);
+    return this;
+  }
+
+  createAndEditOption(value = true): this {
+    this.setCreateAndEditOption(value);
     return this;
   }
 }

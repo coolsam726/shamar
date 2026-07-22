@@ -1,0 +1,102 @@
+{{-- Checkbox list for manyToMany. Expects `relationConfig`. --}}
+<div
+  class="shamar-m2m-checkboxes relative w-full"
+  data-shamar-m2m-config="{{ jsonAttr(relationConfig) }}"
+  x-data="shamarM2mCheckboxFromEl($el)"
+>
+  <template x-for="item in selected" :key="'h-' + item.id">
+    <input type="hidden" name="{{ relationConfig.name }}[]" :value="item.id" />
+  </template>
+
+  <div class="shamar-m2m-checkboxes__toolbar mb-2 flex items-center gap-2" x-show="!readonly">
+    <input
+      type="search"
+      x-model="filter"
+      placeholder="Filter…"
+      class="shamar-input w-full max-w-xs text-sm"
+      autocomplete="off"
+    />
+    <span class="shrink-0 text-xs text-body-subtle" x-text="selected.length + ' selected'"></span>
+  </div>
+
+  <div
+    class="shamar-m2m-checkboxes__body"
+    :class="framed ? 'shamar-m2m-checkboxes__body--framed' : 'shamar-m2m-checkboxes__body--open'"
+  >
+    <template x-if="loading">
+      <div class="px-2 py-3 text-xs text-body-subtle">Loading…</div>
+    </template>
+    <template x-if="!loading && filteredGroups.length === 0">
+      <div class="px-2 py-3 text-xs text-body-subtle">No related records.</div>
+    </template>
+
+    <div
+      x-show="!loading && groupBy && filteredGroups.length > 0"
+      class="shamar-m2m-checkboxes__clusters"
+      :class="'shamar-m2m-checkboxes__clusters--cols-' + columns"
+      :style="'--shamar-checkbox-cols:' + columns"
+    >
+      <template x-for="group in filteredGroups" :key="group.key">
+        <section class="shamar-m2m-checkboxes__cluster">
+          <header class="shamar-m2m-checkboxes__cluster-header">
+            <div class="min-w-0">
+              <h4 class="truncate text-xs font-semibold text-heading" x-text="group.title"></h4>
+            </div>
+            <span
+              class="shamar-m2m-checkboxes__cluster-count shrink-0"
+              x-text="groupSelectedCount(group) + '/' + group.items.length"
+            ></span>
+          </header>
+          <div class="shamar-m2m-checkboxes__cluster-body">
+            <template x-for="item in group.items" :key="item.id">
+              <label
+                class="shamar-m2m-checkboxes__item flex items-center gap-2 rounded px-1.5 py-1 text-sm"
+                :class="{
+                  'opacity-50 cursor-not-allowed': isCovered(item) && !isSelected(item.id),
+                  'cursor-pointer hover:bg-neutral-secondary': !readonly && !(isCovered(item) && !isSelected(item.id)),
+                  'opacity-60': readonly
+                }"
+              >
+                <input
+                  type="checkbox"
+                  class="shamar-checkbox__input"
+                  :checked="isSelected(item.id)"
+                  :disabled="readonly || (isCovered(item) && !isSelected(item.id))"
+                  @change="toggle(item)"
+                />
+                <span class="min-w-0 truncate text-body" x-text="itemDisplay(item)"></span>
+              </label>
+            </template>
+          </div>
+        </section>
+      </template>
+    </div>
+
+    <div
+      x-show="!loading && !groupBy && filteredOptions.length > 0"
+      class="shamar-m2m-checkboxes__list"
+      :class="'shamar-m2m-checkboxes__list--cols-' + columns"
+      :style="'--shamar-checkbox-cols:' + columns"
+    >
+      <template x-for="item in filteredOptions" :key="item.id">
+        <label
+          class="shamar-m2m-checkboxes__item flex items-center gap-2 rounded px-2 py-1.5 text-sm"
+          :class="{
+            'opacity-50 cursor-not-allowed': isCovered(item) && !isSelected(item.id),
+            'cursor-pointer hover:bg-neutral-secondary': !readonly && !(isCovered(item) && !isSelected(item.id)),
+            'opacity-60': readonly
+          }"
+        >
+          <input
+            type="checkbox"
+            class="shamar-checkbox__input"
+            :checked="isSelected(item.id)"
+            :disabled="readonly || (isCovered(item) && !isSelected(item.id))"
+            @change="toggle(item)"
+          />
+          <span class="min-w-0 truncate text-body" x-text="itemDisplay(item)"></span>
+        </label>
+      </template>
+    </div>
+  </div>
+</div>

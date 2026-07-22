@@ -1,0 +1,116 @@
+{{-- BelongsTo async combobox (Create / Create & Edit). Expects `relationConfig`. --}}
+<div
+  class="shamar-m2o relative w-full"
+  data-shamar-m2o-config="{{ jsonAttr(relationConfig) }}"
+  x-data="shamarM2oFromEl($el)"
+  @click.outside="close()"
+  @focusout="onFocusOut($event)"
+  @keydown.escape.prevent.stop="close()"
+>
+  <input
+    type="hidden"
+    name="{{ relationConfig.name }}"
+    :value="value === null || value === '' ? '' : value"
+    @change="$dispatch('input')"
+  />
+
+  <div class="shamar-m2o__row flex w-full items-stretch gap-1">
+    <div class="relative min-w-0 flex-1">
+      <input
+        type="text"
+        x-ref="input"
+        x-model="query"
+        :readonly="readonly"
+        @focus="onFocus()"
+        @input.debounce.250ms="onInput()"
+        @keydown.arrow-down.prevent="moveCursor(1)"
+        @keydown.arrow-up.prevent="moveCursor(-1)"
+        @keydown.enter.prevent="onEnter()"
+        placeholder="{{ field.placeholder ?? 'Search…' }}"
+        autocomplete="off"
+        class="shamar-input shamar-m2o__input w-full pr-8"
+        :class="{ 'is-readonly': readonly }"
+      />
+
+      <button
+        type="button"
+        x-show="value !== null && value !== '' && !readonly"
+        @click.stop="clearSelection()"
+        aria-label="Clear"
+        class="shamar-m2o__clear absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-body-subtle hover:bg-danger-soft hover:text-fg-danger"
+      >
+        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <button
+      type="button"
+      x-show="value !== null && value !== ''"
+      @click.stop="openRecord()"
+      title="Open record"
+      aria-label="Open record"
+      class="shamar-m2o__open inline-flex h-[2.375rem] w-9 shrink-0 items-center justify-center rounded-md border border-default bg-neutral-primary text-body-subtle hover:border-fg-brand hover:text-fg-brand"
+    >
+      <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
+      </svg>
+    </button>
+  </div>
+
+  <div
+    x-show="open"
+    x-cloak
+    x-transition.opacity.duration.100ms
+    class="shamar-m2o__dropdown absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-auto rounded-md border border-default bg-neutral-primary text-sm shadow-lg"
+    role="listbox"
+  >
+    <template x-if="loading">
+      <div class="px-3 py-2 text-xs text-body-subtle">Searching…</div>
+    </template>
+    <template x-if="!loading && results.length === 0 && !createCandidate">
+      <div class="px-3 py-2 text-xs text-body-subtle">No matches.</div>
+    </template>
+    <ul x-show="!loading && (results.length > 0 || createCandidate || canCreateAndEdit)">
+      <template x-for="(item, i) in results" :key="item.id">
+        <li
+          role="option"
+          @mousedown.prevent="pick(item)"
+          @mousemove="cursor = i"
+          :class="i === cursor ? 'bg-brand-softer text-fg-brand' : 'text-body hover:bg-neutral-secondary'"
+          class="flex cursor-pointer items-center justify-between px-3 py-1.5"
+        >
+          <span x-text="item.label" class="truncate"></span>
+          <span x-show="String(item.id) === String(value)" class="text-2xs font-medium text-fg-brand">selected</span>
+        </li>
+      </template>
+      <template x-if="createCandidate">
+        <li
+          role="option"
+          @mousedown.prevent="createFromQuery()"
+          @mousemove="cursor = results.length"
+          :class="cursor === results.length ? 'bg-success-soft text-success-strong' : 'text-fg-success hover:bg-neutral-secondary'"
+          class="flex cursor-pointer items-center gap-1.5 border-t border-default px-3 py-1.5"
+        >
+          <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+          </svg>
+          <span>Create "<span x-text="query"></span>"</span>
+        </li>
+      </template>
+      <template x-if="canCreateAndEdit">
+        <li
+          role="option"
+          @mousedown.prevent="createAndEdit()"
+          class="flex cursor-pointer items-center gap-1.5 border-t border-default px-3 py-1.5 text-body hover:bg-neutral-secondary"
+        >
+          <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/>
+          </svg>
+          <span>Create and edit…</span>
+        </li>
+      </template>
+    </ul>
+  </div>
+</div>
