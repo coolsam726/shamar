@@ -174,6 +174,8 @@ export abstract class Resource {
       actions: actionList,
       searchableFields: [...new Set(searchableFields)],
       defaultSort: tableSchema.defaultSort,
+      defaultFilters: tableSchema.defaultFilters,
+      defaultGroupBy: tableSchema.defaultGroupBy,
       companyScoped: this.companyScoped,
       softDelete: this.softDelete,
       customPermissions: normalizeCustomPermissions(this.slug, this.permissions()),

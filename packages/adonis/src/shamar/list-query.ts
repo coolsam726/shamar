@@ -1,5 +1,6 @@
 import type { ListQuery, PaginatedResult, ResourceMeta } from '@shamar/core';
 import { formatCurrencyValue, getRecordValue } from '@shamar/core';
+import { parseListFilters } from './list-headers.js';
 
 export interface ListViewQuery {
   search?: string;
@@ -7,6 +8,9 @@ export interface ListViewQuery {
   direction?: string;
   perPage?: number | string;
   page?: number | string;
+  filters?: string | unknown[];
+  groupBy?: string;
+  trashed?: string | boolean;
 }
 
 export interface PaginationLink {
@@ -46,6 +50,8 @@ export function normalizeListQuery(raw: ListViewQuery, defaults?: { perPage?: nu
   const direction =
     raw.direction === 'asc' || raw.direction === 'desc' ? raw.direction : undefined;
   const search = typeof raw.search === 'string' ? raw.search.trim() || undefined : undefined;
+  const groupBy =
+    typeof raw.groupBy === 'string' ? raw.groupBy.trim() || undefined : undefined;
 
   const perPageRaw = raw.perPage;
   const wantsAll =
@@ -58,12 +64,16 @@ export function normalizeListQuery(raw: ListViewQuery, defaults?: { perPage?: nu
       );
   const page = Math.max(1, Number(raw.page) || 1);
 
+  const filters = parseListFilters(raw.filters);
+
   return {
     page,
     perPage,
     search,
     sort,
     direction: sort ? direction : undefined,
+    filters: filters.length ? filters : undefined,
+    groupBy,
   };
 }
 
@@ -99,6 +109,19 @@ export function buildListQueryString(
 
   const page = Number(merged.page);
   if (page > 1) params.set('page', String(page));
+
+  if (merged.filters != null) {
+    const filters =
+      typeof merged.filters === 'string'
+        ? merged.filters
+        : Array.isArray(merged.filters)
+          ? JSON.stringify(merged.filters)
+          : '';
+    if (filters && filters !== '[]') params.set('filters', filters);
+  }
+
+  const groupBy = merged.groupBy != null ? String(merged.groupBy).trim() : '';
+  if (groupBy) params.set('groupBy', groupBy);
 
   const value = params.toString();
   return value ? `?${value}` : '';

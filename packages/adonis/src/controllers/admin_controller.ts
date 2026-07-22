@@ -28,6 +28,12 @@ import {
   visibleRowActions,
 } from '../shamar/resource-actions.js';
 import {
+  buildListHeaders,
+  groupRecordsForDisplay,
+  labelListFilters,
+  resolveDefaultFilters,
+} from '../shamar/list-headers.js';
+import {
   formSections,
   formSchemaTree,
   detailSections,
@@ -205,11 +211,36 @@ export class AdminController {
     const authCtx = authResult;
 
     const rawQuery = this.listQuery(ctx);
-    const query = this.withPolicyScope(
-      authCtx,
-      meta,
-      normalizeListQuery(rawQuery),
+    const listHeaders = buildListHeaders(meta);
+    const filtersParam = ctx.request.input('filters');
+    const groupByParam = ctx.request.input('groupBy');
+    const hasFiltersParam = filtersParam !== undefined && filtersParam !== null;
+    const hasGroupByParam = groupByParam !== undefined && groupByParam !== null;
+
+    const normalized = normalizeListQuery(rawQuery);
+
+    if (!hasFiltersParam && meta.defaultFilters?.length) {
+      normalized.filters = resolveDefaultFilters(meta, listHeaders);
+    } else if (normalized.filters?.length) {
+      normalized.filters = labelListFilters(normalized.filters, listHeaders);
+    }
+
+    if (!hasGroupByParam && meta.defaultGroupBy) {
+      normalized.groupBy = meta.defaultGroupBy;
+    } else if (hasGroupByParam && String(groupByParam).trim() === '') {
+      normalized.groupBy = undefined;
+    }
+
+    // Adapter sorts/filters on FK fields; display grouping uses the column path.
+    const displayGroupBy = normalized.groupBy;
+    const groupHeader = listHeaders.find(
+      (header) => header.name === displayGroupBy || header.filterField === displayGroupBy,
     );
+    const adapterGroupBy = groupHeader?.filterField || displayGroupBy;
+    const query = this.withPolicyScope(authCtx, meta, {
+      ...normalized,
+      groupBy: adapterGroupBy,
+    });
 
     if (this.wantsJson(ctx, options?.asJson)) {
       const result = await this.resources.index(meta, query);
@@ -237,15 +268,29 @@ export class AdminController {
       showDeleteButton: policy.delete,
     });
 
+    const groups = groupRecordsForDisplay(
+      result.items,
+      displayGroupBy,
+      listHeaders,
+    );
+
     return ctx.view.render('shamar::index', {
       ...shell,
       meta,
       resource: meta,
       result,
-      query: { ...viewQuery, perPage: perPageValue },
+      groups,
+      query: {
+        ...viewQuery,
+        perPage: perPageValue,
+        filters: normalized.filters ?? [],
+        groupBy: displayGroupBy ?? null,
+      },
       pagination,
-      listHeaders: [],
+      listHeaders,
       listAllPerPage: LIST_ALL_RECORDS_PER_PAGE,
+      filtersLockedEmpty: hasFiltersParam && !(normalized.filters?.length),
+      groupLockedEmpty: hasGroupByParam && !displayGroupBy,
       bulkActions: resourceActionsFor(meta, 'bulk', policy),
       rowActions: resourceActionsFor(meta, 'row', policy),
     });
@@ -988,6 +1033,9 @@ export class AdminController {
       search: ctx.request.input('search'),
       sort: ctx.request.input('sort'),
       direction: ctx.request.input('direction'),
+      filters: ctx.request.input('filters'),
+      groupBy: ctx.request.input('groupBy'),
+      trashed: ctx.request.input('trashed'),
     };
   }
 

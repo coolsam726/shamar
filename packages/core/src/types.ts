@@ -219,6 +219,10 @@ export interface ColumnConfig {
   label?: string;
   searchable?: boolean;
   sortable?: boolean;
+  /** Show this column in the list Filters menu (default: inferred for boolean/select/belongsTo). */
+  filterable?: boolean;
+  /** Allow grouping the list by this column (default: inferred with filterable). */
+  groupable?: boolean;
   format?: 'date' | 'datetime' | 'boolean' | 'badge' | 'toggle' | 'currency';
   /** Currency display options when `format` is `currency`. */
   currency?: CurrencyOptions;
@@ -277,6 +281,10 @@ export interface FormSchema {
 export interface TableSchema {
   columns: ColumnConfig[];
   defaultSort?: { field: string; direction: SortDirection };
+  /** Filters applied when the list is opened without a `filters` query param. */
+  defaultFilters?: ListFilter[];
+  /** Grouping applied when the list is opened without a `groupBy` query param. */
+  defaultGroupBy?: string;
 }
 
 export interface InfolistEntryConfig {
@@ -402,6 +410,10 @@ export interface ResourceMeta {
   actions: ActionConfig[];
   searchableFields: string[];
   defaultSort?: { field: string; direction: SortDirection };
+  /** Pre-applied list filters when the request omits `filters`. */
+  defaultFilters?: ListFilter[];
+  /** Pre-applied list grouping when the request omits `groupBy`. */
+  defaultGroupBy?: string;
   companyScoped?: boolean;
   softDelete?: boolean | { field?: string };
   /** Extra permission names declared by `Resource.permissions()`. */
@@ -411,6 +423,14 @@ export interface ResourceMeta {
 /** Lucid/Mongoose model class or table/model name string. */
 export type ResourceModel = string | (new (...args: never[]) => unknown);
 
+export interface ListFilter {
+  field: string;
+  op?: '=' | '!=' | 'ilike';
+  value: unknown;
+  /** Display label for toolbar chips (optional; client may set). */
+  label?: string;
+}
+
 export interface ListQuery {
   page: number;
   perPage: number;
@@ -418,6 +438,10 @@ export interface ListQuery {
   sort?: string;
   direction?: SortDirection;
   scope?: Record<string, unknown>;
+  /** Equality / simple filters from the list toolbar. */
+  filters?: ListFilter[];
+  /** Group list rows by this field (also used as primary sort). */
+  groupBy?: string;
 }
 
 export interface PaginatedResult<T = Record<string, unknown>> {

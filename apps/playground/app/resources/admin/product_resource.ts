@@ -71,11 +71,11 @@ export default class ProductResource extends Resource {
       t.defaultSort('name', 'asc').schema([
         TextColumn.make('sku').searchable().sortable(),
         TextColumn.make('name').searchable().sortable(),
-        TextColumn.make('company.name').label('Company'),
+        TextColumn.make('company.name').label('Company').filterable().groupable(),
         TextColumn.make('price').currency('KES').sortable().alignRight(),
         TextColumn.make('stock').alignCenter().sortable(),
         TextColumn.make('launchDate').date().sortable(),
-        TextColumn.make('featured').boolean().badge(),
+        TextColumn.make('featured').boolean().badge().filterable().groupable(),
       ])
     })
   }

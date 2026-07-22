@@ -1,4 +1,4 @@
-import type { DataAdapter, ResourceMeta } from '@shamar/core';
+import type { DataAdapter, ListFilter, ResourceMeta } from '@shamar/core';
 import { validateFormData } from '@shamar/core';
 
 /**
@@ -20,6 +20,8 @@ export class ResourceController {
     sort?: string;
     direction?: 'asc' | 'desc';
     scope?: Record<string, unknown>;
+    filters?: ListFilter[];
+    groupBy?: string;
   }) {
     return this.adapter.list(meta, {
       page: query.page ?? 1,
@@ -28,6 +30,8 @@ export class ResourceController {
       sort: query.sort,
       direction: query.direction,
       scope: query.scope,
+      filters: query.filters,
+      groupBy: query.groupBy,
     });
   }
 
