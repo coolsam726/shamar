@@ -48,7 +48,8 @@ jobs:
         run: pnpm test
 
       - name: Pack @shamar/core (validate)
-        run: pnpm --filter @shamar/core pack --pack-destination /tmp/npm-pack
+        # `--filter` implies recursive; `pnpm pack` does not support that.
+        run: pnpm --dir packages/core pack --pack-destination /tmp/npm-pack
 
       - name: Publish @shamar/core
         run: pnpm --filter @shamar/core publish $PUBLISH_FLAGS $DRY_RUN
