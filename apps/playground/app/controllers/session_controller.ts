@@ -1,4 +1,4 @@
-import User from '#models/user'
+import User, { type UserDocument } from '#models/user'
 import { linkUserFromLdap } from '#auth/ldap_users'
 import type { HttpContext } from '@adonisjs/core/http'
 import {
@@ -19,13 +19,13 @@ function escapeRegex(value: string): string {
 }
 
 /** Resolve an existing local user for masquerade by email or username local-part. */
-async function findUserForMasquerade(username: string) {
+async function findUserForMasquerade(username: string): Promise<UserDocument | null> {
   const trimmed = username.trim()
   if (!trimmed) return null
 
   const lower = trimmed.toLowerCase()
   let user = await User.findOne({ email: lower })
-  if (user) return user
+  if (user) return user as UserDocument
 
   if (!trimmed.includes('@')) {
     user = await User.findOne({
@@ -33,7 +33,7 @@ async function findUserForMasquerade(username: string) {
     })
   }
 
-  return user
+  return user ? (user as UserDocument) : null
 }
 
 /**
