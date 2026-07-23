@@ -13,6 +13,7 @@ Inspired by [Filament](https://filamentphp.com/) (PHP) and architecturally align
 | [`@shamar/lucid`](packages/lucid) | Lucid ORM adapter (SQL — list, CRUD, soft-delete, connections) |
 | [`@shamar/mongoose`](packages/mongoose) | Mongoose adapter (MongoDB — list, CRUD, soft-delete) |
 | [`@shamar/adonis`](packages/adonis) | Service provider, routes, controllers, middleware, Edge views |
+| [`@shamar/rest`](packages/rest) | REST helpers + OpenAPI document + Scalar docs UI |
 
 ## Install (Adonis app)
 
@@ -26,6 +27,8 @@ node ace configure @shamar/adonis   # pick Lucid or Mongoose
 ```
 
 Then define resources and open the panel path (default `/admin`). Full host docs: [`packages/adonis/README.md`](packages/adonis/README.md).
+
+For OpenAPI docs over the JSON API **and** your custom `/api/*` routes, add [`@shamar/rest`](packages/rest) and register `@shamar/rest/provider` after the Adonis provider — then open `/api/shamar/docs`. Attach `.openapi({ body, query, response })` on routes (Vine + DTO helpers); no hand-written OpenAPI JSON.
 
 ## Quick start
 

@@ -1,6 +1,6 @@
 import { defaultActions } from './actions.js';
 import { form, FormBuilder } from './form.js';
-import { infolist, infolistFromFields, InfolistBuilder } from './infolist.js';
+import { infolist, formSchemaToInfolistSchema, InfolistBuilder } from './infolist.js';
 import { userHasPermission, normalizeCustomPermissions } from './permissions.js';
 import type { PolicyClass } from './policy-types.js';
 import { table, TableBuilder } from './table.js';
@@ -155,7 +155,7 @@ export abstract class Resource {
     const actionList = this.resourceActions();
     const explicitInfolist = this.infolist() ?? this.detail();
     const hasExplicitInfolist = explicitInfolist !== undefined;
-    const infolistSchema = explicitInfolist ?? infolistFromFields(formSchema.fields);
+    const infolistSchema = explicitInfolist ?? formSchemaToInfolistSchema(formSchema);
 
     const searchableFields = [
       ...formSchema.fields.filter((f) => f.searchable).map((f) => f.name),

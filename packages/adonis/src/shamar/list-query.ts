@@ -1,5 +1,9 @@
 import type { ListQuery, PaginatedResult, ResourceMeta } from '@shamar/core';
-import { formatCurrencyValue, getRecordValue } from '@shamar/core';
+import {
+  formatCurrencyValue,
+  getRecordValue,
+  resolveRelationDisplayBinding,
+} from '@shamar/core';
 import { parseListFilters } from './list-headers.js';
 
 export interface ListViewQuery {
@@ -264,6 +268,44 @@ export function buildRecordPager(options: {
     total,
     navQuery,
   };
+}
+
+/**
+ * BelongsTo display columns (e.g. `company.name`) → URL for the related record.
+ * Returns null for non-relation columns or when the FK is empty.
+ */
+export function relatedListLink(
+  meta: ResourceMeta,
+  record: Record<string, unknown>,
+  column: { name: string },
+  basePath: string,
+): string | null {
+  const binding = resolveRelationDisplayBinding(meta, column.name);
+  if (!binding || binding.relation.kind !== 'belongsTo') return null;
+
+  const nested = record[binding.root];
+  let id: string | null = null;
+  if (nested && typeof nested === 'object' && nested !== null && 'id' in nested) {
+    const nestedId = (nested as { id?: unknown }).id;
+    if (nestedId != null && nestedId !== '') id = String(nestedId);
+  }
+  if (!id) {
+    const fk = record[binding.fieldName];
+    if (fk != null && fk !== '') id = String(fk);
+  }
+  if (!id) return null;
+
+  return `${basePath}/${binding.relation.resource}/${id}`;
+}
+
+/** Show URL for the current list row. */
+export function listRecordHref(
+  meta: ResourceMeta,
+  record: Record<string, unknown>,
+  basePath: string,
+  navQuery = '',
+): string {
+  return `${basePath}/${meta.slug}/${record.id}${navQuery}`;
 }
 
 export function cellValue(

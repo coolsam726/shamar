@@ -2,6 +2,7 @@ import type {
   FieldConfig,
   RelationConfig,
   RelationKind,
+  RelationTableMode,
   RelationWidget,
 } from './types.js';
 
@@ -9,6 +10,8 @@ export interface RelationshipOptions {
   kind?: RelationKind;
   foreignKey?: string;
   widget?: RelationWidget;
+  /** RelationTable: `list` (default) or `simple`. */
+  tableMode?: RelationTableMode;
   createOption?: boolean;
   createAndEditOption?: boolean;
   preloadLimit?: number;
@@ -33,6 +36,12 @@ export function defaultRelationWidget(kind: RelationKind): RelationWidget {
   }
 }
 
+/** Whether a relation table should use the full list UI. */
+export function relationUsesListTable(relation: RelationConfig | undefined): boolean {
+  if (!relation || relation.widget !== 'table') return false;
+  return (relation.tableMode ?? 'list') === 'list';
+}
+
 /**
  * Build a normalized {@link RelationConfig} from Filament-style arguments.
  */
@@ -49,6 +58,7 @@ export function buildRelationConfig(
     titleAttribute,
     foreignKey: options.foreignKey,
     widget: options.widget ?? defaultRelationWidget(kind),
+    tableMode: options.tableMode,
     createOption: options.createOption,
     createAndEditOption: options.createAndEditOption,
     preloadLimit: options.preloadLimit,

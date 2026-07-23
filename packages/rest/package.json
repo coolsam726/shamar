@@ -1,0 +1,57 @@
+{
+  "name": "@shamar/rest",
+  "version": "0.1.3",
+  "description": "REST API helpers and OpenAPI-powered docs for Shamar resources.",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/coolsam726/shamar.git",
+    "directory": "packages/rest"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./provider": {
+      "types": "./dist/provider.d.ts",
+      "import": "./dist/provider.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "tsx --test test/**/*.test.ts",
+    "prepublishOnly": "pnpm build"
+  },
+  "dependencies": {
+    "@shamar/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "@adonisjs/core": ">=6.0.0",
+    "@vinejs/vine": ">=3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@adonisjs/core": {
+      "optional": true
+    },
+    "@vinejs/vine": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@adonisjs/core": "^7.3.5",
+    "@vinejs/vine": "^4.4.0",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.7.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

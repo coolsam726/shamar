@@ -83,6 +83,32 @@ export interface ShamarConfig {
   };
   /** Default branding inherited by panels without their own. */
   branding?: PanelConfig['branding'];
+  /**
+   * Optional REST / OpenAPI docs settings (consumed by `@shamar/rest`).
+   * Prefer nesting here or use a separate `config/shamar_rest.ts`.
+   */
+  rest?: {
+    enabled?: boolean;
+    openapiPath?: string;
+    docs?: {
+      enabled?: boolean;
+      path?: string;
+      ui?: 'scalar';
+    };
+    openapi?: {
+      title?: string;
+      version?: string;
+      description?: string;
+      servers?: Array<{ url: string; description?: string }>;
+    };
+    security?: boolean;
+    discover?:
+      | false
+      | {
+          prefixes?: string[];
+          exclude?: string[];
+        };
+  };
 }
 
 export function defineConfig(config: ShamarConfig): ShamarConfig & { panels: PanelConfig[] } {

@@ -85,6 +85,25 @@ export default class ProductResource extends Resource {
 
 Open `/admin` after starting the server. Single-panel apps can still use legacy top-level `path` + `resources` (normalized into one default panel).
 
+## REST + OpenAPI docs
+
+Install [`@shamar/rest`](../rest) and register its provider after Shamar:
+
+```ts
+// adonisrc.ts
+() => import('@shamar/adonis/provider'),
+() => import('@shamar/rest/provider'),
+```
+
+```ts
+// config/shamar.ts
+rest: {
+  openapi: { title: 'My API', version: '1.0.0' },
+},
+```
+
+Then open `/api/shamar/docs` (Scalar) and `/api/shamar/openapi.json`.
+
 ## Config reference
 
 `defineConfig` accepts:

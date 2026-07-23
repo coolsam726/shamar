@@ -86,6 +86,7 @@ describe('relation field UI config', () => {
     assert.equal(ui.requiresParent, true);
     assert.equal(ui.attachUrl, '/admin/companies/relation-attach');
     assert.equal(ui.createUrl, '/admin/products/create');
+    assert.equal(ui.listUrl, null);
   });
 
   it('builds checkbox list for manyToMany', () => {

@@ -300,6 +300,62 @@ describe('@shamar/core Filament-style builders', () => {
       meta.form.fields.map((f) => f.name).sort(),
       ['a', 'b', 'c', 'd'],
     );
+
+    // Derived show/infolist must keep the same layout tree (not flatten to fields).
+    assert.equal(meta.hasExplicitInfolist, false);
+    assert.equal(meta.infolist.schema[0]!.kind, 'section');
+    assert.equal(meta.infolist.schema[0]!.collapsible, true);
+    const detailKids = meta.infolist.schema[0]!.children ?? [];
+    assert.equal(detailKids[0]!.kind, 'grid');
+    assert.equal(detailKids[0]!.columns, 2);
+    assert.equal(detailKids[0]!.children?.[0]!.kind, 'entry');
+    assert.equal(detailKids[0]!.children?.[0]!.name, 'a');
+    assert.equal(detailKids[1]!.kind, 'tabs');
+    assert.equal(detailKids[2]!.kind, 'callout');
+  });
+
+  it('derives infolist sections with columns and field colspans from form()', () => {
+    class LayoutDeriveResource extends Resource {
+      static override slug = 'layout-derive';
+      static override label = 'Layout Derive';
+      static override singularLabel = 'Layout Derive';
+      static override model = 'LayoutDerive';
+
+      static override form() {
+        return form((f) => {
+          f.schema([
+            Section.make('Details')
+              .columnSpanFull()
+              .columns(3)
+              .schema([
+                TextInput.make('name').columnSpan(2),
+                TextInput.make('code'),
+                Textarea.make('notes').columnSpanFull(),
+              ]),
+          ]);
+        });
+      }
+
+      static override table() {
+        return table((t) => {
+          t.schema([TextColumn.make('name')]);
+        });
+      }
+    }
+
+    const meta = LayoutDeriveResource.configure();
+    const section = meta.infolist.schema[0]!;
+    assert.equal(section.kind, 'section');
+    assert.equal(section.title, 'Details');
+    assert.equal(section.columns, 3);
+    assert.equal(section.columnSpan, 'full');
+    const children = section.children ?? [];
+    assert.equal(children.length, 3);
+    assert.equal(children[0]!.kind, 'entry');
+    assert.equal(children[0]!.columnSpan, 2);
+    assert.equal(children[1]!.columnSpan, undefined);
+    assert.equal(children[2]!.columnSpan, 'full');
+    assert.equal(children[2]!.entry?.format, 'textarea');
   });
 
   it('builds new form field types', () => {
@@ -372,8 +428,8 @@ describe('@shamar/core Filament-style builders', () => {
   it('falls back to infolist from form fields', () => {
     const meta = FallbackResource.configure();
     assert.equal(meta.hasExplicitInfolist, false);
-    assert.equal(meta.infolist.sections[0]!.kind, 'section');
-    assert.equal(meta.infolist.sections[0]!.card, true);
+    // Bare form() uses plain containers — derived show keeps that layout.
+    assert.equal(meta.infolist.sections[0]!.kind, 'plain');
     assert.equal(meta.infolist.sections[0]!.entries[0]!.name, 'title');
   });
 

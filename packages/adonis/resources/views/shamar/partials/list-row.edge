@@ -1,5 +1,9 @@
-<tr class="hover:bg-surface-row-hover transition-colors" data-shamar-record-id="{{ record.id }}">
-  <td class="px-3 py-3">
+<tr
+  class="hover:bg-surface-row-hover transition-colors cursor-pointer"
+  data-shamar-record-id="{{ record.id }}"
+  data-shamar-row-href="{{ basePath }}/{{ resource.slug }}/{{ record.id }}{{ recordNavQuery(query) }}"
+>
+  <td class="px-3 py-3" data-shamar-stop-row-nav>
     @if(bulkActions && bulkActions.length)
       <input
         type="checkbox"
@@ -29,11 +33,20 @@
           —
         @endif
       @else
-        <a href="{{ basePath }}/{{ resource.slug }}/{{ record.id }}{{ recordNavQuery(query) }}" class="text-heading hover:text-fg-brand hover:underline">{{ cellValue(record, column) }}</a>
+        @let(relatedHref = relatedListLink(resource, record, column, basePath))
+        @if(relatedHref)
+          <a
+            href="{{ relatedHref }}"
+            data-shamar-stop-row-nav
+            class="text-fg-brand hover:underline"
+          >{{ cellValue(record, column) }}</a>
+        @else
+          <span class="text-heading">{{ cellValue(record, column) }}</span>
+        @endif
       @endif
     </td>
   @endeach
-  <td class="px-4 py-3 text-right">
+  <td class="px-4 py-3 text-right" data-shamar-stop-row-nav>
     <div class="inline-flex flex-wrap items-center justify-end gap-1 text-xs">
       @if(rowActions)
         @each(action in rowActions)

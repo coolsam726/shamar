@@ -71,6 +71,11 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      - name: Publish @shamar/rest
+        run: pnpm --filter @shamar/rest publish $PUBLISH_FLAGS $DRY_RUN
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Publish @shamar/adonis
         run: pnpm --filter @shamar/adonis publish $PUBLISH_FLAGS $DRY_RUN
         env:

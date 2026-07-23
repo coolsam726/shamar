@@ -80,6 +80,12 @@ export interface RelationConfig {
   foreignKey?: string;
   /** Presentation widget (defaults by kind). */
   widget?: RelationWidget;
+  /**
+   * RelationTable presentation:
+   * - `list` — related resource columns, search, filters, pagination (default)
+   * - `simple` — single label column with Add / Unlink only
+   */
+  tableMode?: RelationTableMode;
   /** Inline quick-create from search query (PyVELM/Loom Create). */
   createOption?: boolean;
   /** Open related create form in a dialog, then pick (Create & Edit). */
@@ -99,6 +105,9 @@ export interface RelationConfig {
    */
   valueAttribute?: string;
 }
+
+/** RelationTable UI mode — full list vs compact linked labels. */
+export type RelationTableMode = 'simple' | 'list';
 
 export interface FieldConfig {
   name: string;

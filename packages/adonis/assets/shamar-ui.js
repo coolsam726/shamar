@@ -818,9 +818,12 @@
 
       openRecord() {
         if (!this.value || !this.detailUrlBase) return;
+        const url = this.readonly
+          ? `${this.detailUrlBase}/${this.value}`
+          : `${this.detailUrlBase}/${this.value}/edit`;
         window.ShamarUI.openDialog({
-          url: `${this.detailUrlBase}/${this.value}/edit`,
-          title: this.label || 'Edit record',
+          url,
+          title: this.label || (this.readonly ? 'View record' : 'Edit record'),
           slug: this.relatedResource,
         });
       },
@@ -1119,9 +1122,12 @@
 
       openRecord(item) {
         if (!item?.id || !this.detailUrlBase) return;
+        const url = this.readonly
+          ? `${this.detailUrlBase}/${item.id}`
+          : `${this.detailUrlBase}/${item.id}/edit`;
         window.ShamarUI.openDialog({
-          url: `${this.detailUrlBase}/${item.id}/edit`,
-          title: item.label || 'Edit record',
+          url,
+          title: item.label || (this.readonly ? 'View record' : 'Edit record'),
           slug: this.relatedResource,
         });
       },
@@ -1453,10 +1459,30 @@
   function createShamarM2mTable(cfg) {
     const self = createShamarM2m(cfg);
     self.addOpen = false;
+    self.listUrl = cfg.listUrl || null;
+    self.columns = Array.isArray(cfg.columns) ? cfg.columns : [];
+    self.listHeaders = Array.isArray(cfg.listHeaders) ? cfg.listHeaders : [];
+    self.rows = [];
+    self.total = 0;
+    self.page = 1;
+    self.pageCount = 1;
+    self.perPage = String(cfg.perPage || 10);
+    self.listSearch = '';
+    self.listFilters = [];
+    self.listSort = cfg.defaultSort || '';
+    self.listDirection = cfg.defaultDirection || 'asc';
+    self.listLoading = false;
+    self.filterPanelOpen = false;
+    self._listAbort = null;
+
     const prevInit = self.init;
     const prevDestroy = self.destroy;
     const prevPick = self.pick;
     const prevCreateAndEdit = self.createAndEdit;
+    const prevAttach = self.attachHasMany;
+    const prevDetach = self.detachHasMany;
+    const prevOpenRecord = self.openRecord;
+
     self.init = function initTable() {
       prevInit.call(this);
       this._tablePickHandler = (event) => {
@@ -1467,13 +1493,190 @@
         }
       };
       window.addEventListener('shamar-m2m-pick', this._tablePickHandler);
+      if (this.listUrl) {
+        this.loadList();
+      }
     };
+
     self.destroy = function destroyTable() {
       prevDestroy.call(this);
       if (this._tablePickHandler) {
         window.removeEventListener('shamar-m2m-pick', this._tablePickHandler);
       }
+      if (this._listAbort) this._listAbort.abort();
     };
+
+    Object.defineProperty(self, 'filterableHeaders', {
+      get() {
+        return (this.listHeaders || []).filter(
+          (header) =>
+            header.filter_kind === 'boolean' ||
+            (header.filter_kind === 'select' && Array.isArray(header.options)),
+        );
+      },
+    });
+
+    Object.defineProperty(self, 'availableResults', {
+      get() {
+        const linked = new Set([
+          ...(this.selected || []).map((item) => String(item.id)),
+          ...(this.rows || []).map((row) => String(row.id)),
+        ]);
+        return (this.results || []).filter((item) => !linked.has(String(item.id)));
+      },
+    });
+
+    self.cellAlignment = function cellAlignment(columnName) {
+      const column = (this.columns || []).find((entry) => entry.name === columnName);
+      return column?.alignmentClass || '';
+    };
+
+    self.buildListUrl = function buildListUrl() {
+      const url = new URL(this.listUrl, window.location.origin);
+      if (this.listSearch) url.searchParams.set('search', this.listSearch);
+      if (this.listSort) {
+        url.searchParams.set('sort', this.listSort);
+        if (this.listDirection === 'asc' || this.listDirection === 'desc') {
+          url.searchParams.set('direction', this.listDirection);
+        }
+      }
+      url.searchParams.set('page', String(this.page || 1));
+      url.searchParams.set('perPage', String(this.perPage || 10));
+      if (this.listFilters?.length) {
+        url.searchParams.set('filters', JSON.stringify(this.listFilters));
+      }
+      return `${url.pathname}${url.search}`;
+    };
+
+    self.loadList = async function loadList() {
+      if (!this.listUrl) return;
+      if (this._listAbort) this._listAbort.abort();
+      const ctl = new AbortController();
+      this._listAbort = ctl;
+      this.listLoading = true;
+      try {
+        const response = await fetch(this.buildListUrl(), {
+          signal: ctl.signal,
+          credentials: 'same-origin',
+          headers: { Accept: 'application/json' },
+        });
+        if (!response.ok) throw new Error('list failed');
+        const data = await response.json();
+        this.rows = Array.isArray(data.rows) ? data.rows : [];
+        this.total = Number(data.total) || 0;
+        this.page = Number(data.page) || 1;
+        this.pageCount = Math.max(1, Number(data.pageCount) || 1);
+        this.perPage = String(data.perPage || this.perPage || 10);
+        if (Array.isArray(data.columns) && data.columns.length) {
+          this.columns = data.columns;
+        }
+        if (Array.isArray(data.listHeaders)) {
+          this.listHeaders = data.listHeaders;
+        }
+        if (data.sort) this.listSort = data.sort;
+        if (data.direction) this.listDirection = data.direction;
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          this.rows = [];
+          this.total = 0;
+          showToast('error', {
+            title: 'Error',
+            message: 'Unable to load related records.',
+          });
+        }
+      } finally {
+        this.listLoading = false;
+      }
+    };
+
+    self.applyListSearch = function applyListSearch() {
+      this.page = 1;
+      this.loadList();
+    };
+
+    self.setListPage = function setListPage(page) {
+      const next = Math.max(1, Number(page) || 1);
+      this.page = next;
+      this.loadList();
+    };
+
+    self.toggleListSort = function toggleListSort(field) {
+      if (!field) return;
+      if (this.listSort === field) {
+        this.listDirection = this.listDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        this.listSort = field;
+        this.listDirection = 'asc';
+      }
+      this.page = 1;
+      this.loadList();
+    };
+
+    self.hasFilter = function hasFilter(header, value) {
+      const field = header.filterField || header.name;
+      return this.listFilters.some(
+        (chip) => chip.field === field && String(chip.value) === String(value),
+      );
+    };
+
+    self.toggleBooleanFilter = function toggleBooleanFilter(header, value) {
+      const field = header.filterField || header.name;
+      const existing = this.listFilters.find((chip) => chip.field === field);
+      if (existing && String(existing.value) === String(value)) {
+        this.listFilters = this.listFilters.filter((chip) => chip.field !== field);
+      } else {
+        this.listFilters = [
+          ...this.listFilters.filter((chip) => chip.field !== field),
+          {
+            field,
+            op: '=',
+            value,
+            label: `${header.label}: ${value ? 'Yes' : 'No'}`,
+          },
+        ];
+      }
+      this.page = 1;
+      this.loadList();
+    };
+
+    self.toggleSelectFilter = function toggleSelectFilter(header, opt) {
+      const field = header.filterField || header.name;
+      const value = opt.value;
+      if (this.hasFilter(header, value)) {
+        this.listFilters = this.listFilters.filter(
+          (chip) => !(chip.field === field && String(chip.value) === String(value)),
+        );
+      } else {
+        this.listFilters = [
+          ...this.listFilters.filter((chip) => chip.field !== field),
+          {
+            field,
+            op: '=',
+            value,
+            label: `${header.label}: ${opt.label}`,
+          },
+        ];
+      }
+      this.page = 1;
+      this.loadList();
+    };
+
+    self.removeListFilter = function removeListFilter(chip) {
+      this.listFilters = this.listFilters.filter(
+        (entry) =>
+          !(entry.field === chip.field && String(entry.value) === String(chip.value)),
+      );
+      this.page = 1;
+      this.loadList();
+    };
+
+    self.clearListFilters = function clearListFilters() {
+      this.listFilters = [];
+      this.filterPanelOpen = false;
+      this.page = 1;
+      this.loadList();
+    };
+
     self.toggleAdd = function toggleAdd() {
       this.addOpen = !this.addOpen;
       if (this.addOpen) {
@@ -1482,18 +1685,76 @@
         this.$nextTick?.(() => this.$refs.addInput?.focus());
       }
     };
+
     self.closeAdd = function closeAdd() {
       this.addOpen = false;
       this.query = '';
     };
+
     self.pick = function pickTable(item) {
+      if (
+        this.listUrl &&
+        item?.id != null &&
+        this.rows.some((row) => String(row.id) === String(item.id))
+      ) {
+        this.closeAdd();
+        return;
+      }
       prevPick.call(this, item);
       this.closeAdd();
     };
+
+    self.attachHasMany = async function attachHasManyTable(item) {
+      await prevAttach.call(this, item);
+      if (this.listUrl) {
+        this.page = 1;
+        await this.loadList();
+      }
+    };
+
+    self.detachHasMany = async function detachHasManyTable(relatedId) {
+      await prevDetach.call(this, relatedId);
+      if (this.listUrl) {
+        await this.loadList();
+      }
+    };
+
+    self.openRecord = function openRecordTable(item) {
+      if (!item?.id || !this.detailUrlBase) return;
+      const url = this.readonly
+        ? `${this.detailUrlBase}/${item.id}`
+        : `${this.detailUrlBase}/${item.id}/edit`;
+      window.ShamarUI.openDialog({
+        url,
+        title: item.label || (this.readonly ? 'View record' : 'Edit record'),
+        slug: this.relatedResource,
+        onResult: () => {
+          if (this.listUrl) this.loadList();
+        },
+      });
+    };
+
     self.createAndEdit = function createAndEditTable() {
       this.closeAdd();
-      prevCreateAndEdit.call(this);
+      if (!this.createUrl) return;
+      const q = (this.query || '').trim();
+      const url = q
+        ? `${this.createUrl}${this.createUrl.includes('?') ? '&' : '?'}name=${encodeURIComponent(q)}`
+        : this.createUrl;
+      const title = q ? `New ${this.singularLabel}` : `Create ${this.singularLabel}`;
+      window.ShamarUI.openDialog({
+        url,
+        title,
+        slug: this.relatedResource,
+        onResult: (detail) => {
+          if (detail?.id) {
+            prevPick.call(this, { id: detail.id, label: detail.label });
+          }
+          if (this.listUrl) this.loadList();
+        },
+      });
     };
+
     return self;
   }
 
@@ -3134,11 +3395,35 @@
     applyListHrefs();
     bindListViewSwitcher();
     bindListRefresh();
+    bindListRowNavigation();
     bindMediaUploads();
     bindFormSaveShortcut();
     bindFormAutosave();
     bindRecordPagerNav();
   });
+
+  function bindListRowNavigation() {
+    document.addEventListener('click', (event) => {
+      if (!(event instanceof MouseEvent) || event.button !== 0) return;
+      if (event.defaultPrevented) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (
+        target.closest(
+          'a, button, input, select, textarea, label, [data-shamar-stop-row-nav]',
+        )
+      ) {
+        return;
+      }
+      const row = target.closest('tr[data-shamar-row-href]');
+      if (!row) return;
+      const href = row.getAttribute('data-shamar-row-href');
+      if (!href) return;
+      event.preventDefault();
+      window.location.assign(href);
+    });
+  }
 
   function relationConfigsFromForm(form) {
     const configs = [];

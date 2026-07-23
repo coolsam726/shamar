@@ -8,6 +8,7 @@ import {
   RelationTable,
   Select,
   defaultRelationWidget,
+  infolistFromFields,
 } from '../src/index.js';
 
 describe('relationship builders', () => {
@@ -107,7 +108,45 @@ describe('relationship builders', () => {
     assert.equal(field.relation?.kind, 'hasMany');
     assert.equal(field.relation?.foreignKey, 'companyId');
     assert.equal(field.relation?.widget, 'table');
+    assert.equal(field.relation?.tableMode, 'list');
     assert.equal(field.relation?.createAndEditOption, true);
+  });
+
+  it('supports RelationTable.simple() compact mode', () => {
+    const field = RelationTable.make('products')
+      .relationship('products', 'name', { foreignKey: 'companyId' })
+      .simple()
+      .build();
+
+    assert.equal(field.relation?.tableMode, 'simple');
+  });
+
+  it('supports RelationTable.listTable() and tableMode option', () => {
+    const viaMethod = RelationTable.make('products')
+      .simple()
+      .relationship('products', 'name', { foreignKey: 'companyId' })
+      .listTable()
+      .build();
+    assert.equal(viaMethod.relation?.tableMode, 'list');
+
+    const viaOptions = RelationTable.make('products')
+      .relationship('products', 'name', {
+        foreignKey: 'companyId',
+        tableMode: 'simple',
+      })
+      .build();
+    assert.equal(viaOptions.relation?.tableMode, 'simple');
+  });
+
+  it('keeps RelationTable on derived infolist (full width)', () => {
+    const field = RelationTable.make('products')
+      .relationship('products', 'name', { foreignKey: 'companyId' })
+      .build();
+    const schema = infolistFromFields([field]);
+    const entry = schema.entries.find((e) => e.name === 'products');
+    assert.ok(entry);
+    assert.equal(entry!.columnSpan, 'full');
+    assert.equal(entry!.type, 'text');
   });
 
   it('maps default widgets by kind', () => {

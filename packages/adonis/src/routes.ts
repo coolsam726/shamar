@@ -47,11 +47,31 @@ export async function registerShamarRoutes(
   };
 
   const api = router.group(() => {
-    router.get('/:slug', apiHandler('index')).as('shamar.api.index');
-    router.get('/:slug/:id', apiHandler('show')).as('shamar.api.show');
-    router.post('/:slug', apiHandler('store')).as('shamar.api.store');
-    router.put('/:slug/:id', apiHandler('update')).as('shamar.api.update');
-    router.delete('/:slug/:id', apiHandler('destroy')).as('shamar.api.destroy');
+    // Reserve docs / OpenAPI paths so they are not treated as resource slugs.
+    const resourceSlug = {
+      match: /^(?!openapi\.json$|docs$).+$/,
+    };
+
+    router
+      .get('/:slug', apiHandler('index'))
+      .where('slug', resourceSlug)
+      .as('shamar.api.index');
+    router
+      .get('/:slug/:id', apiHandler('show'))
+      .where('slug', resourceSlug)
+      .as('shamar.api.show');
+    router
+      .post('/:slug', apiHandler('store'))
+      .where('slug', resourceSlug)
+      .as('shamar.api.store');
+    router
+      .put('/:slug/:id', apiHandler('update'))
+      .where('slug', resourceSlug)
+      .as('shamar.api.update');
+    router
+      .delete('/:slug/:id', apiHandler('destroy'))
+      .where('slug', resourceSlug)
+      .as('shamar.api.destroy');
   });
 
   api.prefix(apiPrefix);
@@ -110,6 +130,9 @@ function registerPanelRoutes(
     router
       .get('/:slug/relation-search', handler('relationSearch', true))
       .as(`${routePrefix}.resources.relationSearch`);
+    router
+      .get('/:slug/relation-table', handler('relationTable', true))
+      .as(`${routePrefix}.resources.relationTable`);
     router
       .post('/:slug/relation-quick-create', handler('relationQuickCreate', true))
       .as(`${routePrefix}.resources.relationQuickCreate`);

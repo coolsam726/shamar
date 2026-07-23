@@ -38,6 +38,13 @@
       @else
         —
       @endif
+    @elseif(relationUi && relationUi[field.name] && (relationUi[field.name].widget === 'table' || relationUi[field.name].kind === 'hasMany' || field.type === 'relationTable'))
+      <div class="mt-1 w-full">
+        @!component('shamar::partials/field-relation-table', {
+          field: field,
+          relationConfig: relationUi[field.name],
+        })
+      </div>
     @elseif(relationUi && relationUi[field.name] && relationUi[field.name].widget === 'checkboxList')
       @!component('shamar::partials/field-relation-checkbox', {
         field: field,

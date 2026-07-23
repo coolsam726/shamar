@@ -11,7 +11,7 @@ import {
   Section,
   Resource,
 } from '@shamar/core';
-import { cellValue, badgeValues } from '../src/shamar/list-query.js';
+import { cellValue, badgeValues, relatedListLink } from '../src/shamar/list-query.js';
 import { hydrateRecordsForDisplay } from '../src/shamar/display-relations.js';
 
 class ProductResource extends Resource {
@@ -115,5 +115,24 @@ describe('display relation hydration', () => {
       'Hardware',
       'Software',
     ]);
+  });
+
+  it('builds belongsTo list links to the related resource', async () => {
+    const record: Record<string, unknown> = {
+      id: 'p1',
+      companyId: 'c1',
+      categoryIds: ['a1'],
+    };
+    await hydrateRecordsForDisplay(meta, [record], registry, adapter as never);
+
+    assert.equal(
+      relatedListLink(meta, record, { name: 'company.name' }, '/admin'),
+      '/admin/companies/c1',
+    );
+    assert.equal(relatedListLink(meta, record, { name: 'name' }, '/admin'), null);
+    assert.equal(
+      relatedListLink(meta, { id: 'p2', companyId: null }, { name: 'company.name' }, '/admin'),
+      null,
+    );
   });
 });
