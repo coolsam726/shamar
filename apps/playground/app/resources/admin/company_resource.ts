@@ -138,6 +138,7 @@ export default class CompanyResource extends Resource {
           .schema([
             RelationTable.make('products')
               .relationship('products', 'name', { foreignKey: 'companyId' })
+              .listTable()
               .createAndEditOption()
               .columnSpanFull(),
           ]),
@@ -156,28 +157,6 @@ export default class CompanyResource extends Resource {
       ])
     })
   }
+   
 
-  static override infolist() {
-    return infolist((i) => {
-      i.schema([
-        Section.make('Company')
-          .columns(3)
-          .schema([
-            TextEntry.make('id').label('ID').copyable(),
-            TextEntry.make('name').label('Name').hint('Legal').badge(),
-            TextEntry.make('code').label('Code').hint('Unique'),
-            TextEntry.make('email').label('Email').columnSpanFull(),
-            TextEntry.make('phone').label('Phone'),
-            TextEntry.make('website').label('Website').url(),
-            TextEntry.make('industry').label('Industry'),
-            TextEntry.make('notes').label('Notes').columnSpanFull(),
-            IconEntry.make('active').label('Active').boolean().icon('✓').falseIcon('✗'),
-          ]),
-        Fieldset.make('Metadata').card().schema([
-          TextEntry.make('createdAt').label('Created At').dateTime(),
-          TextEntry.make('updatedAt').label('Updated At').dateTime(),
-        ]),
-      ])
-    })
-  }
 }

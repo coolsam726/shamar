@@ -18,122 +18,326 @@
   @endif
 
   <div class="shamar-m2m-table__card rounded-md border border-default">
-    <div class="shamar-m2m-table__toolbar flex flex-wrap items-center justify-between gap-2 border-b border-default bg-surface-header px-3 py-2">
-      <p class="text-xs font-medium text-body-subtle">
-        <span x-text="selected.length"></span> linked
-        <span x-text="singularLabel.toLowerCase()"></span><span x-show="selected.length !== 1">s</span>
-      </p>
-      <div class="shamar-m2m-table__add relative" x-show="!readonly">
-        <button
-          type="button"
-          class="inline-flex items-center gap-1 rounded-md border border-default bg-neutral-primary px-2.5 py-1 text-xs font-medium text-body hover:border-fg-brand hover:text-fg-brand"
-          @click="toggleAdd()"
-        >
-          <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
-          </svg>
-          Add
-        </button>
-        <div
-          x-show="addOpen"
-          x-cloak
-          x-transition.opacity.duration.100ms
-          class="shamar-m2m-table__add-dropdown absolute right-0 z-50 mt-1 w-72 rounded-md border border-default bg-neutral-primary text-sm shadow-lg"
-        >
-          <div class="border-b border-default p-2">
-            <input
-              type="text"
-              x-ref="addInput"
-              x-model="query"
-              @input.debounce.250ms="fetchResults()"
-              @keydown.arrow-down.prevent="moveCursor(1)"
-              @keydown.arrow-up.prevent="moveCursor(-1)"
-              @keydown.enter.prevent="onEnter()"
-              placeholder="Search to add…"
-              autocomplete="off"
-              class="shamar-input w-full text-sm"
-            />
+    <div class="shamar-m2m-table__toolbar flex flex-col gap-2 border-b border-default bg-surface-header px-3 py-2">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <p class="text-xs font-medium text-body-subtle">
+          <span x-show="listUrl">
+            <span x-text="total"></span>
+            <span x-text="singularLabel.toLowerCase()"></span><span x-show="total !== 1">s</span>
+          </span>
+          <span x-show="!listUrl">
+            <span x-text="selected.length"></span> linked
+            <span x-text="singularLabel.toLowerCase()"></span><span x-show="selected.length !== 1">s</span>
+          </span>
+        </p>
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="relative" x-show="listUrl && filterableHeaders.length">
+            <button
+              type="button"
+              class="inline-flex items-center gap-1 rounded-md border border-default bg-neutral-primary px-2.5 py-1 text-xs font-medium text-body hover:border-fg-brand hover:text-fg-brand"
+              @click="filterPanelOpen = !filterPanelOpen"
+            >
+              Filters
+              <span
+                x-show="listFilters.length"
+                class="rounded-full bg-brand-softer px-1.5 text-[10px] font-semibold text-fg-brand"
+                x-text="listFilters.length"
+              ></span>
+            </button>
+            <div
+              x-show="filterPanelOpen"
+              x-cloak
+              @click.outside="filterPanelOpen = false"
+              class="absolute right-0 z-50 mt-1 w-64 rounded-md border border-default bg-neutral-primary p-2 text-sm shadow-lg"
+            >
+              <template x-for="header in filterableHeaders" :key="header.name">
+                <div class="mb-2 last:mb-0">
+                  <p class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-body-subtle" x-text="header.label"></p>
+                  <div class="flex gap-1" x-show="header.filter_kind === 'boolean'">
+                    <button
+                      type="button"
+                      class="rounded-md border px-2 py-0.5 text-xs"
+                      :class="hasFilter(header, true) ? 'border-fg-brand bg-brand-softer text-fg-brand' : 'border-default text-body'"
+                      @click="toggleBooleanFilter(header, true)"
+                    >Yes</button>
+                    <button
+                      type="button"
+                      class="rounded-md border px-2 py-0.5 text-xs"
+                      :class="hasFilter(header, false) ? 'border-fg-brand bg-brand-softer text-fg-brand' : 'border-default text-body'"
+                      @click="toggleBooleanFilter(header, false)"
+                    >No</button>
+                  </div>
+                  <div
+                    class="flex max-h-36 flex-col gap-0.5 overflow-auto"
+                    x-show="header.filter_kind === 'select' && header.options"
+                  >
+                    <template x-for="opt in (header.options || [])" :key="String(opt.value)">
+                      <button
+                        type="button"
+                        class="rounded-md px-2 py-1 text-left text-xs hover:bg-surface-hover"
+                        :class="hasFilter(header, opt.value) ? 'bg-brand-softer text-fg-brand' : 'text-body'"
+                        @click="toggleSelectFilter(header, opt)"
+                        x-text="opt.label"
+                      ></button>
+                    </template>
+                  </div>
+                </div>
+              </template>
+              <button
+                type="button"
+                class="mt-1 w-full rounded-md border border-default px-2 py-1 text-xs text-body hover:bg-surface-hover"
+                x-show="listFilters.length"
+                @click="clearListFilters()"
+              >Clear filters</button>
+            </div>
           </div>
-          <div class="max-h-56 overflow-auto">
-            <template x-if="loading">
-              <div class="px-3 py-2 text-xs text-body-subtle">Searching…</div>
-            </template>
-            <template x-if="!loading && availableResults.length === 0 && !createCandidate">
-              <div class="px-3 py-2 text-xs text-body-subtle">No matches.</div>
-            </template>
-            <ul x-show="!loading && (availableResults.length > 0 || createCandidate || canCreateAndEdit)">
-              <template x-for="(item, i) in availableResults" :key="item.id">
-                <li
-                  class="cursor-pointer truncate px-3 py-1.5"
-                  :class="i === cursor ? 'bg-brand-softer text-fg-brand' : 'text-body hover:bg-neutral-secondary'"
-                  @mousedown.prevent="pick(item)"
-                  @mousemove="cursor = i"
-                  x-text="item.label"
-                ></li>
-              </template>
-              <template x-if="createCandidate">
-                <li
-                  class="flex cursor-pointer items-center gap-1.5 border-t border-default px-3 py-1.5 text-fg-success hover:bg-neutral-secondary"
-                  @click="createFromQuery()"
-                >
-                  <span>Create "<span x-text="query"></span>"</span>
-                </li>
-              </template>
-              <template x-if="canCreateAndEdit">
-                <li
-                  class="flex cursor-pointer items-center gap-1.5 border-t border-default px-3 py-1.5 text-body hover:bg-neutral-secondary"
-                  @click="createAndEdit()"
-                >
-                  Create and edit…
-                </li>
-              </template>
-            </ul>
+
+          <div class="shamar-m2m-table__add relative" x-show="!readonly">
+            <button
+              type="button"
+              class="inline-flex items-center gap-1 rounded-md border border-default bg-neutral-primary px-2.5 py-1 text-xs font-medium text-body hover:border-fg-brand hover:text-fg-brand"
+              @click="toggleAdd()"
+            >
+              <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+              </svg>
+              Add
+            </button>
+            <div
+              x-show="addOpen"
+              x-cloak
+              x-transition.opacity.duration.100ms
+              class="shamar-m2m-table__add-dropdown absolute right-0 z-50 mt-1 w-72 rounded-md border border-default bg-neutral-primary text-sm shadow-lg"
+            >
+              <div class="border-b border-default p-2">
+                <input
+                  type="text"
+                  x-ref="addInput"
+                  x-model="query"
+                  @input.debounce.250ms="fetchResults()"
+                  @keydown.arrow-down.prevent="moveCursor(1)"
+                  @keydown.arrow-up.prevent="moveCursor(-1)"
+                  @keydown.enter.prevent="onEnter()"
+                  placeholder="Search to add…"
+                  autocomplete="off"
+                  class="shamar-input w-full text-sm"
+                />
+              </div>
+              <div class="max-h-56 overflow-auto">
+                <template x-if="loading">
+                  <div class="px-3 py-2 text-xs text-body-subtle">Searching…</div>
+                </template>
+                <template x-if="!loading && availableResults.length === 0 && !createCandidate">
+                  <div class="px-3 py-2 text-xs text-body-subtle">No matches.</div>
+                </template>
+                <ul x-show="!loading && (availableResults.length > 0 || createCandidate || canCreateAndEdit)">
+                  <template x-for="(item, i) in availableResults" :key="item.id">
+                    <li
+                      class="cursor-pointer truncate px-3 py-1.5"
+                      :class="i === cursor ? 'bg-brand-softer text-fg-brand' : 'text-body hover:bg-neutral-secondary'"
+                      @mousedown.prevent="pick(item)"
+                      @mousemove="cursor = i"
+                      x-text="item.label"
+                    ></li>
+                  </template>
+                  <template x-if="createCandidate">
+                    <li
+                      class="flex cursor-pointer items-center gap-1.5 border-t border-default px-3 py-1.5 text-fg-success hover:bg-neutral-secondary"
+                      @click="createFromQuery()"
+                    >
+                      <span>Create "<span x-text="query"></span>"</span>
+                    </li>
+                  </template>
+                  <template x-if="canCreateAndEdit">
+                    <li
+                      class="flex cursor-pointer items-center gap-1.5 border-t border-default px-3 py-1.5 text-body hover:bg-neutral-secondary"
+                      @click="createAndEdit()"
+                    >
+                      Create and edit…
+                    </li>
+                  </template>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+
+      <div class="flex flex-wrap items-center gap-2" x-show="listUrl">
+        <input
+          type="search"
+          x-model="listSearch"
+          @input.debounce.300ms="applyListSearch()"
+          placeholder="Search…"
+          class="shamar-input max-w-xs flex-1 text-sm"
+          autocomplete="off"
+        />
+        <template x-for="chip in listFilters" :key="chip.field + String(chip.value)">
+          <button
+            type="button"
+            class="inline-flex items-center gap-1 rounded-full border border-default bg-neutral-primary px-2 py-0.5 text-[11px] text-body hover:border-fg-danger hover:text-fg-danger"
+            @click="removeListFilter(chip)"
+          >
+            <span x-text="chip.label || chip.field"></span>
+            <span aria-hidden="true">×</span>
+          </button>
+        </template>
+      </div>
     </div>
 
-    <table class="w-full text-sm">
-      <thead>
-        <tr class="border-b border-default text-left text-xs uppercase tracking-wider text-body-subtle">
-          <th class="px-3 py-2 font-semibold">Record</th>
-          <th class="px-3 py-2 text-right font-semibold" x-show="!readonly">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <template x-if="selected.length === 0">
-          <tr>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-default text-left text-xs uppercase tracking-wider text-body-subtle">
+            <th class="px-3 py-2 font-semibold" x-show="!listUrl || !columns.length">Record</th>
+            <template x-for="column in columns" :key="column.name">
+              <th
+                class="px-3 py-2 font-semibold"
+                x-show="listUrl"
+                :class="[
+                  column.alignmentClass || '',
+                  column.sortable ? 'cursor-pointer select-none hover:text-fg-brand' : '',
+                ]"
+                @click="column.sortable && toggleListSort(column.name)"
+              >
+                <span class="inline-flex items-center gap-1">
+                  <span x-text="column.label"></span>
+                  <span
+                    x-show="listSort === column.name"
+                    class="text-fg-brand"
+                    x-text="listDirection === 'asc' ? '↑' : '↓'"
+                  ></span>
+                </span>
+              </th>
+            </template>
+            <th class="px-3 py-2 text-right font-semibold" x-show="!readonly">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{-- List mode --}}
+          <tr x-show="listUrl && listLoading">
+            <td :colspan="Math.max(columns.length, 1) + (readonly ? 0 : 1)" class="px-3 py-8 text-center text-xs text-body-subtle">
+              Loading…
+            </td>
+          </tr>
+          <tr x-show="listUrl && !listLoading && rows.length === 0">
+            <td :colspan="Math.max(columns.length, 1) + (readonly ? 0 : 1)" class="px-3 py-8 text-center text-xs text-body-subtle">
+              No linked records yet.
+            </td>
+          </tr>
+          <template x-for="row in rows" :key="row.id">
+            <tr
+              class="cursor-pointer border-b border-default last:border-0 hover:bg-surface-row-hover"
+              x-show="listUrl && !listLoading"
+              @click="openRecord(row)"
+            >
+              <template x-for="cell in row.cells" :key="row.id + ':' + cell.name">
+                <td class="px-3 py-2 text-body" :class="cellAlignment(cell.name)">
+                  <span x-show="cell.boolean !== undefined" x-text="cell.boolean ? 'Yes' : 'No'"></span>
+                  <div class="shamar-badges" x-show="cell.badges && cell.badges.length">
+                    <template x-for="badge in (cell.badges || [])" :key="badge">
+                      <span class="shamar-badge" x-text="badge"></span>
+                    </template>
+                  </div>
+                  <a
+                    x-show="cell.boolean === undefined && !(cell.badges && cell.badges.length) && cell.href"
+                    :href="cell.href"
+                    class="text-fg-brand hover:underline"
+                    @click.stop
+                    x-text="cell.text"
+                  ></a>
+                  <span
+                    class="text-heading"
+                    x-show="cell.boolean === undefined && !(cell.badges && cell.badges.length) && !cell.href"
+                    x-text="cell.text"
+                  ></span>
+                </td>
+              </template>
+              <td class="px-3 py-2 text-right" x-show="!readonly" @click.stop>
+                <div class="inline-flex items-center gap-1 text-xs">
+                  <button
+                    type="button"
+                    class="rounded-md px-2 py-1 text-body hover:bg-surface-hover"
+                    @click="openRecord(row)"
+                  >Open</button>
+                  <button
+                    type="button"
+                    class="rounded-md px-2 py-1 text-fg-danger hover:bg-danger-soft"
+                    @click="remove(row.id)"
+                  >Unlink</button>
+                </div>
+              </td>
+            </tr>
+          </template>
+
+          {{-- Legacy single-column mode --}}
+          <tr x-show="!listUrl && selected.length === 0">
             <td colspan="2" class="px-3 py-8 text-center text-xs text-body-subtle">No linked records yet.</td>
           </tr>
-        </template>
-        <template x-for="item in selected" :key="item.id">
-          <tr class="border-b border-default last:border-0 hover:bg-surface-row-hover">
-            <td class="px-3 py-2">
-              <button
-                type="button"
-                class="text-left text-heading hover:text-fg-brand hover:underline"
-                @click="openRecord(item)"
-                x-text="item.label"
-              ></button>
-            </td>
-            <td class="px-3 py-2 text-right" x-show="!readonly">
-              <div class="inline-flex items-center gap-1 text-xs">
+          <template x-for="item in selected" :key="'legacy-' + item.id">
+            <tr class="border-b border-default last:border-0 hover:bg-surface-row-hover" x-show="!listUrl">
+              <td class="px-3 py-2">
                 <button
                   type="button"
-                  class="rounded-md px-2 py-1 text-body hover:bg-surface-hover"
+                  class="text-left text-heading hover:text-fg-brand hover:underline"
                   @click="openRecord(item)"
-                >Open</button>
-                <button
-                  type="button"
-                  class="rounded-md px-2 py-1 text-fg-danger hover:bg-danger-soft"
-                  @click="remove(item.id)"
-                >Unlink</button>
-              </div>
-            </td>
-          </tr>
-        </template>
-      </tbody>
-    </table>
+                  x-text="item.label"
+                ></button>
+              </td>
+              <td class="px-3 py-2 text-right" x-show="!readonly">
+                <div class="inline-flex items-center gap-1 text-xs">
+                  <button
+                    type="button"
+                    class="rounded-md px-2 py-1 text-body hover:bg-surface-hover"
+                    @click="openRecord(item)"
+                  >Open</button>
+                  <button
+                    type="button"
+                    class="rounded-md px-2 py-1 text-fg-danger hover:bg-danger-soft"
+                    @click="remove(item.id)"
+                  >Unlink</button>
+                </div>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+
+    <div
+      class="flex flex-wrap items-center justify-between gap-2 border-t border-default px-3 py-2 text-xs text-body-subtle"
+      x-show="listUrl && (pageCount > 1 || total > 0)"
+    >
+      <p>
+        Page <span x-text="page"></span> of <span x-text="pageCount"></span>
+        <span class="text-body-subtle">·</span>
+        <span x-text="total"></span> total
+      </p>
+      <div class="inline-flex items-center gap-1">
+        <button
+          type="button"
+          class="rounded-md border border-default px-2 py-1 hover:bg-surface-hover disabled:opacity-40"
+          :disabled="page <= 1 || listLoading"
+          @click="setListPage(page - 1)"
+        >Prev</button>
+        <button
+          type="button"
+          class="rounded-md border border-default px-2 py-1 hover:bg-surface-hover disabled:opacity-40"
+          :disabled="page >= pageCount || listLoading"
+          @click="setListPage(page + 1)"
+        >Next</button>
+        <select
+          class="shamar-input py-1 text-xs"
+          x-model="perPage"
+          @change="setListPage(1)"
+        >
+          <option value="5">5</option>
+          <option value="10">10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+        </select>
+      </div>
+    </div>
   </div>
 </div>
 @endif

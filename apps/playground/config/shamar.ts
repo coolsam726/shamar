@@ -58,6 +58,15 @@ export default defineConfig({
     accentColor: '#286291',
     googleFont: {'family': 'DM Sans', weights: [400, 500, 600, 700, 800, 900]},
   },
+  rest: {
+    openapi: {
+      title: 'Shamar Playground API',
+      version: '0.1.3',
+      description: 'JSON API for playground resources and custom /api routes.',
+    },
+    docs: { path: '/docs' },
+    discover: { prefixes: ['/api'] },
+  },
   panels: [
     panel('admin')
       .path('/admin')

@@ -2,6 +2,7 @@ import type {
   ColumnSpan,
   FieldConfig,
   FieldType,
+  FormSchema,
   InfolistEntryConfig,
   InfolistSchema,
   InfolistSectionConfig,
@@ -337,29 +338,157 @@ export function infolist(callback: (builder: InfolistBuilder) => void): Infolist
   return builder.build();
 }
 
-export function infolistFromFields(fields: FieldConfig[]): InfolistSchema {
-  return infolist((i) => {
-    i.columns(2).schema([
-      Section.make()
-        .card(true)
-        .columns(2)
-        .schema(
-          fields
-            .filter((field) => !field.hiddenOnDetail)
-            .map((field) => {
-              const entry = TextEntry.make(field.name).label(String(field.label ?? field.name));
-              const type = field.type as FieldType;
-              if (type === 'boolean' || type === 'checkbox') entry.boolean();
-              else if (type === 'email') entry.email();
-              else if (type === 'date') entry.date();
-              else if (type === 'datetime') entry.dateTime();
-              else if (type === 'textarea') entry.textarea().columnSpanFull();
-              else if (type === 'color') {
-                /* keep text; ColorEntry used explicitly */
-              }
-              return entry;
-            }),
-        ),
-    ]);
+/**
+ * Map a form field to an infolist entry (shared heuristics for derived show schemas).
+ */
+export function fieldConfigToEntry(field: FieldConfig): InfolistEntryConfig {
+  const entry = TextEntry.make(field.name).label(String(field.label ?? field.name));
+  if (typeof field.help === 'string') entry.help(field.help);
+  if (typeof field.hint === 'string') entry.hint(field.hint);
+  if (field.columnSpan != null) entry.columnSpan(field.columnSpan);
+  if (field.columnStart != null) entry.columnStart(field.columnStart);
+  if (field.alignment) entry.alignment(field.alignment);
+
+  const type = field.type as FieldType;
+  if (type === 'relationTable' || field.relation?.kind === 'hasMany') {
+    entry.columnSpanFull();
+  } else if (type === 'boolean' || type === 'checkbox') entry.boolean();
+  else if (type === 'email') entry.email();
+  else if (type === 'date') entry.date();
+  else if (type === 'datetime') entry.dateTime();
+  else if (type === 'textarea') entry.textarea().columnSpanFull();
+  else if (type === 'tags') entry.badge();
+
+  return entry.build();
+}
+
+function mapFormNodesToInfolist(nodes: SchemaNode[]): SchemaNode[] {
+  const out: SchemaNode[] = [];
+
+  for (const node of nodes) {
+    if (node.kind === 'field') {
+      const field = node.field;
+      if (!field || field.hiddenOnDetail) continue;
+      if (field.type === 'password' || field.type === 'hidden') continue;
+      const entry = fieldConfigToEntry(field);
+      out.push({
+        kind: 'entry',
+        name: entry.name,
+        columnSpan: entry.columnSpan ?? node.columnSpan,
+        columnStart: entry.columnStart ?? node.columnStart,
+        entry,
+      });
+      continue;
+    }
+
+    if (node.kind === 'entry') {
+      if (node.entry?.hiddenOnDetail) continue;
+      out.push({ ...node });
+      continue;
+    }
+
+    const children = node.children?.length ? mapFormNodesToInfolist(node.children) : [];
+    // Drop empty layout chrome (e.g. section whose only fields were hiddenOnDetail).
+    if (!children.length && (node.kind === 'section' || node.kind === 'fieldset' || node.kind === 'plain' || node.kind === 'grid' || node.kind === 'group' || node.kind === 'flex' || node.kind === 'tab' || node.kind === 'step')) {
+      continue;
+    }
+
+    out.push({
+      ...node,
+      field: undefined,
+      entry: undefined,
+      children,
+    });
+  }
+
+  return out;
+}
+
+function finalizeInfolistSchema(schema: SchemaNode[], rootColumns: 1 | 2 | 3 | 4 = 2): InfolistSchema {
+  let next = schema;
+  const onlyLeaves =
+    next.length > 0 && next.every((n) => n.kind === 'field' || n.kind === 'entry');
+  if (onlyLeaves || next.length === 0) {
+    next = [
+      {
+        kind: 'section',
+        name: '_entries',
+        title: '',
+        card: true,
+        columns: rootColumns,
+        children: next.filter((n) => n.kind === 'entry'),
+      },
+    ];
+  }
+
+  const entries = collectEntries(next);
+  const sections: InfolistSectionConfig[] = next.map((node) => {
+    if (node.kind === 'section' || node.kind === 'fieldset' || node.kind === 'plain') {
+      return {
+        name: node.name ?? 'section',
+        title: node.title ?? '',
+        description: node.description,
+        icon: node.icon,
+        kind: node.kind === 'fieldset' ? 'fieldset' : node.kind === 'plain' ? 'plain' : 'section',
+        card: node.card,
+        columns: node.columns,
+        entries: collectEntries([node]),
+        collapsible: node.collapsible,
+        collapsed: node.collapsed,
+        dense: node.dense,
+        gap: node.gap,
+        extraAttributes: node.extraAttributes,
+      };
+    }
+    return {
+      name: node.name ?? 'layout',
+      title: node.title ?? '',
+      description: node.description,
+      icon: node.icon,
+      kind: 'section' as const,
+      card: node.card,
+      columns: node.columns ?? rootColumns,
+      entries: collectEntries([node]),
+      collapsible: node.collapsible,
+      collapsed: node.collapsed,
+      dense: node.dense,
+      gap: node.gap,
+      extraAttributes: node.extraAttributes,
+    };
   });
+
+  return { schema: next, sections, entries };
+}
+
+/**
+ * Derive an infolist from the form **schema tree**, preserving Sections / Grids /
+ * Tabs / Fieldsets and per-node column spans. Field leaves become entries.
+ */
+export function formSchemaToInfolistSchema(form: FormSchema): InfolistSchema {
+  if (!form.schema?.length) {
+    return infolistFromFields(form.fields);
+  }
+  const mapped = mapFormNodesToInfolist(form.schema);
+  if (!mapped.length) {
+    return infolistFromFields(form.fields);
+  }
+  return finalizeInfolistSchema(mapped);
+}
+
+export function infolistFromFields(fields: FieldConfig[]): InfolistSchema {
+  return finalizeInfolistSchema(
+    fields
+      .filter((field) => !field.hiddenOnDetail)
+      .filter((field) => field.type !== 'password' && field.type !== 'hidden')
+      .map((field) => {
+        const entry = fieldConfigToEntry(field);
+        return {
+          kind: 'entry' as const,
+          name: entry.name,
+          columnSpan: entry.columnSpan,
+          columnStart: entry.columnStart,
+          entry,
+        };
+      }),
+  );
 }

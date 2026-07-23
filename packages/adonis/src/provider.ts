@@ -63,6 +63,7 @@ export default class ShamarProvider {
         formInputType,
         fieldInputAttrs,
         recordNavQuery,
+        relatedListLink,
       } = await import('./shamar/list-query.js');
 
       edge.global('sortColumnUrl', sortColumnUrl);
@@ -73,6 +74,7 @@ export default class ShamarProvider {
       edge.global('formInputType', formInputType);
       edge.global('fieldInputAttrs', fieldInputAttrs);
       edge.global('recordNavQuery', recordNavQuery);
+      edge.global('relatedListLink', relatedListLink);
       edge.global('resolveGridItemStyle', resolveGridItemStyle);
       const { humanizeLabel, resolveAlignmentClass, alignmentTextClass } = await import('@shamar/core');
       edge.global('humanizeLabel', humanizeLabel);

@@ -74,6 +74,8 @@ services:
       - ./packages/lucid/dist:/workspace/packages/lucid/dist
       - ./packages/mongoose/src:/workspace/packages/mongoose/src
       - ./packages/mongoose/dist:/workspace/packages/mongoose/dist
+      - ./packages/rest/src:/workspace/packages/rest/src
+      - ./packages/rest/dist:/workspace/packages/rest/dist
 
   # Playground — production build (opt-in: pnpm docker:prod)
   app-prod:

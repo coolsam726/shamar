@@ -5,7 +5,10 @@ import type {
   ResourceMeta,
   ResourceRegistry,
 } from '@shamar/core';
-import { relationTitleAttribute } from '@shamar/core';
+import { relationTitleAttribute, relationUsesListTable } from '@shamar/core';
+import type { ListHeader } from './list-headers.js';
+import type { RelationTableColumn } from './relation-table.js';
+import { relationTableListMeta } from './relation-table.js';
 
 export interface RelationUiConfig {
   name: string;
@@ -38,6 +41,19 @@ export interface RelationUiConfig {
   valueAttribute?: string;
   /** True when hasMany on create — show empty state until parent is saved */
   requiresParent?: boolean;
+  /**
+   * Scoped list endpoint for hasMany RelationTable widgets
+   * (`GET …/relation-table?field=&parentId=`).
+   */
+  listUrl?: string | null;
+  /** Related resource table columns (excluding the parent FK display). */
+  columns?: RelationTableColumn[];
+  /** Filter metadata from the related resource table. */
+  listHeaders?: ListHeader[];
+  /** Default page size for the embedded list. */
+  perPage?: number;
+  defaultSort?: string | null;
+  defaultDirection?: 'asc' | 'desc' | null;
 }
 
 export function isRelationField(field: FieldConfig): boolean {
@@ -93,6 +109,19 @@ export function buildRelationUiConfig(options: {
   const initialItems = options.initialItems ?? [];
   const first = initialItems[0];
 
+  const useListTable =
+    widget === 'table' &&
+    relation.kind === 'hasMany' &&
+    !!relation.foreignKey &&
+    !!parentId &&
+    relationUsesListTable(relation);
+  const listMeta = useListTable
+    ? relationTableListMeta(relatedMeta, relation.foreignKey)
+    : null;
+
+  const listParams = new URLSearchParams({ field: field.name });
+  if (parentId) listParams.set('parentId', parentId);
+
   return {
     name: field.name,
     relatedResource: relatedMeta.slug,
@@ -114,7 +143,7 @@ export function buildRelationUiConfig(options: {
         ? first?.id ?? (record?.[field.name] != null ? String(record[field.name]) : null)
         : null,
     initialLabel: relation.kind === 'belongsTo' ? first?.label ?? '' : undefined,
-    initialItems: relation.kind === 'belongsTo' ? undefined : initialItems,
+    initialItems: relation.kind === 'belongsTo' ? undefined : useListTable ? [] : initialItems,
     options: options.preloadedOptions,
     checkboxColumns: field.checkboxColumns ?? relation.checkboxColumns ?? 2,
     checkboxFramed: field.checkboxFramed ?? relation.checkboxFramed ?? true,
@@ -122,6 +151,14 @@ export function buildRelationUiConfig(options: {
     groupBy: field.groupBy ?? relation.groupBy ?? '',
     valueAttribute: relation.valueAttribute ?? 'id',
     requiresParent: relation.kind === 'hasMany' && (operation === 'create' || !parentId),
+    listUrl: useListTable
+      ? `${basePath}/${parentMeta.slug}/relation-table?${listParams.toString()}`
+      : null,
+    columns: listMeta?.columns ?? [],
+    listHeaders: listMeta?.listHeaders ?? [],
+    perPage: 10,
+    defaultSort: relatedMeta.defaultSort?.field ?? null,
+    defaultDirection: relatedMeta.defaultSort?.direction ?? 'asc',
   };
 }
 

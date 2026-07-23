@@ -1,0 +1,16 @@
+---
+description: After package/build changes, rebuild dist and restart Docker app-dev
+alwaysApply: true
+---
+
+# Sync Docker dev after changes
+
+When changing `@shamar/*` packages (core, adonis, rest, lucid, mongoose, cherubim) or playground code that depends on rebuilt `dist`:
+
+1. **Build** affected packages on the host so mounted `packages/*/dist` updates, e.g.:
+   `pnpm --filter @shamar/core --filter @shamar/adonis --filter @shamar/rest build`
+2. **Restart** the dev container so Adonis reloads providers/dist (HMR alone is not enough for `dist`/provider changes):
+   `docker compose --profile dev restart app-dev`
+3. **Verify** logs show the HTTP server started (`started HTTP server on 0.0.0.0:3333`).
+
+Do this at the end of implementation work without waiting to be asked. Pure Edge/`assets`/`start` edits that are volume-mounted may only need HMR; still restart if the app looks stale or errors persist.

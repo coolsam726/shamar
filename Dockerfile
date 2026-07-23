@@ -17,6 +17,7 @@ COPY packages/cherubim/package.json ./packages/cherubim/
 COPY packages/adonis/package.json ./packages/adonis/
 COPY packages/lucid/package.json ./packages/lucid/
 COPY packages/mongoose/package.json ./packages/mongoose/
+COPY packages/rest/package.json ./packages/rest/
 
 RUN pnpm install --frozen-lockfile
 

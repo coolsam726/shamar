@@ -731,11 +731,17 @@ export class AbilitiesAssignment extends CheckboxList {
 /**
  * Inline relationship table for HasMany / ManyToMany (attach, create, create & edit).
  * HasMany fields are not dehydrated — children own the foreign key.
+ *
+ * Use {@link RelationTable.listTable} (default) for search / filters / pagination
+ * against the related resource’s `table()`, or {@link RelationTable.simple} for a
+ * compact label-only linked list.
  */
 export class RelationTable extends FormComponent {
   static make(name: string): RelationTable {
     return new RelationTable(name);
   }
+
+  private pendingTableMode?: import('./types.js').RelationTableMode;
 
   private constructor(name: string) {
     super(name, 'relationTable');
@@ -752,8 +758,39 @@ export class RelationTable extends FormComponent {
       ...options,
       kind: options?.kind ?? 'hasMany',
       widget: options?.widget ?? 'table',
+      tableMode:
+        options?.tableMode ??
+        this.pendingTableMode ??
+        this.config.relation?.tableMode ??
+        'list',
     });
+    this.pendingTableMode = undefined;
     return this;
+  }
+
+  /** Full list UI: related columns, search, filters, pagination (default). */
+  listTable(value = true): this {
+    this.setTableMode(value ? 'list' : 'simple');
+    return this;
+  }
+
+  /** Compact UI: single label column with Add / Open / Unlink only. */
+  simple(value = true): this {
+    this.setTableMode(value ? 'simple' : 'list');
+    return this;
+  }
+
+  /** Explicit table presentation mode. */
+  tableMode(mode: import('./types.js').RelationTableMode): this {
+    this.setTableMode(mode);
+    return this;
+  }
+
+  private setTableMode(mode: import('./types.js').RelationTableMode): void {
+    this.pendingTableMode = mode;
+    if (this.config.relation) {
+      this.config.relation.tableMode = mode;
+    }
   }
 
   createOption(value = true): this {

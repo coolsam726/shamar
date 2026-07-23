@@ -1,23 +1,62 @@
 @let(mode = 'show')
-@include('shamar::partials/shell-open')
+@if(embed)
+  <div
+    class="space-y-4"
+    data-shamar-embed-detail
+    data-shamar-record-view="show"
+  >
+    @each(node in detailSchema)
+      @!component('shamar::partials/schema-node', {
+        node: node,
+        schemaMode: 'detail',
+        mode: mode,
+        record: record,
+        formErrors: formErrors,
+        relationUi: relationUi,
+      })
+    @endeach
 
-<div
-  class="mx-auto space-y-6 {{ contentMaxWidthClass || 'max-w-5xl' }}"
-  @if(contentMaxWidthStyle)
-    style="{{ contentMaxWidthStyle }}"
-  @endif
-  data-shamar-record-view="show"
->
-  @each(node in detailSchema)
-    @!component('shamar::partials/schema-node', {
-      node: node,
-      schemaMode: 'detail',
-      mode: mode,
-      record: record,
-      formErrors: formErrors,
-      relationUi: relationUi,
-    })
-  @endeach
-</div>
+    <div data-shamar-dialog-actions class="flex flex-wrap items-center justify-end gap-2 pt-2">
+      <button
+        type="button"
+        data-shamar-dialog-close
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-default text-body rounded-md hover:bg-surface-hover transition"
+      >Close</button>
+      @if(showEditButton)
+        <button
+          type="button"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-md bg-fg-brand hover:opacity-90 transition"
+          @click="$dispatch('shamar-open-dialog', {
+            url: {{ jsonAttr(`${basePath}/${resource.slug}/${record.id}/edit`) }},
+            title: {{ jsonAttr(`Edit ${pageTitle}`) }},
+            slug: {{ jsonAttr(resource.slug) }},
+            replace: true,
+          })"
+        >Edit</button>
+      @endif
+    </div>
+  </div>
+@else
+  @include('shamar::partials/shell-open')
 
-@include('shamar::partials/shell-close')
+  <div
+    class="mx-auto space-y-6 {{ contentMaxWidthClass || 'max-w-5xl' }}"
+    @if(contentMaxWidthStyle)
+      style="{{ contentMaxWidthStyle }}"
+    @endif
+    data-shamar-record-view="show"
+  >
+    @each(node in detailSchema)
+      @!component('shamar::partials/schema-node', {
+        node: node,
+        schemaMode: 'detail',
+        mode: mode,
+        record: record,
+        formErrors: formErrors,
+        relationUi: relationUi,
+      })
+    @endeach
+  </div>
+
+  @include('shamar::partials/shell-close')
+@endif

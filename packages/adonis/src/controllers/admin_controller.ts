@@ -1,6 +1,6 @@
 import type { ShamarHttpContext } from '../context.js';
 import type { ResourceRegistry, ResourceMeta } from '@shamar/core';
-import { resolveGridItemStyle, isValidationException } from '@shamar/core';
+import { resolveGridItemStyle, isValidationException, relationUsesListTable } from '@shamar/core';
 import type { Authorizer } from '@shamar/cherubim';
 import { Authorizer as AuthorizerClass } from '@shamar/cherubim';
 import type { AuthorizationContext, ResourceAction } from '@shamar/cherubim';
@@ -60,6 +60,10 @@ import {
   type RelationUiConfig,
 } from '../shamar/relation-fields.js';
 import { hydrateRecordsForDisplay } from '../shamar/display-relations.js';
+import {
+  buildRelationTableRows,
+  relationTableListMeta,
+} from '../shamar/relation-table.js';
 
 export class AdminController {
   private readonly resources: ResourceController;
@@ -413,6 +417,7 @@ export class AdminController {
       return ctx.response.json(record);
     }
 
+    const embed = this.isEmbed(ctx);
     const title = recordTitle(meta, record);
     const policy = resourcePolicyFlags(this.authorizer, authCtx, this.registry, meta, record);
     const shell = this.shellOpts(ctx, authCtx, {
@@ -436,11 +441,14 @@ export class AdminController {
       resource: meta,
       record,
       id: record.id,
+      embed,
       detailSchema: detailSchemaTree(meta),
       detailSections: detailSections(meta),
       relationUi,
       formErrors: {},
-      recordPager: await this.resolveRecordPager(ctx, meta, String(record.id), 'show'),
+      recordPager: embed
+        ? null
+        : await this.resolveRecordPager(ctx, meta, String(record.id), 'show'),
       resolveGridItemStyle,
       recordActions: visibleRowActions(meta, policy, record),
     });
@@ -601,6 +609,85 @@ export class AdminController {
     });
 
     return ctx.response.json({ results });
+  }
+
+  async relationTable(ctx: ShamarHttpContext) {
+    const meta = this.requireResource(ctx);
+    const authResult = await this.ensureResourceAction(ctx, meta, 'viewAny', undefined, true);
+    if (!this.isAuthContext(authResult)) return authResult;
+    const authCtx = authResult;
+
+    const fieldName = String(ctx.request.input('field') ?? '');
+    const field = meta.fields.find((entry) => entry.name === fieldName);
+    if (!field?.relation || field.relation.kind !== 'hasMany' || !field.relation.foreignKey) {
+      return ctx.response.badRequest({ message: 'Relation table requires a hasMany field' });
+    }
+
+    const parentId = ctx.request.input('parentId');
+    if (!parentId) {
+      return ctx.response.badRequest({ message: 'parentId is required' });
+    }
+
+    const related = resolveRelatedMeta(this.registry, field.relation);
+    const relatedAuth = await this.ensureResourceAction(ctx, related, 'viewAny', undefined, true);
+    if (!this.isAuthContext(relatedAuth)) return relatedAuth;
+
+    const { columnConfigs, columns, listHeaders } = relationTableListMeta(
+      related,
+      field.relation.foreignKey,
+    );
+
+    const rawQuery = this.listQuery(ctx);
+    const hasFiltersParam =
+      ctx.request.input('filters') !== undefined && ctx.request.input('filters') !== null;
+    const normalized = normalizeListQuery(rawQuery, { perPage: 10 });
+
+    if (!hasFiltersParam && related.defaultFilters?.length) {
+      normalized.filters = resolveDefaultFilters(related, listHeaders);
+    } else if (normalized.filters?.length) {
+      normalized.filters = labelListFilters(normalized.filters, listHeaders);
+    }
+
+    if (!normalized.sort && related.defaultSort) {
+      normalized.sort = related.defaultSort.field;
+      normalized.direction = related.defaultSort.direction;
+    }
+
+    const query = this.withPolicyScope(authCtx, related, {
+      ...normalized,
+      scope: {
+        ...(normalized.scope ?? {}),
+        [field.relation.foreignKey]: String(parentId),
+      },
+    });
+
+    const result = await this.resources.index(related, query);
+    await hydrateRecordsForDisplay(related, result.items, this.registry, this.panel.adapter);
+    decorateRevokedStatus(result.items);
+
+    const titleAttribute = relationTitleAttribute(field.relation);
+    const rows = buildRelationTableRows(
+      related,
+      columnConfigs,
+      result.items,
+      this.basePath,
+      (record) => recordSummaryLabel(related, record, titleAttribute),
+    );
+
+    return ctx.response.json({
+      items: result.items,
+      rows,
+      total: result.total,
+      page: result.page,
+      perPage: result.perPage,
+      pageCount: result.pageCount,
+      columns,
+      listHeaders,
+      filters: normalized.filters ?? [],
+      sort: normalized.sort ?? null,
+      direction: normalized.direction ?? null,
+      search: normalized.search ?? '',
+    });
   }
 
   async relationQuickCreate(ctx: ShamarHttpContext) {
@@ -1347,7 +1434,17 @@ export class AdminController {
 
       let initialItems: Awaited<ReturnType<typeof this.panel.adapter.search>> = [];
 
-      if (field.relation.kind === 'hasMany' && record?.id != null && field.relation.foreignKey) {
+      const skipPreload =
+        field.relation.kind === 'hasMany' &&
+        widget === 'table' &&
+        record?.id != null &&
+        !!field.relation.foreignKey &&
+        relationUsesListTable(field.relation);
+
+      if (skipPreload) {
+        // RelationTable loads linked rows via GET relation-table (search/page/filters).
+        initialItems = [];
+      } else if (field.relation.kind === 'hasMany' && record?.id != null && field.relation.foreignKey) {
         initialItems = await this.panel.adapter.search(related, {
           titleAttribute,
           limit: field.relation.preloadLimit ?? 100,
