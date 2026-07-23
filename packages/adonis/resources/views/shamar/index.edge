@@ -11,7 +11,8 @@
   data-shamar-sort="{{ query.sort ?? '' }}"
   data-shamar-direction="{{ query.direction ?? '' }}"
 >
-  <div class="shamar-card rounded-xl overflow-hidden">
+  {{-- overflow-visible so Filter/Group/bulk menus are not clipped by the table --}}
+  <div class="shamar-card shamar-list-card rounded-xl">
     @include('shamar::partials/list-toolbar')
 
     @if(bulkActions && bulkActions.length)
@@ -73,7 +74,7 @@
       </div>
     @endif
 
-    <div class="overflow-x-auto">
+    <div class="shamar-list-table-scroll">
       <table class="w-full text-sm">
         <thead class="bg-surface-header">
           <tr>

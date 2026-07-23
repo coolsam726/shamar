@@ -50,6 +50,12 @@ export abstract class Resource {
   static icon?: string;
   static companyScoped?: boolean;
   static softDelete?: boolean | { field?: string };
+  /**
+   * Max width of create/edit and show/infolist content.
+   * Overrides panel `contentMaxWidth` when set.
+   * Tailwind token (`3xl`, `5xl`, `7xl`, `full`, `none`) or CSS length (`80rem`).
+   */
+  static contentMaxWidth?: string;
   /** Optional record-level policy (Loom / Laravel style). */
   static policy?: PolicyClass;
 
@@ -179,6 +185,7 @@ export abstract class Resource {
       companyScoped: this.companyScoped,
       softDelete: this.softDelete,
       customPermissions: normalizeCustomPermissions(this.slug, this.permissions()),
+      contentMaxWidth: this.contentMaxWidth,
     };
   }
 

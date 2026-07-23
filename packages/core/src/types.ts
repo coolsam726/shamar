@@ -295,7 +295,7 @@ export interface InfolistEntryConfig {
   help?: string;
   /** Short text beside the label (Filament `hint`). */
   hint?: string;
-  format?: 'date' | 'datetime' | 'boolean' | 'badge' | 'toggle' | 'markdown' | 'currency';
+  format?: 'date' | 'datetime' | 'boolean' | 'badge' | 'toggle' | 'markdown' | 'currency' | 'textarea';
   columnSpan?: ColumnSpan;
   columnStart?: number;
   hiddenOnDetail?: boolean;
@@ -418,6 +418,12 @@ export interface ResourceMeta {
   softDelete?: boolean | { field?: string };
   /** Extra permission names declared by `Resource.permissions()`. */
   customPermissions?: Array<{ name: string; label?: string }>;
+  /**
+   * Max width of create/edit and show/infolist content cards.
+   * Tailwind token (`3xl`, `5xl`, `7xl`, `full`, `none`) or CSS length (`80rem`, `1200px`).
+   * Overrides panel `contentMaxWidth` when set.
+   */
+  contentMaxWidth?: string;
 }
 
 /** Lucid/Mongoose model class or table/model name string. */
@@ -528,10 +534,31 @@ export interface PanelBranding {
   logo?: string;
   logoDark?: string;
   copyright?: string;
+  /**
+   * Google Font family for the admin UI.
+   * Loads fonts.googleapis.com and sets `fontFamily` / `fontUrl` unless overridden.
+   *
+   * @example 'DM Sans'
+   * @example { family: 'Inter', weights: [400, 500, 600, 700] }
+   */
+  googleFont?: string | GoogleFontOptions;
+  /** CSS font-family stack. Overrides the stack derived from `googleFont`. */
   fontFamily?: string;
+  /** Stylesheet URL (e.g. Google Fonts CSS). Overrides the URL derived from `googleFont`. */
   fontUrl?: string;
   primaryColor?: string;
   accentColor?: string;
+}
+
+/** Options for {@link PanelBranding.googleFont}. */
+export interface GoogleFontOptions {
+  family: string;
+  /** Axis weights to load. Default: `[400, 500, 600, 700]`. */
+  weights?: number[];
+  /** Also load italic variants. */
+  italic?: boolean;
+  /** `font-display` strategy. Default: `'swap'`. */
+  display?: 'auto' | 'block' | 'swap' | 'fallback' | 'optional';
 }
 
 export type PanelOrm = 'lucid' | 'mongoose';
@@ -543,4 +570,10 @@ export interface PanelConfig {
   orm?: PanelOrm;
   resources: Array<typeof import('./resource.js').Resource>;
   discover?: string;
+  /**
+   * Default max width for create/edit and show/infolist pages in this panel.
+   * Tailwind token (`3xl`, `5xl`, `7xl`, `full`, `none`) or CSS length (`80rem`).
+   * Default when omitted: `5xl` (64rem).
+   */
+  contentMaxWidth?: string;
 }

@@ -43,6 +43,15 @@ export class PanelBuilder {
     return this;
   }
 
+  /**
+   * Default max width for create/edit and show/infolist pages.
+   * Tailwind token (`3xl`, `5xl`, `7xl`, `full`, `none`) or CSS length (`80rem`).
+   */
+  contentMaxWidth(value: string): this {
+    this.config.contentMaxWidth = value;
+    return this;
+  }
+
   build(): PanelConfig {
     return {
       ...this.config,

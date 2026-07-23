@@ -113,6 +113,14 @@ Containers use `.schema([...])` for children. Layout width uses `.columns(n)` on
 
 `TextColumn` · `TextEntry`, `IconEntry`, `ColorEntry`, `ImageEntry`
 
+- `TextEntry.make('payload').textarea()` — scrollable, break-all block for long unbroken strings
+- Derived show schemas (no `infolist()`) wrap fields in a card `Section` by default
+
+### Layout width
+
+- Panel: `panel('admin').contentMaxWidth('7xl')` (or `'80rem'`, `'full'`, …)
+- Resource: `static contentMaxWidth = '3xl'` (overrides the panel)
+
 ## Common modifiers
 
 | Modifier | Applies to | Notes |

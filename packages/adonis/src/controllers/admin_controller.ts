@@ -66,6 +66,7 @@ export class AdminController {
   private readonly basePath: string;
   private readonly registry: ResourceRegistry;
   private readonly panelBranding: ShamarConfig['branding'];
+  private readonly panelContentMaxWidth?: string;
   private readonly authorizer: Authorizer;
 
   constructor(
@@ -76,6 +77,7 @@ export class AdminController {
     this.registry = panel.registry;
     this.basePath = panel.path;
     this.panelBranding = panel.config.branding ?? config.branding;
+    this.panelContentMaxWidth = panel.config.contentMaxWidth;
     this.resources = new ResourceController(panel.adapter);
     this.authorizer = authorizer ?? new AuthorizerClass();
   }
@@ -177,6 +179,7 @@ export class AdminController {
       registry: this.registry,
       basePath: this.basePath,
       branding: this.panelBranding,
+      panelContentMaxWidth: this.panelContentMaxWidth,
       authorizer: this.authorizer,
       authCtx,
       flash: readFlash(ctx),

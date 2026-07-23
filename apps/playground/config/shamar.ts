@@ -56,11 +56,15 @@ export default defineConfig({
     name: 'Shamar Playground',
     primaryColor: '#f1511b',
     accentColor: '#286291',
+    googleFont: {'family': 'DM Sans', weights: [400, 500, 600, 700, 800, 900]},
   },
   panels: [
     panel('admin')
       .path('/admin')
-      .branding({ name: 'Admin' })
+      .branding({ 
+        name: 'Admin',
+        googleFont: {'family': 'Poppins', weights: [400, 500, 600, 700, 800, 900]},
+       })
       .discoverResources('app/resources/admin'),
     panel('app')
       .path('/app')

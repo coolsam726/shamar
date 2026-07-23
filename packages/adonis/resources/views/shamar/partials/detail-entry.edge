@@ -25,6 +25,8 @@
       @else
         —
       @endif
+    @elseif(field.format === 'textarea' || field.type === 'textarea')
+      <pre class="shamar-textarea-entry">{{ detailValue(record, field) }}</pre>
     @elseif(field.format === 'badge' || field.type === 'tags')
       @let(badges = badgeValues(record, field))
       @if(badges.length)

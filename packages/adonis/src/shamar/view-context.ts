@@ -1,4 +1,5 @@
 import type { ResourceMeta, ResourceRegistry } from '@shamar/core';
+import { resolveContentMaxWidth } from '@shamar/core';
 import type { AuthorizationContext } from '@shamar/cherubim';
 import type { Authorizer } from '@shamar/cherubim';
 import type { ShamarConfig } from '../config.js';
@@ -32,6 +33,10 @@ export interface AdminShellContext {
   showBackToList?: boolean;
   flash?: { type: string; message: string };
   flashJson?: string;
+  /** Tailwind class for form/show content width (e.g. `max-w-5xl`). */
+  contentMaxWidthClass: string;
+  /** Optional inline max-width when a CSS length was configured. */
+  contentMaxWidthStyle?: string;
 }
 
 export function navigationGroups(
@@ -62,6 +67,8 @@ export function buildShellContext(options: {
   pageTitle: string;
   basePath?: string;
   branding?: ShamarConfig['branding'];
+  /** Panel-level default; resource `contentMaxWidth` wins when set on meta. */
+  panelContentMaxWidth?: string;
   authorizer?: Authorizer;
   authCtx?: AuthorizationContext;
   showCreateButton?: boolean;
@@ -89,6 +96,9 @@ export function buildShellContext(options: {
   const userName = authUser?.name ?? brandingInput?.name ?? branding.brandName;
   const flash = options.flash;
   const flashJson = flash ? JSON.stringify(flash).replace(/</g, '\\u003c') : undefined;
+  const contentMaxWidth = resolveContentMaxWidth(
+    options.meta?.contentMaxWidth ?? options.panelContentMaxWidth,
+  );
 
   return {
     basePath,
@@ -112,6 +122,8 @@ export function buildShellContext(options: {
     showBackToList: options.showBackToList,
     flash,
     flashJson,
+    contentMaxWidthClass: contentMaxWidth.className,
+    contentMaxWidthStyle: contentMaxWidth.style,
   };
 }
 

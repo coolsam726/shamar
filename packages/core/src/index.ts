@@ -7,6 +7,7 @@ export * from './actions.js';
 export * from './resource.js';
 export * from './registry.js';
 export * from './panel.js';
+export * from './content-max-width.js';
 export * from './reactivity.js';
 export * from './validation.js';
 export * from './labels.js';
