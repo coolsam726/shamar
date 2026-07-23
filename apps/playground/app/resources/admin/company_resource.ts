@@ -2,7 +2,6 @@ import {
   Resource,
   form,
   table,
-  infolist,
   Section,
   Fieldset,
   Grid,
@@ -14,8 +13,6 @@ import {
   Select,
   Toggle,
   TextColumn,
-  TextEntry,
-  IconEntry,
   RelationTable,
 } from '@shamar/core'
 import Company from '#models/company'
