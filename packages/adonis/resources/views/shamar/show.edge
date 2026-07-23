@@ -1,7 +1,13 @@
 @let(mode = 'show')
 @include('shamar::partials/shell-open')
 
-<div class="mx-auto max-w-5xl space-y-6" data-shamar-record-view="show">
+<div
+  class="mx-auto space-y-6 {{ contentMaxWidthClass || 'max-w-5xl' }}"
+  @if(contentMaxWidthStyle)
+    style="{{ contentMaxWidthStyle }}"
+  @endif
+  data-shamar-record-view="show"
+>
   @each(node in detailSchema)
     @!component('shamar::partials/schema-node', {
       node: node,

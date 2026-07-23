@@ -1,6 +1,6 @@
 {
   "name": "@shamar/cherubim",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Authentication and access control for Shamar admin (abilities, policies, RBAC).",
   "license": "MIT",
   "type": "module",

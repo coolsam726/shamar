@@ -1,6 +1,6 @@
 {
   "name": "@shamar/lucid",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Lucid ORM adapter for Shamar admin — list, CRUD, soft-delete, multi-connection.",
   "license": "MIT",
   "type": "module",

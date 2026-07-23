@@ -94,6 +94,25 @@ Open `/admin` after starting the server. Single-panel apps can still use legacy 
 | `orm` | `'lucid'` \| `'mongoose'` (default Lucid). Panels may override. |
 | `panels` | Array of `panel(id).path(…).discoverResources(…).branding(…)` |
 | `branding` | Default branding inherited by panels |
+
+#### Branding
+
+```ts
+branding: {
+  name: 'Admin',
+  primaryColor: '#f1511b',
+  accentColor: '#286291',
+  // Load a Google Font and apply it to the admin UI:
+  googleFont: 'DM Sans',
+  // Or with options:
+  // googleFont: { family: 'Inter', weights: [400, 500, 600, 700], italic: true },
+  // Manual override (skips auto URL/stack from googleFont when set):
+  // fontFamily: '"DM Sans", system-ui, sans-serif',
+  // fontUrl: 'https://fonts.googleapis.com/css2?family=DM+Sans&display=swap',
+}
+```
+
+Panel-level `.branding({ googleFont: '…' })` overrides the default.
 | `apiPrefix` | JSON API prefix (default `/api/shamar`) |
 | `adapter` | Escape hatch: custom `DataAdapter` (or factory) for all panels |
 | `auth` | Session / API / policy wiring (see below) |

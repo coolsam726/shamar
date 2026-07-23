@@ -173,6 +173,18 @@ export class TextEntry extends InfolistEntry {
   }
 
   /**
+   * Long / unbroken text display (payloads, tokens, hex dumps).
+   * Renders in a scrollable block with `overflow-wrap` / `break-all`.
+   */
+  textarea(value = true): this {
+    if (value) {
+      this.config.type = 'textarea';
+      this.config.format = 'textarea';
+    }
+    return this;
+  }
+
+  /**
    * Format the entry value as currency (Intl).
    * @example TextEntry.make('price').currency('USD')
    */
@@ -266,11 +278,13 @@ export class InfolistBuilder {
     const onlyLeaves =
       schema.length > 0 && schema.every((n) => n.kind === 'field' || n.kind === 'entry');
     if (onlyLeaves || schema.length === 0) {
+      // Card section by default (Filament-style) — not transparent `plain`.
       schema = [
         {
-          kind: 'plain',
+          kind: 'section',
           name: '_entries',
           title: '',
+          card: true,
           columns: this.rootColumns,
           children: schema.filter((n) => n.kind === 'entry'),
         },
@@ -325,21 +339,27 @@ export function infolist(callback: (builder: InfolistBuilder) => void): Infolist
 
 export function infolistFromFields(fields: FieldConfig[]): InfolistSchema {
   return infolist((i) => {
-    i.columns(2).schema(
-      fields
-        .filter((field) => !field.hiddenOnDetail)
-        .map((field) => {
-          const entry = TextEntry.make(field.name).label(String(field.label ?? field.name));
-          const type = field.type as FieldType;
-          if (type === 'boolean' || type === 'checkbox') entry.boolean();
-          else if (type === 'email') entry.email();
-          else if (type === 'date') entry.date();
-          else if (type === 'datetime') entry.dateTime();
-          else if (type === 'color') {
-            /* keep text; ColorEntry used explicitly */
-          }
-          return entry;
-        }),
-    );
+    i.columns(2).schema([
+      Section.make()
+        .card(true)
+        .columns(2)
+        .schema(
+          fields
+            .filter((field) => !field.hiddenOnDetail)
+            .map((field) => {
+              const entry = TextEntry.make(field.name).label(String(field.label ?? field.name));
+              const type = field.type as FieldType;
+              if (type === 'boolean' || type === 'checkbox') entry.boolean();
+              else if (type === 'email') entry.email();
+              else if (type === 'date') entry.date();
+              else if (type === 'datetime') entry.dateTime();
+              else if (type === 'textarea') entry.textarea().columnSpanFull();
+              else if (type === 'color') {
+                /* keep text; ColorEntry used explicitly */
+              }
+              return entry;
+            }),
+        ),
+    ]);
   });
 }

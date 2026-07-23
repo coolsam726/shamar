@@ -1,3 +1,5 @@
+import type { GoogleFontOptions, PanelBranding } from '@shamar/core';
+
 export interface ShamarBranding {
   brandName: string;
   logoUrl?: string;
@@ -5,6 +7,8 @@ export interface ShamarBranding {
   copyrightText?: string;
   fontFamily: string;
   fontUrl?: string;
+  /** True when `fontUrl` points at Google Fonts (enables preconnect hints). */
+  fontPreconnect?: boolean;
   primaryColor: string;
   accentColor: string;
 }
@@ -15,6 +19,48 @@ export const DEFAULT_SHAMAR_BRANDING: ShamarBranding = {
   primaryColor: '#f1511b',
   accentColor: '#286291',
 };
+
+const DEFAULT_GOOGLE_WEIGHTS = [400, 500, 600, 700] as const;
+
+/**
+ * Build a Google Fonts CSS2 URL + CSS font-family stack from a family name or options.
+ */
+export function resolveGoogleFont(
+  input: string | GoogleFontOptions,
+): { fontFamily: string; fontUrl: string } {
+  const opts: GoogleFontOptions = typeof input === 'string' ? { family: input } : input;
+  const family = opts.family.trim();
+  if (!family) {
+    throw new Error('googleFont.family must be a non-empty string');
+  }
+
+  const weights = normalizeWeights(opts.weights ?? [...DEFAULT_GOOGLE_WEIGHTS]);
+  const display = opts.display ?? 'swap';
+  const familyParam = encodeURIComponent(family).replace(/%20/g, '+');
+
+  let axis: string;
+  if (opts.italic) {
+    const pairs = [
+      ...weights.map((w) => `0,${w}`),
+      ...weights.map((w) => `1,${w}`),
+    ].join(';');
+    axis = `ital,wght@${pairs}`;
+  } else {
+    axis = `wght@${weights.join(';')}`;
+  }
+
+  const fontUrl =
+    `https://fonts.googleapis.com/css2?family=${familyParam}:${axis}&display=${display}`;
+  const fontFamily = `"${family.replace(/"/g, '')}", ${DEFAULT_SHAMAR_BRANDING.fontFamily}`;
+
+  return { fontFamily, fontUrl };
+}
+
+function normalizeWeights(weights: number[]): number[] {
+  const unique = [...new Set(weights.map((w) => Math.round(Number(w))).filter((w) => w > 0))];
+  unique.sort((a, b) => a - b);
+  return unique.length ? unique : [...DEFAULT_GOOGLE_WEIGHTS];
+}
 
 export function mergeBranding(
   base: ShamarBranding,
@@ -29,23 +75,25 @@ export function mergeBranding(
   } as ShamarBranding;
 }
 
-export function resolveBranding(config?: {
-  name?: string;
-  logo?: string;
-  logoDark?: string;
-  copyright?: string;
-  fontFamily?: string;
-  fontUrl?: string;
-  primaryColor?: string;
-  accentColor?: string;
-}): ShamarBranding {
+export function resolveBranding(config?: PanelBranding): ShamarBranding {
+  const google = config?.googleFont
+    ? resolveGoogleFont(config.googleFont)
+    : undefined;
+
+  const fontUrl = config?.fontUrl || google?.fontUrl;
+  const fontFamily = config?.fontFamily || google?.fontFamily;
+
   return mergeBranding(DEFAULT_SHAMAR_BRANDING, {
     brandName: config?.name,
     logoUrl: config?.logo,
     logoDarkUrl: config?.logoDark,
     copyrightText: config?.copyright,
-    fontFamily: config?.fontFamily,
-    fontUrl: config?.fontUrl,
+    fontFamily,
+    fontUrl,
+    fontPreconnect: Boolean(
+      fontUrl &&
+        (fontUrl.includes('fonts.googleapis.com') || fontUrl.includes('fonts.gstatic.com')),
+    ),
     primaryColor: config?.primaryColor,
     accentColor: config?.accentColor,
   });

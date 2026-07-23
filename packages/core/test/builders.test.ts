@@ -132,11 +132,13 @@ describe('@shamar/core Filament-style builders', () => {
     const config = panel('admin')
       .path('/admin')
       .branding({ name: 'Admin' })
+      .contentMaxWidth('7xl')
       .discoverResources('app/resources/admin')
       .resources([DemoResource])
       .build();
 
     assert.equal(config.id, 'admin');
+    assert.equal(config.contentMaxWidth, '7xl');
     assert.equal(config.path, '/admin');
   });
 
@@ -370,8 +372,16 @@ describe('@shamar/core Filament-style builders', () => {
   it('falls back to infolist from form fields', () => {
     const meta = FallbackResource.configure();
     assert.equal(meta.hasExplicitInfolist, false);
-    assert.equal(meta.infolist.sections[0]!.kind, 'plain');
+    assert.equal(meta.infolist.sections[0]!.kind, 'section');
+    assert.equal(meta.infolist.sections[0]!.card, true);
     assert.equal(meta.infolist.sections[0]!.entries[0]!.name, 'title');
+  });
+
+  it('TextEntry.textarea marks long-text format', () => {
+    const entry = TextEntry.make('payload').textarea().columnSpanFull().build();
+    assert.equal(entry.type, 'textarea');
+    assert.equal(entry.format, 'textarea');
+    assert.equal(entry.columnSpan, 'full');
   });
 
   it('bare form schema uses plain containers (no section chrome)', () => {
