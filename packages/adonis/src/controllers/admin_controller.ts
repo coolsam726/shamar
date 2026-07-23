@@ -290,8 +290,6 @@ export class AdminController {
       meta,
       pageTitle: meta.label,
       showCreateButton: policy.create,
-      showEditButton: policy.update,
-      showDeleteButton: policy.delete,
     });
 
     const groups = groupRecordsForDisplay(

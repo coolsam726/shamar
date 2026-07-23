@@ -115,9 +115,7 @@
         >Delete</button>
         @endif
       @else
-        @if(showEditButton)
-          <a href="{{ basePath }}/{{ resource.slug }}/{{ id }}/edit" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-md bg-fg-brand hover:opacity-90 transition-opacity">Edit</a>
-        @endif
+        {{-- List / other modes: no record-scoped Edit (row actions + show page handle that). --}}
         @if(showBackToList)
           <a href="{{ basePath }}/{{ resource.slug }}" data-shamar-list-href="{{ resource.slug }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-default text-body rounded-md hover:bg-surface-hover transition">Back to list</a>
         @endif
