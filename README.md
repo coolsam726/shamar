@@ -198,6 +198,10 @@ export default class LegacyProductResource extends Resource {
 
 [`apps/playground`](apps/playground) is the living Mongoose demo (dual panels `/admin` + `/app`, session auth, API keys, RBAC). See its README for run instructions and seed credentials.
 
+## CI
+
+GitHub Actions [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on pull requests and pushes to `main`: package build + tests, plus a playground production build (catches unused-import / `tsc` failures before publish).
+
 ## Publishing
 
 GitHub Actions [`.github/workflows/publish.yml`](.github/workflows/publish.yml) builds, tests, and publishes `@shamar/*` packages when a GitHub Release is published (or via workflow_dispatch dry-run).
