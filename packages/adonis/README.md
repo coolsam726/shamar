@@ -20,6 +20,7 @@ pnpm add mongoose          # MongoDB
 | `@adonisjs/lucid` `>=21` | `orm: 'lucid'` |
 | `mongoose` `>=8` | `orm: 'mongoose'` |
 | `edge.js` `>=6` | Rendering Edge views (usually already present) |
+| `ldapts` `>=7` | LDAP login (`auth.loginMode` `ldap` / `both`) |
 
 Workspace packages pulled in automatically: `@shamar/core`, `@shamar/cherubim`, `@shamar/lucid`, `@shamar/mongoose`.
 
@@ -29,12 +30,46 @@ Workspace packages pulled in automatically: `@shamar/core`, `@shamar/cherubim`, 
 node ace configure @shamar/adonis
 ```
 
-You choose **Lucid** or **Mongoose**. Codemods then:
+You choose **Lucid** or **Mongoose**, then whether to publish the opinionated login page. Codemods then:
 
-1. Register `@shamar/adonis/provider` in `adonisrc.ts`
+1. Register `@shamar/adonis/provider` and `@shamar/adonis/commands` in `adonisrc.ts`
 2. Write `config/shamar.ts` from the package stub
+3. Optionally publish `components/layouts/auth.edge` + `pages/auth/login.edge`
 
 Your app still owns the database connection (Lucid provider or `mongoose.connect`).
+
+### Publish auth views later
+
+```bash
+node ace shamar:publish-auth
+# overwrite without prompts:
+node ace shamar:publish-auth --force
+```
+
+Published views are host-owned — edit freely after publishing. Re-running asks for confirmation before overwriting.
+
+Pass branding into the login view with `buildAuthLoginViewData(shamarConfig)` so fonts/colors match the admin shell:
+
+```ts
+import { buildAuthLoginViewData } from '@shamar/adonis'
+import shamarConfig from '#config/shamar'
+
+return view.render('pages/auth/login', buildAuthLoginViewData(shamarConfig))
+```
+
+Optional login copy (`auth.login`) — subtitle under the brand, footer under the form (hidden when empty):
+
+```ts
+auth: {
+  loginMode: 'both',
+  login: {
+    subtitle: 'Sign in with your campus account',
+    footer: 'Need help? Contact ICT Support.', // omit or '' to hide
+    usernameLabel: 'Staff username',
+    usernamePlaceholder: 'jdoe or jdoe@strathmore.edu',
+  },
+}
+```
 
 ## Quick start
 
@@ -49,6 +84,7 @@ export default defineConfig({
     panel('admin')
       .path('/admin')
       .discoverResources('app/resources/admin'),
+    // .allowUsersWithoutRoles() // opt in: empty role/permission users may enter
   ],
 })
 ```
@@ -154,8 +190,45 @@ auth: {
     protectApi: true,           // RequireApiKeyMiddleware on /api/shamar
     intersectGatewayAbilities: true,
   },
+  // Password / LDAP login (host SessionController calls resolvePasswordLogin)
+  loginMode: 'both',            // local | ldap | both (LDAP first, then local)
+  ldap: {
+    // existing (default): AD users must already exist locally with externalId sync UID
+    // create: auto-provision local users on first successful LDAP bind
+    provisioning: 'existing',
+    domains: [
+      {
+        id: 'corp',
+        url: 'ldaps://dc.corp.example',
+        bindDn: 'cn=svc,dc=corp,dc=example',
+        bindPassword: '…',
+        searchBase: 'dc=corp,dc=example',
+        searchFilter: '(uid={{username}})',
+        emailDomains: ['corp.example'],
+        netbios: 'CORP',
+        groupRoleMap: { 'CN=Admins,OU=Groups,DC=corp': 'adminRoleId' },
+        timeoutMs: 5_000,           // ldapts operation timeout (default 10_000)
+        connectTimeoutMs: 5_000,    // optional; defaults to timeoutMs
+      },
+    ],
+  },
 }
 ```
+
+Install optional peer `ldapts` when enabling LDAP. Helpers: `resolvePasswordLogin`, `createLdaptsDirectoryClient`, `authenticateLdap`.
+
+| `loginMode` | Behavior |
+|-------------|----------|
+| `local` | Local passwords only (default when no domains) |
+| `ldap` | LDAP directories only |
+| `both` | Try LDAP domains first; fall back to local on miss |
+
+| `ldap.provisioning` | Behavior |
+|---------------------|----------|
+| `existing` (default) | Directory bind must match a pre-synced local user (`externalId`) |
+| `create` | Upsert local users on first LDAP login |
+
+Multi-domain: prefer domains matching `user@email.domain` / `NETBIOS\user`, then remaining domains in order.
 
 Full RBAC, policies, and credential details: [`@shamar/cherubim`](../cherubim).
 

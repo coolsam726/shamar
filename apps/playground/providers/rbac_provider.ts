@@ -145,6 +145,10 @@ export default class RbacProvider {
       ],
     )
 
+    // Drop legacy bad casts (`String(null)` → `"null"`) left by form/LDAP bugs.
+    await User.updateMany({}, { $pullAll: { roleIds: ['null', 'undefined', ''] } })
+    await User.updateMany({}, { $pull: { roleIds: null } })
+
     const adminUser = await User.findOne({ email: 'admin@example.com' })
     const machineHash = hashApiKey(PLAYGROUND_DEMO_API_KEY)
     await ApiKey.findOneAndUpdate(

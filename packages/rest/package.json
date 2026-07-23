@@ -1,6 +1,6 @@
 {
   "name": "@shamar/rest",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "REST API helpers and OpenAPI-powered docs for Shamar resources.",
   "license": "MIT",
   "type": "module",

@@ -585,4 +585,9 @@ export interface PanelConfig {
    * Default when omitted: `5xl` (64rem).
    */
   contentMaxWidth?: string;
+  /**
+   * When `true`, authenticated users with no roles and no permissions may enter.
+   * Default `false` — empty authorization is denied at the panel gate.
+   */
+  allowUsersWithoutRoles?: boolean;
 }

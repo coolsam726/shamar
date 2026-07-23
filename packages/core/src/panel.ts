@@ -52,6 +52,15 @@ export class PanelBuilder {
     return this;
   }
 
+  /**
+   * Allow authenticated users with no roles (and no direct permissions) into this panel.
+   * Default is to deny empty authorization.
+   */
+  allowUsersWithoutRoles(value = true): this {
+    this.config.allowUsersWithoutRoles = value;
+    return this;
+  }
+
   build(): PanelConfig {
     return {
       ...this.config,

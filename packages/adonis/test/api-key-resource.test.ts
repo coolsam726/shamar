@@ -10,6 +10,18 @@ describe('ApiKeyResource', () => {
     assert.equal(abilities?.relation?.valueAttribute, 'name')
     assert.equal(abilities?.relation?.resource, 'permissions')
     assert.equal(ApiKeyResource.canEdit({ id: '1', name: 'Admin' }), false)
+    assert.equal(
+      ApiKeyResource.canViewAny({ id: '1', name: 'Nobody', permissions: [] }),
+      false,
+    )
+    assert.equal(
+      ApiKeyResource.canViewAny({
+        id: '1',
+        name: 'Admin',
+        permissions: ['api-keys:viewAny'],
+      }),
+      true,
+    )
     assert.ok(meta.actions.some((action) => action.name === 'revoke' && action.placement === 'row'))
     assert.ok(meta.actions.some((action) => action.name === 'revoke' && action.placement === 'bulk'))
     assert.ok(meta.actions.some((action) => action.name === 'delete' && action.placement === 'bulk'))

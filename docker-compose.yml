@@ -70,6 +70,8 @@ services:
       - ./packages/adonis/dist:/workspace/packages/adonis/dist
       - ./packages/adonis/resources:/workspace/packages/adonis/resources
       - ./packages/adonis/assets:/workspace/packages/adonis/assets
+      - ./packages/adonis/stubs:/workspace/packages/adonis/stubs
+      - ./packages/adonis/package.json:/workspace/packages/adonis/package.json
       - ./packages/lucid/src:/workspace/packages/lucid/src
       - ./packages/lucid/dist:/workspace/packages/lucid/dist
       - ./packages/mongoose/src:/workspace/packages/mongoose/src

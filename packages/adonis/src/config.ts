@@ -1,4 +1,5 @@
 import type {
+  AuthLoginMode,
   AuthorizerOptions,
   CherubimUser,
   RoleResolver,
@@ -12,6 +13,7 @@ import type {
 } from '@shamar/core';
 import { panel as createPanel, type PanelBuilder } from '@shamar/core';
 import type { ShamarHttpContext } from './context.js';
+import type { LdapAuthSettings } from './auth/ldap.js';
 
 export type ShamarOrm = 'lucid' | 'mongoose';
 
@@ -80,6 +82,36 @@ export interface ShamarConfig {
     };
     /** Custom principal resolver (overrides guard-based mapping). */
     resolveUser?: (ctx: ShamarHttpContext) => CherubimUser | null | Promise<CherubimUser | null>;
+    /**
+     * Password login strategy:
+     * - `local` — local passwords only (default when no LDAP domains)
+     * - `ldap` — LDAP directories only
+     * - `both` — try LDAP first, then fall back to local
+     */
+    loginMode?: AuthLoginMode;
+    /**
+     * Copy for the published login page (`buildAuthLoginViewData`).
+     * When omitted, sensible mode-based subtitles are used and the footer is hidden.
+     */
+    login?: {
+      /** Subtitle under the brand name. */
+      subtitle?: string;
+      /** Optional hint under the form. Empty/omit hides it. */
+      footer?: string;
+      /** Placeholder for the username / email field. */
+      usernamePlaceholder?: string;
+      /** Label for the username / email field. */
+      usernameLabel?: string;
+    };
+    /** Multi-domain LDAP directory settings. */
+    ldap?: LdapAuthSettings;
+    /**
+     * Dev-only shared password: login as any existing local user.
+     * Ignored unless `NODE_ENV !== 'production'` and `password` is non-empty.
+     */
+    masquerade?: {
+      password?: string;
+    };
   };
   /** Default branding inherited by panels without their own. */
   branding?: PanelConfig['branding'];

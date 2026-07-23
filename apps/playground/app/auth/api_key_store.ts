@@ -2,6 +2,7 @@ import {
   generateApiKey,
   hashApiKey,
   resolveFromApiKey,
+  sanitizeRoleIds,
   toCherubimUser,
   type ApiKeyStore,
   type CherubimUser,
@@ -36,7 +37,7 @@ async function loadUserForPat(userId: string): Promise<CherubimUser | null> {
   const user = await User.findById(userId).lean()
   if (!user) return null
 
-  const roleIds = Array.isArray(user.roleIds) ? user.roleIds.map(String).filter(Boolean) : []
+  const roleIds = sanitizeRoleIds(user.roleIds)
 
   return toCherubimUser({
     id: String(user._id),

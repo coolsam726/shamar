@@ -42,29 +42,12 @@ export default class ApiKeyResource extends Resource {
   static override navigationSort = 8
   static override icon = 'key'
 
-  static override canAccess(_user: ShamarUser): boolean {
-    return true
-  }
-
-  static override canViewAny(_user: ShamarUser): boolean {
-    return true
-  }
-
-  static override canView(_user: ShamarUser, _record?: Record<string, unknown>): boolean {
-    return true
-  }
-
-  static override canCreate(_user: ShamarUser): boolean {
-    return true
-  }
-
-  /** Secrets are create-once — use Deactivate / Reactivate instead of edit. */
+  /**
+   * Secrets are create-once — use Deactivate / Reactivate instead of edit.
+   * Other gates use default RBAC (`api-keys:viewAny`, `api-keys:create`, …).
+   */
   static override canEdit(_user: ShamarUser, _record?: Record<string, unknown>): boolean {
     return false
-  }
-
-  static override canDelete(_user: ShamarUser, _record?: Record<string, unknown>): boolean {
-    return true
   }
 
   static override resourceActions() {
