@@ -11,12 +11,13 @@ import {
   intersectPermissions,
   isMachineApiKeyPrincipal,
   resolveUserPermissions,
+  sanitizeRoleIds,
   toCherubimUser,
   type AuthorizationContext,
   type CherubimUser,
   type ResourceAction,
 } from '@shamar/cherubim';
-import type { ResourceMeta, ResourceRegistry } from '@shamar/core';
+import type { ResourceMeta, ResourceRegistry, ShamarUser } from '@shamar/core';
 import type { ShamarConfig } from '../config.js';
 
 export { ForbiddenError, UnauthorizedError };
@@ -27,6 +28,42 @@ export function authRequired(config: ShamarConfig): boolean {
   if (config.auth?.required === true) return true;
   return Boolean(config.auth?.guard || config.auth?.resolveUser || config.auth?.apiKeys);
 }
+
+/**
+ * True when the user has at least one role or a direct permission grant.
+ * Machine/API principals with abilities count via `permissions`.
+ */
+export function userHasAuthorization(user: ShamarUser | CherubimUser | null | undefined): boolean {
+  if (!user) return false;
+  const roleIds = Array.isArray(user.roleIds)
+    ? user.roleIds
+    : Array.isArray(user.roles)
+      ? user.roles
+      : [];
+  const hasRole = roleIds.some((id) => {
+    if (id == null) return false;
+    const value = String(id).trim();
+    return value !== '' && value !== 'null' && value !== 'undefined';
+  });
+  if (hasRole) return true;
+  if (Array.isArray(user.permissions) && user.permissions.length > 0) return true;
+  return false;
+}
+
+/**
+ * Panel gate: deny empty authorization unless the panel opts in.
+ */
+export function canAccessPanel(
+  user: ShamarUser | CherubimUser | null | undefined,
+  panel?: { allowUsersWithoutRoles?: boolean } | null,
+): boolean {
+  if (!user) return false;
+  if (panel?.allowUsersWithoutRoles) return true;
+  return userHasAuthorization(user);
+}
+
+export const PANEL_ACCESS_DENIED_MESSAGE =
+  'You do not have access to this panel. Ask an administrator to assign you a role.';
 
 export function createAuthorizer(config: ShamarConfig, policies: PolicyRegistry): Authorizer {
   return new Authorizer(
@@ -144,13 +181,17 @@ async function resolveSessionUser(
       name,
       email: typeof raw.email === 'string' ? raw.email : undefined,
       permissions: Array.isArray(raw.permissions) ? (raw.permissions as string[]) : undefined,
-      roleIds: Array.isArray(raw.roleIds)
-        ? (raw.roleIds as string[])
-        : raw.roleId != null && raw.roleId !== ''
-          ? [String(raw.roleId)]
-          : Array.isArray(raw.roles)
-            ? (raw.roles as string[])
-            : undefined,
+      roleIds: sanitizeRoleIds(
+        Array.isArray(raw.roleIds)
+          ? raw.roleIds
+          : raw.roleId != null && raw.roleId !== ''
+            ? [raw.roleId]
+            : Array.isArray(raw.roles)
+              ? raw.roles
+              : [],
+      ),
+      authProvider: typeof raw.authProvider === 'string' ? raw.authProvider : undefined,
+      ldapDomainId: typeof raw.ldapDomainId === 'string' ? raw.ldapDomainId : undefined,
     });
   } catch {
     return null;
@@ -192,7 +233,7 @@ export async function buildAuthContext(
   if (bearer) {
     authMethod = 'pat';
   } else if (sessionUser) {
-    authMethod = 'session';
+    authMethod = sessionUser.authProvider === 'ldap' ? 'ldap' : 'session';
   } else if (gateway) {
     authMethod = 'api_key';
   }

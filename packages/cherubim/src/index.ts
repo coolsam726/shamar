@@ -53,12 +53,24 @@ export {
 } from './resource-policy.js';
 export { buildListScope } from './scope.js';
 export { resolveUserPermissions, toCherubimUser } from './user.js';
+export {
+  ldapExternalId,
+  mapGroupsToRoleIds,
+  mergeExternalRoles,
+  parseLdapUsername,
+  sanitizeRoleIds,
+  sanitizeStringIds,
+} from './identity.js';
 export type {
   AbilityHandler,
+  AuthLoginMode,
   AuthorizationContext,
   AuthorizationTarget,
   AuthorizerOptions,
   CherubimUser,
+  ExternalIdentity,
+  IdentityLinkResult,
+  ParsedLdapUsername,
   ResourceAction,
   ResourceClass,
   RoleDefinition,

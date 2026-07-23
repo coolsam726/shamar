@@ -205,3 +205,19 @@ router
 - `scopeList` applied to list queries and IDOR checks on show/edit/delete
 
 See the Adonis package README for full `defineConfig` auth options and middleware exports.
+
+## LDAP identity helpers
+
+Cherubim does not speak LDAP on the wire. It normalizes directory identities and group→role mapping after the host authenticates:
+
+```ts
+import {
+  parseLdapUsername,
+  mapGroupsToRoleIds,
+  mergeExternalRoles,
+  ldapExternalId,
+  type ExternalIdentity,
+} from '@shamar/cherubim'
+```
+
+`AuthorizationContext.authMethod` may be `'ldap'` when the session user was provisioned from a directory (`user.authProvider === 'ldap'`). Login orchestration (`loginMode`, multi-domain bind) lives in [`@shamar/adonis`](../adonis) (`resolvePasswordLogin`).

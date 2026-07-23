@@ -53,6 +53,11 @@
     @if(branding.copyrightText)
       <p class="mb-2 leading-relaxed">{{ branding.copyrightText }}</p>
     @endif
-    <p class="truncate">Signed in as <span class="font-semibold text-heading">{{ user.name }}</span></p>
+    <p class="truncate">
+      Signed in as <span class="font-semibold text-heading">{{ user.name }}</span>
+      @if(masquerade && masquerade.active)
+        <span class="ml-1 inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-warning-soft text-warning-strong">Masquerade</span>
+      @endif
+    </p>
   </div>
 </aside>

@@ -97,6 +97,9 @@
           @if(user.email)
             <p class="text-xs text-body-subtle">{{ user.email }}</p>
           @endif
+          @if(masquerade && masquerade.active)
+            <p class="mt-1.5 text-[10px] font-semibold uppercase tracking-wide text-warning-strong">Masquerade session</p>
+          @endif
         </div>
         <div class="py-1 text-sm">
           <a href="{{ basePath }}" class="block px-4 py-1.5 text-body hover:bg-surface-hover hover:text-heading">Admin</a>

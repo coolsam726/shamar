@@ -6,6 +6,9 @@ export interface ShamarHttpContext extends HttpContext {
   };
   session: {
     flash(key: string, value: unknown): void;
+    get?(key: string): unknown;
+    put?(key: string, value: unknown): void;
+    forget?(key: string): void;
     flashMessages?: {
       has(key: string): boolean;
       get(key: string): unknown;

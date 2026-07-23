@@ -33,6 +33,8 @@ export interface AdminShellContext {
   showBackToList?: boolean;
   flash?: { type: string; message: string };
   flashJson?: string;
+  /** Set when the session was created via masquerade password. */
+  masquerade?: { active: true };
   /** Tailwind class for form/show content width (e.g. `max-w-5xl`). */
   contentMaxWidthClass: string;
   /** Optional inline max-width when a CSS length was configured. */
@@ -77,6 +79,8 @@ export function buildShellContext(options: {
   showBackToList?: boolean;
   flash?: { type: string; message: string };
   recordBreadcrumb?: RecordBreadcrumbOptions;
+  /** Dev masquerade session (shared password login). */
+  masquerade?: { active: true };
 }): AdminShellContext {
   const basePath = options.basePath ?? options.config.path ?? '/admin';
   const groups = navigationGroups(options.registry, {
@@ -122,6 +126,7 @@ export function buildShellContext(options: {
     showBackToList: options.showBackToList,
     flash,
     flashJson,
+    masquerade: options.masquerade,
     contentMaxWidthClass: contentMaxWidth.className,
     contentMaxWidthStyle: contentMaxWidth.style,
   };

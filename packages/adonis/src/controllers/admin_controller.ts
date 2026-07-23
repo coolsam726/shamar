@@ -1,6 +1,7 @@
 import type { ShamarHttpContext } from '../context.js';
 import type { ResourceRegistry, ResourceMeta } from '@shamar/core';
 import { resolveGridItemStyle, isValidationException, relationUsesListTable } from '@shamar/core';
+import { sanitizeStringIds } from '@shamar/cherubim';
 import type { Authorizer } from '@shamar/cherubim';
 import { Authorizer as AuthorizerClass } from '@shamar/cherubim';
 import type { AuthorizationContext, ResourceAction } from '@shamar/cherubim';
@@ -11,7 +12,9 @@ import {
   authRequired,
   assertResourceAccess,
   buildAuthContext,
+  canAccessPanel,
   ForbiddenError,
+  PANEL_ACCESS_DENIED_MESSAGE,
   resourcePolicyFlags,
   respondForbidden,
   respondUnauthorized,
@@ -22,6 +25,7 @@ import {
   buildShellContext,
   readFlash,
 } from '../shamar/view-context.js';
+import { isMasqueradeSession } from '../auth/masquerade.js';
 import {
   decorateRevokedStatus,
   resourceActionsFor,
@@ -106,6 +110,20 @@ export class AdminController {
     if (authRequired(this.config) && !authCtx.user) {
       return respondUnauthorized(ctx, this.config, json);
     }
+
+    if (
+      authRequired(this.config) &&
+      authCtx.user &&
+      !canAccessPanel(authCtx.user, this.panel.config)
+    ) {
+      return respondForbidden(
+        ctx,
+        PANEL_ACCESS_DENIED_MESSAGE,
+        json,
+        this.config.auth?.loginPath ?? '/login',
+      );
+    }
+
     return authCtx;
   }
 
@@ -187,6 +205,7 @@ export class AdminController {
       authorizer: this.authorizer,
       authCtx,
       flash: readFlash(ctx),
+      masquerade: isMasqueradeSession(ctx.session) ? { active: true } : undefined,
       showCreateButton:
         showCreateButton === true ? policy?.create ?? true : showCreateButton,
       showEditButton:
@@ -1032,10 +1051,10 @@ export class AdminController {
   private collectBulkIds(ctx: ShamarHttpContext): string[] {
     const raw = ctx.request.input('ids');
     if (Array.isArray(raw)) {
-      return raw.map(String).map((id) => id.trim()).filter(Boolean);
+      return sanitizeStringIds(raw);
     }
     if (raw != null && String(raw).trim() !== '') {
-      return [String(raw).trim()];
+      return sanitizeStringIds([raw]);
     }
     return [];
   }
@@ -1533,12 +1552,12 @@ export class AdminController {
       ) {
         const raw = input[field.name] ?? input[`${field.name}[]`];
         if (Array.isArray(raw)) {
-          data[field.name] = raw.map((item) => String(item)).filter(Boolean);
+          data[field.name] = sanitizeStringIds(raw);
         } else if (typeof raw === 'string' && raw.trim()) {
           data[field.name] =
             field.type === 'tags'
-              ? raw.split(',').map((item) => item.trim()).filter(Boolean)
-              : [raw.trim()];
+              ? sanitizeStringIds(raw.split(','))
+              : sanitizeStringIds([raw]);
         } else if (field.name in input || `${field.name}[]` in input) {
           data[field.name] = [];
         }

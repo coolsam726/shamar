@@ -1,9 +1,16 @@
 import type { ShamarUser } from '@shamar/core';
+import { sanitizeRoleIds } from './identity.js';
 import type { CherubimUser, RoleResolver } from './types.js';
 
 /** Normalize any user-like object into a Cherubim principal. */
 export function toCherubimUser(
-  input: Partial<ShamarUser> & { id: string },
+  input: Partial<ShamarUser> & {
+    id: string;
+    authProvider?: string;
+    ldapDomainId?: string;
+    apiKeyId?: string;
+    apiKeyAbilities?: string[];
+  },
   options?: { permissions?: string[]; roleIds?: string[] },
 ): CherubimUser {
   const name =
@@ -16,7 +23,11 @@ export function toCherubimUser(
     name,
     email: input.email,
     permissions: options?.permissions ?? input.permissions ?? [],
-    roleIds: options?.roleIds ?? input.roleIds ?? [],
+    roleIds: sanitizeRoleIds(options?.roleIds ?? input.roleIds ?? []),
+    authProvider: input.authProvider,
+    ldapDomainId: input.ldapDomainId,
+    apiKeyId: input.apiKeyId,
+    apiKeyAbilities: input.apiKeyAbilities,
   };
 }
 

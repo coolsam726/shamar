@@ -6,6 +6,7 @@ import type {
   ResourceRegistry,
 } from '@shamar/core';
 import { relationTitleAttribute, relationUsesListTable } from '@shamar/core';
+import { sanitizeStringIds } from '@shamar/cherubim';
 import type { ListHeader } from './list-headers.js';
 import type { RelationTableColumn } from './relation-table.js';
 import { relationTableListMeta } from './relation-table.js';
@@ -176,10 +177,10 @@ export function collectRelationIds(
   if (!record) return [];
   const raw = record[field.name];
   if (Array.isArray(raw)) {
-    return raw.map((item) => String(item)).filter(Boolean);
+    return sanitizeStringIds(raw);
   }
   if (raw != null && raw !== '') {
-    return [String(raw)];
+    return sanitizeStringIds([raw]);
   }
   return [];
 }

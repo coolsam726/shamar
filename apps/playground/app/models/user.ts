@@ -1,6 +1,7 @@
 import mongoose, { Schema, type HydratedDocument, type Model } from 'mongoose'
 import app from '@adonisjs/core/services/app'
 import { errors } from '@adonisjs/auth'
+import { sanitizeRoleIds } from '@shamar/cherubim'
 
 export interface UserAttrs {
   fullName?: string | null
@@ -9,6 +10,12 @@ export interface UserAttrs {
   /** ManyToMany Role ids. */
   roleIds?: string[]
   permissions?: string[]
+  /** `local` (default) or `ldap` when provisioned from a directory. */
+  authProvider?: 'local' | 'ldap'
+  /** Stable LDAP subject key (`ldap:{domainId}:{dn}`). */
+  externalId?: string | null
+  /** LDAP domain config id. */
+  ldapDomainId?: string | null
 }
 
 async function hasher() {
@@ -23,8 +30,16 @@ const userSchema = new Schema<UserAttrs>(
     fullName: { type: String, default: null, trim: true },
     email: { type: String, required: true, unique: true, trim: true, lowercase: true },
     password: { type: String, required: true, select: false },
-    roleIds: { type: [String], default: [], index: true },
+    roleIds: {
+      type: [String],
+      default: [],
+      index: true,
+      set: (value: unknown) => sanitizeRoleIds(value),
+    },
     permissions: { type: [String], default: [] },
+    authProvider: { type: String, enum: ['local', 'ldap'], default: 'local', index: true },
+    externalId: { type: String, default: null, sparse: true, unique: true, index: true },
+    ldapDomainId: { type: String, default: null, index: true },
   },
   {
     timestamps: true,
@@ -50,6 +65,9 @@ userSchema.virtual('initials').get(function (this: UserDocument) {
 })
 
 userSchema.pre('save', async function () {
+  // Scrub legacy bad casts (`String(null)` → `"null"`) on every write.
+  this.roleIds = sanitizeRoleIds(this.roleIds)
+
   if (!this.isModified('password')) return
   const hash = await hasher()
   this.password = await hash.make(this.password)
