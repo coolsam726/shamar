@@ -12,7 +12,12 @@
             <span class="shrink-0 w-4 h-4">
               @include('shamar::partials/icon')
             </span>
-            <span class="truncate">{{ item.label }}</span>
+            <span class="truncate">
+              @if(item.navigationSubGroup)
+                <span class="text-body-subtle">{{ item.navigationSubGroup }} · </span>
+              @endif
+              {{ item.label }}
+            </span>
           </a>
         @endeach
       </div>

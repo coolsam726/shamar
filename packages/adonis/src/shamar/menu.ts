@@ -71,6 +71,64 @@ function firstGroupHref(group: NavigationGroup, basePath: string): string {
   return `${basePath}/${sorted[0]?.slug ?? ''}`;
 }
 
+/**
+ * Build top-bar secondary items. Resources with `navigationSubGroup` collapse
+ * into a dropdown (`children`); others remain direct links. Relative order
+ * follows each item/cluster's minimum `navigationSort`.
+ */
+export function buildMenuSecondary(
+  items: ResourceMeta[],
+  basePath: string,
+  currentSlug?: string,
+): MenuSecondaryItem[] {
+  const sorted = [...items].sort(compareNavigationItems);
+  type Entry = { sort: number; item: MenuSecondaryItem };
+  const entries: Entry[] = [];
+  const subgroups = new Map<string, ResourceMeta[]>();
+  const subgroupOrder: string[] = [];
+
+  for (const item of sorted) {
+    const subgroup = item.navigationSubGroup?.trim();
+    if (!subgroup) {
+      entries.push({
+        sort: item.navigationSort ?? Number.POSITIVE_INFINITY,
+        item: {
+          label: item.label,
+          href: `${basePath}/${item.slug}`,
+          active: item.slug === currentSlug,
+          icon: item.icon,
+        },
+      });
+      continue;
+    }
+    if (!subgroups.has(subgroup)) {
+      subgroups.set(subgroup, []);
+      subgroupOrder.push(subgroup);
+    }
+    subgroups.get(subgroup)!.push(item);
+  }
+
+  for (const name of subgroupOrder) {
+    const members = subgroups.get(name)!;
+    const children: MenuSecondaryChild[] = members.map((item) => ({
+      label: item.label,
+      href: `${basePath}/${item.slug}`,
+      active: item.slug === currentSlug,
+      icon: item.icon,
+    }));
+    entries.push({
+      sort: Math.min(...members.map((m) => m.navigationSort ?? Number.POSITIVE_INFINITY)),
+      item: {
+        label: name,
+        active: children.some((child) => child.active),
+        children,
+      },
+    });
+  }
+
+  return entries.sort((a, b) => a.sort - b.sort).map((entry) => entry.item);
+}
+
 export function menuLayoutContext(
   groups: NavigationGroup[],
   basePath: string,
@@ -115,12 +173,7 @@ export function menuLayoutContext(
     : undefined;
 
   const menuSecondary = activeGroup
-    ? activeGroup.items.sort(compareNavigationItems).map((item) => ({
-        label: item.label,
-        href: `${basePath}/${item.slug}`,
-        active: item.slug === currentSlug,
-        icon: item.icon,
-      }))
+    ? buildMenuSecondary(activeGroup.items, basePath, currentSlug)
     : [];
 
   const breadcrumbs: Breadcrumb[] = [{ label: 'Home', href: basePath }];

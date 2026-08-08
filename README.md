@@ -179,7 +179,7 @@ static table() {
 | `Action` / `BulkAction` | `actions((a) => a.header(…) / a.bulkDelete(…) / a.row(…))` |
 | `RelationManager` | `Relation.field()` + relation widgets (phase 2) |
 | `Policy` | `Resource.policy` class + Cherubim `Policy` (Loom / Laravel) |
-| Panel navigation | `navigationGroup`, `navigationSort` |
+| Panel navigation | `navigationGroup`, `navigationSubGroup` (top-bar dropdown), `navigationSort` |
 | Live form fields | `.live()` + `.afterStateUpdated()` → `POST …/form-state` |
 | Multi-tenancy | `companyScoped` + session company switcher (phase 2) |
 
