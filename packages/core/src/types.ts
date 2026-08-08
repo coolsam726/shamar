@@ -408,6 +408,11 @@ export interface ResourceMeta {
   model: ResourceModel;
   connection?: string;
   navigationGroup?: string;
+  /**
+   * Optional third-level cluster inside `navigationGroup`.
+   * Rendered as a top-bar dropdown (children links) when set.
+   */
+  navigationSubGroup?: string;
   navigationSort?: number;
   recordTitleField: string;
   icon?: string;

@@ -45,6 +45,11 @@ export abstract class Resource {
   static model: ResourceModel = 'Resource';
   static connection?: string;
   static navigationGroup?: string;
+  /**
+   * Cluster resources under a dropdown inside the active navigation group
+   * (Shamar top-bar secondary menu). Leave unset for a direct top-bar link.
+   */
+  static navigationSubGroup?: string;
   static navigationSort?: number;
   static recordTitleField = 'name';
   static icon?: string;
@@ -169,6 +174,7 @@ export abstract class Resource {
       model: this.model,
       connection: this.connection,
       navigationGroup: this.navigationGroup,
+      navigationSubGroup: this.navigationSubGroup,
       navigationSort: this.navigationSort,
       recordTitleField: this.recordTitleField,
       icon: this.icon,
