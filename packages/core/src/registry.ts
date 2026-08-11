@@ -37,6 +37,7 @@ export class ResourceRegistry {
   navigationGroups(): Array<{ name: string; items: ResourceMeta[] }> {
     const groups = new Map<string, ResourceMeta[]>();
     for (const meta of this.all()) {
+      if (meta.navigationHidden) continue;
       const group = meta.navigationGroup ?? 'General';
       const items = groups.get(group) ?? [];
       items.push(meta);

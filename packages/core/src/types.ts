@@ -249,6 +249,11 @@ export interface ActionConfig {
   icon?: string;
   confirm?: string;
   ability?: string;
+  /**
+   * Row actions only. When `false`, render as an inline control outside the ⋮ menu.
+   * Default / omitted: grouped under the row actions menu.
+   */
+  grouped?: boolean;
 }
 
 export interface FormSection {
@@ -414,6 +419,8 @@ export interface ResourceMeta {
    */
   navigationSubGroup?: string;
   navigationSort?: number;
+  /** When true, omit from panel navigation (routes remain registered). */
+  navigationHidden?: boolean;
   recordTitleField: string;
   icon?: string;
   fields: FieldConfig[];
@@ -434,10 +441,15 @@ export interface ResourceMeta {
   customPermissions?: Array<{ name: string; label?: string }>;
   /**
    * Max width of create/edit and show/infolist content cards.
-   * Tailwind token (`3xl`, `5xl`, `7xl`, `full`, `none`) or CSS length (`80rem`, `1200px`).
+   * Prefer screen tokens (`screen-lg`, `screen-xl`, `screen-2xl`) or a scale/CSS length.
    * Overrides panel `contentMaxWidth` when set.
    */
   contentMaxWidth?: string;
+  /**
+   * Default list page size when the request omits `perPage`.
+   * Overrides panel `defaultPerPage` when set. Built-in default: `15`.
+   */
+  defaultPerPage?: number;
 }
 
 /** Lucid/Mongoose model class or table/model name string. */
@@ -543,10 +555,29 @@ export interface ConnectionRegistry {
   get(name?: string): unknown;
 }
 
+/**
+ * What the shell / auth brand mark shows.
+ * - `both` — logo (when set) and brand name (default)
+ * - `logo` — logo only (falls back to name if no logo URL)
+ * - `name` — brand text only
+ */
+export type BrandDisplay = 'both' | 'logo' | 'name';
+
 export interface PanelBranding {
   name?: string;
   logo?: string;
   logoDark?: string;
+  /**
+   * Logo display height (px number or CSS length). Default `2rem` (32px).
+   * @example 40
+   * @example '2.5rem'
+   */
+  logoHeight?: number | string;
+  /**
+   * Show logo, brand name, or both in the panel chrome (and auth header).
+   * Default: `'both'`.
+   */
+  brandDisplay?: BrandDisplay;
   copyright?: string;
   /**
    * Google Font family for the admin UI.
@@ -560,7 +591,9 @@ export interface PanelBranding {
   fontFamily?: string;
   /** Stylesheet URL (e.g. Google Fonts CSS). Overrides the URL derived from `googleFont`. */
   fontUrl?: string;
+  /** Theme primary (hex). Drives buttons, accents, shell tint. */
   primaryColor?: string;
+  /** Theme accent (hex). Used in brand gradients alongside primary. */
   accentColor?: string;
 }
 
@@ -583,13 +616,23 @@ export interface PanelConfig {
   branding?: PanelBranding;
   orm?: PanelOrm;
   resources: Array<typeof import('./resource.js').Resource>;
+  /** Explicit page classes (merged with discovered pages). */
+  pages?: Array<typeof import('./page.js').Page>;
   discover?: string;
+  /** Discover `*_page.ts` / `*Page.ts` under this directory (relative to app root). */
+  discoverPages?: string;
   /**
    * Default max width for create/edit and show/infolist pages in this panel.
-   * Tailwind token (`3xl`, `5xl`, `7xl`, `full`, `none`) or CSS length (`80rem`).
-   * Default when omitted: `5xl` (64rem).
+   * Prefer screen tokens (`screen-lg`, `screen-xl`, `screen-2xl`) for a container feel,
+   * or a scale token / CSS length (`7xl`, `80rem`, `full`, `none`).
+   * Default when omitted: `screen-xl` (1280px).
    */
   contentMaxWidth?: string;
+  /**
+   * Default list page size when the request omits `perPage`.
+   * Overridden by resource `defaultPerPage`. Built-in default: `15`.
+   */
+  defaultPerPage?: number;
   /**
    * When `true`, authenticated users with no roles and no permissions may enter.
    * Default `false` — empty authorization is denied at the panel gate.

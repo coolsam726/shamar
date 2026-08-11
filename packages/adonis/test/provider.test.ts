@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { Resource, form, table, panel, TextInput, Toggle, TextColumn } from '@shamar/core';
+import { Resource, form, table, panel, TextInput, Toggle, TextColumn, FormPage } from '@shamar/core';
 import { defineConfig, createShamarRuntime } from '../src/index.js';
 import { evaluateFormState } from '../src/form-state.js';
 
@@ -33,6 +33,18 @@ class CompanyResource extends Resource {
         TextColumn.make('code'),
         TextColumn.make('active').toggle(),
       ]);
+    });
+  }
+}
+
+class DemoSettingsPage extends FormPage {
+  static override slug = 'demo-settings';
+  static override label = 'Demo settings';
+  static override navigationGroup = 'Settings';
+
+  static override form() {
+    return form((f) => {
+      f.schema([TextInput.make('title')]);
     });
   }
 }
@@ -94,5 +106,38 @@ describe('@shamar/adonis provider', () => {
 
     assert.equal(result.state.code, 'ACME COR');
     assert.ok(result.fields.some((f) => f.name === 'name' && f.live === true));
+  });
+
+  it('registers panel pages beside resources', async () => {
+    const runtime = await createShamarRuntime(
+      defineConfig({
+        panels: [
+          panel('admin').path('/admin').resources([CompanyResource]).pages([DemoSettingsPage]),
+        ],
+      }),
+    );
+
+    const admin = runtime.panel('admin');
+    assert.equal(admin.pages.has('demo-settings'), true);
+    assert.equal(admin.pages.require('demo-settings').kind, 'form');
+    await assert.rejects(
+      () =>
+        createShamarRuntime(
+          defineConfig({
+            panels: [
+              panel('admin')
+                .path('/admin')
+                .resources([CompanyResource])
+                .pages([
+                  class CollisionPage extends FormPage {
+                    static override slug = 'companies';
+                    static override label = 'Collision';
+                  },
+                ]),
+            ],
+          }),
+        ),
+      /collides with a resource/,
+    );
   });
 });

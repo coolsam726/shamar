@@ -12,6 +12,7 @@ import Asset from '#models/asset'
 import Campaign from '#models/campaign'
 import LockedItem from '#models/locked_item'
 import Category from '#models/category'
+import { upsertAppSettings, getAppSettings } from '#models/app_settings'
 
 /**
  * Connects Mongoose for Shamar resources and app auth (User).
@@ -29,6 +30,7 @@ export default class MongoProvider {
   async ready() {
     await this.seedCompanies()
     await this.seedAdminUser()
+    await this.seedAppSettings()
     await this.seedCategories()
     await this.seedProducts()
     await this.seedEvents()
@@ -46,29 +48,76 @@ export default class MongoProvider {
 
   private async seedCompanies() {
     const count = await Company.countDocuments()
-    if (count > 0) return
+    if (count === 0) {
+      await Company.create([
+        {
+          name: 'Savannabits Ltd',
+          code: 'SAV',
+          email: 'hello@savannabits.com',
+          phone: '+254 700 000 001',
+          website: 'https://savannabits.com',
+          industry: 'technology',
+          notes: 'Primary demo company.',
+          active: true,
+          logo: 'https://picsum.photos/seed/sav-logo/240/80',
+          logoHeight: '40',
+        },
+        {
+          name: 'All Saints Cathedral',
+          code: 'ASC',
+          email: 'ops@allsaints.example',
+          phone: '+254 700 000 002',
+          website: 'https://example.com',
+          industry: 'education',
+          active: true,
+        },
+      ])
+    }
 
-    await Company.create([
+    await Company.updateOne(
+      { code: 'SAV', $or: [{ logo: null }, { logo: '' }, { logo: { $exists: false } }] },
       {
-        name: 'Savannabits Ltd',
-        code: 'SAV',
-        email: 'hello@savannabits.com',
-        phone: '+254 700 000 001',
-        website: 'https://savannabits.com',
-        industry: 'technology',
-        notes: 'Primary demo company.',
-        active: true,
+        $set: {
+          logo: 'https://picsum.photos/seed/sav-logo/240/80',
+          logoHeight: '40',
+        },
       },
-      {
-        name: 'All Saints Cathedral',
-        code: 'ASC',
-        email: 'ops@allsaints.example',
-        phone: '+254 700 000 002',
-        website: 'https://example.com',
-        industry: 'education',
-        active: true,
-      },
-    ])
+    )
+  }
+
+  private async seedAppSettings() {
+    const existing = await getAppSettings()
+    if (!existing) {
+      await upsertAppSettings({
+        // Leave logo / brandDisplay unset so panel + defineConfig branding win
+        // until Settings overrides them.
+        notifyEmail: true,
+        notifySms: false,
+        channels: ['email'],
+        theme: 'system',
+      })
+      return
+    }
+
+    let dirty = false
+
+    // Early seed wrote brandDisplay:'both', which blocked panel `.brandDisplay()`.
+    if (
+      existing.brandDisplay === 'both' &&
+      String(existing.logo ?? '').includes('picsum.photos/seed/shamar-logo')
+    ) {
+      existing.brandDisplay = null
+      dirty = true
+    }
+
+    // Replace placeholder picsum logos with the framework brand assets.
+    if (String(existing.logo ?? '').includes('picsum.photos')) {
+      existing.logo = null
+      existing.logoDark = null
+      dirty = true
+    }
+
+    if (dirty) await existing.save()
   }
 
   private async seedAdminUser() {
@@ -88,6 +137,17 @@ export default class MongoProvider {
         permissions: [],
       })
     }
+
+    const sav = await Company.findOne({ code: 'SAV' }).lean()
+    if (sav?._id) {
+      await User.updateOne(
+        {
+          email: 'admin@example.com',
+          $or: [{ companyId: null }, { companyId: '' }, { companyId: { $exists: false } }],
+        },
+        { $set: { companyId: String(sav._id) } },
+      )
+    }
   }
 
   private async seedCategories() {
@@ -100,14 +160,30 @@ export default class MongoProvider {
   }
 
   private async seedProducts() {
-    if ((await Product.countDocuments()) > 0) return
-    const company = await Company.findOne({ code: 'SAV' }).lean()
+    const companySav = await Company.findOne({ code: 'SAV' }).lean()
+    const companyAsc = await Company.findOne({ code: 'ASC' }).lean()
     const categories = await Category.find({}).lean()
     const outdoor = categories.find((item) => item.slug === 'outdoor')
     const office = categories.find((item) => item.slug === 'office')
-    const companyId = company?._id ? String(company._id) : null
+    const accessories = categories.find((item) => item.slug === 'accessories')
+    const savId = companySav?._id ? String(companySav._id) : null
+    const ascId = companyAsc?._id ? String(companyAsc._id) : null
+    const outdoorId = outdoor?._id ? String(outdoor._id) : null
+    const officeId = office?._id ? String(office._id) : null
+    const accessoriesId = accessories?._id ? String(accessories._id) : null
 
-    await Product.create([
+    const catalog: Array<{
+      sku: string
+      name: string
+      price: number
+      stock: number
+      launchDate: Date
+      tags: string[]
+      color: string
+      featured: boolean
+      companyId: string | null
+      categoryIds: string[]
+    }> = [
       {
         sku: 'SKU-100',
         name: 'Trail Bottle',
@@ -117,8 +193,8 @@ export default class MongoProvider {
         tags: ['outdoor', 'hydration'],
         color: '#0ea5e9',
         featured: true,
-        companyId,
-        categoryIds: outdoor?._id ? [String(outdoor._id)] : [],
+        companyId: savId,
+        categoryIds: outdoorId ? [outdoorId] : [],
       },
       {
         sku: 'SKU-200',
@@ -129,10 +205,234 @@ export default class MongoProvider {
         tags: ['office'],
         color: '#111827',
         featured: false,
-        companyId,
-        categoryIds: office?._id ? [String(office._id)] : [],
+        companyId: savId,
+        categoryIds: officeId ? [officeId] : [],
       },
-    ])
+      {
+        sku: 'SKU-110',
+        name: 'Summit Daypack',
+        price: 189,
+        stock: 28,
+        launchDate: new Date('2026-02-12'),
+        tags: ['outdoor', 'travel'],
+        color: '#166534',
+        featured: true,
+        companyId: savId,
+        categoryIds: [outdoorId, accessoriesId].filter(Boolean) as string[],
+      },
+      {
+        sku: 'SKU-120',
+        name: 'Alpine Softshell',
+        price: 249,
+        stock: 16,
+        launchDate: new Date('2026-04-08'),
+        tags: ['outdoor', 'apparel'],
+        color: '#1d4ed8',
+        featured: true,
+        companyId: savId,
+        categoryIds: outdoorId ? [outdoorId] : [],
+      },
+      {
+        sku: 'SKU-130',
+        name: 'Camp Lantern',
+        price: 58,
+        stock: 75,
+        launchDate: new Date('2026-01-20'),
+        tags: ['outdoor', 'camping'],
+        color: '#f59e0b',
+        featured: false,
+        companyId: ascId,
+        categoryIds: outdoorId ? [outdoorId] : [],
+      },
+      {
+        sku: 'SKU-140',
+        name: 'Trail Socks (3-pack)',
+        price: 22,
+        stock: 210,
+        launchDate: new Date('2026-05-02'),
+        tags: ['outdoor', 'apparel'],
+        color: '#64748b',
+        featured: false,
+        companyId: savId,
+        categoryIds: [outdoorId, accessoriesId].filter(Boolean) as string[],
+      },
+      {
+        sku: 'SKU-210',
+        name: 'Ergo Chair',
+        price: 420,
+        stock: 12,
+        launchDate: new Date('2026-03-22'),
+        tags: ['office', 'furniture'],
+        color: '#0f172a',
+        featured: true,
+        companyId: savId,
+        categoryIds: officeId ? [officeId] : [],
+      },
+      {
+        sku: 'SKU-220',
+        name: 'Monitor Arm',
+        price: 145,
+        stock: 34,
+        launchDate: new Date('2026-07-01'),
+        tags: ['office', 'desk'],
+        color: '#334155',
+        featured: false,
+        companyId: savId,
+        categoryIds: officeId ? [officeId] : [],
+      },
+      {
+        sku: 'SKU-230',
+        name: 'Wireless Keyboard',
+        price: 99,
+        stock: 88,
+        launchDate: new Date('2026-02-28'),
+        tags: ['office', 'electronics'],
+        color: '#e2e8f0',
+        featured: true,
+        companyId: ascId,
+        categoryIds: [officeId, accessoriesId].filter(Boolean) as string[],
+      },
+      {
+        sku: 'SKU-240',
+        name: 'Standing Desk Converter',
+        price: 275,
+        stock: 19,
+        launchDate: new Date('2026-08-10'),
+        tags: ['office', 'furniture'],
+        color: '#92400e',
+        featured: false,
+        companyId: savId,
+        categoryIds: officeId ? [officeId] : [],
+      },
+      {
+        sku: 'SKU-250',
+        name: 'Noise-cancelling Headset',
+        price: 199,
+        stock: 47,
+        launchDate: new Date('2026-04-18'),
+        tags: ['office', 'electronics'],
+        color: '#1e293b',
+        featured: true,
+        companyId: ascId,
+        categoryIds: [officeId, accessoriesId].filter(Boolean) as string[],
+      },
+      {
+        sku: 'SKU-310',
+        name: 'Cable Organizer Kit',
+        price: 18,
+        stock: 300,
+        launchDate: new Date('2026-01-05'),
+        tags: ['accessories', 'desk'],
+        color: '#94a3b8',
+        featured: false,
+        companyId: savId,
+        categoryIds: accessoriesId ? [accessoriesId] : [],
+      },
+      {
+        sku: 'SKU-320',
+        name: 'Leather Notebook',
+        price: 32,
+        stock: 64,
+        launchDate: new Date('2026-05-20'),
+        tags: ['accessories', 'stationery'],
+        color: '#78350f',
+        featured: false,
+        companyId: ascId,
+        categoryIds: accessoriesId ? [accessoriesId] : [],
+      },
+      {
+        sku: 'SKU-330',
+        name: 'Portable Power Bank',
+        price: 49,
+        stock: 150,
+        launchDate: new Date('2026-06-01'),
+        tags: ['accessories', 'electronics'],
+        color: '#0369a1',
+        featured: true,
+        companyId: savId,
+        categoryIds: accessoriesId ? [accessoriesId] : [],
+      },
+      {
+        sku: 'SKU-340',
+        name: 'Travel Adapter Duo',
+        price: 27,
+        stock: 95,
+        launchDate: new Date('2026-07-14'),
+        tags: ['accessories', 'travel'],
+        color: '#ffffff',
+        featured: false,
+        companyId: ascId,
+        categoryIds: accessoriesId ? [accessoriesId] : [],
+      },
+      {
+        sku: 'SKU-350',
+        name: 'Insulated Tumbler',
+        price: 35,
+        stock: 110,
+        launchDate: new Date('2026-03-30'),
+        tags: ['accessories', 'hydration'],
+        color: '#be123c',
+        featured: false,
+        companyId: savId,
+        categoryIds: [accessoriesId, outdoorId].filter(Boolean) as string[],
+      },
+      {
+        sku: 'SKU-360',
+        name: 'Desk Plant Pot',
+        price: 16,
+        stock: 72,
+        launchDate: new Date('2026-09-01'),
+        tags: ['office', 'accessories'],
+        color: '#65a30d',
+        featured: false,
+        companyId: ascId,
+        categoryIds: [officeId, accessoriesId].filter(Boolean) as string[],
+      },
+      {
+        sku: 'SKU-370',
+        name: 'Folding Camp Stool',
+        price: 44,
+        stock: 53,
+        launchDate: new Date('2026-04-25'),
+        tags: ['outdoor', 'camping'],
+        color: '#ea580c',
+        featured: false,
+        companyId: savId,
+        categoryIds: outdoorId ? [outdoorId] : [],
+      },
+      {
+        sku: 'SKU-380',
+        name: 'Ultralight Rain Shell',
+        price: 165,
+        stock: 22,
+        launchDate: new Date('2026-10-05'),
+        tags: ['outdoor', 'apparel'],
+        color: '#7c3aed',
+        featured: true,
+        companyId: ascId,
+        categoryIds: outdoorId ? [outdoorId] : [],
+      },
+      {
+        sku: 'SKU-390',
+        name: 'USB-C Dock',
+        price: 129,
+        stock: 31,
+        launchDate: new Date('2026-08-20'),
+        tags: ['office', 'electronics'],
+        color: '#475569',
+        featured: false,
+        companyId: savId,
+        categoryIds: officeId ? [officeId] : [],
+      },
+    ]
+
+    for (const product of catalog) {
+      await Product.findOneAndUpdate(
+        { sku: product.sku },
+        { $setOnInsert: product },
+        { upsert: true, new: true },
+      )
+    }
   }
 
   private async seedEvents() {

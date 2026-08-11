@@ -17,8 +17,8 @@
     </template>
   @endif
 
-  <div class="shamar-m2m-table__card rounded-md border border-default">
-    <div class="shamar-m2m-table__toolbar flex flex-col gap-2 border-b border-default bg-surface-header px-3 py-2">
+  <div class="shamar-m2m-table__panel">
+    <div class="shamar-m2m-table__toolbar flex flex-col gap-2 border-b border-card-border px-4 py-2.5">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <p class="text-xs font-medium text-body-subtle">
           <span x-show="listUrl">
@@ -185,14 +185,14 @@
       </div>
     </div>
 
-    <div class="overflow-x-auto">
+    <div class="shamar-m2m-table__scroll overflow-x-auto">
       <table class="w-full text-sm">
         <thead>
-          <tr class="border-b border-default text-left text-xs uppercase tracking-wider text-body-subtle">
-            <th class="px-3 py-2 font-semibold" x-show="!listUrl || !columns.length">Record</th>
+          <tr class="border-b border-card-border text-left text-xs uppercase tracking-wider text-body-subtle">
+            <th class="px-4 py-2.5 font-semibold" x-show="!listUrl || !columns.length">Record</th>
             <template x-for="column in columns" :key="column.name">
               <th
-                class="px-3 py-2 font-semibold"
+                class="px-4 py-2.5 font-semibold"
                 x-show="listUrl"
                 :class="[
                   column.alignmentClass || '',
@@ -210,29 +210,29 @@
                 </span>
               </th>
             </template>
-            <th class="px-3 py-2 text-right font-semibold" x-show="!readonly">Actions</th>
+            <th class="px-4 py-2.5 text-right font-semibold" x-show="!readonly">Actions</th>
           </tr>
         </thead>
         <tbody>
           {{-- List mode --}}
           <tr x-show="listUrl && listLoading">
-            <td :colspan="Math.max(columns.length, 1) + (readonly ? 0 : 1)" class="px-3 py-8 text-center text-xs text-body-subtle">
+            <td :colspan="Math.max(columns.length, 1) + (readonly ? 0 : 1)" class="px-4 py-8 text-center text-xs text-body-subtle">
               Loading…
             </td>
           </tr>
           <tr x-show="listUrl && !listLoading && rows.length === 0">
-            <td :colspan="Math.max(columns.length, 1) + (readonly ? 0 : 1)" class="px-3 py-8 text-center text-xs text-body-subtle">
+            <td :colspan="Math.max(columns.length, 1) + (readonly ? 0 : 1)" class="px-4 py-8 text-center text-xs text-body-subtle">
               No linked records yet.
             </td>
           </tr>
           <template x-for="row in rows" :key="row.id">
             <tr
-              class="cursor-pointer border-b border-default last:border-0 hover:bg-surface-row-hover"
+              class="cursor-pointer border-b border-card-border last:border-0 hover:bg-surface-row-hover"
               x-show="listUrl && !listLoading"
               @click="openRecord(row)"
             >
               <template x-for="cell in row.cells" :key="row.id + ':' + cell.name">
-                <td class="px-3 py-2 text-body" :class="cellAlignment(cell.name)">
+                <td class="px-4 py-2.5 text-body" :class="cellAlignment(cell.name)">
                   <span x-show="cell.boolean !== undefined" x-text="cell.boolean ? 'Yes' : 'No'"></span>
                   <div class="shamar-badges" x-show="cell.badges && cell.badges.length">
                     <template x-for="badge in (cell.badges || [])" :key="badge">
@@ -253,7 +253,7 @@
                   ></span>
                 </td>
               </template>
-              <td class="px-3 py-2 text-right" x-show="!readonly" @click.stop>
+              <td class="px-4 py-2.5 text-right" x-show="!readonly" @click.stop>
                 <div class="inline-flex items-center gap-1 text-xs">
                   <button
                     type="button"
@@ -272,11 +272,11 @@
 
           {{-- Legacy single-column mode --}}
           <tr x-show="!listUrl && selected.length === 0">
-            <td colspan="2" class="px-3 py-8 text-center text-xs text-body-subtle">No linked records yet.</td>
+            <td colspan="2" class="px-4 py-8 text-center text-xs text-body-subtle">No linked records yet.</td>
           </tr>
           <template x-for="item in selected" :key="'legacy-' + item.id">
-            <tr class="border-b border-default last:border-0 hover:bg-surface-row-hover" x-show="!listUrl">
-              <td class="px-3 py-2">
+            <tr class="border-b border-card-border last:border-0 hover:bg-surface-row-hover" x-show="!listUrl">
+              <td class="px-4 py-2.5">
                 <button
                   type="button"
                   class="text-left text-heading hover:text-fg-brand hover:underline"
@@ -284,7 +284,7 @@
                   x-text="item.label"
                 ></button>
               </td>
-              <td class="px-3 py-2 text-right" x-show="!readonly">
+              <td class="px-4 py-2.5 text-right" x-show="!readonly">
                 <div class="inline-flex items-center gap-1 text-xs">
                   <button
                     type="button"
@@ -305,7 +305,7 @@
     </div>
 
     <div
-      class="flex flex-wrap items-center justify-between gap-2 border-t border-default px-3 py-2 text-xs text-body-subtle"
+      class="shamar-m2m-table__footer flex flex-wrap items-center justify-between gap-2 border-t border-card-border px-4 py-2.5 text-xs text-body-subtle"
       x-show="listUrl && (pageCount > 1 || total > 0)"
     >
       <p>

@@ -1,7 +1,7 @@
 @let(mode = 'show')
 @if(embed)
   <div
-    class="space-y-4"
+    class="space-y-0"
     data-shamar-embed-detail
     data-shamar-record-view="show"
   >
@@ -40,7 +40,7 @@
   @include('shamar::partials/shell-open')
 
   <div
-    class="mx-auto space-y-6 {{ contentMaxWidthClass || 'max-w-5xl' }}"
+    class="mx-auto space-y-6 {{ contentMaxWidthClass || 'w-full max-w-screen-xl' }}"
     @if(contentMaxWidthStyle)
       style="{{ contentMaxWidthStyle }}"
     @endif

@@ -118,8 +118,10 @@ Containers use `.schema([...])` for children. Layout width uses `.columns(n)` on
 
 ### Layout width
 
-- Panel: `panel('admin').contentMaxWidth('7xl')` (or `'80rem'`, `'full'`, …)
-- Resource: `static contentMaxWidth = '3xl'` (overrides the panel)
+Default for form and detail pages: `screen-xl` (1280px) — fills the column up to that cap.
+
+- Panel: `panel('admin').contentMaxWidth('screen-2xl')` (or `'screen-lg'`, `'7xl'`, `'full'`, …)
+- Resource: `static contentMaxWidth = 'screen-lg'` (overrides the panel)
 
 ## Common modifiers
 

@@ -1,0 +1,90 @@
+{{-- Single list-row action control. Expects: action, record, resource, basePath, query, showEditButton, showDeleteButton, menuItem (bool) --}}
+@if(action.name === 'view')
+  <a
+    href="{{ basePath }}/{{ resource.slug }}/{{ record.id }}{{ recordNavQuery(query) }}"
+    @if(menuItem)
+      role="menuitem"
+      class="shamar-row-actions__item"
+      @click="open = false"
+    @else
+      class="shamar-row-actions__inline"
+    @endif
+  >
+    @!component('shamar::partials/action-icon', { icon: action.icon || 'eye' })
+    <span>{{ action.label }}</span>
+  </a>
+@elseif(action.name === 'edit' && showEditButton !== false)
+  <a
+    href="{{ basePath }}/{{ resource.slug }}/{{ record.id }}/edit{{ recordNavQuery(query) }}"
+    @if(menuItem)
+      role="menuitem"
+      class="shamar-row-actions__item"
+      @click="open = false"
+    @else
+      class="shamar-row-actions__inline"
+    @endif
+  >
+    @!component('shamar::partials/action-icon', { icon: action.icon || 'pencil' })
+    <span>{{ action.label }}</span>
+  </a>
+@elseif(action.name === 'delete' && showDeleteButton !== false)
+  <button
+    type="button"
+    @if(menuItem)
+      role="menuitem"
+      class="shamar-row-actions__item is-danger"
+      @click="open = false; $dispatch('shamar-open-confirm', { variant: 'danger', mode: 'confirm', title: {{ jsonAttr(action.label) }}, message: {{ jsonAttr(action.confirm || 'Are you sure?') }}, confirmLabel: 'Delete', action: '{{ basePath }}/{{ resource.slug }}/{{ record.id }}/delete' })"
+    @else
+      class="shamar-row-actions__inline is-danger"
+      @click="$dispatch('shamar-open-confirm', { variant: 'danger', mode: 'confirm', title: {{ jsonAttr(action.label) }}, message: {{ jsonAttr(action.confirm || 'Are you sure?') }}, confirmLabel: 'Delete', action: '{{ basePath }}/{{ resource.slug }}/{{ record.id }}/delete' })"
+    @endif
+  >
+    @!component('shamar::partials/action-icon', { icon: action.icon || 'trash' })
+    <span>{{ action.label }}</span>
+  </button>
+@elseif(action.name === 'revoke' && !record.revokedAt)
+  <button
+    type="button"
+    @if(menuItem)
+      role="menuitem"
+      class="shamar-row-actions__item is-danger"
+      @click="open = false; $dispatch('shamar-open-confirm', { variant: 'danger', mode: 'confirm', title: {{ jsonAttr(action.label) }}, message: {{ jsonAttr(action.confirm || 'Are you sure?') }}, confirmLabel: {{ jsonAttr(action.label) }}, action: '{{ basePath }}/{{ resource.slug }}/{{ record.id }}/action/{{ action.name }}' })"
+    @else
+      class="shamar-row-actions__inline is-danger"
+      @click="$dispatch('shamar-open-confirm', { variant: 'danger', mode: 'confirm', title: {{ jsonAttr(action.label) }}, message: {{ jsonAttr(action.confirm || 'Are you sure?') }}, confirmLabel: {{ jsonAttr(action.label) }}, action: '{{ basePath }}/{{ resource.slug }}/{{ record.id }}/action/{{ action.name }}' })"
+    @endif
+  >
+    @!component('shamar::partials/action-icon', { icon: action.icon || 'trash' })
+    <span>{{ action.label }}</span>
+  </button>
+@elseif(action.name === 'reactivate' && record.revokedAt)
+  <button
+    type="button"
+    @if(menuItem)
+      role="menuitem"
+      class="shamar-row-actions__item"
+      @click="open = false; $dispatch('shamar-open-confirm', { variant: 'primary', mode: 'confirm', title: {{ jsonAttr(action.label) }}, message: {{ jsonAttr(action.confirm || 'Are you sure?') }}, confirmLabel: {{ jsonAttr(action.label) }}, action: '{{ basePath }}/{{ resource.slug }}/{{ record.id }}/action/{{ action.name }}' })"
+    @else
+      class="shamar-row-actions__inline"
+      @click="$dispatch('shamar-open-confirm', { variant: 'primary', mode: 'confirm', title: {{ jsonAttr(action.label) }}, message: {{ jsonAttr(action.confirm || 'Are you sure?') }}, confirmLabel: {{ jsonAttr(action.label) }}, action: '{{ basePath }}/{{ resource.slug }}/{{ record.id }}/action/{{ action.name }}' })"
+    @endif
+  >
+    @!component('shamar::partials/action-icon', { icon: action.icon })
+    <span>{{ action.label }}</span>
+  </button>
+@elseif(action.name !== 'view' && action.name !== 'edit' && action.name !== 'delete' && action.name !== 'revoke' && action.name !== 'reactivate')
+  <button
+    type="button"
+    @if(menuItem)
+      role="menuitem"
+      class="shamar-row-actions__item {{ action.color === 'danger' ? 'is-danger' : '' }}"
+      @click="open = false; $dispatch('shamar-open-confirm', { variant: {{ jsonAttr(action.color === 'danger' ? 'danger' : 'primary') }}, mode: 'confirm', title: {{ jsonAttr(action.label) }}, message: {{ jsonAttr(action.confirm || 'Are you sure?') }}, confirmLabel: {{ jsonAttr(action.label) }}, action: '{{ basePath }}/{{ resource.slug }}/{{ record.id }}/action/{{ action.name }}' })"
+    @else
+      class="shamar-row-actions__inline {{ action.color === 'danger' ? 'is-danger' : '' }}"
+      @click="$dispatch('shamar-open-confirm', { variant: {{ jsonAttr(action.color === 'danger' ? 'danger' : 'primary') }}, mode: 'confirm', title: {{ jsonAttr(action.label) }}, message: {{ jsonAttr(action.confirm || 'Are you sure?') }}, confirmLabel: {{ jsonAttr(action.label) }}, action: '{{ basePath }}/{{ resource.slug }}/{{ record.id }}/action/{{ action.name }}' })"
+    @endif
+  >
+    @!component('shamar::partials/action-icon', { icon: action.icon })
+    <span>{{ action.label }}</span>
+  </button>
+@endif

@@ -4,7 +4,7 @@
     data-shamar-embed-form
     method="post"
     action="{{ mode === 'create' ? `${basePath}/${resource.slug}` : `${basePath}/${resource.slug}/${record.id}` }}"
-    class="space-y-4"
+    class="space-y-0"
     x-data='shamarForm({
       endpoint: {{ jsonAttr(formStateEndpoint) }},
       operation: {{ jsonAttr(mode) }},
@@ -47,7 +47,7 @@
   @include('shamar::partials/shell-open')
 
   <div
-    class="mx-auto space-y-6 {{ contentMaxWidthClass || 'max-w-5xl' }}"
+    class="mx-auto space-y-6 {{ contentMaxWidthClass || 'w-full max-w-screen-xl' }}"
     @if(contentMaxWidthStyle)
       style="{{ contentMaxWidthStyle }}"
     @endif

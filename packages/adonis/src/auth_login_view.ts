@@ -1,9 +1,11 @@
-import type { AuthLoginMode } from '@shamar/cherubim';
+import type { AuthLoginMode, CherubimUser } from '@shamar/cherubim';
 import type { PanelBranding } from '@shamar/core';
 import { isMasqueradeEnabled } from './auth/masquerade.js';
 import {
   buildBrandingCss,
-  resolveBranding,
+  resolveEffectiveBranding,
+  type BrandingOverride,
+  type BrandingOverrideContext,
   type ShamarBranding,
 } from './shamar/branding.js';
 
@@ -20,6 +22,9 @@ export interface AuthLoginCopy {
 
 export interface AuthLoginViewConfig {
   branding?: PanelBranding;
+  resolveBrandingOverrides?: (
+    ctx: BrandingOverrideContext,
+  ) => BrandingOverride | null | undefined | Promise<BrandingOverride | null | undefined>;
   auth?: {
     loginMode?: AuthLoginMode | string;
     login?: AuthLoginCopy;
@@ -98,10 +103,22 @@ export function resolveAuthLoginCopy(
 /**
  * View locals for the published Shamar login page.
  * Uses the same branding resolution as the admin shell.
+ * Pass `resolveBrandingOverrides` (e.g. from `defineConfig`) to apply global settings logos.
  */
-export function buildAuthLoginViewData(config: AuthLoginViewConfig = {}): AuthLoginViewData {
+export async function buildAuthLoginViewData(
+  config: AuthLoginViewConfig = {},
+  auth?: { user?: CherubimUser | null; companyId?: string; panelId?: string },
+): Promise<AuthLoginViewData> {
   const loginMode = config.auth?.loginMode ?? 'local';
-  const branding = resolveBranding(config.branding);
+  const branding = await resolveEffectiveBranding(
+    config.branding,
+    config.resolveBrandingOverrides,
+    {
+      panelId: auth?.panelId,
+      companyId: auth?.companyId,
+      user: auth?.user ?? null,
+    },
+  );
   const { subtitle, footer, usernameLabel, usernamePlaceholder } = resolveAuthLoginCopy(
     loginMode,
     config.auth?.login,

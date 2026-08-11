@@ -46,7 +46,7 @@ export default class SessionController {
    * Display the login page (branding matches config/shamar.ts).
    */
   async create({ view }: HttpContext) {
-    return view.render('pages/auth/login', buildAuthLoginViewData(shamarConfig))
+    return view.render('pages/auth/login', await buildAuthLoginViewData(shamarConfig))
   }
 
   /**

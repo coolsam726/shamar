@@ -14,8 +14,15 @@ import type {
 import { panel as createPanel, type PanelBuilder } from '@shamar/core';
 import type { ShamarHttpContext } from './context.js';
 import type { LdapAuthSettings } from './auth/ldap.js';
+import {
+  mergePanelBranding,
+  type BrandingOverride,
+  type BrandingOverrideContext,
+} from './shamar/branding.js';
 
 export type ShamarOrm = 'lucid' | 'mongoose';
+
+export type { BrandingOverride, BrandingOverrideContext };
 
 export interface ShamarConfig {
   /** @deprecated Prefer `panels`. Kept for single-panel apps. */
@@ -39,6 +46,11 @@ export interface ShamarConfig {
     loginPath?: string;
     /** POST target for sign-out (shown in the admin shell when set). */
     logoutPath?: string;
+    /**
+     * Optional profile / account URL shown in the admin user dropdown
+     * (e.g. `/admin/profile`). Host apps register the matching route.
+     */
+    profilePath?: string;
     /** Adonis auth guard name (default `web`). */
     guard?: string;
     /**
@@ -116,6 +128,24 @@ export interface ShamarConfig {
   /** Default branding inherited by panels without their own. */
   branding?: PanelConfig['branding'];
   /**
+   * Optional runtime branding overrides (DB settings, company logo, etc.).
+   * Applied after panel/config branding when rendering the admin shell (and login when awaited).
+   *
+   * @example
+   * resolveBrandingOverrides: async ({ companyId }) => {
+   *   const settings = await loadGlobalBranding()
+   *   const company = companyId ? await Company.findById(companyId) : null
+   *   return {
+   *     logo: company?.logo || settings.logo,
+   *     logoDark: company?.logoDark || settings.logoDark,
+   *     logoHeight: company?.logoHeight ?? settings.logoHeight,
+   *   }
+   * }
+   */
+  resolveBrandingOverrides?: (
+    ctx: BrandingOverrideContext,
+  ) => BrandingOverride | null | undefined | Promise<BrandingOverride | null | undefined>;
+  /**
    * Optional REST / OpenAPI docs settings (consumed by `@shamar/rest`).
    * Prefer nesting here or use a separate `config/shamar_rest.ts`.
    */
@@ -166,8 +196,9 @@ function normalizePanels(config: ShamarConfig): PanelConfig[] {
       return {
         ...built,
         orm: built.orm ?? config.orm,
-        branding: built.branding ?? config.branding,
+        branding: mergePanelBranding(config.branding, built.branding),
         resources: [...(built.resources ?? [])],
+        pages: [...(built.pages ?? [])],
       };
     });
   }
@@ -179,6 +210,7 @@ function normalizePanels(config: ShamarConfig): PanelConfig[] {
       orm: config.orm,
       branding: config.branding,
       resources: [...(config.resources ?? [])],
+      pages: [],
     },
   ];
 }

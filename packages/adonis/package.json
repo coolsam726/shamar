@@ -38,6 +38,8 @@
     "build": "tsc && node -e \"const fs=require('fs'); for (const f of ['main.js','main.d.ts','commands.json']) try { fs.unlinkSync('dist/commands/'+f) } catch {}\" && pnpm index:commands",
     "index:commands": "adonis-kit index dist/commands",
     "build:css": "pnpm dlx @tailwindcss/cli@4.3.2 -i ./assets/input.css -o ./assets/admin.css --minify",
+    "dev": "pnpm dlx @tailwindcss/cli@4.3.2 -i ./assets/input.css -o ./assets/admin.css --watch",
+    "dev:css": "pnpm run dev",
     "test": "tsx --test test/**/*.test.ts",
     "prepublishOnly": "pnpm build && pnpm build:css"
   },

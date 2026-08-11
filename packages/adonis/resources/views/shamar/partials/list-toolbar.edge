@@ -14,7 +14,8 @@
     basePath: {{ jsonAttr(basePath) }},
     slug: {{ jsonAttr(resource.slug) }},
     view: {{ jsonAttr('table') }},
-    allPerPage: {{ jsonAttr(listAllPerPage) }}
+    allPerPage: {{ jsonAttr(listAllPerPage) }},
+    defaultPerPage: {{ jsonAttr(defaultPerPage) }}
   })'
 >
   <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -247,10 +248,9 @@
         @change="reload()"
         class="shamar-select w-auto min-w-[5.5rem]"
       >
-        <option value="10">10</option>
-        <option value="15">15</option>
-        <option value="20">20</option>
-        <option value="50">50</option>
+        @each(n in perPageOptions)
+          <option value="{{ n }}">{{ n }}</option>
+        @endeach
         <option value="all">All records</option>
       </select>
       <button

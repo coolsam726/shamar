@@ -1,11 +1,19 @@
-import type { ResourceMeta, ResourceRegistry } from '@shamar/core';
-import { resolveContentMaxWidth } from '@shamar/core';
+import type { PageMeta, PageRegistry, ResourceMeta, ResourceRegistry } from '@shamar/core';
+import { DEFAULT_LIST_PER_PAGE, resolveContentMaxWidth } from '@shamar/core';
 import type { AuthorizationContext } from '@shamar/cherubim';
 import type { Authorizer } from '@shamar/cherubim';
 import type { ShamarConfig } from '../config.js';
 import { canViewResource } from './auth.js';
-import { resolveBranding, type ShamarBranding } from './branding.js';
-import { menuLayoutContext, type NavigationGroup, type RecordBreadcrumbOptions } from './menu.js';
+import {
+  resolveEffectiveBranding,
+  type ShamarBranding,
+} from './branding.js';
+import {
+  menuLayoutContext,
+  mergeNavigationGroups,
+  type NavigationGroup,
+  type RecordBreadcrumbOptions,
+} from './menu.js';
 import {
   buildPaginationContext,
   normalizeListQuery,
@@ -27,6 +35,8 @@ export interface AdminShellContext {
   user: { name: string; email?: string };
   userInitial: string;
   logoutPath?: string;
+  /** Optional account / profile link in the user dropdown. */
+  profilePath?: string;
   showCreateButton?: boolean;
   showEditButton?: boolean;
   showDeleteButton?: boolean;
@@ -35,7 +45,7 @@ export interface AdminShellContext {
   flashJson?: string;
   /** Set when the session was created via masquerade password. */
   masquerade?: { active: true };
-  /** Tailwind class for form/show content width (e.g. `max-w-5xl`). */
+  /** Tailwind class for form/show content width (e.g. `w-full max-w-screen-xl`). */
   contentMaxWidthClass: string;
   /** Optional inline max-width when a CSS length was configured. */
   contentMaxWidthStyle?: string;
@@ -46,6 +56,7 @@ export function navigationGroups(
   options?: {
     authorizer?: Authorizer;
     authCtx?: AuthorizationContext;
+    pages?: PageRegistry;
   },
 ): NavigationGroup[] {
   const canView = (slug: string) => {
@@ -53,22 +64,35 @@ export function navigationGroups(
     return canViewResource(options.authorizer, options.authCtx, registry, slug);
   };
 
-  return registry
+  const resourceGroups = registry
     .navigationGroups()
     .map((group) => ({
       name: group.name,
       items: group.items.filter((item) => canView(item.slug)),
     }))
     .filter((group) => group.items.length > 0);
+
+  const pageItems = (options?.pages?.navigationItems() ?? []).filter((page) => {
+    const PageClass = options?.pages?.pageClass(page.slug);
+    if (!PageClass || !options?.authCtx) return true;
+    return PageClass.canAccess(options.authCtx.user);
+  });
+
+  return mergeNavigationGroups(resourceGroups, pageItems);
 }
 
-export function buildShellContext(options: {
+export async function buildShellContext(options: {
   config: ShamarConfig;
   registry: ResourceRegistry;
-  meta?: ResourceMeta;
+  pages?: PageRegistry;
+  meta?: ResourceMeta | PageMeta;
+  /** Active nav slug (resource or page). */
+  currentSlug?: string;
   pageTitle: string;
   basePath?: string;
   branding?: ShamarConfig['branding'];
+  /** Pre-resolved branding (skips resolveBrandingOverrides). */
+  resolvedBranding?: ShamarBranding;
   /** Panel-level default; resource `contentMaxWidth` wins when set on meta. */
   panelContentMaxWidth?: string;
   authorizer?: Authorizer;
@@ -81,21 +105,33 @@ export function buildShellContext(options: {
   recordBreadcrumb?: RecordBreadcrumbOptions;
   /** Dev masquerade session (shared password login). */
   masquerade?: { active: true };
-}): AdminShellContext {
+}): Promise<AdminShellContext> {
   const basePath = options.basePath ?? options.config.path ?? '/admin';
   const groups = navigationGroups(options.registry, {
     authorizer: options.authorizer,
     authCtx: options.authCtx,
+    pages: options.pages,
   });
+  const currentSlug = options.currentSlug ?? options.meta?.slug;
   const menu = menuLayoutContext(
     groups,
     basePath,
-    options.meta?.slug,
+    currentSlug,
     options.pageTitle,
     options.recordBreadcrumb,
   );
   const brandingInput = options.branding ?? options.config.branding;
-  const branding = resolveBranding(brandingInput);
+  const branding =
+    options.resolvedBranding ??
+    (await resolveEffectiveBranding(
+      brandingInput,
+      options.config.resolveBrandingOverrides,
+      {
+        panelId: options.authCtx?.panelId,
+        companyId: options.authCtx?.companyId ?? options.authCtx?.user?.companyId,
+        user: options.authCtx?.user ?? null,
+      },
+    ));
   const authUser = options.authCtx?.user;
   const userName = authUser?.name ?? brandingInput?.name ?? branding.brandName;
   const flash = options.flash;
@@ -120,6 +156,7 @@ export function buildShellContext(options: {
     },
     userInitial: userName.slice(0, 2).toUpperCase(),
     logoutPath: options.config.auth?.logoutPath,
+    profilePath: options.config.auth?.profilePath,
     showCreateButton: options.showCreateButton,
     showEditButton: options.showEditButton,
     showDeleteButton: options.showDeleteButton,
@@ -137,13 +174,16 @@ export function buildListContext(options: {
   meta: ResourceMeta;
   query: ListViewQuery;
   result: PaginatedResult;
+  defaultPerPage?: number;
 }): { query: ListViewQuery; pagination: PaginationContext; perPageValue: string } {
-  const query = normalizeListQuery(options.query);
+  const defaultPerPage = options.defaultPerPage ?? DEFAULT_LIST_PER_PAGE;
+  const query = normalizeListQuery(options.query, { perPage: defaultPerPage });
   const pagination = buildPaginationContext(
     options.basePath,
     options.meta.slug,
     query,
     options.result,
+    { defaultPerPage },
   );
   const perPageValue =
     query.perPage >= 1000 || options.query.perPage === 'all' ? 'all' : String(query.perPage);

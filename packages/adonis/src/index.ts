@@ -1,4 +1,22 @@
-export { defineConfig, panel, type ShamarConfig, type ShamarOrm } from './config.js';
+export {
+  buildBrandingCss,
+  brandingOverrideToPartial,
+  mergeBranding,
+  mergePanelBranding,
+  normalizeLogoHeight,
+  resolveBranding,
+  resolveEffectiveBranding,
+  resolveGoogleFont,
+  type BrandingOverride,
+  type BrandingOverrideContext,
+  type ShamarBranding,
+} from './shamar/branding.js';
+export {
+  defineConfig,
+  panel,
+  type ShamarConfig,
+  type ShamarOrm,
+} from './config.js';
 export { default as ShamarProvider } from './provider.js';
 export { ResourceController } from './controller.js';
 export {
@@ -54,12 +72,10 @@ export {
   type AuthLoginViewData,
 } from './auth_login_view.js';
 export {
-  buildBrandingCss,
-  mergeBranding,
-  resolveBranding,
-  resolveGoogleFont,
-  type ShamarBranding,
-} from './shamar/branding.js';
-export { discoverResources } from './discover.js';
+  buildShellContext,
+  readFlash,
+  type AdminShellContext,
+} from './shamar/view-context.js';
+export { discoverResources, discoverPages } from './discover.js';
 export { default as ApiKeyResource } from './resources/api_key_resource.js';
 export { default as RequireApiKeyMiddleware, createRequireApiKeyMiddleware } from './middleware/require_api_key_middleware.js';

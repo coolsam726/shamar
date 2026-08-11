@@ -270,7 +270,14 @@ export async function buildAuthContext(
     };
   }
 
-  return { user, panelId, authMethod, apiKeyId, gatewayApiKeyId };
+  return {
+    user,
+    panelId,
+    companyId: user?.companyId,
+    authMethod,
+    apiKeyId,
+    gatewayApiKeyId,
+  };
 }
 
 /**

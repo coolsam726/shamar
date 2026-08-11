@@ -4,13 +4,13 @@
   @each(root in dashboardCards)
     <a
       href="{{ root.href }}"
-      class="group shamar-card rounded-xl p-5 transition hover:bg-surface-row-hover"
+      class="group shamar-card shamar-dashboard-card rounded-xl p-5 transition"
     >
-      <div class="mb-3 flex items-center gap-2.5">
-        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-inset text-fg-brand">
+      <div class="mb-3 flex items-center gap-3">
+        <span class="shamar-dashboard-card__icon flex h-10 w-10 items-center justify-center rounded-lg text-fg-brand">
           @include('shamar::partials/icon')
         </span>
-        <h3 class="text-base font-semibold text-heading group-hover:text-fg-brand">{{ root.label }}</h3>
+        <h3 class="text-base font-bold tracking-tight text-heading group-hover:text-fg-brand">{{ root.label }}</h3>
       </div>
       <p class="text-sm text-body-subtle">Open {{ root.label }}</p>
     </a>

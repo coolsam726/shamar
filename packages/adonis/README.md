@@ -48,13 +48,13 @@ node ace shamar:publish-auth --force
 
 Published views are host-owned — edit freely after publishing. Re-running asks for confirmation before overwriting.
 
-Pass branding into the login view with `buildAuthLoginViewData(shamarConfig)` so fonts/colors match the admin shell:
+Pass branding into the login view with `await buildAuthLoginViewData(shamarConfig)` so fonts/colors match the admin shell:
 
 ```ts
 import { buildAuthLoginViewData } from '@shamar/adonis'
 import shamarConfig from '#config/shamar'
 
-return view.render('pages/auth/login', buildAuthLoginViewData(shamarConfig))
+return view.render('pages/auth/login', await buildAuthLoginViewData(shamarConfig))
 ```
 
 Optional login copy (`auth.login`) — subtitle under the brand, footer under the form (hidden when empty):
@@ -147,7 +147,7 @@ Then open `/api/shamar/docs` (Scalar) and `/api/shamar/openapi.json`.
 | Key | Description |
 |-----|-------------|
 | `orm` | `'lucid'` \| `'mongoose'` (default Lucid). Panels may override. |
-| `panels` | Array of `panel(id).path(…).discoverResources(…).branding(…)` |
+| `panels` | Array of `panel(id).path(…).discoverResources(…).discoverPages(…).branding(…)` |
 | `branding` | Default branding inherited by panels |
 
 #### Branding
@@ -167,7 +167,50 @@ branding: {
 }
 ```
 
-Panel-level `.branding({ googleFont: '…' })` overrides the default.
+Panel-level `.branding({ name, primaryColor, accentColor, logo, logoHeight })` merges over the default — colors, logos, and fonts are inherited unless overridden.
+
+Use `resolveBrandingOverrides` to overlay logos from a DB (global settings and/or per-company) at request time.
+
+#### Pages (Filament-style)
+
+Custom panel pages live beside resources — form pages, list pages, or plain views:
+
+```ts
+import { FormPage, ListPage, Page, form, table, Section, TextInput, TextColumn } from '@shamar/core'
+
+export default class BrandingSettingsPage extends FormPage {
+  static override slug = 'settings'
+  static override label = 'Settings'
+  static override navigationGroup = 'Settings'
+
+  static override form() {
+    return form((f) => {
+      f.schema([Section.make('Branding').schema([TextInput.make('logo').url()])])
+    })
+  }
+
+  static override async fill() { /* load singleton */ return {} }
+  static override async save(data) { /* persist */ return { message: 'Saved' } }
+}
+```
+
+```ts
+panel('admin')
+  .brandDisplay('both') // or 'logo' | 'name' — also `.brandLogoOnly()` / `.brandNameOnly()`
+  .discoverResources('app/resources/admin')
+  .discoverPages('app/pages/admin') // `*_page.ts` / `*Page.ts`
+```
+
+| Kind | Base class | Routes |
+|------|------------|--------|
+| Custom | `Page` | `GET /:slug` |
+| Form | `FormPage` | `GET|POST /:slug`, `POST /:slug/form-state` |
+| List | `ListPage` | `GET /:slug` (reuses list UI; no create/edit by default) |
+
+Page slugs must not collide with resource slugs or reserved names (`assets`, `profile`).
+Resource routes like `/:slug/:id/edit` redirect to the page when `slug` is a registered page.
+
+`brandDisplay` (on `.branding({ brandDisplay })` or `.brandDisplay()`) controls whether the shell shows **logo + name**, **logo only**, or **name only**.
 | `apiPrefix` | JSON API prefix (default `/api/shamar`) |
 | `adapter` | Escape hatch: custom `DataAdapter` (or factory) for all panels |
 | `auth` | Session / API / policy wiring (see below) |

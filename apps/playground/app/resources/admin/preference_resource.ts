@@ -28,6 +28,7 @@ export default class PreferenceResource extends Resource {
   static override recordTitleField = 'key'
   static override navigationGroup = 'Settings'
   static override navigationSort = 10
+  static override navigationHidden = true
 
   static override form() {
     return form((f) => {

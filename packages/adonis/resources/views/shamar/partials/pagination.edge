@@ -49,7 +49,7 @@
             <input type="hidden" name="sort" value="{{ query.sort }}" />
             <input type="hidden" name="direction" value="{{ query.direction }}" />
           @endif
-          @if(query.perPage !== '15' && query.perPage !== 15)
+          @if(query.perPage !== String(defaultPerPage) && query.perPage !== defaultPerPage)
             <input type="hidden" name="perPage" value="{{ query.perPage }}" />
           @endif
           <label for="pagination-jump-page" class="sr-only">Jump to page</label>

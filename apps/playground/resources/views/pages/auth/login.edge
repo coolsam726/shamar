@@ -5,13 +5,14 @@
   brandName: branding.brandName || brandName || 'Admin',
 })
   <header class="auth-brand">
-    @if(branding.logoUrl)
+    @if(branding.showLogo && branding.logoUrl)
       <img
         class="auth-brand__logo"
         src="{{ branding.logoUrl }}"
         alt="{{ branding.brandName || brandName || 'Admin' }}"
       />
-    @else
+    @endif
+    @if(branding.showBrandName)
       <p class="auth-brand__name">{{ branding.brandName || brandName || 'Admin' }}</p>
     @endif
     @if(loginSubtitle)

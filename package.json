@@ -9,7 +9,8 @@
   "scripts": {
     "build": "pnpm -r build",
     "test": "pnpm --filter './packages/*' test",
-    "dev": "pnpm --filter @shamar/playground dev",
+    "dev": "pnpm --parallel --filter @shamar/playground --filter @shamar/adonis run dev",
+    "dev:app": "pnpm --filter @shamar/playground dev",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",

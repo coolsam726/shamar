@@ -2,6 +2,10 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { buildAuthLoginViewData } from '../src/auth_login_view.js';
 import {
+  buildBrandingCss,
+  brandingOverrideToPartial,
+  mergeBranding,
+  mergePanelBranding,
   resolveBranding,
   resolveGoogleFont,
 } from '../src/shamar/branding.js';
@@ -51,9 +55,86 @@ describe('resolveBranding googleFont', () => {
   });
 });
 
+describe('mergePanelBranding', () => {
+  it('keeps global colors and fonts when a panel only overrides the name', () => {
+    const merged = mergePanelBranding(
+      {
+        name: 'Shamar Playground',
+        primaryColor: '#f1511b',
+        accentColor: '#286291',
+        googleFont: { family: 'Poppins', weights: [400, 700, 800] },
+      },
+      { name: 'Admin' },
+    );
+    assert.equal(merged?.name, 'Admin');
+    assert.equal(merged?.primaryColor, '#f1511b');
+    assert.equal(merged?.accentColor, '#286291');
+    const branding = resolveBranding(merged);
+    assert.match(branding.fontFamily, /^"Poppins",/);
+    assert.match(buildBrandingCss(branding), /--color-shamar-brand-panel:/);
+    assert.match(buildBrandingCss(branding), /--color-shamar-top-accent:/);
+  });
+
+  it('applies logoHeight from panel branding', () => {
+    const branding = resolveBranding({ name: 'Admin', logoHeight: 40 });
+    assert.equal(branding.logoHeight, '40px');
+    assert.match(buildBrandingCss(branding), /--shamar-logo-height:\s*40px/);
+  });
+
+  it('respects brandDisplay logo / name / both', () => {
+    const both = resolveBranding({
+      name: 'Admin',
+      logo: '/logo.svg',
+      brandDisplay: 'both',
+    });
+    assert.equal(both.showLogo, true);
+    assert.equal(both.showBrandName, true);
+
+    const logoOnly = resolveBranding({
+      name: 'Admin',
+      logo: '/logo.svg',
+      brandDisplay: 'logo',
+    });
+    assert.equal(logoOnly.showLogo, true);
+    assert.equal(logoOnly.showBrandName, false);
+
+    const nameOnly = resolveBranding({
+      name: 'Admin',
+      logo: '/logo.svg',
+      brandDisplay: 'name',
+    });
+    assert.equal(nameOnly.showLogo, false);
+    assert.equal(nameOnly.showBrandName, true);
+
+    const logoFallback = resolveBranding({
+      name: 'Admin',
+      brandDisplay: 'logo',
+    });
+    assert.equal(logoFallback.showLogo, false);
+    assert.equal(logoFallback.showBrandName, true);
+  });
+
+  it('keeps panel brandDisplay when override omits it', () => {
+    const panel = resolveBranding({
+      name: 'Admin',
+      brandDisplay: 'name',
+    });
+    const merged = mergeBranding(
+      panel,
+      brandingOverrideToPartial({
+        logo: '/logo.svg',
+      }),
+    );
+    assert.equal(merged.brandDisplay, 'name');
+    assert.equal(merged.showLogo, false);
+    assert.equal(merged.showBrandName, true);
+    assert.equal(merged.logoUrl, '/logo.svg');
+  });
+});
+
 describe('buildAuthLoginViewData', () => {
-  it('mirrors admin branding tokens for the login view', () => {
-    const data = buildAuthLoginViewData({
+  it('mirrors admin branding tokens for the login view', async () => {
+    const data = await buildAuthLoginViewData({
       branding: {
         name: 'Acme',
         primaryColor: '#0ea5e9',
@@ -72,8 +153,8 @@ describe('buildAuthLoginViewData', () => {
     assert.equal(data.loginFooter, '');
   });
 
-  it('uses configured login subtitle and footer', () => {
-    const data = buildAuthLoginViewData({
+  it('uses configured login subtitle and footer', async () => {
+    const data = await buildAuthLoginViewData({
       auth: {
         loginMode: 'ldap',
         login: {

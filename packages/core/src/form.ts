@@ -747,6 +747,7 @@ export class RelationTable extends FormComponent {
     super(name, 'relationTable');
     this.config.multiple = true;
     this.config.dehydrated = false;
+    this.columnSpanFull();
   }
 
   relationship(

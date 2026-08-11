@@ -64,21 +64,21 @@ describe('masquerade helpers', () => {
     );
   });
 
-  it('exposes masqueradeEnabled on login view data', () => {
+  it('exposes masqueradeEnabled on login view data', async () => {
     const previous = process.env.NODE_ENV;
     process.env.NODE_ENV = 'development';
     try {
-      const enabled = buildAuthLoginViewData(withPassword);
+      const enabled = await buildAuthLoginViewData(withPassword);
       assert.equal(enabled.masqueradeEnabled, true);
-      const disabled = buildAuthLoginViewData({ auth: {} });
+      const disabled = await buildAuthLoginViewData({ auth: {} });
       assert.equal(disabled.masqueradeEnabled, false);
     } finally {
       process.env.NODE_ENV = previous;
     }
   });
 
-  it('passes masquerade into shell context', () => {
-    const shell = buildShellContext({
+  it('passes masquerade into shell context', async () => {
+    const shell = await buildShellContext({
       config: { path: '/admin', resources: [] },
       registry: new ResourceRegistry([]),
       pageTitle: 'Dashboard',

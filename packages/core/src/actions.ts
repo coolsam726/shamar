@@ -32,6 +32,20 @@ abstract class ActionBase<T extends ActionConfig> {
     return this;
   }
 
+  /**
+   * Row actions: include in the ⋮ menu (default) or show inline.
+   * Pass `false` (or use {@link ungrouped}) for a visible toolbar button.
+   */
+  grouped(value = true): this {
+    this.config.grouped = value;
+    return this;
+  }
+
+  /** Shorthand: show this row action outside the ⋮ menu. */
+  ungrouped(): this {
+    return this.grouped(false);
+  }
+
   build(): T {
     return { ...this.config };
   }
@@ -64,28 +78,29 @@ export class ActionBuilder {
     return action;
   }
 
-  create(label = 'Create'): HeaderAction {
-    return this.track(new HeaderAction('create', label));
+  view(label = 'View'): RowAction {
+    return this.track(new RowAction('view', label).icon('eye'));
   }
 
   edit(label = 'Edit'): RowAction {
-    return this.track(new RowAction('edit', label));
-  }
-
-  view(label = 'View'): RowAction {
-    return this.track(new RowAction('view', label));
+    return this.track(new RowAction('edit', label).icon('pencil'));
   }
 
   delete(label = 'Delete'): RowAction {
-    return this.track(new RowAction('delete', label).color('danger'));
+    return this.track(new RowAction('delete', label).color('danger').icon('trash'));
   }
 
   bulkDelete(label = 'Delete selected'): BulkAction {
     return this.track(
       new BulkAction('delete', label)
         .color('danger')
+        .icon('trash')
         .confirm('Delete selected records?'),
     );
+  }
+
+  create(label = 'Create'): HeaderAction {
+    return this.track(new HeaderAction('create', label).icon('plus'));
   }
 
   header(name: string, label: string): HeaderAction {
@@ -117,8 +132,8 @@ export function actions(
 export function defaultActions(): ActionConfig[] {
   return actions((a) => {
     a.create();
-    a.edit();
     a.view();
+    a.edit();
     a.delete();
     a.bulkDelete();
   });

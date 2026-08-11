@@ -51,6 +51,8 @@ export abstract class Resource {
    */
   static navigationSubGroup?: string;
   static navigationSort?: number;
+  /** When true, omit from panel navigation (CRUD routes remain). */
+  static navigationHidden?: boolean;
   static recordTitleField = 'name';
   static icon?: string;
   static companyScoped?: boolean;
@@ -58,9 +60,14 @@ export abstract class Resource {
   /**
    * Max width of create/edit and show/infolist content.
    * Overrides panel `contentMaxWidth` when set.
-   * Tailwind token (`3xl`, `5xl`, `7xl`, `full`, `none`) or CSS length (`80rem`).
+   * Prefer screen tokens (`screen-lg`, `screen-xl`, `screen-2xl`) or a scale/CSS length.
    */
   static contentMaxWidth?: string;
+  /**
+   * Default list page size when the request omits `perPage`.
+   * Overrides panel `defaultPerPage` when set. Built-in default: `15`.
+   */
+  static defaultPerPage?: number;
   /** Optional record-level policy (Loom / Laravel style). */
   static policy?: PolicyClass;
 
@@ -176,6 +183,7 @@ export abstract class Resource {
       navigationGroup: this.navigationGroup,
       navigationSubGroup: this.navigationSubGroup,
       navigationSort: this.navigationSort,
+      navigationHidden: this.navigationHidden,
       recordTitleField: this.recordTitleField,
       icon: this.icon,
       fields: formSchema.fields,
@@ -192,6 +200,7 @@ export abstract class Resource {
       softDelete: this.softDelete,
       customPermissions: normalizeCustomPermissions(this.slug, this.permissions()),
       contentMaxWidth: this.contentMaxWidth,
+      defaultPerPage: this.defaultPerPage,
     };
   }
 

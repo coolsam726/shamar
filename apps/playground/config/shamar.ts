@@ -2,6 +2,7 @@ import { defineConfig, panel, type LdapDomainConfig } from '@shamar/adonis'
 import { toCherubimUser, sanitizeRoleIds, type AuthLoginMode } from '@shamar/cherubim'
 import { resolveDatabaseRolePermissions } from '#auth/role_resolver'
 import { resolvePlaygroundApiKeyUser } from '#auth/api_key_store'
+import { resolvePlaygroundBrandingOverrides } from '#branding/resolve_overrides'
 
 function envStr(key: string, fallback = ''): string {
   const value = process.env[key]
@@ -66,7 +67,6 @@ const loginMode: AuthLoginMode =
 
 const provisioningEnv = envStr('LDAP_PROVISIONING').toLowerCase()
 const ldapProvisioning = provisioningEnv === 'create' ? 'create' : 'existing'
-const masqueradePassword = envStr('MASQUERADE_PASSWORD') || undefined
 
 const loginSubtitle = envStr('AUTH_LOGIN_SUBTITLE') || undefined
 const loginFooter = envStr('AUTH_LOGIN_FOOTER') || undefined
@@ -88,7 +88,6 @@ export default defineConfig({
       ...(loginUsernameLabel ? { usernameLabel: loginUsernameLabel } : {}),
     },
     ldap: { domains: ldapDomains, provisioning: ldapProvisioning },
-    ...(masqueradePassword ? { masquerade: { password: masqueradePassword } } : {}),
     roleResolver: {
       resolveRolePermissions: resolveDatabaseRolePermissions,
     },
@@ -110,6 +109,7 @@ export default defineConfig({
             permissions?: string[]
             authProvider?: string
             ldapDomainId?: string | null
+            companyId?: string | null
           }
         | undefined
       if (!sessionUser) return null
@@ -133,15 +133,22 @@ export default defineConfig({
         permissions: Array.isArray(sessionUser.permissions) ? sessionUser.permissions : [],
         authProvider: sessionUser.authProvider,
         ldapDomainId: sessionUser.ldapDomainId ?? undefined,
+        companyId: sessionUser.companyId ? String(sessionUser.companyId) : undefined,
       })
     },
   },
   branding: {
     name: 'Shamar Playground',
+    // Full lockup for the login page (mark + wordmark).
+    logo: '/branding/shamar-banner.svg',
+    logoDark: '/branding/shamar-banner-dark.svg',
+    logoHeight: 48,
+    brandDisplay: 'logo',
     primaryColor: '#f1511b',
     accentColor: '#286291',
-    googleFont: { family: 'DM Sans', weights: [400, 500, 600, 700, 800, 900] },
+    googleFont: { family: 'Poppins', weights: [400, 500, 600, 700, 800, 900] },
   },
+  resolveBrandingOverrides: resolvePlaygroundBrandingOverrides,
   rest: {
     openapi: {
       title: 'Shamar Playground API',
@@ -155,13 +162,31 @@ export default defineConfig({
     panel('admin')
       .path('/admin')
       .branding({
-        name: 'Admin',
-        googleFont: { family: 'Poppins', weights: [400, 500, 600, 700, 800, 900] },
+        name: 'SHAMAR',
+        // Icon mark in the sidebar; brand name rendered beside it.
+        logo: '/branding/shamar-logo.svg',
+        logoDark: '/branding/shamar-logo-dark.svg',
+        // Panel theme colors override global branding for this panel.
+        primaryColor: '#F1511B',
+        accentColor: '#286291',
+        logoHeight: 32,
       })
-      .discoverResources('app/resources/admin'),
+      // Logo + name | logo only | name only.
+      // Settings → Branding can override; leave Brand mark as “Use panel default” there.
+      .brandDisplay('both')
+      .contentMaxWidth('screen-2xl')
+      .defaultPerPage(10)
+      .discoverResources('app/resources/admin')
+      .discoverPages('app/pages/admin'),
     panel('app')
       .path('/app')
-      .branding({ name: 'App' })
+      .branding({
+        name: 'SHAMAR APP',
+        logo: '/branding/shamar-logo.svg',
+        logoDark: '/branding/shamar-logo-dark.svg',
+        logoHeight: 32,
+      })
+      .brandDisplay('both')
       .discoverResources('app/resources/app'),
   ],
 })

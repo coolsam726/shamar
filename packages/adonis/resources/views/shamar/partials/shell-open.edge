@@ -13,6 +13,7 @@
   @endif
   <link rel="stylesheet" href="{{ basePath }}/assets/admin.css" />
   <link rel="stylesheet" href="{{ basePath }}/assets/branding.css" />
+  <style>:root { --shamar-logo-height: {{ branding.logoHeight }}; }</style>
   <meta name="csrf-token" content="{{ csrfToken }}" />
   <script>
     (function () {
@@ -27,7 +28,7 @@
   <style>[x-cloak] { display: none !important; }</style>
 </head>
 <body
-  class="min-h-screen bg-shamar-shell text-body antialiased flex md:flex-row"
+  class="h-dvh overflow-hidden bg-shamar-shell text-body antialiased flex md:flex-row"
   x-data="shamarShell()"
   data-shamar-base-path="{{ basePath }}"
 >
@@ -41,12 +42,12 @@
 
   @include('shamar::partials/nav')
 
-  <div class="flex min-w-0 flex-1 flex-col min-h-screen w-full">
+  <div class="flex min-w-0 flex-1 flex-col h-full min-h-0 overflow-hidden">
     @include('shamar::partials/topbar')
 
     @if(masquerade && masquerade.active)
       <div
-        class="shrink-0 px-4 md:px-6 py-2.5 text-sm bg-warning-soft text-warning-strong border-b border-toast-warning-border sticky top-[60px] z-20"
+        class="shrink-0 px-4 md:px-6 py-2.5 text-sm bg-warning-soft text-warning-strong border-b border-toast-warning-border z-20"
         role="status"
       >
         <span class="font-semibold">Masquerade</span>
@@ -58,7 +59,10 @@
       </div>
     @endif
 
-    <div class="flex-1 flex flex-col min-h-0 overflow-x-hidden w-full p-3 md:p-4 gap-4">
+    <div
+      data-shamar-scroll-root
+      class="shamar-scroll-root flex-1 min-h-0 overflow-x-hidden overflow-y-auto px-3 md:px-4 pt-3 md:pt-4"
+    >
 
       @include('shamar::partials/toast')
 
@@ -66,4 +70,4 @@
         @include('shamar::partials/page-heading')
       @endif
 
-      <main class="flex-1 min-h-0 overflow-auto">
+      <main>
