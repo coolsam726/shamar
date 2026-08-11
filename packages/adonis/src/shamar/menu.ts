@@ -1,4 +1,12 @@
-import type { ResourceMeta } from '@shamar/core';
+/** Shared nav shape for resources and pages. */
+export interface NavItem {
+  slug: string;
+  label: string;
+  icon?: string;
+  navigationGroup?: string;
+  navigationSubGroup?: string;
+  navigationSort?: number;
+}
 
 export interface MenuRoot {
   label: string;
@@ -40,7 +48,7 @@ export interface NavigationGroup {
   name: string;
   icon?: string;
   sort?: number;
-  items: ResourceMeta[];
+  items: NavItem[];
 }
 
 /** Extra crumbs for create / show / edit record pages. */
@@ -59,7 +67,7 @@ const GROUP_ICONS: Record<string, string> = {
   Settings: 'cog',
 };
 
-function compareNavigationItems(a: ResourceMeta, b: ResourceMeta): number {
+function compareNavigationItems(a: NavItem, b: NavItem): number {
   const sortA = a.navigationSort ?? Number.POSITIVE_INFINITY;
   const sortB = b.navigationSort ?? Number.POSITIVE_INFINITY;
   if (sortA !== sortB) return sortA - sortB;
@@ -72,19 +80,19 @@ function firstGroupHref(group: NavigationGroup, basePath: string): string {
 }
 
 /**
- * Build top-bar secondary items. Resources with `navigationSubGroup` collapse
+ * Build top-bar secondary items. Items with `navigationSubGroup` collapse
  * into a dropdown (`children`); others remain direct links. Relative order
  * follows each item/cluster's minimum `navigationSort`.
  */
 export function buildMenuSecondary(
-  items: ResourceMeta[],
+  items: NavItem[],
   basePath: string,
   currentSlug?: string,
 ): MenuSecondaryItem[] {
   const sorted = [...items].sort(compareNavigationItems);
   type Entry = { sort: number; item: MenuSecondaryItem };
   const entries: Entry[] = [];
-  const subgroups = new Map<string, ResourceMeta[]>();
+  const subgroups = new Map<string, NavItem[]>();
   const subgroupOrder: string[] = [];
 
   for (const item of sorted) {
@@ -183,9 +191,9 @@ export function menuLayoutContext(
   }
 
   if (currentSlug && activeGroup) {
-    const resource = activeGroup.items.find((item) => item.slug === currentSlug);
-    if (resource) {
-      breadcrumbs.push({ label: resource.label, href: `${basePath}/${resource.slug}` });
+    const navItem = activeGroup.items.find((item) => item.slug === currentSlug);
+    if (navItem) {
+      breadcrumbs.push({ label: navItem.label, href: `${basePath}/${navItem.slug}` });
     }
   }
 
@@ -214,4 +222,30 @@ export function menuLayoutContext(
     menuSecondary,
     breadcrumbs,
   };
+}
+
+/**
+ * Merge resource + page nav items into groups (by `navigationGroup`).
+ */
+export function mergeNavigationGroups(
+  resourceGroups: Array<{ name: string; items: NavItem[] }>,
+  pageItems: NavItem[],
+): NavigationGroup[] {
+  const groups = new Map<string, NavItem[]>();
+
+  for (const group of resourceGroups) {
+    groups.set(group.name, [...group.items]);
+  }
+
+  for (const page of pageItems) {
+    const name = page.navigationGroup ?? 'General';
+    const items = groups.get(name) ?? [];
+    items.push(page);
+    groups.set(name, items);
+  }
+
+  return [...groups.entries()].map(([name, items]) => ({
+    name,
+    items: items.sort(compareNavigationItems),
+  }));
 }

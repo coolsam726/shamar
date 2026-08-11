@@ -25,7 +25,7 @@ export class ResourceController {
   }) {
     return this.adapter.list(meta, {
       page: query.page ?? 1,
-      perPage: query.perPage ?? 15,
+      perPage: query.perPage ?? meta.defaultPerPage ?? 15,
       search: query.search,
       sort: query.sort,
       direction: query.direction,

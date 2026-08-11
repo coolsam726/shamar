@@ -36,6 +36,58 @@
     return headers;
   }
 
+  /**
+   * Fixed-position styles so dropdowns escape overflow:hidden / overflow:auto
+   * ancestors (form cards, tabs, table scroll roots).
+   */
+  function fixedDropdownStyle(anchorEl, panelEl, opts = {}) {
+    if (!anchorEl) return {};
+    const rect = anchorEl.getBoundingClientRect();
+    const gap = opts.gap ?? 4;
+    const pad = opts.pad ?? 8;
+    const maxHeight = opts.maxHeight ?? 256;
+    const width = Math.max(opts.width ?? rect.width, 0);
+    const measured = panelEl?.offsetHeight || 0;
+    const panelHeight = measured > 0 ? Math.min(measured, maxHeight) : maxHeight;
+
+    let top = rect.bottom + gap;
+    if (top + panelHeight > window.innerHeight - pad) {
+      const above = rect.top - panelHeight - gap;
+      if (above >= pad) top = above;
+    }
+
+    let left = rect.left;
+    if (opts.align === 'end') {
+      left = rect.right - width;
+    }
+    left = Math.min(Math.max(pad, left), Math.max(pad, window.innerWidth - width - pad));
+
+    return {
+      position: 'fixed',
+      top: `${Math.round(top)}px`,
+      left: `${Math.round(left)}px`,
+      width: `${Math.round(width)}px`,
+      right: 'auto',
+      maxHeight: `${maxHeight}px`,
+      zIndex: String(opts.zIndex ?? 1100),
+    };
+  }
+
+  function bindFixedDropdownListeners(component) {
+    component._onFixedDropdownReposition = () => {
+      if (component.open) component.repositionDropdown?.();
+    };
+    window.addEventListener('scroll', component._onFixedDropdownReposition, true);
+    window.addEventListener('resize', component._onFixedDropdownReposition);
+  }
+
+  function unbindFixedDropdownListeners(component) {
+    if (!component._onFixedDropdownReposition) return;
+    window.removeEventListener('scroll', component._onFixedDropdownReposition, true);
+    window.removeEventListener('resize', component._onFixedDropdownReposition);
+    component._onFixedDropdownReposition = null;
+  }
+
   function normalizeToast(typeOrOptions, messageOrDuration, durationMs) {
     if (typeof typeOrOptions === 'object' && typeOrOptions !== null) {
       const options = typeOrOptions;
@@ -281,7 +333,44 @@
     return true;
   }
 
+  function getScrollRoot() {
+    return document.querySelector('[data-shamar-scroll-root]');
+  }
+
+  function saveScrollPosition() {
+    const root = getScrollRoot();
+    if (!root) return;
+    try {
+      sessionStorage.setItem('shamar-scroll-top', String(root.scrollTop));
+    } catch {
+      /* private mode / quota */
+    }
+  }
+
+  function restoreScrollPosition() {
+    let raw = null;
+    try {
+      raw = sessionStorage.getItem('shamar-scroll-top');
+      sessionStorage.removeItem('shamar-scroll-top');
+    } catch {
+      return;
+    }
+    if (raw == null) return;
+    const top = Number(raw);
+    if (!Number.isFinite(top)) return;
+    const apply = () => {
+      const root = getScrollRoot();
+      if (root) root.scrollTop = top;
+    };
+    apply();
+    requestAnimationFrame(() => {
+      apply();
+      requestAnimationFrame(apply);
+    });
+  }
+
   function reloadParentView({ success, error } = {}) {
+    saveScrollPosition();
     const url = new URL(window.location.href);
     url.searchParams.delete('success');
     url.searchParams.delete('error');
@@ -679,6 +768,7 @@
       loading: false,
       _abort: null,
       _initialFetched: false,
+      dropdownStyle: {},
 
       init() {
         this.query = this.label;
@@ -690,12 +780,21 @@
           }
         };
         window.addEventListener('shamar-m2o-pick', this._pickHandler);
+        bindFixedDropdownListeners(this);
       },
 
       destroy() {
         if (this._pickHandler) {
           window.removeEventListener('shamar-m2o-pick', this._pickHandler);
         }
+        unbindFixedDropdownListeners(this);
+      },
+
+      repositionDropdown() {
+        this.dropdownStyle = fixedDropdownStyle(this.$el, this.$refs.dropdown, {
+          maxHeight: 288,
+          zIndex: 1100,
+        });
       },
 
       get exactMatch() {
@@ -732,11 +831,13 @@
           }
         } finally {
           this.loading = false;
+          if (this.open) this.$nextTick(() => this.repositionDropdown());
         }
       },
 
       onFocus() {
         this.open = true;
+        this.$nextTick(() => this.repositionDropdown());
         if (!this._initialFetched) {
           this._initialFetched = true;
           this.fetchResults();
@@ -750,10 +851,12 @@
           this.label = '';
         }
         this.fetchResults();
+        this.$nextTick(() => this.repositionDropdown());
       },
 
       close() {
         this.open = false;
+        this.dropdownStyle = {};
         this.query = this.label;
       },
 
@@ -771,6 +874,7 @@
       moveCursor(delta) {
         if (!this.open) {
           this.open = true;
+          this.$nextTick(() => this.repositionDropdown());
           return;
         }
         const extra = this.createCandidate ? 1 : 0;
@@ -794,6 +898,7 @@
         this.label = item.label || this.value;
         this.query = this.label;
         this.open = false;
+        this.dropdownStyle = {};
         this.syncHiddenInput();
         notifyRelationFieldChange(this.$el, this.name);
       },
@@ -811,6 +916,7 @@
         this.query = '';
         this.cursor = 0;
         this.open = false;
+        this.dropdownStyle = {};
         this.syncHiddenInput();
         this.$refs.input?.focus();
         notifyRelationFieldChange(this.$el, this.name);
@@ -868,6 +974,7 @@
       createAndEdit() {
         if (!this.createUrl) return;
         this.open = false;
+        this.dropdownStyle = {};
         const q = (this.query || '').trim();
         const url = q
           ? `${this.createUrl}?name=${encodeURIComponent(q)}`
@@ -925,6 +1032,7 @@
       loading: false,
       _abort: null,
       _initialFetched: false,
+      dropdownStyle: {},
 
       init() {
         this._pickHandler = (event) => {
@@ -934,12 +1042,21 @@
           }
         };
         window.addEventListener('shamar-m2m-pick', this._pickHandler);
+        bindFixedDropdownListeners(this);
       },
 
       destroy() {
         if (this._pickHandler) {
           window.removeEventListener('shamar-m2m-pick', this._pickHandler);
         }
+        unbindFixedDropdownListeners(this);
+      },
+
+      repositionDropdown() {
+        this.dropdownStyle = fixedDropdownStyle(this.$el, this.$refs.dropdown, {
+          maxHeight: 288,
+          zIndex: 1100,
+        });
       },
 
       get valueCsv() {
@@ -995,12 +1112,14 @@
           }
         } finally {
           this.loading = false;
+          if (this.open) this.$nextTick(() => this.repositionDropdown());
         }
       },
 
       onFocus() {
         if (this.readonly) return;
         this.open = true;
+        this.$nextTick(() => this.repositionDropdown());
         if (!this._initialFetched) {
           this._initialFetched = true;
           this.fetchResults();
@@ -1010,10 +1129,12 @@
       onInput() {
         this.open = true;
         this.fetchResults();
+        this.$nextTick(() => this.repositionDropdown());
       },
 
       close() {
         this.open = false;
+        this.dropdownStyle = {};
         this.query = '';
       },
 
@@ -1031,6 +1152,7 @@
       moveCursor(delta) {
         if (!this.open) {
           this.open = true;
+          this.$nextTick(() => this.repositionDropdown());
           return;
         }
         const extra = this.createCandidate ? 1 : 0;
@@ -1283,16 +1405,21 @@
       return label;
     };
     self.itemDisplay = function itemDisplay(item) {
+      // Prefer catalog label / permission name over bare ability or raw id.
+      const label = String(item?.label || '').trim();
+      if (label && label !== String(item?.id || '')) return label;
+      const name = String(item?.name || '').trim();
+      if (name) {
+        if (name === '*') return 'All (*)';
+        return name;
+      }
       if (item?.ability) {
         return item.ability === '*' ? 'All (*)' : item.ability;
       }
       const key = this.permissionKey(item);
       if (key === '*') return 'All (*)';
-      if (key.includes(':')) {
-        const ability = key.slice(key.indexOf(':') + 1);
-        return ability === '*' ? 'All (*)' : ability || key;
-      }
-      return item?.label || key;
+      if (key.includes(':')) return key;
+      return key || String(item?.id || '');
     };
     self.groupSelectedCount = function groupSelectedCount(group) {
       if (!group?.items) return 0;
@@ -2004,6 +2131,7 @@
       open: false,
       cursor: 0,
       _syncing: false,
+      dropdownStyle: {},
 
       init() {
         this.syncFromValue();
@@ -2014,6 +2142,19 @@
             this.syncFromValue();
           },
         );
+        bindFixedDropdownListeners(this);
+      },
+
+      destroy() {
+        unbindFixedDropdownListeners(this);
+      },
+
+      repositionDropdown() {
+        const anchor = this.$refs.control || this.$el;
+        this.dropdownStyle = fixedDropdownStyle(anchor, this.$refs.list, {
+          maxHeight: 256,
+          zIndex: 1100,
+        });
       },
 
       get disabled() {
@@ -2075,17 +2216,22 @@
 
       openDropdown() {
         if (this.disabled) return;
+        this.repositionDropdown();
         this.open = true;
         this.cursor = 0;
         if (!this.multiple) {
           this.query = '';
         }
-        this.$nextTick(() => this.$refs.search?.focus());
+        this.$nextTick(() => {
+          this.repositionDropdown();
+          this.$refs.search?.focus();
+        });
       },
 
       close() {
         this.open = false;
         this.cursor = 0;
+        this.dropdownStyle = {};
         if (!this.multiple) {
           this.query = this.selectedLabel;
         } else {
@@ -2122,6 +2268,7 @@
           // Typing clears the current single selection until an option is picked.
           this.commit('');
         }
+        this.$nextTick(() => this.repositionDropdown());
       },
 
       onKeydown(event) {
@@ -2188,11 +2335,15 @@
           this.query = '';
           this.open = true;
           this.cursor = 0;
-          this.$nextTick(() => this.$refs.search?.focus());
+          this.$nextTick(() => {
+            this.repositionDropdown();
+            this.$refs.search?.focus();
+          });
         } else {
           this.commit(value);
           this.query = opt.label;
           this.open = false;
+          this.dropdownStyle = {};
         }
       },
 
@@ -2207,12 +2358,66 @@
         this.commit(this.multiple ? [] : '');
         this.query = '';
         this.open = false;
+        this.dropdownStyle = {};
         this.$nextTick(() => this.$refs.search?.focus());
       },
     };
   }
 
   window.shamarCombobox = createShamarCombobox;
+
+  /**
+   * Dropdown menu that uses position:fixed so it escapes overflow:hidden /
+   * overflow:auto ancestors (list tables, cards, scroll roots).
+   */
+  function createShamarFloatingMenu() {
+    return {
+      open: false,
+      panelStyle: {},
+
+      init() {
+        bindFixedDropdownListeners(this);
+      },
+
+      destroy() {
+        unbindFixedDropdownListeners(this);
+      },
+
+      toggle() {
+        if (this.open) {
+          this.close();
+          return;
+        }
+        this.open = true;
+        this.$nextTick(() => this.repositionDropdown());
+      },
+
+      close() {
+        this.open = false;
+        this.panelStyle = {};
+      },
+
+      repositionDropdown() {
+        const trigger = this.$refs.trigger;
+        const panel = this.$refs.panel;
+        if (!trigger) return;
+        const width = panel?.offsetWidth || 152;
+        this.panelStyle = {
+          ...fixedDropdownStyle(trigger, panel, {
+            width,
+            align: 'end',
+            maxHeight: Math.min(panel?.offsetHeight || 320, window.innerHeight - 16),
+            zIndex: 1100,
+          }),
+          // Keep natural panel width instead of stretching to trigger width.
+          width: `${Math.round(width)}px`,
+          minWidth: '9.5rem',
+        };
+      },
+    };
+  }
+
+  window.shamarFloatingMenu = createShamarFloatingMenu;
 
   function registerShamarAlpineComponents() {
     if (registerShamarAlpineComponents._done) return;
@@ -2229,6 +2434,8 @@
     window.shamarForm = createShamarForm;
     Alpine.data('shamarForm', (cfg) => createShamarForm(cfg));
     Alpine.data('shamarCombobox', (cfg) => createShamarCombobox(cfg));
+    window.shamarFloatingMenu = createShamarFloatingMenu;
+    Alpine.data('shamarFloatingMenu', () => createShamarFloatingMenu());
 
     window.shamarTabs = (active = 1) => ({ active: Number(active) || 1 });
     Alpine.data('shamarTabs', (active = 1) => window.shamarTabs(active));
@@ -2277,13 +2484,14 @@
       perPage:
         cfg.perPage === 'all' || Number(cfg.perPage) === Number(cfg.allPerPage)
           ? 'all'
-          : String(cfg.perPage || 15),
+          : String(cfg.perPage || cfg.defaultPerPage || 15),
       trashed: cfg.trashed || false,
       headers: Array.isArray(cfg.headers) ? cfg.headers : [],
       basePath: cfg.basePath || '',
       slug: cfg.slug || '',
       view: cfg.view || 'table',
       allPerPage: cfg.allPerPage || 1000,
+      defaultPerPage: String(cfg.defaultPerPage || 15),
       panelOpen: false,
       groupOpen: false,
       openFilterField: null,
@@ -2316,7 +2524,9 @@
             params.set('direction', this.direction);
           }
         }
-        if (this.perPage && this.perPage !== '15') params.set('perPage', String(this.perPage));
+        if (this.perPage && this.perPage !== String(this.defaultPerPage || 15)) {
+          params.set('perPage', String(this.perPage));
+        }
         if (fieldChips.length) {
           params.set('filters', JSON.stringify(fieldChips));
         } else if (this.filtersLockedEmpty) {
@@ -2697,10 +2907,11 @@
       fullscreen: false,
       x: 0,
       y: 0,
-      width: 720,
-      height: 520,
-      minWidth: 400,
-      minHeight: 280,
+      /** Default record dialog ≈ Tailwind max-w-6xl (72rem). */
+      width: 1152,
+      height: 720,
+      minWidth: 560,
+      minHeight: 320,
       dragging: false,
       resizing: false,
       dragOffsetX: 0,
@@ -2872,6 +3083,19 @@
         return `width: ${this.width}px; height: ${this.height}px; transform: translate(calc(-50% + ${this.x}px), calc(-50% + ${this.y}px));`;
       },
 
+      /** Size record dialogs to at least max-w-6xl, clamped to the viewport. */
+      fitRecordDialogSize() {
+        const margin = 24;
+        const preferW = 1152;
+        const preferH = 720;
+        this.minWidth = 560;
+        this.minHeight = 320;
+        this.width = Math.min(preferW, Math.max(this.minWidth, window.innerWidth - margin));
+        this.height = Math.min(preferH, Math.max(this.minHeight, window.innerHeight - margin));
+        this.x = 0;
+        this.y = 0;
+      },
+
       async openModal(detail) {
         if (!this.open) {
           this._previousFocus = document.activeElement;
@@ -2905,10 +3129,7 @@
         this.fullPageUrl = withoutEmbed(detail.url);
         this.resourceSlug = nextSlug;
         this.fullscreen = false;
-        this.width = 720;
-        this.height = 520;
-        this.x = 0;
-        this.y = 0;
+        this.fitRecordDialogSize();
         if (!replace) {
           _dialogOnResult = typeof detail.onResult === 'function' ? detail.onResult : null;
         }
@@ -3062,7 +3283,11 @@
         const prev = this._previousFocus;
         this._previousFocus = null;
         if (prev && typeof prev.focus === 'function') {
-          prev.focus();
+          try {
+            prev.focus({ preventScroll: true });
+          } catch {
+            prev.focus();
+          }
         }
       },
 
@@ -3080,7 +3305,9 @@
           await this.restoreDialog(item);
           return;
         }
-        const shouldRefresh = !options.skipRefresh && !!this.currentEmbedUrl;
+        // Closing without a mutation should not reload the parent (keeps scroll).
+        // Pass { refresh: true } when the parent list must reload.
+        const shouldRefresh = options.refresh === true;
         this.close();
         if (shouldRefresh) {
           reloadParentView();
@@ -3262,6 +3489,7 @@
               return;
             }
             this.close();
+            saveScrollPosition();
             window.location.reload();
           } catch {
             showToast('error', {
@@ -3388,6 +3616,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    restoreScrollPosition();
     if (!consumeInitialFlash()) {
       consumeQueryFlash();
     }

@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{{ title || branding.brandName || brandName || 'Sign in' }}</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   @if(branding.fontPreconnect)
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -79,7 +80,8 @@
 
     .auth-brand__logo {
       display: block;
-      max-height: 2.75rem;
+      height: var(--shamar-logo-height, 2.75rem);
+      max-height: none;
       width: auto;
       object-fit: contain;
     }

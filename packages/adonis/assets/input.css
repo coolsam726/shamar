@@ -12,6 +12,9 @@
  */
 @source "../../../apps/**/*.{ts,js,edge}";
 
+/* Panel/resource contentMaxWidth tokens resolved at runtime. */
+@source inline("max-w-xs max-w-sm max-w-md max-w-lg max-w-xl max-w-2xl max-w-3xl max-w-4xl max-w-5xl max-w-6xl max-w-7xl max-w-full max-w-none max-w-prose max-w-screen-sm max-w-screen-md max-w-screen-lg max-w-screen-xl max-w-screen-2xl");
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
@@ -56,17 +59,17 @@
   --color-shamar-surface: #ffffff;
   --color-shamar-muted: #64748b;
 
-  /* Loom semantic tokens (brand-mapped to primary orange) */
+  /* Loom semantic tokens — panels stay neutral; brand soft is for accents only */
   --color-body: #475569;
   --color-body-subtle: #64748b;
   --color-heading: #0f172a;
   --color-neutral-primary: #ffffff;
-  --color-neutral-secondary: #fff4f0;
-  --color-neutral-tertiary: #fee9e2;
-  --color-default: #fdc9b8;
+  --color-neutral-secondary: #f8fafc;
+  --color-neutral-tertiary: #f1f5f9;
+  --color-default: #e2e8f0;
   --color-fg-brand: #f1511b;
   --color-fg-brand-strong: #a23512;
-  --color-brand-soft: #fee9e2;
+  --color-brand-soft: #fdc9b8;
   --color-brand-softer: #fee9e2;
   --color-fg-danger: #b91c1c;
   --color-danger-soft: #fef2f2;
@@ -98,13 +101,18 @@
   --color-toast-info-title: #ffffff;
   --color-toast-info-body: #dbeafe;
   --color-toast-info-icon: #eff6ff;
-  --color-shamar-shell: color-mix(in srgb, var(--color-primary-50) 35%, #ffffff);
+  --color-shamar-shell: color-mix(in srgb, var(--color-primary-50) 55%, #ffffff);
   --color-card-border: var(--color-gray-200);
-  --color-surface-hover: var(--color-neutral-tertiary);
-  --color-surface-header: color-mix(in srgb, var(--color-neutral-tertiary) 50%, transparent);
-  --color-surface-inset: color-mix(in srgb, var(--color-neutral-tertiary) 45%, transparent);
-  --color-surface-row-hover: color-mix(in srgb, var(--color-neutral-tertiary) 30%, transparent);
-  --color-badge-neutral: var(--color-neutral-tertiary);
+  --color-surface-hover: var(--color-gray-100);
+  --color-surface-header: var(--color-gray-50);
+  --color-surface-inset: var(--color-gray-50);
+  --color-surface-row-hover: color-mix(in srgb, var(--color-gray-100) 65%, transparent);
+  --color-badge-neutral: var(--color-gray-100);
+  --color-shamar-brand-panel: linear-gradient(135deg, var(--color-primary-500) 0%, color-mix(in srgb, var(--color-primary-500) 72%, var(--color-shamar-accent)) 100%);
+  --color-shamar-brand-panel-solid: var(--color-primary-500);
+  --color-shamar-brand-panel-fg: #ffffff;
+  --color-shamar-brand-panel-muted: rgb(255 255 255 / 72%);
+  --color-shamar-top-accent: var(--color-primary-500);
 }
 
 .dark {
@@ -161,6 +169,22 @@
 
 :where(.dark, .dark *) {
   color-scheme: dark;
+}
+
+/* Main column scrollport — block layout so bottom padding is part of scroll height. */
+.shamar-scroll-root {
+  display: block;
+  padding-bottom: 4rem;
+}
+
+@media (min-width: 768px) {
+  .shamar-scroll-root {
+    padding-bottom: 5rem;
+  }
+}
+
+.shamar-scroll-root > * + * {
+  margin-top: 1rem;
 }
 
 /* All native controls follow brand + light/dark tokens (including future inputs). */
@@ -261,56 +285,160 @@ button:disabled,
 
 .nav-item {
   color: var(--color-body);
+  border-radius: 0.5rem;
+  transition: background-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
 }
 @media (hover: hover) {
   .nav-item:hover {
-    background-color: var(--color-primary-100);
-    color: var(--color-fg-brand);
+    background-color: color-mix(in srgb, var(--color-primary-500) 18%, white);
+    color: var(--color-fg-brand-strong);
   }
 }
 .nav-item.nav-active {
-  background-color: var(--color-primary-200);
+  background-color: color-mix(in srgb, var(--color-primary-500) 28%, white);
   color: var(--color-fg-brand-strong);
   font-weight: 600;
+  box-shadow: inset 3px 0 0 0 var(--color-primary-500);
 }
 
 :where(.dark, .dark *) .nav-item:hover {
-  background-color: var(--color-surface-hover);
+  background-color: color-mix(in srgb, var(--color-primary-500) 22%, var(--color-gray-800));
   color: var(--color-heading);
 }
 
 :where(.dark, .dark *) .nav-item.nav-active {
-  background-color: var(--color-surface-inset);
+  background-color: color-mix(in srgb, var(--color-primary-500) 32%, var(--color-gray-800));
   color: var(--color-fg-brand);
   font-weight: 600;
+  box-shadow: inset 3px 0 0 0 var(--color-primary-400);
+}
+
+.shamar-brand-panel,
+.shamar-topbar {
+  box-shadow:
+    inset 0 3px 0 0 var(--color-shamar-top-accent),
+    0 1px 0 rgb(15 23 42 / 4%);
+}
+
+.shamar-brand-name {
+  color: var(--color-heading);
+  font-family: var(--shamar-font-family, inherit);
+  letter-spacing: -0.02em;
+}
+
+.shamar-topbar-link {
+  color: var(--color-body);
+  transition: background-color 140ms ease, color 140ms ease;
+}
+@media (hover: hover) {
+  .shamar-topbar-link:hover {
+    background-color: color-mix(in srgb, var(--color-primary-500) 18%, white);
+    color: var(--color-fg-brand-strong);
+  }
+}
+.shamar-topbar-link.is-active {
+  background-color: color-mix(in srgb, var(--color-primary-500) 28%, white);
+  color: var(--color-fg-brand-strong);
+  font-weight: 600;
+}
+
+.shamar-topbar-menu-item {
+  color: var(--color-body);
+}
+@media (hover: hover) {
+  .shamar-topbar-menu-item:hover {
+    background-color: color-mix(in srgb, var(--color-primary-500) 18%, white);
+    color: var(--color-fg-brand-strong);
+  }
+}
+.shamar-topbar-menu-item.is-active {
+  background-color: color-mix(in srgb, var(--color-primary-500) 28%, white);
+  color: var(--color-fg-brand-strong);
+  font-weight: 600;
+}
+
+:where(.dark, .dark *) .shamar-topbar-link:hover,
+:where(.dark, .dark *) .shamar-topbar-menu-item:hover {
+  background-color: color-mix(in srgb, var(--color-primary-500) 22%, var(--color-gray-800));
+  color: var(--color-heading);
+}
+:where(.dark, .dark *) .shamar-topbar-link.is-active,
+:where(.dark, .dark *) .shamar-topbar-menu-item.is-active {
+  background-color: color-mix(in srgb, var(--color-primary-500) 32%, var(--color-gray-800));
+  color: var(--color-fg-brand);
+}
+
+.shamar-dashboard-card {
+  transition: box-shadow 140ms ease, transform 140ms ease, border-color 140ms ease;
+}
+@media (hover: hover) {
+  .shamar-dashboard-card:hover {
+    border-color: var(--color-card-border);
+    background-color: var(--color-neutral-primary);
+    box-shadow:
+      0 2px 4px color-mix(in srgb, #0f172a 5%, transparent),
+      0 10px 24px color-mix(in srgb, #0f172a 8%, transparent);
+    transform: translateY(-1px);
+  }
+}
+.shamar-dashboard-card__icon {
+  background: var(--color-gray-100);
+  color: var(--color-fg-brand);
+  box-shadow: inset 0 0 0 1px var(--color-card-border);
+}
+@media (hover: hover) {
+  .group:hover .shamar-dashboard-card__icon {
+    background: var(--color-gray-100);
+    color: var(--color-fg-brand);
+    box-shadow: inset 0 0 0 1px var(--color-card-border);
+  }
 }
 
 @utility shamar-card {
   border-radius: 0.75rem;
   border: 1px solid var(--color-card-border);
   background-color: var(--color-neutral-primary);
+  overflow: hidden;
+  box-shadow:
+    0 1px 2px color-mix(in srgb, #0f172a 4%, transparent),
+    0 6px 18px color-mix(in srgb, #0f172a 5%, transparent);
 }
 
 fieldset.shamar-card {
   border: 1px solid var(--color-card-border);
+  border-radius: 0.75rem;
   margin: 0;
   min-width: 0;
   background-color: var(--color-neutral-primary);
+  overflow: hidden;
+  box-shadow:
+    0 1px 2px color-mix(in srgb, #0f172a 4%, transparent),
+    0 6px 18px color-mix(in srgb, #0f172a 5%, transparent);
 }
 
 :where(.dark, .dark *) .shamar-card,
 :where(.dark, .dark *) fieldset.shamar-card {
   background-color: var(--color-neutral-primary);
+  box-shadow:
+    0 1px 2px color-mix(in srgb, #000 28%, transparent),
+    0 8px 22px color-mix(in srgb, #000 22%, transparent);
 }
 
 /* Form Section — card with header / optional description + icon */
+.shamar-form-section.shamar-card {
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
 .shamar-form-section__header {
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
   padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--color-card-border);
-  background-color: var(--color-surface-header, var(--color-neutral-secondary));
+  background-color: var(--color-neutral-primary);
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
 }
 
 .shamar-form-section__header--centered {
@@ -452,7 +580,132 @@ fieldset.shamar-card {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 1rem;
+  padding: 1rem 1.25rem;
+}
+
+/*
+ * Embed forms/details: the dialog panel is already a white card.
+ * Flatten nested section/tab/wizard chrome for density.
+ */
+[data-shamar-embed-form] .shamar-card,
+[data-shamar-embed-detail] .shamar-card,
+[data-shamar-embed-form] fieldset.shamar-card,
+[data-shamar-embed-detail] fieldset.shamar-card {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  overflow: visible;
+}
+
+[data-shamar-embed-form] .shamar-form-section,
+[data-shamar-embed-detail] .shamar-form-section,
+[data-shamar-embed-form] .shamar-form-section--plain,
+[data-shamar-embed-detail] .shamar-form-section--plain {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+[data-shamar-embed-form] .shamar-form-section + .shamar-form-section,
+[data-shamar-embed-detail] .shamar-form-section + .shamar-form-section,
+[data-shamar-embed-form] .shamar-tabs + .shamar-form-section,
+[data-shamar-embed-detail] .shamar-tabs + .shamar-form-section,
+[data-shamar-embed-form] .shamar-form-section + .shamar-tabs,
+[data-shamar-embed-detail] .shamar-form-section + .shamar-tabs,
+[data-shamar-embed-form] .shamar-wizard + .shamar-form-section,
+[data-shamar-embed-detail] .shamar-wizard + .shamar-form-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-card-border);
+}
+
+[data-shamar-embed-form] .shamar-form-section__header,
+[data-shamar-embed-detail] .shamar-form-section__header {
+  padding: 0 0 0.65rem;
+  background: transparent;
+  border-bottom: 0;
+  border-radius: 0;
+}
+
+[data-shamar-embed-form] .shamar-form-section__body,
+[data-shamar-embed-detail] .shamar-form-section__body {
+  padding: 0;
+}
+
+[data-shamar-embed-form] .shamar-form-fieldset,
+[data-shamar-embed-detail] .shamar-form-fieldset {
+  border-left: 0;
+  border-right: 0;
+  border-radius: 0;
+  padding-left: 0;
+  padding-right: 0;
+  background: transparent;
+}
+
+[data-shamar-embed-form] .shamar-tabs--contained,
+[data-shamar-embed-detail] .shamar-tabs--contained {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+[data-shamar-embed-form] .shamar-tabs__list,
+[data-shamar-embed-detail] .shamar-tabs__list {
+  padding-left: 0;
+  padding-right: 0;
+  background: transparent;
+}
+
+[data-shamar-embed-form] .shamar-wizard,
+[data-shamar-embed-detail] .shamar-wizard {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+[data-shamar-embed-detail] .shamar-detail-grid {
+  gap: 0.75rem 1.25rem;
+}
+
+[data-shamar-embed-detail] .shamar-detail-cell {
+  border: 0;
+  padding: 0.35rem 0;
+}
+
+[data-shamar-embed-form] .shamar-form-section.shamar-card > .shamar-form-section__body:has(.shamar-m2m-table),
+[data-shamar-embed-detail] .shamar-form-section.shamar-card > .shamar-form-section__body:has(.shamar-m2m-table) {
+  padding: 0;
+}
+
+[data-shamar-embed-form] .shamar-form-section.shamar-card > .shamar-form-section__body:has(.shamar-m2m-table) .shamar-field-cell:has(.shamar-m2m-table) > .shamar-field__label-row,
+[data-shamar-embed-detail] .shamar-detail-cell:has(.shamar-m2m-table) > .shamar-detail__label-row {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+[data-shamar-embed-form] .shamar-m2m-table__toolbar,
+[data-shamar-embed-detail] .shamar-m2m-table__toolbar,
+[data-shamar-embed-form] .shamar-m2m-table__footer,
+[data-shamar-embed-detail] .shamar-m2m-table__footer {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+[data-shamar-embed-form] .shamar-m2m-table th:first-child,
+[data-shamar-embed-detail] .shamar-m2m-table th:first-child,
+[data-shamar-embed-form] .shamar-m2m-table td:first-child,
+[data-shamar-embed-detail] .shamar-m2m-table td:first-child {
+  padding-left: 0;
+}
+
+[data-shamar-embed-form] .shamar-m2m-table th:last-child,
+[data-shamar-embed-detail] .shamar-m2m-table th:last-child,
+[data-shamar-embed-form] .shamar-m2m-table td:last-child,
+[data-shamar-embed-detail] .shamar-m2m-table td:last-child {
+  padding-right: 0;
 }
 
 .shamar-embed-section + .shamar-embed-section {
@@ -671,6 +924,138 @@ fieldset.shamar-card {
   overflow: visible;
 }
 
+.shamar-list-card > :first-child {
+  border-top-left-radius: 0.75rem;
+  border-top-right-radius: 0.75rem;
+}
+
+.shamar-list-card > :last-child {
+  border-bottom-left-radius: 0.75rem;
+  border-bottom-right-radius: 0.75rem;
+}
+
+/* List table rows */
+.shamar-list-table-scroll table {
+  border-collapse: collapse;
+}
+
+.shamar-list-table-scroll tbody > tr.shamar-list-row > td {
+  border-bottom: 1px solid var(--color-card-border);
+}
+
+.shamar-list-table-scroll tbody > tr:last-child > td {
+  border-bottom: 0;
+}
+
+.shamar-list-row__actions {
+  overflow: visible;
+}
+
+.shamar-row-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.25rem;
+}
+
+.shamar-row-actions__inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+  color: var(--color-body);
+  text-decoration: none;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.shamar-row-actions__inline:hover {
+  background-color: var(--color-surface-hover);
+}
+
+.shamar-row-actions__inline.is-danger {
+  color: var(--color-fg-danger);
+}
+
+.shamar-row-actions__inline.is-danger:hover {
+  background-color: var(--color-danger-soft, color-mix(in srgb, var(--color-fg-danger) 12%, transparent));
+}
+
+.shamar-row-actions__menu {
+  position: relative;
+}
+
+.shamar-row-actions__trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 0;
+  border-radius: 0.375rem;
+  background: transparent;
+  color: var(--color-body-subtle);
+  cursor: pointer;
+}
+
+.shamar-row-actions__trigger:hover,
+.shamar-row-actions__trigger[aria-expanded="true"] {
+  background-color: var(--color-surface-hover);
+  color: var(--color-heading);
+}
+
+.shamar-row-actions__panel {
+  /* position/top/left applied via shamarFloatingMenu (fixed) to escape table overflow */
+  position: fixed;
+  z-index: 1100;
+  min-width: 9.5rem;
+  padding: 0.25rem;
+  border: 1px solid var(--color-card-border);
+  border-radius: 0.625rem;
+  background-color: var(--color-neutral-primary);
+  box-shadow: 0 12px 28px color-mix(in srgb, #000 14%, transparent);
+}
+
+.shamar-row-actions__item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 0;
+  border-radius: 0.375rem;
+  background: transparent;
+  color: var(--color-body);
+  font-size: 0.8125rem;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.shamar-action-icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.shamar-row-actions__item:hover {
+  background-color: var(--color-surface-hover);
+  color: var(--color-heading);
+}
+
+.shamar-row-actions__item.is-danger {
+  color: var(--color-fg-danger);
+}
+
+.shamar-row-actions__item.is-danger:hover {
+  background-color: var(--color-danger-soft, color-mix(in srgb, var(--color-fg-danger) 12%, transparent));
+}
+
 .shamar-list-toolbar,
 .shamar-bulk-bar {
   position: relative;
@@ -681,6 +1066,11 @@ fieldset.shamar-card {
   position: relative;
   z-index: 0;
   overflow-x: auto;
+}
+
+.shamar-list-pagination {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--color-card-border);
   border-bottom-left-radius: 0.75rem;
   border-bottom-right-radius: 0.75rem;
 }
@@ -1770,11 +2160,8 @@ select.shamar-input option {
 }
 
 .shamar-combobox__dropdown {
-  position: absolute;
+  /* position/top/left/width applied via fixedDropdownStyle (fixed) to escape card overflow */
   z-index: 40;
-  top: calc(100% + 0.25rem);
-  left: 0;
-  right: 0;
   max-height: 16rem;
   overflow: auto;
   padding: 0.35rem;
@@ -1943,15 +2330,18 @@ select.shamar-input option {
 .shamar-m2m-checkboxes,
 .shamar-m2m-table {
   width: 100%;
+  min-width: 0;
 }
 
-.shamar-m2m-table__card {
-  overflow: visible;
+.shamar-m2m-table__panel {
+  width: 100%;
+  background: transparent;
 }
 
 .shamar-m2m-table__toolbar {
   position: relative;
   z-index: 2;
+  background: transparent;
 }
 
 .shamar-m2m-table__add {
@@ -1962,11 +2352,66 @@ select.shamar-input option {
   z-index: 50;
 }
 
+.shamar-m2m-table__footer {
+  background: transparent;
+}
+
+/* Relation tables sit flush in section cards — no nested card chrome. */
+.shamar-form-section.shamar-card > .shamar-form-section__body:has(.shamar-m2m-table) {
+  padding-left: 0;
+  padding-right: 0;
+  padding-bottom: 0;
+}
+
+.shamar-form-section.shamar-card > .shamar-form-section__body:has(.shamar-m2m-table) .shamar-form-grid {
+  gap: 0;
+}
+
+.shamar-form-section.shamar-card > .shamar-form-section__body:has(.shamar-m2m-table) .shamar-field-cell:has(.shamar-m2m-table) > .shamar-field__label-row {
+  padding: 0 1.25rem 0.75rem;
+  margin-bottom: 0;
+}
+
+.shamar-form-section.shamar-card > .shamar-form-section__body:has(.shamar-m2m-table) .shamar-field-cell:has(.shamar-m2m-table) > .shamar-field__help,
+.shamar-form-section.shamar-card > .shamar-form-section__body:has(.shamar-m2m-table) .shamar-field-cell:has(.shamar-m2m-table) > .shamar-field__error {
+  padding: 0 1.25rem 0.75rem;
+}
+
+/* Detail cells: same full-bleed treatment. */
+.shamar-detail-cell:has(.shamar-m2m-table) {
+  padding-left: 0;
+  padding-right: 0;
+  padding-bottom: 0;
+  border-right-width: 0;
+}
+
+.shamar-detail-cell:has(.shamar-m2m-table) > .shamar-detail__label-row {
+  padding: 0 0.75rem 0.5rem;
+}
+
+.shamar-detail-cell:has(.shamar-m2m-table) > .shamar-field__value {
+  margin-top: 0;
+}
+
 /* Let relation dropdowns escape form section cards. */
 .shamar-form-section:has(.shamar-m2m-table),
 .shamar-form-section:has(.shamar-m2o),
 .shamar-form-section:has(.shamar-m2m) {
   overflow: visible;
+}
+
+.shamar-form-section.shamar-card:has(.shamar-m2m-table) > .shamar-form-section__header,
+.shamar-form-section.shamar-card:has(.shamar-m2o) > .shamar-form-section__header,
+.shamar-form-section.shamar-card:has(.shamar-m2m) > .shamar-form-section__header {
+  border-top-left-radius: 0.75rem;
+  border-top-right-radius: 0.75rem;
+}
+
+.shamar-form-section.shamar-card:has(.shamar-m2m-table) > .shamar-form-section__body:last-child,
+.shamar-form-section.shamar-card:has(.shamar-m2o) > .shamar-form-section__body:last-child,
+.shamar-form-section.shamar-card:has(.shamar-m2m) > .shamar-form-section__body:last-child {
+  border-bottom-left-radius: 0.75rem;
+  border-bottom-right-radius: 0.75rem;
 }
 
 .shamar-m2m-checkboxes__body--framed {
@@ -2079,16 +2524,16 @@ select.shamar-input option {
 }
 
 .shamar-list-refresh:hover {
-  color: var(--color-fg-brand);
-  border-color: var(--color-fg-brand);
-  background: var(--color-brand-softer);
+  color: var(--color-heading);
+  border-color: var(--color-default);
+  background: var(--color-surface-hover);
 }
 
 .shamar-list-refresh.is-auto {
   color: var(--color-fg-brand);
   border-color: var(--color-fg-brand);
-  background: var(--color-brand-softer);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-fg-brand) 35%, transparent);
+  background: var(--color-neutral-primary);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-fg-brand) 25%, transparent);
 }
 
 .shamar-list-refresh:disabled,
@@ -2298,6 +2743,10 @@ select.shamar-input option {
   color: var(--color-heading);
   background: var(--color-neutral-primary);
   border-color: var(--color-card-border);
+}
+.shamar-form-section.is-collapsed > .shamar-form-section__header {
+  border-bottom-width: 0;
+  border-radius: 0.75rem;
 }
 .shamar-form-section__chevron {
   margin-left: auto;

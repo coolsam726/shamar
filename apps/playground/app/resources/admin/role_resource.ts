@@ -22,6 +22,8 @@ export default class RoleResource extends Resource {
   static override navigationGroup = 'System'
   static override navigationSort = 6
   static override icon = 'shield'
+  /** Demo: resource override of panel defaultPerPage (25). */
+  static override defaultPerPage = 10
 
   static override form() {
     return form((f) => {
@@ -61,6 +63,8 @@ export default class RoleResource extends Resource {
             TextEntry.make('name'),
             TextEntry.make('slug'),
             TextEntry.make('description').columnSpanFull(),
+            // Same field name as form PermissionsAssignment — show page renders
+            // the readonly checkbox matrix (labels/names), not raw ids.
             TextEntry.make('permissionIds').label('Permissions').columnSpanFull(),
             TextEntry.make('active').boolean(),
           ]),

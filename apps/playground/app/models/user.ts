@@ -16,6 +16,8 @@ export interface UserAttrs {
   externalId?: string | null
   /** LDAP domain config id. */
   ldapDomainId?: string | null
+  /** Optional company for branding / tenancy demos. */
+  companyId?: string | null
 }
 
 async function hasher() {
@@ -40,6 +42,7 @@ const userSchema = new Schema<UserAttrs>(
     authProvider: { type: String, enum: ['local', 'ldap'], default: 'local', index: true },
     externalId: { type: String, default: null, sparse: true, unique: true, index: true },
     ldapDomainId: { type: String, default: null, index: true },
+    companyId: { type: String, default: null, index: true },
   },
   {
     timestamps: true,

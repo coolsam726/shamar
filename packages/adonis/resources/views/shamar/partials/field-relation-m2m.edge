@@ -58,8 +58,10 @@
   <div
     x-show="open"
     x-cloak
+    x-ref="dropdown"
     x-transition.opacity.duration.100ms
-    class="shamar-m2m__dropdown absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-auto rounded-md border border-default bg-neutral-primary text-sm shadow-lg"
+    :style="dropdownStyle"
+    class="shamar-m2m__dropdown z-50 max-h-72 overflow-auto rounded-md border border-default bg-neutral-primary text-sm shadow-lg"
     role="listbox"
   >
     <template x-if="loading">

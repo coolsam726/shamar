@@ -25,7 +25,7 @@
   <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <div class="min-w-0 flex items-center gap-3 flex-wrap">
       <div class="min-w-0">
-        <h1 class="text-xl font-semibold text-heading truncate">{{ pageTitle }}</h1>
+        <h1 class="text-2xl font-extrabold tracking-tight text-heading truncate">{{ pageTitle }}</h1>
         @if(pageSubtitle)
           <p class="mt-1 text-sm text-body-subtle">{{ pageSubtitle }}</p>
         @endif
@@ -115,9 +115,7 @@
         >Delete</button>
         @endif
       @else
-        @if(showEditButton)
-          <a href="{{ basePath }}/{{ resource.slug }}/{{ id }}/edit" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-md bg-fg-brand hover:opacity-90 transition-opacity">Edit</a>
-        @endif
+        {{-- List / other modes: no record-scoped Edit (row actions + show page handle that). --}}
         @if(showBackToList)
           <a href="{{ basePath }}/{{ resource.slug }}" data-shamar-list-href="{{ resource.slug }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-default text-body rounded-md hover:bg-surface-hover transition">Back to list</a>
         @endif

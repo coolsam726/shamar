@@ -27,6 +27,19 @@
       @endif
     @elseif(field.format === 'textarea' || field.type === 'textarea')
       <pre class="shamar-textarea-entry">{{ detailValue(record, field) }}</pre>
+    @elseif(relationUi && relationUi[field.name] && (relationUi[field.name].widget === 'table' || relationUi[field.name].kind === 'hasMany' || field.type === 'relationTable'))
+      <div class="mt-1 w-full">
+        @!component('shamar::partials/field-relation-table', {
+          field: field,
+          relationConfig: relationUi[field.name],
+        })
+      </div>
+    @elseif(relationUi && relationUi[field.name] && relationUi[field.name].widget === 'checkboxList')
+      {{-- Prefer the form PermissionsAssignment / M2M matrix (readonly) over badge dumps of raw ids. --}}
+      @!component('shamar::partials/field-relation-checkbox', {
+        field: field,
+        relationConfig: relationUi[field.name],
+      })
     @elseif(field.format === 'badge' || field.type === 'tags')
       @let(badges = badgeValues(record, field))
       @if(badges.length)
@@ -38,18 +51,6 @@
       @else
         —
       @endif
-    @elseif(relationUi && relationUi[field.name] && (relationUi[field.name].widget === 'table' || relationUi[field.name].kind === 'hasMany' || field.type === 'relationTable'))
-      <div class="mt-1 w-full">
-        @!component('shamar::partials/field-relation-table', {
-          field: field,
-          relationConfig: relationUi[field.name],
-        })
-      </div>
-    @elseif(relationUi && relationUi[field.name] && relationUi[field.name].widget === 'checkboxList')
-      @!component('shamar::partials/field-relation-checkbox', {
-        field: field,
-        relationConfig: relationUi[field.name],
-      })
     @elseif(field.copyable)
       <span class="shamar-copyable" x-data>
         <span>{{ detailValue(record, field) }}</span>

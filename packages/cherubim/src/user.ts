@@ -8,6 +8,7 @@ export function toCherubimUser(
     id: string;
     authProvider?: string;
     ldapDomainId?: string;
+    companyId?: string;
     apiKeyId?: string;
     apiKeyAbilities?: string[];
   },
@@ -26,6 +27,7 @@ export function toCherubimUser(
     roleIds: sanitizeRoleIds(options?.roleIds ?? input.roleIds ?? []),
     authProvider: input.authProvider,
     ldapDomainId: input.ldapDomainId,
+    companyId: input.companyId,
     apiKeyId: input.apiKeyId,
     apiKeyAbilities: input.apiKeyAbilities,
   };

@@ -1,5 +1,6 @@
 import type { ListQuery, PaginatedResult, ResourceMeta } from '@shamar/core';
 import {
+  DEFAULT_LIST_PER_PAGE,
   formatCurrencyValue,
   getRecordValue,
   resolveRelationDisplayBinding,
@@ -57,6 +58,7 @@ export function normalizeListQuery(raw: ListViewQuery, defaults?: { perPage?: nu
   const groupBy =
     typeof raw.groupBy === 'string' ? raw.groupBy.trim() || undefined : undefined;
 
+  const fallbackPerPage = defaults?.perPage ?? DEFAULT_LIST_PER_PAGE;
   const perPageRaw = raw.perPage;
   const wantsAll =
     perPageRaw === 'all' || String(perPageRaw).toLowerCase() === 'all';
@@ -64,7 +66,7 @@ export function normalizeListQuery(raw: ListViewQuery, defaults?: { perPage?: nu
     ? LIST_ALL_RECORDS_PER_PAGE
     : Math.min(
         LIST_ALL_RECORDS_PER_PAGE,
-        Math.max(5, Number(perPageRaw) || defaults?.perPage || 15),
+        Math.max(5, Number(perPageRaw) || fallbackPerPage),
       );
   const page = Math.max(1, Number(raw.page) || 1);
 
@@ -84,9 +86,11 @@ export function normalizeListQuery(raw: ListViewQuery, defaults?: { perPage?: nu
 export function buildListQueryString(
   query: ListViewQuery = {},
   overrides: ListViewQuery = {},
+  options?: { defaultPerPage?: number },
 ): string {
   const merged = { ...query, ...overrides };
   const params = new URLSearchParams();
+  const defaultPerPage = options?.defaultPerPage ?? DEFAULT_LIST_PER_PAGE;
 
   const search = merged.search != null ? String(merged.search).trim() : '';
   if (search) params.set('search', search);
@@ -108,7 +112,7 @@ export function buildListQueryString(
     params.set('perPage', 'all');
   } else {
     const perPage = Number(perPageRaw);
-    if (perPage && perPage !== 15) params.set('perPage', String(perPage));
+    if (perPage && perPage !== defaultPerPage) params.set('perPage', String(perPage));
   }
 
   const page = Number(merged.page);
@@ -136,8 +140,9 @@ export function listResourcePath(
   slug: string,
   query: ListViewQuery = {},
   overrides: ListViewQuery = {},
+  options?: { defaultPerPage?: number },
 ): string {
-  return `${basePath}/${slug}${buildListQueryString(query, overrides)}`;
+  return `${basePath}/${slug}${buildListQueryString(query, overrides, options)}`;
 }
 
 function paginationWindow(current: number, pageCount: number): Array<number | 'ellipsis'> {
@@ -169,7 +174,9 @@ export function buildPaginationContext(
   slug: string,
   query: ListViewQuery,
   result: PaginatedResult,
+  options?: { defaultPerPage?: number },
 ): PaginationContext {
+  const pathOpts = { defaultPerPage: options?.defaultPerPage };
   const links: PaginationLink[] = paginationWindow(result.page, result.pageCount).map(
     (entry) => {
       if (entry === 'ellipsis') {
@@ -180,7 +187,7 @@ export function buildPaginationContext(
         page: entry,
         label: String(entry),
         active: entry === result.page,
-        href: listResourcePath(basePath, slug, query, { page: entry }),
+        href: listResourcePath(basePath, slug, query, { page: entry }, pathOpts),
       };
     },
   );
@@ -192,11 +199,11 @@ export function buildPaginationContext(
     formAction: `${basePath}/${slug}`,
     prevHref:
       result.page > 1
-        ? listResourcePath(basePath, slug, query, { page: result.page - 1 })
+        ? listResourcePath(basePath, slug, query, { page: result.page - 1 }, pathOpts)
         : undefined,
     nextHref:
       result.page < result.pageCount
-        ? listResourcePath(basePath, slug, query, { page: result.page + 1 })
+        ? listResourcePath(basePath, slug, query, { page: result.page + 1 }, pathOpts)
         : undefined,
     links,
   };

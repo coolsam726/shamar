@@ -1,6 +1,14 @@
 import type { ShamarHttpContext } from '../context.js';
-import type { ResourceRegistry, ResourceMeta } from '@shamar/core';
-import { resolveGridItemStyle, isValidationException, relationUsesListTable } from '@shamar/core';
+import type { ResourceRegistry, ResourceMeta, PageMeta } from '@shamar/core';
+import {
+  resolveDefaultPerPage,
+  resolveGridItemStyle,
+  resolvePerPageOptions,
+  isValidationException,
+  relationUsesListTable,
+  isFormPage,
+  validateFormData,
+} from '@shamar/core';
 import { sanitizeStringIds } from '@shamar/cherubim';
 import type { Authorizer } from '@shamar/cherubim';
 import { Authorizer as AuthorizerClass } from '@shamar/cherubim';
@@ -73,8 +81,10 @@ export class AdminController {
   private readonly resources: ResourceController;
   private readonly basePath: string;
   private readonly registry: ResourceRegistry;
+  private readonly pages: import('@shamar/core').PageRegistry;
   private readonly panelBranding: ShamarConfig['branding'];
   private readonly panelContentMaxWidth?: string;
+  private readonly panelDefaultPerPage?: number;
   private readonly authorizer: Authorizer;
 
   constructor(
@@ -83,11 +93,17 @@ export class AdminController {
     authorizer?: Authorizer,
   ) {
     this.registry = panel.registry;
+    this.pages = panel.pages;
     this.basePath = panel.path;
     this.panelBranding = panel.config.branding ?? config.branding;
     this.panelContentMaxWidth = panel.config.contentMaxWidth;
+    this.panelDefaultPerPage = panel.config.defaultPerPage;
     this.resources = new ResourceController(panel.adapter);
     this.authorizer = authorizer ?? new AuthorizerClass();
+  }
+
+  private resolveListDefaultPerPage(meta: ResourceMeta): number {
+    return resolveDefaultPerPage(meta.defaultPerPage, this.panelDefaultPerPage);
   }
 
   private isAuthContext(
@@ -160,7 +176,7 @@ export class AdminController {
     return authCtx;
   }
 
-  private shellOpts(
+  private async shellOpts(
     ctx: ShamarHttpContext,
     authCtx: AuthorizationContext,
     extras: {
@@ -199,6 +215,7 @@ export class AdminController {
     return buildShellContext({
       config: this.config,
       registry: this.registry,
+      pages: this.pages,
       basePath: this.basePath,
       branding: this.panelBranding,
       panelContentMaxWidth: this.panelContentMaxWidth,
@@ -221,16 +238,22 @@ export class AdminController {
     if (!this.isAuthContext(authResult)) return authResult;
     const authCtx = authResult;
 
-    const shell = this.shellOpts(ctx, authCtx, { pageTitle: 'Dashboard' });
+    const shell = await this.shellOpts(ctx, authCtx, { pageTitle: 'Dashboard' });
     const dashboardCards = shell.menuRoots.filter((root) => root.label !== 'Dashboard');
 
     return ctx.view.render('shamar::dashboard', {
       ...shell,
       dashboardCards,
+      pageSubtitle: 'Jump into a resource to manage your data.',
     });
   }
 
   async index(ctx: ShamarHttpContext, options?: { asJson?: boolean }) {
+    const pageMeta = this.pages.get(ctx.params.slug);
+    if (pageMeta) {
+      return this.renderPage(ctx, pageMeta, options);
+    }
+
     const meta = this.requireResource(ctx);
     const authResult = await this.ensureResourceAction(ctx, meta, 'viewAny', undefined, options?.asJson);
     if (!this.isAuthContext(authResult)) return authResult;
@@ -243,7 +266,8 @@ export class AdminController {
     const hasFiltersParam = filtersParam !== undefined && filtersParam !== null;
     const hasGroupByParam = groupByParam !== undefined && groupByParam !== null;
 
-    const normalized = normalizeListQuery(rawQuery);
+    const defaultPerPage = this.resolveListDefaultPerPage(meta);
+    const normalized = normalizeListQuery(rawQuery, { perPage: defaultPerPage });
 
     if (!hasFiltersParam && meta.defaultFilters?.length) {
       normalized.filters = resolveDefaultFilters(meta, listHeaders);
@@ -283,10 +307,11 @@ export class AdminController {
       meta,
       query: rawQuery,
       result,
+      defaultPerPage,
     });
 
     const policy = resourcePolicyFlags(this.authorizer, authCtx, this.registry, meta);
-    const shell = this.shellOpts(ctx, authCtx, {
+    const shell = await this.shellOpts(ctx, authCtx, {
       meta,
       pageTitle: meta.label,
       showCreateButton: policy.create,
@@ -315,6 +340,8 @@ export class AdminController {
       pagination,
       listHeaders,
       listAllPerPage: LIST_ALL_RECORDS_PER_PAGE,
+      defaultPerPage,
+      perPageOptions: resolvePerPageOptions(defaultPerPage),
       filtersLockedEmpty: hasFiltersParam && !(normalized.filters?.length),
       groupLockedEmpty: hasGroupByParam && !displayGroupBy,
       bulkActions: resourceActionsFor(meta, 'bulk', policy),
@@ -323,6 +350,8 @@ export class AdminController {
   }
 
   async create(ctx: ShamarHttpContext, options?: { asJson?: boolean }) {
+    const pageRedirect = this.redirectPageSlugAwayFromResourceRoutes(ctx, options?.asJson);
+    if (pageRedirect) return pageRedirect;
     const meta = this.requireResource(ctx);
     const authResult = await this.ensureResourceAction(ctx, meta, 'create', undefined, options?.asJson);
     if (!this.isAuthContext(authResult)) return authResult;
@@ -334,7 +363,7 @@ export class AdminController {
 
     const embed = this.isEmbed(ctx);
     const policy = resourcePolicyFlags(this.authorizer, authCtx, this.registry, meta);
-    const shell = this.shellOpts(ctx, authCtx, {
+    const shell = await this.shellOpts(ctx, authCtx, {
       meta,
       pageTitle: `New ${meta.singularLabel}`,
       showBackToList: false,
@@ -371,6 +400,11 @@ export class AdminController {
   }
 
   async store(ctx: ShamarHttpContext, options?: { asJson?: boolean }) {
+    const pageMeta = this.pages.get(ctx.params.slug);
+    if (pageMeta) {
+      return this.savePage(ctx, pageMeta, options);
+    }
+
     const meta = this.requireResource(ctx);
     const authResult = await this.ensureResourceAction(ctx, meta, 'create', undefined, options?.asJson);
     if (!this.isAuthContext(authResult)) return authResult;
@@ -422,6 +456,8 @@ export class AdminController {
   }
 
   async show(ctx: ShamarHttpContext, options?: { asJson?: boolean }) {
+    const pageRedirect = this.redirectPageSlugAwayFromResourceRoutes(ctx, options?.asJson);
+    if (pageRedirect) return pageRedirect;
     const meta = this.requireResource(ctx);
     const { id } = ctx.params;
     const record = await this.resources.show(meta, id);
@@ -439,7 +475,7 @@ export class AdminController {
     const embed = this.isEmbed(ctx);
     const title = recordTitle(meta, record);
     const policy = resourcePolicyFlags(this.authorizer, authCtx, this.registry, meta, record);
-    const shell = this.shellOpts(ctx, authCtx, {
+    const shell = await this.shellOpts(ctx, authCtx, {
       meta,
       record,
       pageTitle: title,
@@ -474,6 +510,8 @@ export class AdminController {
   }
 
   async edit(ctx: ShamarHttpContext, options?: { asJson?: boolean }) {
+    const pageRedirect = this.redirectPageSlugAwayFromResourceRoutes(ctx, options?.asJson);
+    if (pageRedirect) return pageRedirect;
     const meta = this.requireResource(ctx);
     const { id } = ctx.params;
     const record = await this.resources.show(meta, id);
@@ -489,7 +527,7 @@ export class AdminController {
     const title = recordTitle(meta, record);
     const navQuery = recordNavQuery(this.listQuery(ctx));
     const policy = resourcePolicyFlags(this.authorizer, authCtx, this.registry, meta, record);
-    const shell = this.shellOpts(ctx, authCtx, {
+    const shell = await this.shellOpts(ctx, authCtx, {
       meta,
       record,
       pageTitle: `Edit ${title}`,
@@ -532,6 +570,11 @@ export class AdminController {
   }
 
   async formState(ctx: ShamarHttpContext) {
+    const pageMeta = this.pages.get(ctx.params.slug);
+    if (pageMeta?.kind === 'form') {
+      return this.pageFormState(ctx, pageMeta);
+    }
+
     const meta = this.requireResource(ctx);
     const body = ctx.request.body() as {
       operation?: string;
@@ -845,6 +888,8 @@ export class AdminController {
   }
 
   async update(ctx: ShamarHttpContext, options?: { asJson?: boolean }) {
+    const pageRedirect = this.redirectPageSlugAwayFromResourceRoutes(ctx, options?.asJson);
+    if (pageRedirect) return pageRedirect;
     const meta = this.requireResource(ctx);
     const { id } = ctx.params;
 
@@ -894,6 +939,8 @@ export class AdminController {
   }
 
   async destroy(ctx: ShamarHttpContext, options?: { asJson?: boolean }) {
+    const pageRedirect = this.redirectPageSlugAwayFromResourceRoutes(ctx, options?.asJson);
+    if (pageRedirect) return pageRedirect;
     const meta = this.requireResource(ctx);
     const { id } = ctx.params;
     const record = await this.resources.show(meta, id);
@@ -1120,6 +1167,22 @@ export class AdminController {
     return this.registry.require(ctx.params.slug);
   }
 
+  /**
+   * Resource CRUD routes (`/:slug/:id/edit`, etc.) must not treat page slugs as
+   * resources. Form/list/custom pages live at `GET|POST /:slug` only.
+   */
+  private redirectPageSlugAwayFromResourceRoutes(
+    ctx: ShamarHttpContext,
+    asJson = false,
+  ): unknown | null {
+    const slug = ctx.params.slug as string | undefined;
+    if (!slug || !this.pages.has(slug)) return null;
+    if (asJson || this.wantsJson(ctx, asJson)) {
+      return ctx.response.notFound({ message: 'Not a resource' });
+    }
+    return ctx.response.redirect(`${this.basePath}/${slug}`);
+  }
+
   private withPolicyScope(
     authCtx: AuthorizationContext,
     meta: ResourceMeta,
@@ -1283,7 +1346,7 @@ export class AdminController {
       meta,
       options.record,
     );
-    const shell = this.shellOpts(ctx, authCtx, {
+    const shell = await this.shellOpts(ctx, authCtx, {
       meta,
       record: options.record,
       pageTitle: title,
@@ -1572,5 +1635,426 @@ export class AdminController {
     }
 
     return data;
+  }
+
+  private pageRequestContext(
+    ctx: ShamarHttpContext,
+    authCtx: AuthorizationContext,
+  ): import('@shamar/core').PageRequestContext {
+    return {
+      user: authCtx.user,
+      panelId: this.panel.id,
+      input: ctx.request.all() as Record<string, unknown>,
+    };
+  }
+
+  private formPageAsResourceMeta(page: PageMeta): ResourceMeta {
+    return {
+      slug: page.slug,
+      label: page.label,
+      singularLabel: page.label,
+      model: 'Page',
+      recordTitleField: 'id',
+      fields: page.fields ?? [],
+      form: page.form ?? { fields: [], sections: [], schema: [] },
+      columns: [],
+      infolist: { entries: [], sections: [], schema: [] },
+      hasExplicitInfolist: false,
+      actions: page.actions,
+      searchableFields: [],
+      contentMaxWidth: page.contentMaxWidth,
+      defaultPerPage: page.defaultPerPage,
+    };
+  }
+
+  private async ensurePageAccess(
+    ctx: ShamarHttpContext,
+    page: PageMeta,
+    asJson = false,
+  ): Promise<AuthorizationContext | unknown> {
+    const authResult = await this.ensureAuthenticated(ctx, asJson);
+    if (!this.isAuthContext(authResult)) return authResult;
+    const PageClass = this.pages.pageClass(page.slug);
+    if (PageClass && !PageClass.canAccess(authResult.user)) {
+      return respondForbidden(
+        ctx,
+        'You do not have access to this page.',
+        asJson || this.wantsJson(ctx, asJson),
+        this.basePath,
+      );
+    }
+    return authResult;
+  }
+
+  private async renderPage(
+    ctx: ShamarHttpContext,
+    page: PageMeta,
+    options?: { asJson?: boolean },
+  ) {
+    if (page.kind === 'list') {
+      return this.renderListPage(ctx, page, options);
+    }
+    if (page.kind === 'form') {
+      return this.renderFormPage(ctx, page, options);
+    }
+    return this.renderCustomPage(ctx, page, options);
+  }
+
+  private async renderCustomPage(
+    ctx: ShamarHttpContext,
+    page: PageMeta,
+    options?: { asJson?: boolean },
+  ) {
+    const authResult = await this.ensurePageAccess(ctx, page, options?.asJson);
+    if (!this.isAuthContext(authResult)) return authResult;
+
+    const PageClass = this.pages.pageClass(page.slug)!;
+    const mountLocals = await PageClass.mount(this.pageRequestContext(ctx, authResult));
+
+    if (this.wantsJson(ctx, options?.asJson)) {
+      return ctx.response.json({ page: page.slug, ...mountLocals });
+    }
+
+    const shellWithSlug = await buildShellContext({
+      config: this.config,
+      registry: this.registry,
+      pages: this.pages,
+      meta: page,
+      currentSlug: page.slug,
+      pageTitle: page.label,
+      basePath: this.basePath,
+      branding: this.panelBranding,
+      panelContentMaxWidth: this.panelContentMaxWidth,
+      authorizer: this.authorizer,
+      authCtx: authResult,
+      flash: readFlash(ctx),
+      masquerade: isMasqueradeSession(ctx.session) ? { active: true } : undefined,
+    });
+
+    const view = page.view ?? 'shamar::page';
+    return ctx.view.render(view, {
+      ...shellWithSlug,
+      page,
+      pageActions: page.actions.filter((a) => a.placement === 'header'),
+      ...mountLocals,
+    });
+  }
+
+  private async renderFormPage(
+    ctx: ShamarHttpContext,
+    page: PageMeta,
+    options?: { asJson?: boolean },
+  ) {
+    const authResult = await this.ensurePageAccess(ctx, page, options?.asJson);
+    if (!this.isAuthContext(authResult)) return authResult;
+
+    const PageClass = this.pages.pageClass(page.slug)!;
+    if (!isFormPage(PageClass)) {
+      return ctx.response.badRequest({ message: 'Not a form page' });
+    }
+
+    const pageCtx = this.pageRequestContext(ctx, authResult);
+    const filled = await PageClass.fill(pageCtx);
+    const mountLocals = await PageClass.mount(pageCtx);
+    const resourceMeta = this.formPageAsResourceMeta(page);
+
+    const record: Record<string, unknown> = { ...filled };
+    const formInitialState: Record<string, unknown> = {};
+    for (const field of resourceMeta.fields) {
+      if (field.hiddenOnForm) continue;
+      const raw = field.name in filled ? filled[field.name] : field.default;
+      formInitialState[field.name] = toFormControlValue(raw, field);
+    }
+
+    if (this.wantsJson(ctx, options?.asJson)) {
+      return ctx.response.json({ page: page.slug, record, ...mountLocals });
+    }
+
+    const shellWithSlug = await buildShellContext({
+      config: this.config,
+      registry: this.registry,
+      pages: this.pages,
+      meta: page,
+      currentSlug: page.slug,
+      pageTitle: page.label,
+      basePath: this.basePath,
+      branding: this.panelBranding,
+      panelContentMaxWidth: page.contentMaxWidth ?? this.panelContentMaxWidth,
+      authorizer: this.authorizer,
+      authCtx: authResult,
+      flash: readFlash(ctx),
+      masquerade: isMasqueradeSession(ctx.session) ? { active: true } : undefined,
+    });
+
+    const view = page.view ?? 'shamar::page-form';
+    return ctx.view.render(view, {
+      ...shellWithSlug,
+      page,
+      resource: resourceMeta,
+      meta: resourceMeta,
+      // Avoid resource create/edit/show chrome in page-heading (View/Cancel/id URLs).
+      mode: 'form',
+      record,
+      formSchema: formSchemaTree(resourceMeta),
+      formStateEndpoint: `${this.basePath}/${page.slug}/form-state`,
+      formInitialState,
+      formLiveFields: formClientFields(resourceMeta, {
+        state: formInitialState,
+        record,
+        operation: 'edit',
+      }),
+      formErrors: {},
+      pageActions: page.actions.filter((a) => a.placement === 'header'),
+      relationUi: {},
+      resolveGridItemStyle,
+      ...mountLocals,
+    });
+  }
+
+  private async renderListPage(
+    ctx: ShamarHttpContext,
+    page: PageMeta,
+    options?: { asJson?: boolean },
+  ) {
+    const authResult = await this.ensurePageAccess(ctx, page, options?.asJson);
+    if (!this.isAuthContext(authResult)) return authResult;
+
+    const meta = page.listResource;
+    if (!meta) {
+      return ctx.response.badRequest({ message: 'List page is missing table meta' });
+    }
+
+    const rawQuery = this.listQuery(ctx);
+    const listHeaders = buildListHeaders(meta);
+    const filtersParam = ctx.request.input('filters');
+    const groupByParam = ctx.request.input('groupBy');
+    const hasFiltersParam = filtersParam !== undefined && filtersParam !== null;
+    const hasGroupByParam = groupByParam !== undefined && groupByParam !== null;
+
+    const defaultPerPage = this.resolveListDefaultPerPage(meta);
+    const normalized = normalizeListQuery(rawQuery, { perPage: defaultPerPage });
+
+    if (!hasFiltersParam && meta.defaultFilters?.length) {
+      normalized.filters = resolveDefaultFilters(meta, listHeaders);
+    } else if (normalized.filters?.length) {
+      normalized.filters = labelListFilters(normalized.filters, listHeaders);
+    }
+
+    if (!hasGroupByParam && meta.defaultGroupBy) {
+      normalized.groupBy = meta.defaultGroupBy;
+    } else if (hasGroupByParam && String(groupByParam).trim() === '') {
+      normalized.groupBy = undefined;
+    }
+
+    const displayGroupBy = normalized.groupBy;
+    const groupHeader = listHeaders.find(
+      (header) => header.name === displayGroupBy || header.filterField === displayGroupBy,
+    );
+    const adapterGroupBy = groupHeader?.filterField || displayGroupBy;
+    const query = { ...normalized, groupBy: adapterGroupBy };
+
+    if (this.wantsJson(ctx, options?.asJson)) {
+      const result = await this.resources.index(meta, query);
+      await hydrateRecordsForDisplay(meta, result.items, this.registry, this.panel.adapter);
+      return ctx.response.json(result);
+    }
+
+    const result = await this.resources.index(meta, query);
+    await hydrateRecordsForDisplay(meta, result.items, this.registry, this.panel.adapter);
+    const { query: viewQuery, pagination, perPageValue } = buildListContext({
+      basePath: this.basePath,
+      meta,
+      query: rawQuery,
+      result,
+      defaultPerPage,
+    });
+
+    const shellWithSlug = await buildShellContext({
+      config: this.config,
+      registry: this.registry,
+      pages: this.pages,
+      meta: page,
+      currentSlug: page.slug,
+      pageTitle: page.label,
+      basePath: this.basePath,
+      branding: this.panelBranding,
+      panelContentMaxWidth: this.panelContentMaxWidth,
+      authorizer: this.authorizer,
+      authCtx: authResult,
+      flash: readFlash(ctx),
+      masquerade: isMasqueradeSession(ctx.session) ? { active: true } : undefined,
+      showCreateButton: false,
+    });
+
+    const groups = groupRecordsForDisplay(result.items, displayGroupBy, listHeaders);
+    const view = page.view ?? 'shamar::index';
+
+    return ctx.view.render(view, {
+      ...shellWithSlug,
+      page,
+      meta,
+      resource: meta,
+      result,
+      groups,
+      query: {
+        ...viewQuery,
+        perPage: perPageValue,
+        filters: normalized.filters ?? [],
+        groupBy: displayGroupBy ?? null,
+      },
+      pagination,
+      listHeaders,
+      listAllPerPage: LIST_ALL_RECORDS_PER_PAGE,
+      defaultPerPage,
+      perPageOptions: resolvePerPageOptions(defaultPerPage),
+      filtersLockedEmpty: hasFiltersParam && !(normalized.filters?.length),
+      groupLockedEmpty: hasGroupByParam && !displayGroupBy,
+      bulkActions: [],
+      rowActions: resourceActionsFor(meta, 'row', {
+        create: false,
+        update: false,
+        delete: false,
+      }),
+      pageActions: page.actions.filter((a) => a.placement === 'header'),
+    });
+  }
+
+  private async savePage(
+    ctx: ShamarHttpContext,
+    page: PageMeta,
+    options?: { asJson?: boolean },
+  ) {
+    if (page.kind !== 'form') {
+      return ctx.response.badRequest({ message: 'Page does not accept POST save' });
+    }
+
+    const authResult = await this.ensurePageAccess(ctx, page, options?.asJson);
+    if (!this.isAuthContext(authResult)) return authResult;
+
+    const PageClass = this.pages.pageClass(page.slug)!;
+    if (!isFormPage(PageClass)) {
+      return ctx.response.badRequest({ message: 'Not a form page' });
+    }
+
+    const resourceMeta = this.formPageAsResourceMeta(page);
+    const data = this.resourcePayload(resourceMeta, ctx, 'update');
+
+    try {
+      await validateFormData(resourceMeta, data, this.panel.adapter);
+      const result = await PageClass.save(data, this.pageRequestContext(ctx, authResult));
+
+      if (this.wantsJson(ctx, options?.asJson)) {
+        return ctx.response.json({ ok: true, message: result?.message });
+      }
+
+      ctx.session.flash('success', result?.message ?? `${page.label} saved`);
+      const redirectTo = result?.redirectTo ?? `${this.basePath}/${page.slug}`;
+      return ctx.response.redirect(redirectTo);
+    } catch (error) {
+      if (!isValidationException(error)) throw error;
+
+      if (this.wantsJson(ctx, options?.asJson)) {
+        return ctx.response.status(422).json({
+          message: error.message,
+          errors: error.errors,
+        });
+      }
+
+      const pageCtx = this.pageRequestContext(ctx, authResult);
+      const filled = { ...(await PageClass.fill(pageCtx)), ...data };
+      const mountLocals = await PageClass.mount(pageCtx);
+      const formInitialState: Record<string, unknown> = {};
+      for (const field of resourceMeta.fields) {
+        if (field.hiddenOnForm) continue;
+        formInitialState[field.name] = toFormControlValue(
+          field.name in filled ? filled[field.name] : field.default,
+          field,
+        );
+      }
+
+      const shellWithSlug = await buildShellContext({
+        config: this.config,
+        registry: this.registry,
+        pages: this.pages,
+        meta: page,
+        currentSlug: page.slug,
+        pageTitle: page.label,
+        basePath: this.basePath,
+        branding: this.panelBranding,
+        panelContentMaxWidth: page.contentMaxWidth ?? this.panelContentMaxWidth,
+        authorizer: this.authorizer,
+        authCtx: authResult,
+        flash: { type: 'error', message: error.message },
+      });
+
+      return ctx.view.render(page.view ?? 'shamar::page-form', {
+        ...shellWithSlug,
+        page,
+        resource: resourceMeta,
+        meta: resourceMeta,
+        mode: 'form',
+        record: filled,
+        formSchema: formSchemaTree(resourceMeta),
+        formStateEndpoint: `${this.basePath}/${page.slug}/form-state`,
+        formInitialState,
+        formLiveFields: formClientFields(resourceMeta, {
+          state: formInitialState,
+          record: filled,
+          operation: 'edit',
+        }),
+        formErrors: error.errors,
+        pageActions: page.actions.filter((a) => a.placement === 'header'),
+        relationUi: {},
+        resolveGridItemStyle,
+        ...mountLocals,
+      });
+    }
+  }
+
+  private async pageFormState(ctx: ShamarHttpContext, page: PageMeta) {
+    const authResult = await this.ensurePageAccess(ctx, page, true);
+    if (!this.isAuthContext(authResult)) return authResult;
+
+    const resourceMeta = this.formPageAsResourceMeta(page);
+    const body = ctx.request.body() as {
+      operation?: string;
+      changed?: string;
+      state?: Record<string, unknown>;
+    };
+
+    const result = await evaluateFormState(resourceMeta, {
+      operation: 'edit',
+      changed: body.changed,
+      state: body.state ?? {},
+      record: body.state ?? {},
+    });
+
+    return ctx.response.json(result);
+  }
+
+  async pageAction(ctx: ShamarHttpContext) {
+    const page = this.pages.require(ctx.params.slug);
+    const authResult = await this.ensurePageAccess(ctx, page);
+    if (!this.isAuthContext(authResult)) return authResult;
+
+    const actionName = String(ctx.params.action ?? '');
+    const PageClass = this.pages.pageClass(page.slug)!;
+    const result = await PageClass.handleAction(
+      actionName,
+      this.pageRequestContext(ctx, authResult),
+    );
+
+    if (!result) {
+      return ctx.response.badRequest({ message: `Unknown action: ${actionName}` });
+    }
+
+    if (this.wantsJson(ctx)) {
+      return ctx.response.json(result);
+    }
+
+    if (result.message) {
+      ctx.session.flash('success', result.message);
+    }
+    return ctx.response.redirect(result.redirectTo ?? `${this.basePath}/${page.slug}`);
   }
 }

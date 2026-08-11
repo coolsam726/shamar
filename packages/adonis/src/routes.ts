@@ -125,6 +125,10 @@ function registerPanelRoutes(
       .as(`${routePrefix}.assets.alpineJs`);
 
     router.get('/', handler('dashboard')).as(`${routePrefix}.dashboard`);
+    router
+      .post('/:slug/action/:action', handler('pageAction'))
+      .where('slug', /^(?!assets$|profile$)/)
+      .as(`${routePrefix}.pages.action`);
     router.get('/:slug/create', handler('create')).as(`${routePrefix}.resources.create`);
     router.post('/:slug/form-state', handler('formState')).as(`${routePrefix}.resources.formState`);
     router
@@ -157,11 +161,11 @@ function registerPanelRoutes(
     router.delete('/:slug/:id', handler('destroy')).as(`${routePrefix}.resources.destroy.delete`);
     router
       .get('/:slug/:id', handler('show'))
-      .where('slug', /^(?!assets$)/)
+      .where('slug', /^(?!assets$|profile$)/)
       .as(`${routePrefix}.resources.show`);
     router
       .get('/:slug', handler('index'))
-      .where('slug', /^(?!assets$)/)
+      .where('slug', /^(?!assets$|profile$)/)
       .as(`${routePrefix}.resources.index`);
   });
 

@@ -76,7 +76,7 @@
 
     <div class="shamar-list-table-scroll">
       <table class="w-full text-sm">
-        <thead class="bg-surface-header">
+        <thead class="bg-neutral-primary border-b border-card-border">
           <tr>
             <th class="w-9 px-3 py-3">
               @if(bulkActions && bulkActions.length)
@@ -136,15 +136,15 @@
         </tbody>
       </table>
     </div>
-  </div>
 
-  @if(pagination)
-    <div data-shamar-list-pagination>
-      @include('shamar::partials/pagination')
-    </div>
-  @else
-    <div data-shamar-list-pagination hidden></div>
-  @endif
+    @if(pagination)
+      <div class="shamar-list-pagination" data-shamar-list-pagination>
+        @include('shamar::partials/pagination')
+      </div>
+    @else
+      <div data-shamar-list-pagination hidden></div>
+    @endif
+  </div>
 </section>
 
 @include('shamar::partials/shell-close')

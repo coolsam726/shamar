@@ -110,6 +110,7 @@ describe('relationship builders', () => {
     assert.equal(field.relation?.widget, 'table');
     assert.equal(field.relation?.tableMode, 'list');
     assert.equal(field.relation?.createAndEditOption, true);
+    assert.equal(field.columnSpan, 'full');
   });
 
   it('supports RelationTable.simple() compact mode', () => {

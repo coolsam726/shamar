@@ -1,0 +1,70 @@
+@include('shamar::partials/shell-open')
+
+<div
+  class="mx-auto space-y-6 {{ contentMaxWidthClass || 'w-full max-w-screen-xl' }}"
+  @if(contentMaxWidthStyle)
+    style="{{ contentMaxWidthStyle }}"
+  @endif
+>
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <h1 class="text-xl font-semibold text-heading tracking-tight">{{ pageTitle }}</h1>
+      @if(pageSubtitle)
+        <p class="mt-1 text-sm text-body-subtle">{{ pageSubtitle }}</p>
+      @endif
+    </div>
+    @if(pageActions && pageActions.length)
+      <div class="flex flex-wrap items-center gap-2">
+        @each(action in pageActions)
+          <form method="post" action="{{ basePath }}/{{ page.slug }}/action/{{ action.name }}">
+            @include('shamar::partials/csrf')
+            <button
+              type="submit"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md border border-default text-body hover:bg-surface-hover transition {{ action.color === 'danger' ? 'text-red-600 border-red-200' : '' }}"
+              @if(action.confirm)
+                onclick="return confirm({{ JSON.stringify(action.confirm) }})"
+              @endif
+            >{{ action.label }}</button>
+          </form>
+        @endeach
+      </div>
+    @endif
+  </div>
+
+  <form
+    id="shamar-form"
+    method="post"
+    action="{{ basePath }}/{{ page.slug }}"
+    class="space-y-6"
+    x-data='shamarForm({
+      endpoint: {{ jsonAttr(formStateEndpoint) }},
+      operation: "edit",
+      recordId: null,
+      fields: {{ jsonAttr(formLiveFields) }},
+      state: {{ jsonAttr(formInitialState) }},
+    })'
+  >
+    @include('shamar::partials/csrf')
+
+    @each(node in formSchema)
+      @!component('shamar::partials/schema-node', {
+        node: node,
+        schemaMode: 'form',
+        mode: mode || 'edit',
+        record: record,
+        formErrors: formErrors,
+        relationUi: relationUi || {},
+      })
+    @endeach
+
+    <div class="flex items-center justify-end gap-2 pt-2">
+      <button
+        type="submit"
+        form="shamar-form"
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-md bg-fg-brand hover:opacity-90 transition"
+      >Save</button>
+    </div>
+  </form>
+</div>
+
+@include('shamar::partials/shell-close')

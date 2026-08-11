@@ -76,6 +76,8 @@ export default class ShamarProvider {
       edge.global('recordNavQuery', recordNavQuery);
       edge.global('relatedListLink', relatedListLink);
       edge.global('resolveGridItemStyle', resolveGridItemStyle);
+      const { partitionRowActions } = await import('./shamar/resource-actions.js');
+      edge.global('partitionRowActions', partitionRowActions);
       const { humanizeLabel, resolveAlignmentClass, alignmentTextClass } = await import('@shamar/core');
       edge.global('humanizeLabel', humanizeLabel);
       edge.global('resolveAlignmentClass', resolveAlignmentClass);

@@ -352,6 +352,13 @@ export function fieldConfigToEntry(field: FieldConfig): InfolistEntryConfig {
   const type = field.type as FieldType;
   if (type === 'relationTable' || field.relation?.kind === 'hasMany') {
     entry.columnSpanFull();
+  } else if (
+    type === 'checkboxList' ||
+    field.relation?.widget === 'checkboxList' ||
+    field.relation?.kind === 'manyToMany'
+  ) {
+    // Keep PermissionsAssignment / M2M matrices full-width on detail views.
+    entry.columnSpanFull();
   } else if (type === 'boolean' || type === 'checkbox') entry.boolean();
   else if (type === 'email') entry.email();
   else if (type === 'date') entry.date();

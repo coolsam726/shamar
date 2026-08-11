@@ -1,4 +1,4 @@
-<header class="flex items-center gap-3 px-4 md:px-6 min-h-[60px] shrink-0 bg-shamar-shell sticky top-0 z-30 overflow-visible">
+<header class="shamar-topbar flex items-center gap-3 px-4 md:px-6 min-h-[60px] shrink-0 sticky top-0 z-30 overflow-visible bg-neutral-primary border-b border-card-border">
   <button
     type="button"
     @click="sidebarOpen = true"
@@ -15,7 +15,7 @@
       class="shamar-app-menu flex-1 min-w-0 flex flex-wrap items-center gap-1 overflow-visible"
       aria-label="{{ menuActiveRoot ? `${menuActiveRoot.label} menu` : 'App menu' }}"
     >
-      @if(menuActiveRoot)
+      @if(menuActiveRoot && menuActiveRoot.label !== 'Dashboard')
         @if(!menuSecondary.length)
           <span class="shrink-0 text-sm font-semibold text-heading truncate max-w-[12rem]">{{ menuActiveRoot.label }}</span>
         @endif
@@ -32,7 +32,7 @@
             <button
               type="button"
               @click="open = !open"
-              class="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-sm whitespace-nowrap {{ item.active ? 'bg-surface-inset text-fg-brand font-medium' : 'text-body hover:text-heading hover:bg-surface-hover' }}"
+              class="shamar-topbar-link flex items-center gap-1 px-2.5 py-1.5 rounded-md text-sm whitespace-nowrap {{ item.active ? 'is-active' : '' }}"
               :aria-expanded="open.toString()"
             >
               {{ item.label }}
@@ -47,18 +47,18 @@
               class="absolute left-0 top-full z-50 mt-1 min-w-[10rem] shamar-card rounded-xl shadow-lg py-1"
             >
               @each(child in item.children)
-                <a href="{{ child.href }}" class="block px-3 py-1.5 text-sm whitespace-nowrap {{ child.active ? 'text-fg-brand font-medium bg-surface-inset' : 'text-body hover:bg-surface-hover hover:text-heading' }}">{{ child.label }}</a>
+                <a href="{{ child.href }}" class="shamar-topbar-menu-item block px-3 py-1.5 text-sm whitespace-nowrap {{ child.active ? 'is-active' : '' }}">{{ child.label }}</a>
               @endeach
             </div>
           </div>
         @else
-          <a href="{{ item.href }}" class="shrink-0 px-2.5 py-1.5 rounded-md text-sm whitespace-nowrap {{ item.active ? 'bg-surface-inset text-fg-brand font-medium' : 'text-body hover:text-heading hover:bg-surface-hover' }}">{{ item.label }}</a>
+          <a href="{{ item.href }}" class="shamar-topbar-link shrink-0 px-2.5 py-1.5 rounded-md text-sm whitespace-nowrap {{ item.active ? 'is-active' : '' }}">{{ item.label }}</a>
         @endif
       @endeach
     </nav>
   </div>
 
-  @if(menuActiveRoot)
+  @if(menuActiveRoot && menuActiveRoot.label !== 'Dashboard')
     <p class="md:hidden flex-1 min-w-0 text-sm font-semibold text-heading truncate px-0.5">{{ menuActiveRoot.label }}</p>
   @else
     <div class="md:hidden flex-1 min-w-0" aria-hidden="true"></div>
@@ -104,7 +104,10 @@
           @endif
         </div>
         <div class="py-1 text-sm">
-          <a href="{{ basePath }}" class="block px-4 py-1.5 text-body hover:bg-surface-hover hover:text-heading">Admin</a>
+          @if(profilePath)
+            <a href="{{ profilePath }}" class="block px-4 py-1.5 text-body hover:bg-surface-hover hover:text-heading">Profile</a>
+          @endif
+          <a href="{{ basePath }}" class="block px-4 py-1.5 text-body hover:bg-surface-hover hover:text-heading">Dashboard</a>
           @if(logoutPath)
             <form method="post" action="{{ logoutPath }}" class="block">
               @include('shamar::partials/csrf')

@@ -37,6 +37,22 @@ export function visibleRowActions(
   })
 }
 
+/**
+ * Split row actions into inline (ungrouped) vs ⋮ menu (default / grouped).
+ */
+export function partitionRowActions(actions: ActionConfig[]): {
+  inline: ActionConfig[]
+  menu: ActionConfig[]
+} {
+  const inline: ActionConfig[] = []
+  const menu: ActionConfig[] = []
+  for (const action of actions) {
+    if (action.grouped === false) inline.push(action)
+    else menu.push(action)
+  }
+  return { inline, menu }
+}
+
 /** Derive Active/Revoked when a resource uses `revokedAt` + a `status` column/entry. */
 export function decorateRevokedStatus(records: Record<string, unknown>[]): void {
   for (const record of records) {

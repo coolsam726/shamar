@@ -7,6 +7,7 @@ import {
   TextInput,
   CheckboxList,
   TagsInput,
+  Select,
   TextColumn,
   TextEntry,
 } from '@shamar/core'
@@ -47,6 +48,11 @@ export default class UserResource extends Resource {
               .required()
               .columnSpanFull()
               .helperText('Users may belong to multiple roles; permissions are merged.'),
+            Select.make('companyId')
+              .label('Company')
+              .relationship('companies', 'name')
+              .helperText('Optional — company logo overrides global branding for this user.')
+              .columnSpanFull(),
             TagsInput.make('permissions')
               .label('Direct permissions')
               .helperText('Optional extra grants like products:create or *.')

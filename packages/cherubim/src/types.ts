@@ -13,6 +13,8 @@ export type CherubimUser = ShamarUser & {
   authProvider?: 'local' | 'ldap' | string;
   /** LDAP domain id when `authProvider` is `ldap`. */
   ldapDomainId?: string;
+  /** Optional company / tenant id for branding and scoping. */
+  companyId?: string;
 };
 
 /** CRUD-style actions on a Shamar resource. */
