@@ -17,6 +17,7 @@ import {
   ColorPicker,
   TagsInput,
   FileUpload,
+  FilePicker,
   Section,
   Fieldset,
   Grid,
@@ -389,6 +390,8 @@ describe('@shamar/core Filament-style builders', () => {
               .options([{ label: 'Admin', value: 'admin' }]),
             Select.make('status').native().options([{ label: 'Open', value: 'open' }]),
             FileUpload.make('avatar').image().accept('image/png'),
+            FilePicker.make('coverId').image().folder(null).makePublic(),
+            FilePicker.make('attachments').multiple().accept('application/pdf'),
           ]);
         });
       }
@@ -423,6 +426,13 @@ describe('@shamar/core Filament-style builders', () => {
     assert.equal(byName.status?.nativeSelect, true);
     assert.equal(byName.avatar?.type, 'image');
     assert.equal(byName.avatar?.accept, 'image/png');
+    assert.equal(byName.coverId?.type, 'filePicker');
+    assert.equal(byName.coverId?.accept, 'image/*,image/svg+xml,.svg');
+    assert.equal(byName.coverId?.mediaMakePublic, true);
+    assert.equal(byName.coverId?.mediaFolderId, null);
+    assert.equal(byName.attachments?.type, 'filePicker');
+    assert.equal(byName.attachments?.multiple, true);
+    assert.equal(byName.attachments?.accept, 'application/pdf');
   });
 
   it('falls back to infolist from form fields', () => {

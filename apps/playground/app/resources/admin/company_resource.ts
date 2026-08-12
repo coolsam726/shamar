@@ -118,22 +118,6 @@ export default class CompanyResource extends Resource {
                 .inline()
                 .helperText('Inactive companies are hidden from most pickers.'),
             ]),
-            Tab.make('Branding').schema([
-              TextInput.make('logo')
-                .url()
-                .label('Logo URL')
-                .helperText('Overrides global settings and panel logo for users in this company.')
-                .columnSpanFull(),
-              TextInput.make('logoDark')
-                .url()
-                .label('Dark logo URL')
-                .helperText('Optional dark-mode variant.')
-                .columnSpanFull(),
-              TextInput.make('logoHeight')
-                .label('Logo height')
-                .placeholder('40 or 2.5rem')
-                .helperText('Pixels (number) or CSS length. Leave blank to keep global/panel height.'),
-            ]),
             Tab.make('Security').schema([
               TextInput.make('api_token')
                 .password()

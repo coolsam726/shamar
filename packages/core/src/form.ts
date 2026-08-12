@@ -427,6 +427,7 @@ export class TextInput extends FormComponent {
 
   url(): this {
     this.config.type = 'url';
+    this.config.inputMode = this.config.inputMode ?? 'url';
     return this;
   }
 
@@ -888,7 +889,7 @@ export class FileUpload extends FormComponent {
 
   image(): this {
     this.config.type = 'image';
-    this.config.accept = this.config.accept ?? 'image/*';
+    this.config.accept = this.config.accept ?? 'image/*,image/svg+xml,.svg';
     return this;
   }
 
@@ -899,6 +900,51 @@ export class FileUpload extends FormComponent {
 
   multiple(value = true): this {
     this.config.multiple = value;
+    return this;
+  }
+}
+
+/**
+ * Pick one or more files from the Shamar media library.
+ * Stores media file id(s) in form state (string or string[] when multiple).
+ */
+export class FilePicker extends FormComponent {
+  static make(name: string): FilePicker {
+    return new FilePicker(name);
+  }
+
+  private constructor(name: string) {
+    super(name, 'filePicker');
+  }
+
+  /** Prefer images in the picker (raster + SVG). */
+  image(): this {
+    this.config.accept = this.config.accept ?? 'image/*,image/svg+xml,.svg';
+    return this;
+  }
+
+  accept(value: string): this {
+    this.config.accept = value;
+    return this;
+  }
+
+  multiple(value = true): this {
+    this.config.multiple = value;
+    return this;
+  }
+
+  /** Constrain browsing to a folder (and its descendants). */
+  folder(folderId: string | null): this {
+    this.config.mediaFolderId = folderId;
+    return this;
+  }
+
+  /**
+   * On confirm, mark selected library files as public (ungated URL).
+   * Useful for logos and other assets that must load when logged out.
+   */
+  makePublic(value = true): this {
+    this.config.mediaMakePublic = value;
     return this;
   }
 }

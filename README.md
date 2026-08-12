@@ -26,7 +26,7 @@ pnpm add mongoose           # MongoDB
 node ace configure @shamar/adonis   # pick Lucid or Mongoose
 ```
 
-Then define resources and open the panel path (default `/admin`). Full host docs: [`packages/adonis/README.md`](packages/adonis/README.md).
+Then define resources (and optional panel pages) and open the panel path (default `/admin`). Full host docs: [`packages/adonis/README.md`](packages/adonis/README.md).
 
 For OpenAPI docs over the JSON API **and** your custom `/api/*` routes, add [`@shamar/rest`](packages/rest) and register `@shamar/rest/provider` after the Adonis provider — then open `/api/shamar/docs`. Attach `.openapi({ body, query, response })` on routes (Vine + DTO helpers); no hand-written OpenAPI JSON.
 

@@ -400,6 +400,140 @@
         @endif
       </div>
     @endif
+  @elseif(field.type === 'filePicker')
+    <div
+      class="shamar-file-picker{{ formErrors && formErrors[field.name] ? ' is-invalid' : '' }}"
+      x-data="shamarFilePicker({
+        name: {{ jsonAttr(field.name) }},
+        multiple: {{ field.multiple ? 'true' : 'false' }},
+        accept: {{ jsonAttr(field.accept ?? '') }},
+        folderId: {{ jsonAttr(field.mediaFolderId ?? null) }},
+        makePublic: {{ field.mediaMakePublic ? 'true' : 'false' }},
+        apiBase: {{ jsonAttr((basePath || '/admin') + '/media') }},
+        getValue: () => state[{{ jsonAttr(field.name) }}],
+        setValue: (v) => { state[{{ jsonAttr(field.name) }}] = v; onFieldChange({{ jsonAttr(field.name) }}); },
+        isDisabled: () => isDisabled({{ jsonAttr(field.name) }}),
+      })"
+    >
+      <div class="shamar-file-picker__selected">
+        <template x-if="!selectedItems.length">
+          <span class="shamar-file-picker__empty">No file selected</span>
+        </template>
+        <template x-for="item in selectedItems" :key="item.id">
+          <span class="shamar-file-picker__chip">
+            <img x-show="item.isImage" :src="item.url" alt="" class="shamar-file-picker__thumb" />
+            <span x-text="item.name"></span>
+            <button type="button" class="shamar-file-picker__remove" @click="remove(item.id)" :disabled="disabled" aria-label="Remove">&times;</button>
+          </span>
+        </template>
+      </div>
+      <div class="shamar-file-picker__actions">
+        <button type="button" class="shamar-btn shamar-btn--secondary" @click="openPicker()" :disabled="disabled">
+          Choose from library
+        </button>
+        <button type="button" class="shamar-btn shamar-btn--ghost" x-show="selectedItems.length" @click="clear()" :disabled="disabled">
+          Clear
+        </button>
+      </div>
+
+      <template x-if="multiple">
+        <template x-for="id in selectedIds" :key="'h-' + id">
+          <input type="hidden" name="{{ field.name }}[]" :value="id" />
+        </template>
+      </template>
+      <template x-if="!multiple">
+        <input type="hidden" name="{{ field.name }}" :value="selectedIds[0] || ''" />
+      </template>
+
+      <div class="shamar-file-picker__modal" x-show="open" x-cloak @keydown.escape.window="closePicker()">
+        <div class="shamar-file-picker__backdrop" @click="closePicker()"></div>
+        <div class="shamar-file-picker__dialog" role="dialog" aria-modal="true" aria-label="Choose file">
+          <header class="shamar-file-picker__dialog-head">
+            <h3>Media library</h3>
+            <div class="shamar-file-picker__dialog-head-actions">
+              <label class="shamar-btn shamar-btn--secondary" :class="{ 'is-disabled': uploading }">
+                <span x-show="!uploading">Upload</span>
+                <span x-show="uploading" x-cloak>Uploading…</span>
+                <input
+                  type="file"
+                  class="sr-only"
+                  multiple
+                  :accept="acceptInputAttr()"
+                  :disabled="uploading"
+                  @change="onUploadInput($event)"
+                />
+              </label>
+              <button type="button" class="shamar-btn shamar-btn--ghost" @click="closePicker()">Close</button>
+            </div>
+          </header>
+          <div class="shamar-file-picker__dialog-body">
+            <div class="shamar-file-picker__toolbar">
+              <div class="shamar-media__crumbs">
+                <button type="button" class="shamar-media__crumb" @click="goFolder(null)">Library</button>
+                <template x-for="crumb in browseBreadcrumbs" :key="crumb.id">
+                  <span class="shamar-media__crumb-wrap">
+                    <span class="shamar-media__crumb-sep">/</span>
+                    <button type="button" class="shamar-media__crumb" @click="goFolder(crumb.id)" x-text="crumb.name"></button>
+                  </span>
+                </template>
+              </div>
+            </div>
+            <p class="shamar-file-picker__upload-status" x-show="uploadStatus" x-text="uploadStatus" x-cloak></p>
+            <div
+              class="shamar-file-picker__drop"
+              :class="{ 'is-dragover': pickerDragover, 'is-uploading': uploading }"
+              @dragover.prevent="onPickerDragOver($event)"
+              @dragleave.prevent="onPickerDragLeave($event)"
+              @drop.prevent="onPickerDrop($event)"
+            >
+              <p class="shamar-file-picker__drop-hint" x-show="pickerDragover && !uploading" x-cloak>Drop files to upload</p>
+              <div class="shamar-media__grid shamar-media__grid--compact" x-show="browseFolders.length || browseFiles.length">
+                <template x-for="item in browseFolders" :key="'pf-' + item.id">
+                  <button type="button" class="shamar-media__tile is-folder" @click="goFolder(item.id)">
+                    <span class="shamar-media__tile-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+                    </span>
+                    <span class="shamar-media__tile-name" x-text="item.name"></span>
+                  </button>
+                </template>
+                <template x-for="item in browseFiles" :key="'pfile-' + item.id">
+                  <button
+                    type="button"
+                    class="shamar-media__tile"
+                    :class="{ 'is-selected': isPicked(item.id) }"
+                    @click="togglePick(item)"
+                  >
+                    <span class="shamar-media__tile-preview">
+                      <img x-show="item.isImage" :src="item.url" :alt="item.name" />
+                      <span x-show="!item.isImage" class="shamar-media__tile-icon" x-text="(item.mime || '').split('/')[1] || 'file'"></span>
+                    </span>
+                    <span class="shamar-media__tile-name" x-text="item.name"></span>
+                  </button>
+                </template>
+              </div>
+              <div class="shamar-file-picker__empty" x-show="!browseFolders.length && !browseFiles.length && !uploading" x-cloak>
+                <p>This folder is empty.</p>
+                <p class="text-body-subtle text-sm">Upload a file or browse another folder.</p>
+                <label class="shamar-btn shamar-btn--secondary">
+                  Upload file
+                  <input
+                    type="file"
+                    class="sr-only"
+                    multiple
+                    :accept="acceptInputAttr()"
+                    @change="onUploadInput($event)"
+                  />
+                </label>
+              </div>
+            </div>
+          </div>
+          <footer class="shamar-file-picker__dialog-foot">
+            <button type="button" class="shamar-btn shamar-btn--secondary" @click="closePicker()" :disabled="uploading">Cancel</button>
+            <button type="button" class="shamar-btn shamar-btn--primary" @click="confirmPick()" :disabled="uploading">Use selection</button>
+          </footer>
+        </div>
+      </div>
+    </div>
   @elseif(field.type === 'file' || field.type === 'image')
     <input
       id="field-{{ field.name }}"

@@ -497,75 +497,9 @@
       : 'Refresh (double-click for auto-refresh every 10s)';
   }
 
+  /** Legacy FileUpload helpers — superseded by File Manager / FilePicker. */
   function bindMediaUploads() {
-    document.querySelectorAll('[data-shamar-media-file]').forEach((input) => {
-      if (!(input instanceof HTMLInputElement)) return;
-      input.addEventListener('change', async () => {
-        const file = input.files?.[0];
-        if (!file) return;
-        const root = input.closest('[data-shamar-media-field]');
-        const hidden = root?.querySelector('[data-shamar-media-value]');
-        const status = root?.querySelector('[data-shamar-media-status]');
-        const uploadUrl = input.dataset.uploadUrl;
-        const fieldName = input.dataset.fieldName;
-        const maxBytes = Number(input.dataset.maxBytes || 0);
-        if (!uploadUrl || !fieldName || !(hidden instanceof HTMLInputElement)) return;
-        if (maxBytes > 0 && file.size > maxBytes) {
-          if (status instanceof HTMLElement) {
-            status.hidden = false;
-            status.textContent = `File exceeds ${maxBytes} bytes.`;
-          }
-          input.value = '';
-          return;
-        }
-        const reader = new FileReader();
-        reader.onload = async () => {
-          try {
-            if (status instanceof HTMLElement) {
-              status.hidden = false;
-              status.textContent = 'Uploading…';
-            }
-            const data = String(reader.result ?? '');
-            const res = await fetch(uploadUrl, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-                'X-CSRF-Token': csrfToken() || '',
-              },
-              credentials: 'same-origin',
-              body: JSON.stringify({
-                field: fieldName,
-                filename: file.name,
-                mimeType: file.type || 'application/octet-stream',
-                data,
-              }),
-            });
-            const payload = await res.json();
-            if (!res.ok) throw new Error(payload?.message || 'Upload failed');
-            hidden.value = payload.media?.url || '';
-            if (status instanceof HTMLElement) {
-              status.textContent = 'Uploaded.';
-            }
-            const preview = root?.querySelector('[data-shamar-media-preview]');
-            if (preview instanceof HTMLElement && hidden.value) {
-              if (input.dataset.fieldType === 'image') {
-                preview.innerHTML = `<img src="${hidden.value}" alt="" class="max-h-32 rounded-md border border-default object-contain" />`;
-              } else {
-                preview.innerHTML = `<a href="${hidden.value}" class="text-sm text-fg-brand hover:underline" target="_blank" rel="noopener">View file</a>`;
-              }
-            }
-          } catch (error) {
-            if (status instanceof HTMLElement) {
-              status.textContent =
-                error instanceof Error ? error.message : 'Upload failed';
-            }
-            input.value = '';
-          }
-        };
-        reader.readAsDataURL(file);
-      });
-    });
+    // no-op: media library uses shamarMediaManager + multipart /media/upload
   }
 
   function bindListRefresh() {
@@ -2419,6 +2353,1302 @@
 
   window.shamarFloatingMenu = createShamarFloatingMenu;
 
+  const MEDIA_DND_MIME = 'application/x-shamar-media';
+  const MEDIA_CLIPBOARD_KEY = 'shamar-media-clipboard';
+
+  function normalizeMediaClipboard(parsed) {
+    if (!parsed?.mode) return null;
+    if (Array.isArray(parsed.items) && parsed.items.length) {
+      return {
+        mode: parsed.mode,
+        items: parsed.items.filter((item) => item?.kind && item?.id),
+      };
+    }
+    if (parsed.kind && parsed.id) {
+      return {
+        mode: parsed.mode,
+        items: [{ kind: parsed.kind, id: parsed.id, name: parsed.name }],
+      };
+    }
+    return null;
+  }
+
+  function readMediaClipboard() {
+    try {
+      const raw = sessionStorage.getItem(MEDIA_CLIPBOARD_KEY);
+      if (!raw) return null;
+      return normalizeMediaClipboard(JSON.parse(raw));
+    } catch {
+      return null;
+    }
+  }
+
+  function writeMediaClipboard(value) {
+    if (!value) {
+      sessionStorage.removeItem(MEDIA_CLIPBOARD_KEY);
+      return;
+    }
+    const normalized = normalizeMediaClipboard(value);
+    if (!normalized?.items?.length) {
+      sessionStorage.removeItem(MEDIA_CLIPBOARD_KEY);
+      return;
+    }
+    sessionStorage.setItem(MEDIA_CLIPBOARD_KEY, JSON.stringify(normalized));
+  }
+
+  const MEDIA_VIEW_MODES = ['icons', 'tiles', 'list', 'details'];
+  const MEDIA_SORT_COLUMNS = ['name', 'type', 'size', 'visibility'];
+
+  function readMediaViewMode() {
+    try {
+      const mode = localStorage.getItem('shamar-media-view-mode');
+      return MEDIA_VIEW_MODES.includes(mode) ? mode : 'icons';
+    } catch {
+      return 'icons';
+    }
+  }
+
+  function readMediaSortColumn() {
+    try {
+      const col = localStorage.getItem('shamar-media-sort-column');
+      return MEDIA_SORT_COLUMNS.includes(col) ? col : 'name';
+    } catch {
+      return 'name';
+    }
+  }
+
+  function readMediaSortDirection() {
+    try {
+      const dir = localStorage.getItem('shamar-media-sort-direction');
+      return dir === 'desc' ? 'desc' : 'asc';
+    } catch {
+      return 'asc';
+    }
+  }
+
+  function createShamarMediaManager(cfg = {}) {
+    return {
+      apiBase: cfg.apiBase || '/admin/media',
+      folderId: cfg.folderId ?? null,
+      folders: Array.isArray(cfg.folders) ? cfg.folders : [],
+      folderTree: Array.isArray(cfg.folderTree) ? cfg.folderTree : [],
+      files: (Array.isArray(cfg.files) ? cfg.files : []).map((file) => ({
+        ...file,
+        visibility: file.visibility === 'public' ? 'public' : 'private',
+      })),
+      breadcrumbs: Array.isArray(cfg.breadcrumbs) ? cfg.breadcrumbs : [],
+      viewMode: readMediaViewMode(),
+      sortColumn: readMediaSortColumn(),
+      sortDirection: readMediaSortDirection(),
+      expandedIds: {},
+      dragover: null,
+      dropTarget: null,
+      status: '',
+      selection: [],
+      details: null,
+      clipboard: readMediaClipboard(),
+      menu: { open: false, style: {}, kind: null, item: null },
+      _menuOpenedAt: 0,
+      _selectionAnchor: null,
+      _dragging: null,
+
+      init() {
+        this.clipboard = readMediaClipboard();
+        this.syncExpandedFromPath();
+      },
+
+      setViewMode(mode) {
+        if (!MEDIA_VIEW_MODES.includes(mode)) return;
+        this.viewMode = mode;
+        try {
+          localStorage.setItem('shamar-media-view-mode', mode);
+        } catch {
+          /* ignore */
+        }
+      },
+
+      toggleSort(column) {
+        if (!MEDIA_SORT_COLUMNS.includes(column)) return;
+        if (this.sortColumn === column) {
+          this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.sortColumn = column;
+          this.sortDirection = 'asc';
+        }
+        try {
+          localStorage.setItem('shamar-media-sort-column', this.sortColumn);
+          localStorage.setItem('shamar-media-sort-direction', this.sortDirection);
+        } catch {
+          /* ignore */
+        }
+      },
+
+      sortIndicator(column) {
+        if (this.sortColumn !== column) return '';
+        return this.sortDirection === 'asc' ? '↑' : '↓';
+      },
+
+      isSorted(column) {
+        return this.sortColumn === column;
+      },
+
+      typeSortKey(row) {
+        return row.kind === 'folder' ? 'Folder' : this.fileTypeLabel(row.item);
+      },
+
+      sizeSortKey(row) {
+        return row.kind === 'folder' ? -1 : Number(row.item.size) || 0;
+      },
+
+      visibilitySortKey(row) {
+        if (row.kind === 'folder') return -1;
+        return row.item.visibility === 'public' ? 1 : 0;
+      },
+
+      browseItemsRaw() {
+        const rows = [];
+        for (const item of this.folders || []) {
+          rows.push({ kind: 'folder', item, key: `folder:${item.id}` });
+        }
+        for (const item of this.files || []) {
+          rows.push({ kind: 'file', item, key: `file:${item.id}` });
+        }
+        return rows;
+      },
+
+      defaultBrowseItems() {
+        const folders = [...(this.folders || [])].sort((a, b) =>
+          String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' }),
+        );
+        const files = [...(this.files || [])].sort((a, b) =>
+          String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' }),
+        );
+        return [
+          ...folders.map((item) => ({ kind: 'folder', item, key: `folder:${item.id}` })),
+          ...files.map((item) => ({ kind: 'file', item, key: `file:${item.id}` })),
+        ];
+      },
+
+      sortBrowseItems(rows) {
+        const dir = this.sortDirection === 'desc' ? -1 : 1;
+        const col = this.sortColumn;
+        return [...rows].sort((a, b) => {
+          let cmp = 0;
+          if (col === 'type') {
+            cmp = this.typeSortKey(a).localeCompare(this.typeSortKey(b), undefined, {
+              sensitivity: 'base',
+            });
+          } else if (col === 'size') {
+            cmp = this.sizeSortKey(a) - this.sizeSortKey(b);
+          } else if (col === 'visibility') {
+            cmp = this.visibilitySortKey(a) - this.visibilitySortKey(b);
+          } else {
+            cmp = String(a.item.name || '').localeCompare(String(b.item.name || ''), undefined, {
+              sensitivity: 'base',
+            });
+          }
+          if (cmp === 0) {
+            cmp = String(a.item.name || '').localeCompare(String(b.item.name || ''), undefined, {
+              sensitivity: 'base',
+            });
+          }
+          return cmp * dir;
+        });
+      },
+
+      sortedBrowseItems() {
+        if (this.viewMode === 'icons' || this.viewMode === 'tiles') {
+          return this.defaultBrowseItems();
+        }
+        return this.sortBrowseItems(this.browseItemsRaw());
+      },
+
+      selectionKey(kind, id) {
+        return `${kind}:${id}`;
+      },
+
+      isItemSelected(kind, id) {
+        const key = this.selectionKey(kind, id);
+        return this.selection.some((entry) => this.selectionKey(entry.kind, entry.id) === key);
+      },
+
+      primarySelection() {
+        return this.selection.length ? this.selection[this.selection.length - 1] : null;
+      },
+
+      browseItems() {
+        return this.sortedBrowseItems();
+      },
+
+      clearSelection() {
+        this.selection = [];
+        this._selectionAnchor = null;
+      },
+
+      selectionLabel() {
+        const n = this.selection.length;
+        if (!n) return '';
+        if (n === 1) return this.selection[0].item?.name || '1 item';
+        return `${n} items selected`;
+      },
+
+      selectedFiles() {
+        return this.selection.filter((entry) => entry.kind === 'file');
+      },
+
+      fileTypeLabel(item) {
+        if (!item) return '—';
+        const mime = String(item.mime || '');
+        if (!mime) return 'File';
+        const parts = mime.split('/');
+        if (parts[1]) return `${parts[1].toUpperCase()} file`;
+        return parts[0];
+      },
+
+      onItemClick(event, kind, item) {
+        const normalized = kind === 'file' ? this.normalizeFileItem(item) : item;
+        const rows = this.browseItems();
+        const index = rows.findIndex(
+          (row) => row.kind === kind && String(row.item.id) === String(item.id),
+        );
+        const entry = { kind, id: normalized.id, item: normalized };
+
+        if (event.shiftKey && this._selectionAnchor != null && index >= 0) {
+          const start = Math.min(this._selectionAnchor, index);
+          const end = Math.max(this._selectionAnchor, index);
+          const range = rows.slice(start, end + 1).map((row) => ({
+            kind: row.kind,
+            id: row.item.id,
+            item: row.kind === 'file' ? this.normalizeFileItem(row.item) : row.item,
+          }));
+          if (event.metaKey || event.ctrlKey) {
+            const map = new Map(
+              this.selection.map((sel) => [this.selectionKey(sel.kind, sel.id), sel]),
+            );
+            for (const sel of range) map.set(this.selectionKey(sel.kind, sel.id), sel);
+            this.selection = [...map.values()];
+          } else {
+            this.selection = range;
+          }
+        } else if (event.metaKey || event.ctrlKey) {
+          if (this.isItemSelected(kind, item.id)) {
+            this.selection = this.selection.filter(
+              (sel) => !(sel.kind === kind && String(sel.id) === String(item.id)),
+            );
+          } else {
+            this.selection = [...this.selection, entry];
+          }
+          this._selectionAnchor = index;
+        } else {
+          this.selection = [entry];
+          this._selectionAnchor = index;
+        }
+        this.closeMenu();
+      },
+
+      selectAllItems() {
+        this.selection = this.browseItems().map((row) => ({
+          kind: row.kind,
+          id: row.item.id,
+          item: row.kind === 'file' ? this.normalizeFileItem(row.item) : row.item,
+        }));
+        this._selectionAnchor = 0;
+      },
+
+      clipboardLabel() {
+        const clip = this.clipboard || readMediaClipboard();
+        if (!clip?.items?.length) return '';
+        const verb = clip.mode === 'cut' ? 'Cut' : 'Copied';
+        if (clip.items.length === 1) {
+          return `${verb}: ${clip.items[0].name || clip.items[0].id}`;
+        }
+        return `${verb}: ${clip.items.length} items`;
+      },
+
+      /** Expand ancestors + current folder so the open path is visible. */
+      syncExpandedFromPath() {
+        const next = { ...this.expandedIds };
+        for (const crumb of this.breadcrumbs || []) {
+          if (crumb?.id != null) next[String(crumb.id)] = true;
+        }
+        if (this.folderId != null) next[String(this.folderId)] = true;
+        this.expandedIds = next;
+      },
+
+      isExpanded(id) {
+        return !!this.expandedIds[String(id)];
+      },
+
+      toggleExpand(id, event) {
+        event?.preventDefault?.();
+        event?.stopPropagation?.();
+        const key = String(id);
+        this.expandedIds = {
+          ...this.expandedIds,
+          [key]: !this.expandedIds[key],
+        };
+      },
+
+      foldersByParent() {
+        const folders = Array.isArray(this.folderTree) ? this.folderTree : [];
+        const byParent = new Map();
+        for (const folder of folders) {
+          const key = folder.parentId == null ? '' : String(folder.parentId);
+          if (!byParent.has(key)) byParent.set(key, []);
+          byParent.get(key).push(folder);
+        }
+        for (const list of byParent.values()) {
+          list.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+        }
+        return byParent;
+      },
+
+      /**
+       * Visible tree rows: top-level folders always, plus children of expanded nodes.
+       * The open path is auto-expanded via syncExpandedFromPath().
+       */
+      treeNodes() {
+        const byParent = this.foldersByParent();
+        const out = [];
+        const walk = (parentId, depth) => {
+          const key = parentId == null ? '' : String(parentId);
+          for (const folder of byParent.get(key) || []) {
+            const childKey = String(folder.id);
+            const hasChildren = (byParent.get(childKey) || []).length > 0;
+            const expanded = hasChildren && this.isExpanded(folder.id);
+            out.push({ ...folder, depth, hasChildren, expanded });
+            if (expanded) walk(folder.id, depth + 1);
+          }
+        };
+        walk(null, 0);
+        return out;
+      },
+
+      humanSize(bytes) {
+        const n = Number(bytes) || 0;
+        if (n < 1024) return `${n} B`;
+        if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+        return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+      },
+
+      humanSizeExact(bytes) {
+        const n = Number(bytes) || 0;
+        return `${n.toLocaleString()} bytes`;
+      },
+
+      formatDate(value) {
+        if (!value) return '—';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '—';
+        return date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+      },
+
+      fileExtension(name) {
+        const base = String(name || '');
+        const idx = base.lastIndexOf('.');
+        if (idx <= 0 || idx === base.length - 1) return '';
+        return base.slice(idx + 1).toUpperCase();
+      },
+
+      detailsLocation() {
+        const parts = ['Library', ...(this.breadcrumbs || []).map((crumb) => crumb.name)];
+        return parts.filter(Boolean).join(' › ');
+      },
+
+      detailsDimensions() {
+        if (!this.details?.width || !this.details?.height) return null;
+        return `${this.details.width} × ${this.details.height} px`;
+      },
+
+      async copyDetailsUrl() {
+        if (!this.details?.url) return;
+        try {
+          await navigator.clipboard.writeText(this.details.url);
+          this.status = 'URL copied to clipboard';
+        } catch {
+          this.status = 'Unable to copy URL';
+        }
+      },
+
+      isCutItem(kind, id) {
+        const clip = this.clipboard || readMediaClipboard();
+        if (!clip || clip.mode !== 'cut') return false;
+        return (clip.items || []).some(
+          (item) => item.kind === kind && String(item.id) === String(id),
+        );
+      },
+
+      openDetails(item) {
+        if (!item) return;
+        const file = this.normalizeFileItem(item);
+        this.selection = [{ kind: 'file', id: file.id, item: file }];
+        this.closeMenu();
+        this.details = { ...file };
+      },
+
+      openDetailsFromMenu() {
+        const item = this.menu.item;
+        this.closeMenu();
+        if (item) this.openDetails(item);
+      },
+
+      closeDetails() {
+        this.details = null;
+      },
+
+      closeMenu() {
+        if (this.menu?.open) this.menu.open = false;
+      },
+
+      onMenuOutside() {
+        if (Date.now() - (this._menuOpenedAt || 0) < 400) return;
+        this.closeMenu();
+      },
+
+      menuStyleAt(clientX, clientY) {
+        const pad = 8;
+        const estWidth = 190;
+        const estHeight = 320;
+        let left = Number(clientX) || 0;
+        let top = Number(clientY) || 0;
+        if (left + estWidth > window.innerWidth - pad) left = window.innerWidth - estWidth - pad;
+        if (top + estHeight > window.innerHeight - pad) top = window.innerHeight - estHeight - pad;
+        return {
+          position: 'fixed',
+          top: `${Math.max(pad, top)}px`,
+          left: `${Math.max(pad, left)}px`,
+          zIndex: '2000',
+        };
+      },
+
+      normalizeFileItem(item) {
+        if (!item) return item;
+        return {
+          ...item,
+          visibility: item.visibility === 'public' ? 'public' : 'private',
+        };
+      },
+
+      menuTargets() {
+        if (this.selection.length) return this.selection;
+        if (this.menu.item && this.menu.kind) {
+          return [
+            {
+              kind: this.menu.kind,
+              id: this.menu.item.id,
+              item: this.menu.item,
+            },
+          ];
+        }
+        return [];
+      },
+
+      syncDetails() {
+        if (!this.details) return;
+        const updated = (this.files || []).find(
+          (file) => String(file.id) === String(this.details.id),
+        );
+        if (updated) this.details = this.normalizeFileItem(updated);
+        else this.details = null;
+      },
+
+      async refreshFolderTree() {
+        const res = await fetch(`${this.apiBase}/folders`, {
+          headers: { Accept: 'application/json' },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        this.folderTree = data.folders || [];
+      },
+
+      async refresh() {
+        const params = new URLSearchParams({ format: 'json' });
+        if (this.folderId) params.set('folderId', this.folderId);
+        const res = await fetch(`${this.apiBase}/browse?${params}`, {
+          headers: { Accept: 'application/json' },
+        });
+        if (!res.ok) {
+          this.status = 'Unable to load library';
+          return;
+        }
+        const data = await res.json();
+        this.folders = data.folders || [];
+        this.files = (data.files || []).map((file) => this.normalizeFileItem(file));
+        this.breadcrumbs = data.breadcrumbs || [];
+        this.folderId = data.folder?.id ?? null;
+        this.clipboard = readMediaClipboard();
+        this.syncDetails();
+        this.pruneSelection();
+        await this.refreshFolderTree();
+        this.syncExpandedFromPath();
+      },
+
+      pruneSelection() {
+        const folderIds = new Set((this.folders || []).map((folder) => String(folder.id)));
+        const fileIds = new Set((this.files || []).map((file) => String(file.id)));
+        this.selection = this.selection.filter(
+          (entry) =>
+            (entry.kind === 'folder' && folderIds.has(String(entry.id))) ||
+            (entry.kind === 'file' && fileIds.has(String(entry.id))),
+        );
+      },
+
+      goFolder(id) {
+        const url = new URL(window.location.href);
+        if (id) url.searchParams.set('folderId', id);
+        else url.searchParams.delete('folderId');
+        window.location.href = url.toString();
+      },
+
+      async promptNewFolder(parentId = this.folderId) {
+        const name = window.prompt('Folder name');
+        if (!name?.trim()) return;
+        this.status = 'Creating folder…';
+        const res = await fetch(`${this.apiBase}/folders`, {
+          method: 'POST',
+          headers: csrfHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }),
+          body: JSON.stringify({ name: name.trim(), parentId: parentId ?? null }),
+        });
+        this.status = '';
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          this.status = body.message || 'Unable to create folder';
+          return;
+        }
+        await this.refresh();
+      },
+
+      async uploadFiles(fileList, targetFolderId = this.folderId) {
+        const files = Array.from(fileList || []);
+        if (!files.length) return;
+        this.status = `Uploading ${files.length} file(s)…`;
+        const body = new FormData();
+        if (targetFolderId) body.append('folderId', targetFolderId);
+        for (const file of files) body.append('file', file);
+        const res = await fetch(`${this.apiBase}/upload`, {
+          method: 'POST',
+          headers: csrfHeaders({ Accept: 'application/json' }),
+          body,
+        });
+        this.status = '';
+        if (!res.ok) {
+          const payload = await res.json().catch(() => ({}));
+          this.status = payload.message || 'Upload failed';
+          return;
+        }
+        if (String(targetFolderId ?? '') === String(this.folderId ?? '')) {
+          await this.refresh();
+        } else {
+          this.goFolder(targetFolderId);
+        }
+      },
+
+      onUpload(event) {
+        this.uploadFiles(event.target.files);
+        event.target.value = '';
+      },
+
+      openFile(item) {
+        if (item?.url) window.open(item.url, '_blank', 'noopener');
+      },
+
+      parseDragPayload(event) {
+        const raw =
+          event.dataTransfer?.getData(MEDIA_DND_MIME) ||
+          event.dataTransfer?.getData('text/plain') ||
+          '';
+        if (!raw) return null;
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed?.items?.length) return parsed;
+          if (parsed?.kind && parsed?.id) return parsed;
+          return null;
+        } catch {
+          return null;
+        }
+      },
+
+      dragItemsFromPayload(payload) {
+        if (!payload) return [];
+        if (Array.isArray(payload.items)) return payload.items;
+        if (payload.kind && payload.id) return [payload];
+        return [];
+      },
+
+      async moveDragItemsTo(folderId, payload) {
+        const items = this.dragItemsFromPayload(payload);
+        if (!items.length) return;
+        let failed = false;
+        for (const item of items) {
+          if (item.kind === 'folder' && String(item.id) === String(folderId ?? '')) {
+            this.status = 'Cannot move a folder into itself';
+            failed = true;
+            continue;
+          }
+          const ok = await this.moveItemTo(item.kind, item.id, folderId, { refresh: false });
+          if (!ok) failed = true;
+        }
+        await this.refresh();
+        if (!failed && this.clipboard?.mode === 'cut') {
+          const cutIds = new Set(
+            (this.clipboard.items || []).map((entry) => this.selectionKey(entry.kind, entry.id)),
+          );
+          const movedIds = new Set(items.map((entry) => this.selectionKey(entry.kind, entry.id)));
+          const remaining = (this.clipboard.items || []).filter(
+            (entry) => !movedIds.has(this.selectionKey(entry.kind, entry.id)),
+          );
+          if (remaining.length) writeMediaClipboard({ mode: 'cut', items: remaining });
+          else this.clearClipboard();
+          if ([...movedIds].some((id) => cutIds.has(id))) this.clearSelection();
+        }
+      },
+
+      onDragStart(event, kind, item) {
+        if (!this.isItemSelected(kind, item.id)) {
+          this.onItemClick({ metaKey: false, ctrlKey: false, shiftKey: false }, kind, item);
+        }
+        const dragItems =
+          this.selection.length > 1
+            ? this.selection.map((entry) => ({
+                kind: entry.kind,
+                id: entry.id,
+                name: entry.item?.name,
+              }))
+            : [{ kind, id: item.id, name: item.name }];
+        this._dragging = dragItems.length === 1 ? dragItems[0] : { items: dragItems };
+        this.closeMenu();
+        const payload = JSON.stringify(this._dragging);
+        event.dataTransfer.setData(MEDIA_DND_MIME, payload);
+        event.dataTransfer.setData('text/plain', payload);
+        event.dataTransfer.effectAllowed = 'move';
+      },
+
+      onDragEnd() {
+        this._dragging = null;
+        this.dragover = null;
+        this.dropTarget = null;
+      },
+
+      onDragOverTarget(event, targetKey, _folderId) {
+        const hasFiles = Array.from(event.dataTransfer?.types || []).includes('Files');
+        const hasMedia =
+          Array.from(event.dataTransfer?.types || []).includes(MEDIA_DND_MIME) ||
+          !!this._dragging;
+        if (!hasFiles && !hasMedia) return;
+        event.dataTransfer.dropEffect = hasFiles ? 'copy' : 'move';
+        this.dropTarget = targetKey;
+        this.dragover = hasFiles ? 'upload' : 'move';
+      },
+
+      clearDropTarget() {
+        this.dropTarget = null;
+      },
+
+      onCanvasDragOver(event) {
+        const types = Array.from(event.dataTransfer?.types || []);
+        if (types.includes('Files')) {
+          this.dragover = 'upload';
+          event.dataTransfer.dropEffect = 'copy';
+          return;
+        }
+        if (types.includes(MEDIA_DND_MIME) || this._dragging) {
+          this.dragover = 'move';
+          event.dataTransfer.dropEffect = 'move';
+        }
+      },
+
+      onCanvasDragLeave(event) {
+        if (event.currentTarget && !event.currentTarget.contains(event.relatedTarget)) {
+          this.dragover = null;
+        }
+      },
+
+      async onCanvasDrop(event) {
+        this.dragover = null;
+        this.dropTarget = null;
+        const files = event.dataTransfer?.files;
+        if (files && files.length) {
+          await this.uploadFiles(files, this.folderId);
+          return;
+        }
+        const payload = this.parseDragPayload(event) || this._dragging;
+        if (payload) await this.moveDragItemsTo(this.folderId, payload);
+      },
+
+      async onDropOnTarget(event, targetFolderId) {
+        this.dragover = null;
+        this.dropTarget = null;
+        const files = event.dataTransfer?.files;
+        if (files && files.length) {
+          await this.uploadFiles(files, targetFolderId);
+          return;
+        }
+        const payload = this.parseDragPayload(event) || this._dragging;
+        if (payload) await this.moveDragItemsTo(targetFolderId, payload);
+      },
+
+      async moveItemTo(kind, id, folderId, options = {}) {
+        const path =
+          kind === 'folder'
+            ? `${this.apiBase}/folders/${id}/move`
+            : `${this.apiBase}/files/${id}/move`;
+        if (!options.refresh) this.status = 'Moving…';
+        const res = await fetch(path, {
+          method: 'POST',
+          headers: csrfHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }),
+          body: JSON.stringify({ folderId }),
+        });
+        if (!options.refresh) this.status = '';
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          this.status = body.message || 'Move failed';
+          return false;
+        }
+        if (options.refresh !== false) await this.refresh();
+        return true;
+      },
+
+      openMenu(event, kind, item) {
+        event.preventDefault();
+        event.stopPropagation();
+        const normalized = kind === 'file' ? this.normalizeFileItem(item) : item;
+        if (!this.isItemSelected(kind, item.id)) {
+          this.selection = [{ kind, id: normalized.id, item: normalized }];
+        }
+        this._menuOpenedAt = Date.now();
+        this.menu = {
+          open: true,
+          kind,
+          item: normalized,
+          style: this.menuStyleAt(event.clientX, event.clientY),
+        };
+      },
+
+      openEmptyMenu(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        this._menuOpenedAt = Date.now();
+        this.menu = {
+          open: true,
+          kind: null,
+          item: null,
+          style: this.menuStyleAt(event.clientX, event.clientY),
+        };
+      },
+
+      openFromMenu() {
+        const item = this.menu.item;
+        const kind = this.menu.kind;
+        this.closeMenu();
+        if (!item) return;
+        if (kind === 'folder') this.goFolder(item.id);
+        else this.openFile(item);
+      },
+
+      cutItem() {
+        const targets = this.menuTargets();
+        this.closeMenu();
+        if (!targets.length) return;
+        const items = targets.map((entry) => ({
+          kind: entry.kind,
+          id: entry.id,
+          name: entry.item?.name,
+        }));
+        this.clipboard = { mode: 'cut', items };
+        writeMediaClipboard(this.clipboard);
+        this.status =
+          items.length === 1
+            ? `Cut “${items[0].name}” — paste into a folder`
+            : `Cut ${items.length} items — paste into a folder`;
+      },
+
+      copyItem() {
+        const targets = this.menuTargets().filter((entry) => entry.kind === 'file');
+        this.closeMenu();
+        if (!targets.length) {
+          this.status = 'Only files can be copied';
+          return;
+        }
+        const items = targets.map((entry) => ({
+          kind: 'file',
+          id: entry.id,
+          name: entry.item?.name,
+        }));
+        this.clipboard = { mode: 'copy', items };
+        writeMediaClipboard(this.clipboard);
+        this.status =
+          items.length === 1 ? `Copied “${items[0].name}”` : `Copied ${items.length} files`;
+      },
+
+      clearClipboard() {
+        this.clipboard = null;
+        writeMediaClipboard(null);
+      },
+
+      async pasteHere() {
+        this.closeMenu();
+        const clip = this.clipboard || readMediaClipboard();
+        if (!clip?.items?.length) {
+          this.status = 'Clipboard is empty';
+          return;
+        }
+        if (clip.mode === 'cut') {
+          let failed = false;
+          for (const item of clip.items) {
+            const ok = await this.moveItemTo(item.kind, item.id, this.folderId, { refresh: false });
+            if (!ok) failed = true;
+          }
+          if (!failed) this.clearClipboard();
+          await this.refresh();
+          this.clearSelection();
+          return;
+        }
+        const files = clip.items.filter((item) => item.kind === 'file');
+        if (!files.length) {
+          this.status = 'Only files can be pasted as copies';
+          return;
+        }
+        this.status = 'Pasting…';
+        let failed = false;
+        for (const item of files) {
+          const res = await fetch(`${this.apiBase}/files/${item.id}/copy`, {
+            method: 'POST',
+            headers: csrfHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }),
+            body: JSON.stringify({ folderId: this.folderId }),
+          });
+          if (!res.ok) failed = true;
+        }
+        this.status = failed ? 'Some items could not be pasted' : '';
+        await this.refresh();
+      },
+
+      async setVisibility(visibility, targets = null) {
+        let items = targets;
+        if (!items?.length) items = this.menuTargets();
+        if (!items?.length && this.details) {
+          items = [{ kind: 'file', id: this.details.id, item: this.details }];
+        }
+        items = items.filter((entry) => entry.kind === 'file');
+        this.closeMenu();
+        if (!items.length) return;
+        this.status = visibility === 'public' ? 'Making public…' : 'Making private…';
+        let failed = false;
+        for (const entry of items) {
+          const res = await fetch(`${this.apiBase}/files/${entry.id}/visibility`, {
+            method: 'POST',
+            headers: csrfHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }),
+            body: JSON.stringify({ visibility }),
+          });
+          if (!res.ok) failed = true;
+        }
+        this.status = failed ? 'Unable to update some items' : '';
+        await this.refresh();
+      },
+
+      async bulkDelete() {
+        const targets = this.selection.length ? this.selection : this.menuTargets();
+        this.closeMenu();
+        if (!targets.length) return;
+        const label =
+          targets.length === 1
+            ? `Delete “${targets[0].item?.name}”?`
+            : `Delete ${targets.length} items?`;
+        if (!window.confirm(label)) return;
+        let failed = false;
+        for (const entry of targets) {
+          const path =
+            entry.kind === 'folder'
+              ? `${this.apiBase}/folders/${entry.id}/delete`
+              : `${this.apiBase}/files/${entry.id}/delete`;
+          const res = await fetch(path, {
+            method: 'POST',
+            headers: csrfHeaders({ Accept: 'application/json' }),
+          });
+          if (!res.ok) failed = true;
+        }
+        this.clearSelection();
+        this.details = null;
+        await this.refresh();
+        if (failed) this.status = 'Some items could not be deleted';
+      },
+
+      async bulkSetVisibility(visibility) {
+        await this.setVisibility(visibility, this.selection);
+      },
+
+      async renameItem() {
+        const primary = this.primarySelection() || this.menuTargets()[0];
+        const kind = primary?.kind || this.menu.kind;
+        const item = primary?.item || this.menu.item;
+        this.closeMenu();
+        if (!item || !kind) return;
+        const name = window.prompt('Rename', item.name);
+        if (!name?.trim() || name.trim() === item.name) return;
+        const path =
+          kind === 'folder'
+            ? `${this.apiBase}/folders/${item.id}/rename`
+            : `${this.apiBase}/files/${item.id}/rename`;
+        const res = await fetch(path, {
+          method: 'POST',
+          headers: csrfHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }),
+          body: JSON.stringify({ name: name.trim() }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          this.status = body.message || 'Rename failed';
+          return;
+        }
+        await this.refresh();
+      },
+
+      async deleteItem() {
+        await this.bulkDelete();
+      },
+
+      onKeydown(event) {
+        const tag = String(event.target?.tagName || '').toLowerCase();
+        if (tag === 'input' || tag === 'textarea' || event.target?.isContentEditable) return;
+
+        const meta = event.metaKey || event.ctrlKey;
+        if (meta && event.key.toLowerCase() === 'a') {
+          event.preventDefault();
+          this.selectAllItems();
+          return;
+        }
+        if (meta && event.key.toLowerCase() === 'x') {
+          event.preventDefault();
+          if (this.selection.length) this.cutItem();
+          return;
+        }
+        if (meta && event.key.toLowerCase() === 'c') {
+          event.preventDefault();
+          if (this.selection.length) this.copyItem();
+          return;
+        }
+        if (meta && event.key.toLowerCase() === 'v') {
+          event.preventDefault();
+          this.pasteHere();
+          return;
+        }
+        if (event.key === 'Escape') {
+          if (this.menu.open) {
+            this.closeMenu();
+            return;
+          }
+          if (this.selection.length) {
+            this.clearSelection();
+            return;
+          }
+          if (this.details) {
+            this.closeDetails();
+            return;
+          }
+        }
+        if (event.key === 'Delete' || event.key === 'Backspace') {
+          if (!this.selection.length) return;
+          event.preventDefault();
+          this.bulkDelete();
+        }
+      },
+    };
+  }
+
+  window.shamarMediaManager = createShamarMediaManager;
+
+  function createShamarFilePicker(cfg = {}) {
+    return {
+      name: cfg.name || '',
+      multiple: !!cfg.multiple,
+      accept: cfg.accept || '',
+      rootFolderId: cfg.folderId ?? null,
+      apiBase: cfg.apiBase || '/admin/media',
+      getValue: typeof cfg.getValue === 'function' ? cfg.getValue : () => null,
+      setValue: typeof cfg.setValue === 'function' ? cfg.setValue : () => {},
+      isDisabled: typeof cfg.isDisabled === 'function' ? cfg.isDisabled : () => false,
+      makePublic: !!cfg.makePublic,
+
+      open: false,
+      folderId: cfg.folderId ?? null,
+      browseFolders: [],
+      browseFiles: [],
+      browseBreadcrumbs: [],
+      selectedItems: [],
+      draftIds: [],
+      uploading: false,
+      uploadStatus: '',
+      pickerDragover: false,
+
+      get disabled() {
+        return !!this.isDisabled();
+      },
+
+      acceptsImages() {
+        const accept = String(this.accept || '');
+        return /image\/|\.svg/i.test(accept);
+      },
+
+      isImageFile(file) {
+        const mime = String(file?.mime || '').toLowerCase();
+        if (mime.startsWith('image/') || file?.isImage) return true;
+        return /\.svg$/i.test(String(file?.name || ''));
+      },
+
+      matchesAccept(file) {
+        if (!this.accept) return true;
+        if (this.acceptsImages()) return this.isImageFile(file);
+        const tokens = String(this.accept)
+          .split(',')
+          .map((t) => t.trim().toLowerCase())
+          .filter(Boolean);
+        if (!tokens.length) return true;
+        const mime = String(file?.mime || '').toLowerCase();
+        const name = String(file?.name || '').toLowerCase();
+        return tokens.some((token) => {
+          if (token.startsWith('.')) return name.endsWith(token);
+          if (token.endsWith('/*')) return mime.startsWith(token.slice(0, -1));
+          return mime === token;
+        });
+      },
+
+      get selectedIds() {
+        const raw = this.getValue();
+        if (this.multiple) {
+          if (Array.isArray(raw)) return raw.map(String);
+          if (raw == null || raw === '') return [];
+          return [String(raw)];
+        }
+        if (raw == null || raw === '') return [];
+        return [String(raw)];
+      },
+
+      init() {
+        this.hydrateSelected();
+        this.$watch(
+          () => this.getValue(),
+          () => this.hydrateSelected(),
+        );
+      },
+
+      async hydrateSelected() {
+        const ids = this.selectedIds;
+        if (!ids.length) {
+          this.selectedItems = [];
+          return;
+        }
+        const items = [];
+        for (const id of ids) {
+          try {
+            const res = await fetch(`${this.apiBase}/files/${id}`, {
+              headers: { Accept: 'application/json' },
+            });
+            if (!res.ok) continue;
+            const data = await res.json();
+            if (data.file) {
+              items.push({
+                ...data.file,
+                isImage: this.isImageFile(data.file),
+              });
+            }
+          } catch {
+            /* ignore */
+          }
+        }
+        this.selectedItems = items;
+      },
+
+      async openPicker() {
+        if (this.disabled) return;
+        this.open = true;
+        this.folderId = this.rootFolderId;
+        this.draftIds = [...this.selectedIds];
+        await this.loadBrowse();
+      },
+
+      closePicker() {
+        this.open = false;
+        this.uploadStatus = '';
+        this.pickerDragover = false;
+      },
+
+      acceptInputAttr() {
+        const accept = String(this.accept || '').trim();
+        return accept || undefined;
+      },
+
+      onPickerDragOver(event) {
+        if (this.uploading) return;
+        event.preventDefault();
+        this.pickerDragover = true;
+      },
+
+      onPickerDragLeave(event) {
+        if (event.currentTarget && !event.currentTarget.contains(event.relatedTarget)) {
+          this.pickerDragover = false;
+        }
+      },
+
+      onPickerDrop(event) {
+        event.preventDefault();
+        this.pickerDragover = false;
+        if (this.uploading) return;
+        this.uploadFiles(event.dataTransfer?.files);
+      },
+
+      onUploadInput(event) {
+        this.uploadFiles(event.target.files);
+        event.target.value = '';
+      },
+
+      async uploadFiles(fileList) {
+        const files = Array.from(fileList || []);
+        if (!files.length || this.uploading) return;
+
+        if (this.accept) {
+          const rejected = files.filter((file) => {
+            const fake = { name: file.name, mime: file.type };
+            return !this.matchesAccept(fake);
+          });
+          if (rejected.length === files.length) {
+            this.uploadStatus = 'Selected file type is not allowed';
+            return;
+          }
+        }
+
+        this.uploading = true;
+        this.uploadStatus = `Uploading ${files.length} file(s)…`;
+        const body = new FormData();
+        if (this.folderId) body.append('folderId', this.folderId);
+        if (this.makePublic) body.append('visibility', 'public');
+        for (const file of files) body.append('file', file);
+
+        try {
+          const res = await fetch(`${this.apiBase}/upload`, {
+            method: 'POST',
+            headers: csrfHeaders({ Accept: 'application/json' }),
+            body,
+          });
+          if (!res.ok) {
+            const payload = await res.json().catch(() => ({}));
+            this.uploadStatus = payload.message || 'Upload failed';
+            return;
+          }
+          const data = await res.json();
+          const uploaded = (data.files || [])
+            .map((file) => ({ ...file, isImage: this.isImageFile(file) }))
+            .filter((file) => this.matchesAccept(file));
+
+          await this.loadBrowse();
+
+          if (uploaded.length) {
+            if (this.multiple) {
+              const next = new Set(this.draftIds.map(String));
+              for (const file of uploaded) next.add(String(file.id));
+              this.draftIds = [...next];
+            } else {
+              this.draftIds = [String(uploaded[0].id)];
+            }
+            this.uploadStatus = `Uploaded ${uploaded.length} file(s)`;
+          } else {
+            this.uploadStatus = 'Upload complete — no matching files for this field';
+          }
+        } catch {
+          this.uploadStatus = 'Upload failed';
+        } finally {
+          this.uploading = false;
+          window.setTimeout(() => {
+            if (this.uploadStatus.startsWith('Uploaded') || this.uploadStatus === 'Upload complete — no matching files for this field') {
+              this.uploadStatus = '';
+            }
+          }, 2500);
+        }
+      },
+
+      async loadBrowse() {
+        const params = new URLSearchParams({ format: 'json' });
+        if (this.folderId) params.set('folderId', this.folderId);
+        // Prefer server-side image filter, but keep SVG-friendly client filter too
+        // (browsers sometimes upload SVG as application/octet-stream).
+        if (this.acceptsImages() && !/\.svg/i.test(String(this.accept || ''))) {
+          params.set('mime', 'image/');
+        }
+        const res = await fetch(`${this.apiBase}/browse?${params}`, {
+          headers: { Accept: 'application/json' },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        this.browseFolders = data.folders || [];
+        const files = (data.files || []).map((f) => ({
+          ...f,
+          isImage: this.isImageFile(f),
+        }));
+        this.browseFiles = this.accept ? files.filter((f) => this.matchesAccept(f)) : files;
+        this.browseBreadcrumbs = data.breadcrumbs || [];
+      },
+
+      goFolder(id) {
+        this.folderId = id;
+        this.loadBrowse();
+      },
+
+      isPicked(id) {
+        return this.draftIds.includes(String(id));
+      },
+
+      togglePick(item) {
+        const id = String(item.id);
+        if (this.multiple) {
+          if (this.draftIds.includes(id)) {
+            this.draftIds = this.draftIds.filter((x) => x !== id);
+          } else {
+            this.draftIds = [...this.draftIds, id];
+          }
+        } else {
+          this.draftIds = [id];
+        }
+      },
+
+      async confirmPick() {
+        const ids = this.multiple ? this.draftIds : this.draftIds[0] ? [this.draftIds[0]] : [];
+        if (this.makePublic && ids.length) {
+          await Promise.all(
+            ids.map(async (id) => {
+              try {
+                await fetch(`${this.apiBase}/files/${id}/visibility`, {
+                  method: 'POST',
+                  headers: csrfHeaders({
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                  }),
+                  body: JSON.stringify({ visibility: 'public' }),
+                });
+              } catch {
+                /* ignore */
+              }
+            }),
+          );
+        }
+        if (this.multiple) this.setValue(this.draftIds);
+        else this.setValue(this.draftIds[0] || '');
+        this.closePicker();
+        this.hydrateSelected();
+      },
+
+      remove(id) {
+        if (this.multiple) {
+          this.setValue(this.selectedIds.filter((x) => x !== String(id)));
+        } else {
+          this.setValue('');
+        }
+      },
+
+      clear() {
+        this.setValue(this.multiple ? [] : '');
+      },
+    };
+  }
+
+  window.shamarFilePicker = createShamarFilePicker;
+
   function registerShamarAlpineComponents() {
     if (registerShamarAlpineComponents._done) return;
     registerShamarAlpineComponents._done = true;
@@ -2436,6 +3666,8 @@
     Alpine.data('shamarCombobox', (cfg) => createShamarCombobox(cfg));
     window.shamarFloatingMenu = createShamarFloatingMenu;
     Alpine.data('shamarFloatingMenu', () => createShamarFloatingMenu());
+    Alpine.data('shamarMediaManager', (cfg) => createShamarMediaManager(cfg));
+    Alpine.data('shamarFilePicker', (cfg) => createShamarFilePicker(cfg));
 
     window.shamarTabs = (active = 1) => ({ active: Number(active) || 1 });
     Alpine.data('shamarTabs', (active = 1) => window.shamarTabs(active));
@@ -2489,6 +3721,7 @@
       headers: Array.isArray(cfg.headers) ? cfg.headers : [],
       basePath: cfg.basePath || '',
       slug: cfg.slug || '',
+      queryPrefix: cfg.queryPrefix || '',
       view: cfg.view || 'table',
       allPerPage: cfg.allPerPage || 1000,
       defaultPerPage: String(cfg.defaultPerPage || 15),
@@ -2511,35 +3744,44 @@
       },
       buildUrl() {
         const fieldChips = this.chips.filter((c) => c.field !== null);
+        const prefix = this.queryPrefix || '';
         const path =
           this.view === 'kanban'
             ? `${this.basePath}/${this.slug}/kanban`
             : `${this.basePath}/${this.slug}`;
-        const params = new URLSearchParams();
+        const params = new URLSearchParams(
+          typeof window !== 'undefined' ? window.location.search : '',
+        );
+        if (prefix) {
+          for (const key of [...params.keys()]) {
+            if (key.startsWith(prefix)) params.delete(key);
+          }
+        } else {
+          params.forEach((_value, key) => params.delete(key));
+        }
         const search = (this.searchInput || '').trim();
-        if (search) params.set('search', search);
+        if (search) params.set(`${prefix}search`, search);
         if (this.sort) {
-          params.set('sort', this.sort);
+          params.set(`${prefix}sort`, this.sort);
           if (this.direction === 'asc' || this.direction === 'desc') {
-            params.set('direction', this.direction);
+            params.set(`${prefix}direction`, this.direction);
           }
         }
         if (this.perPage && this.perPage !== String(this.defaultPerPage || 15)) {
-          params.set('perPage', String(this.perPage));
+          params.set(`${prefix}perPage`, String(this.perPage));
         }
         if (fieldChips.length) {
-          params.set('filters', JSON.stringify(fieldChips));
+          params.set(`${prefix}filters`, JSON.stringify(fieldChips));
         } else if (this.filtersLockedEmpty) {
-          // Explicit empty — do not re-apply resource defaultFilters.
-          params.set('filters', '[]');
+          params.set(`${prefix}filters`, '[]');
         }
         if (this.groupBy) {
-          params.set('groupBy', this.groupBy);
+          params.set(`${prefix}groupBy`, this.groupBy);
         } else if (this.groupLockedEmpty) {
-          params.set('groupBy', '');
+          params.set(`${prefix}groupBy`, '');
         }
         if (this.trashed === true || this.trashed === 'only' || this.trashed === '1') {
-          params.set('trashed', '1');
+          params.set(`${prefix}trashed`, '1');
         }
         const qs = params.toString();
         return qs ? `${path}?${qs}` : path;

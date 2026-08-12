@@ -15,6 +15,7 @@ export {
   defineConfig,
   panel,
   type ShamarConfig,
+  type ShamarMediaConfig,
   type ShamarOrm,
 } from './config.js';
 export { default as ShamarProvider } from './provider.js';
@@ -76,6 +77,23 @@ export {
   readFlash,
   type AdminShellContext,
 } from './shamar/view-context.js';
+export {
+  createLocalMediaStorage,
+  mediaObjectKey,
+  sanitizeFilename,
+  checksumOf,
+  isImageMime,
+  isImageLike,
+  resolveUploadMime,
+  type MediaStorage,
+  type LocalMediaStorageOptions,
+} from './shamar/media-storage.js';
+export {
+  mediaPublicUrl,
+  normalizeMediaVisibility,
+  resolveMediaFileUrl,
+} from './shamar/media-url.js';
+export { MediaController } from './controllers/media_controller.js';
 export { discoverResources, discoverPages } from './discover.js';
 export { default as ApiKeyResource } from './resources/api_key_resource.js';
 export { default as RequireApiKeyMiddleware, createRequireApiKeyMiddleware } from './middleware/require_api_key_middleware.js';

@@ -1,4 +1,5 @@
 export * from './types.js';
+export * from './media.js';
 export * from './schemas.js';
 export * from './form.js';
 export * from './table.js';
@@ -6,6 +7,7 @@ export * from './infolist.js';
 export * from './actions.js';
 export * from './resource.js';
 export * from './page.js';
+export * from './page-content.js';
 export * from './page-registry.js';
 export * from './registry.js';
 export * from './panel.js';

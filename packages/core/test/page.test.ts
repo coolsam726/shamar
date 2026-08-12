@@ -7,10 +7,15 @@ import {
   PageRegistry,
   form,
   table,
+  pageContent,
+  infolist,
+  Section,
   TextInput,
   TextColumn,
+  TextEntry,
   isFormPage,
   isListPage,
+  hasPageSections,
 } from '../src/index.js';
 
 class WelcomePage extends Page {
@@ -46,6 +51,32 @@ class CatalogPage extends ListPage {
   }
 }
 
+class DashboardPage extends Page {
+  static override slug = 'dashboard';
+  static override label = 'Dashboard';
+
+  static override content() {
+    return pageContent((p) => {
+      p.edge('banner', { view: 'pages/banner', data: { title: 'Hi' } });
+      p.form('prefs', {
+        form: () => form((f) => f.schema([TextInput.make('theme')])),
+        save: async () => ({ message: 'Saved' }),
+      });
+      p.table('items', {
+        model: 'Product',
+        table: () => table((t) => t.schema([TextColumn.make('name')])),
+      });
+      p.infolist('meta', {
+        record: { env: 'test' },
+        infolist: () =>
+          infolist((i) => {
+            i.schema([Section.make('Runtime').schema([TextEntry.make('env')])]);
+          }),
+      });
+    });
+  }
+}
+
 describe('Page.configure', () => {
   it('configures a custom page', () => {
     const meta = WelcomePage.configure();
@@ -68,7 +99,21 @@ describe('Page.configure', () => {
     assert.equal(meta.kind, 'list');
     assert.ok(meta.listResource);
     assert.equal(meta.listResource?.columns[0]?.name, 'name');
+    assert.equal(meta.listResource?.infolist.entries[0]?.name, 'name');
     assert.equal(isListPage(CatalogPage), true);
+  });
+
+  it('configures a composite page with sections', () => {
+    const meta = DashboardPage.configure();
+    assert.equal(meta.kind, 'composite');
+    assert.equal(meta.view, 'shamar::page-sections');
+    assert.equal(meta.sections?.length, 4);
+    assert.equal(meta.sections?.[0]?.kind, 'edge');
+    assert.equal(meta.sections?.[1]?.kind, 'form');
+    assert.equal(meta.sections?.[2]?.kind, 'table');
+    assert.equal(meta.sections?.[3]?.kind, 'infolist');
+    assert.equal(hasPageSections(DashboardPage), true);
+    assert.equal(hasPageSections(WelcomePage), false);
   });
 });
 

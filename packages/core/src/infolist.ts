@@ -1,4 +1,5 @@
 import type {
+  ColumnConfig,
   ColumnSpan,
   FieldConfig,
   FieldType,
@@ -495,6 +496,43 @@ export function infolistFromFields(fields: FieldConfig[]): InfolistSchema {
           columnSpan: entry.columnSpan,
           columnStart: entry.columnStart,
           entry,
+        };
+      }),
+  );
+}
+
+/** Derive a show/infolist schema from table columns (list pages without a form). */
+export function columnsToInfolistSchema(columns: ColumnConfig[]): InfolistSchema {
+  return finalizeInfolistSchema(
+    columns
+      .filter((column) => column.type !== 'id')
+      .map((column) => {
+        const entry = TextEntry.make(column.name).label(String(column.label ?? column.name));
+        if (column.alignment) entry.alignment(column.alignment);
+        if (
+          column.type === 'boolean' ||
+          column.format === 'boolean' ||
+          column.format === 'toggle'
+        ) {
+          entry.boolean();
+        } else if (column.format === 'badge' || column.type === 'tags') {
+          entry.badge();
+        } else if (column.format === 'date' || column.type === 'date') {
+          entry.date();
+        } else if (column.format === 'datetime' || column.type === 'datetime') {
+          entry.dateTime();
+        } else if (column.type === 'email') {
+          entry.email();
+        } else if (column.format === 'currency') {
+          entry.currency(column.currency ?? 'USD');
+        }
+        const built = entry.build();
+        return {
+          kind: 'entry' as const,
+          name: built.name,
+          columnSpan: built.columnSpan,
+          columnStart: built.columnStart,
+          entry: built,
         };
       }),
   );

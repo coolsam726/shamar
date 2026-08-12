@@ -4,7 +4,13 @@ import type { ApplicationService } from '@adonisjs/core/types';
 import type { ShamarRuntime, PanelRuntime } from './runtime.js';
 import { AdminController } from './controllers/admin_controller.js';
 import { AssetsController } from './assets-controller.js';
+import { MediaController } from './controllers/media_controller.js';
 import type { ShamarHttpContext } from './context.js';
+import { buildShellContext, readFlash } from './shamar/view-context.js';
+import { buildAuthContext, canAccessPanel } from './shamar/auth.js';
+import { isMasqueradeSession } from './auth/masquerade.js';
+import { isImageLike } from './shamar/media-storage.js';
+import { normalizeMediaVisibility, resolveMediaFileUrl } from './shamar/media-url.js';
 
 type AdminAction = keyof {
   [Key in keyof AdminController as AdminController[Key] extends (
@@ -21,6 +27,16 @@ type AssetAction = keyof {
     ? Key
     : never]: AssetsController[Key];
 };
+
+type MediaAction = keyof {
+  [Key in keyof MediaController as MediaController[Key] extends (
+    ctx: ShamarHttpContext,
+  ) => unknown
+    ? Key
+    : never]: MediaController[Key];
+};
+
+const RESERVED_SLUG = /^(?!assets$|profile$|media$)/;
 
 export async function registerShamarRoutes(
   app: ApplicationService,
@@ -76,6 +92,8 @@ export async function registerShamarRoutes(
 
   api.prefix(apiPrefix);
 
+  registerPublicMediaRoutes(router, runtime);
+
   if (runtime.config.auth?.apiKeys?.protectApi) {
     const { createRequireApiKeyMiddleware } = await import(
       './middleware/require_api_key_middleware.js'
@@ -124,10 +142,22 @@ function registerPanelRoutes(
       .get('/assets/alpine.min.js', assetHandler('alpineJs'))
       .as(`${routePrefix}.assets.alpineJs`);
 
+    if (panel.media) {
+      registerMediaRoutes(router, runtime, panel, routePrefix);
+    }
+
+    router
+      .post('/:slug/sections/:section/form-state', handler('sectionFormState'))
+      .where('slug', RESERVED_SLUG)
+      .as(`${routePrefix}.pages.sectionFormState`);
+    router
+      .post('/:slug/sections/:section', handler('savePageSection'))
+      .where('slug', RESERVED_SLUG)
+      .as(`${routePrefix}.pages.sectionSave`);
     router.get('/', handler('dashboard')).as(`${routePrefix}.dashboard`);
     router
       .post('/:slug/action/:action', handler('pageAction'))
-      .where('slug', /^(?!assets$|profile$)/)
+      .where('slug', RESERVED_SLUG)
       .as(`${routePrefix}.pages.action`);
     router.get('/:slug/create', handler('create')).as(`${routePrefix}.resources.create`);
     router.post('/:slug/form-state', handler('formState')).as(`${routePrefix}.resources.formState`);
@@ -161,14 +191,172 @@ function registerPanelRoutes(
     router.delete('/:slug/:id', handler('destroy')).as(`${routePrefix}.resources.destroy.delete`);
     router
       .get('/:slug/:id', handler('show'))
-      .where('slug', /^(?!assets$|profile$)/)
+      .where('slug', RESERVED_SLUG)
       .as(`${routePrefix}.resources.show`);
     router
       .get('/:slug', handler('index'))
-      .where('slug', /^(?!assets$|profile$)/)
+      .where('slug', RESERVED_SLUG)
       .as(`${routePrefix}.resources.index`);
   });
 
   group.prefix(prefix);
   void app;
+}
+
+function registerMediaRoutes(
+  router: Router,
+  runtime: ShamarRuntime,
+  panel: PanelRuntime,
+  routePrefix: string,
+): void {
+  const media = panel.media!;
+  const basePath = panel.path.replace(/\/+$/, '') || '/admin';
+
+  const mediaHandler = (action: MediaAction) => {
+    return async (ctx: HttpContext) => {
+      const shamarCtx = ctx as ShamarHttpContext;
+      const authCtx = await buildAuthContext(shamarCtx, runtime.config, panel.id);
+      if (authCtx.user && !canAccessPanel(authCtx.user, panel.config)) {
+        return ctx.response.unauthorized({ message: 'Forbidden' });
+      }
+      if (!authCtx.user) {
+        return ctx.response.redirect(runtime.config.auth?.loginPath ?? '/login');
+      }
+
+      const checkAbility = async (
+        _c: ShamarHttpContext,
+        ability: 'view' | 'upload' | 'manage',
+      ) => {
+        const user = authCtx.user;
+        if (!user) return false;
+        // Super-user / empty-auth hosts: allow when no explicit media abilities.
+        const permissions = user.permissions ?? [];
+        if (permissions.length === 0) return true;
+        const needed =
+          ability === 'view'
+            ? ['media.view', 'media.upload', 'media.manage', 'media.*']
+            : ability === 'upload'
+              ? ['media.upload', 'media.manage', 'media.*']
+              : ['media.manage', 'media.*'];
+        return needed.some((p) => permissions.includes(p) || permissions.includes('*'));
+      };
+
+      const controller = new MediaController({
+        adapter: media.adapter,
+        storage: media.storage,
+        basePath,
+        publicPath: media.publicPath,
+        checkAbility,
+      });
+
+      if (action === 'index') {
+        const wantsJson =
+          ctx.request.qs().format === 'json' ||
+          ctx.request.header('accept')?.includes('application/json');
+        if (!wantsJson) {
+          const shell = await buildShellContext({
+            config: runtime.config,
+            registry: panel.registry,
+            pages: panel.pages,
+            currentSlug: 'media',
+            pageTitle: media.label,
+            basePath,
+            branding: panel.config.branding ?? runtime.config.branding,
+            panelContentMaxWidth: panel.config.contentMaxWidth,
+            authorizer: runtime.authorizer,
+            authCtx,
+            flash: readFlash(shamarCtx),
+            masquerade: isMasqueradeSession(shamarCtx.session) ? { active: true } : undefined,
+            mediaNav: {
+              label: media.label,
+              navigationGroup: media.navigationGroup,
+              navigationSort: media.navigationSort,
+              navigationIcon: media.navigationIcon,
+            },
+          });
+          const folderId = (ctx.request.qs().folderId as string | undefined) || null;
+          const browse = await media.adapter.browse({
+            folderId,
+            search: (ctx.request.qs().q as string | undefined) || undefined,
+            mimePrefix: (ctx.request.qs().mime as string | undefined) || undefined,
+          });
+          const folderTree = await media.adapter.listFolders();
+          return shamarCtx.view.render('shamar::media/manager', {
+            ...shell,
+            folder: browse.folder,
+            mediaBreadcrumbs: browse.breadcrumbs,
+            folders: browse.folders,
+            folderTree,
+            files: browse.files.map((file) => ({
+              ...file,
+              visibility: normalizeMediaVisibility(file.visibility),
+              url: resolveMediaFileUrl(file, {
+                panelBasePath: basePath,
+                publicPath: media.publicPath,
+              }),
+              isImage: isImageLike(file),
+            })),
+            mediaApiBase: `${basePath}/media`,
+            publicPath: media.publicPath,
+            pageTitle: media.label,
+          });
+        }
+      }
+
+      const method = controller[action] as (context: ShamarHttpContext) => unknown;
+      return method.call(controller, shamarCtx);
+    };
+  };
+
+  router.get('/media', mediaHandler('index')).as(`${routePrefix}.media.index`);
+  router.get('/media/browse', mediaHandler('browseJson')).as(`${routePrefix}.media.browse`);
+  router.get('/media/folders', mediaHandler('listFolders')).as(`${routePrefix}.media.folders.index`);
+  router.post('/media/folders', mediaHandler('createFolder')).as(`${routePrefix}.media.folders.create`);
+  router
+    .post('/media/folders/:id/rename', mediaHandler('renameFolder'))
+    .as(`${routePrefix}.media.folders.rename`);
+  router
+    .post('/media/folders/:id/move', mediaHandler('moveFolder'))
+    .as(`${routePrefix}.media.folders.move`);
+  router
+    .post('/media/folders/:id/delete', mediaHandler('deleteFolder'))
+    .as(`${routePrefix}.media.folders.delete`);
+  router.post('/media/upload', mediaHandler('upload')).as(`${routePrefix}.media.upload`);
+  router.get('/media/files/:id', mediaHandler('showFile')).as(`${routePrefix}.media.files.show`);
+  router.get('/media/files/:id/raw', mediaHandler('rawFile')).as(`${routePrefix}.media.files.raw`);
+  router
+    .post('/media/files/:id/rename', mediaHandler('renameFile'))
+    .as(`${routePrefix}.media.files.rename`);
+  router
+    .post('/media/files/:id/move', mediaHandler('moveFile'))
+    .as(`${routePrefix}.media.files.move`);
+  router
+    .post('/media/files/:id/visibility', mediaHandler('setFileVisibility'))
+    .as(`${routePrefix}.media.files.visibility`);
+  router
+    .post('/media/files/:id/copy', mediaHandler('copyFile'))
+    .as(`${routePrefix}.media.files.copy`);
+  router
+    .post('/media/files/:id/delete', mediaHandler('deleteFile'))
+    .as(`${routePrefix}.media.files.delete`);
+}
+
+/** Public (ungated) media bytes — only files marked `visibility: public`. */
+function registerPublicMediaRoutes(router: Router, runtime: ShamarRuntime): void {
+  const panelWithMedia = runtime.panels.find((panel) => panel.media);
+  const media = panelWithMedia?.media;
+  if (!media) return;
+
+  const publicPath = media.publicPath.replace(/\/+$/, '') || '/media';
+  const basePath = panelWithMedia!.path.replace(/\/+$/, '') || '/admin';
+  const controller = new MediaController({
+    adapter: media.adapter,
+    storage: media.storage,
+    basePath,
+    publicPath,
+  });
+
+  router.get(`${publicPath}/:id`, async (ctx: HttpContext) => {
+    return controller.publicRaw(ctx as ShamarHttpContext);
+  }).as('shamar.media.public');
 }

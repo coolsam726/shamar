@@ -149,6 +149,10 @@ Then open `/api/shamar/docs` (Scalar) and `/api/shamar/openapi.json`.
 | `orm` | `'lucid'` \| `'mongoose'` (default Lucid). Panels may override. |
 | `panels` | Array of `panel(id).path(…).discoverResources(…).discoverPages(…).branding(…)` |
 | `branding` | Default branding inherited by panels |
+| `media` | File Manager + FilePicker (see [Media library](#media-library)) |
+| `apiPrefix` | JSON API prefix (default `/api/shamar`) |
+| `adapter` | Escape hatch: custom `DataAdapter` (or factory) for all panels |
+| `auth` | Session / API / policy wiring (see below) |
 
 #### Branding
 
@@ -169,14 +173,16 @@ branding: {
 
 Panel-level `.branding({ name, primaryColor, accentColor, logo, logoHeight })` merges over the default — colors, logos, and fonts are inherited unless overridden.
 
-Use `resolveBrandingOverrides` to overlay logos from a DB (global settings and/or per-company) at request time.
+Use `resolveBrandingOverrides` to overlay logos from a DB (global settings) at request time. Prefer panel config + a singleton Settings page over per-company logos.
 
 #### Pages (Filament-style)
 
-Custom panel pages live beside resources — form pages, list pages, or plain views:
+Custom panel pages live beside resources. Discover them with `.discoverPages('app/pages/admin')` (`*_page.ts` / `*Page.ts`).
+
+**Single-purpose shortcuts** — `FormPage` (one form) and `ListPage` (one table):
 
 ```ts
-import { FormPage, ListPage, Page, form, table, Section, TextInput, TextColumn } from '@shamar/core'
+import { FormPage, ListPage, form, table, Section, TextInput, TextColumn } from '@shamar/core'
 
 export default class BrandingSettingsPage extends FormPage {
   static override slug = 'settings'
@@ -194,26 +200,113 @@ export default class BrandingSettingsPage extends FormPage {
 }
 ```
 
+**Composite `Page`** — multiple forms, tables, infolists, and Edge blocks on one screen via `content()` / `pageContent()`:
+
+```ts
+import {
+  Page,
+  pageContent,
+  form,
+  table,
+  infolist,
+  Section,
+  TextColumn,
+  TextEntry,
+  Select,
+} from '@shamar/core'
+
+export default class OpsDashboardPage extends Page {
+  static override slug = 'ops-dashboard'
+  static override label = 'Ops dashboard'
+
+  static override content() {
+    return pageContent((p) => {
+      p.edge('banner', {
+        view: 'pages/admin/ops_banner', // host Edge view; locals from `data`
+        data: async (ctx) => ({ userName: ctx.user?.name }),
+      })
+
+      p.form('quick-settings', {
+        title: 'Quick settings',
+        form: () => form((f) => f.schema([Select.make('theme').options([/* … */])])),
+        fill: async () => ({ theme: 'system' }),
+        save: async (data) => ({ message: 'Saved' }),
+      })
+
+      p.table('recent-products', {
+        title: 'Recent products',
+        model: Product,
+        linkResourceSlug: 'products', // row links to the resource show page
+        table: () => table((t) => t.schema([TextColumn.make('name').searchable()])),
+      })
+
+      p.infolist('environment', {
+        title: 'Environment',
+        record: () => ({ nodeEnv: process.env.NODE_ENV }),
+        infolist: () =>
+          infolist((i) => {
+            i.schema([Section.make('Runtime').schema([TextEntry.make('nodeEnv')])])
+          }),
+      })
+    })
+  }
+}
+```
+
+Empty `content()` keeps the original custom-page behavior: `static view` + `mount()` locals.
+
 ```ts
 panel('admin')
   .brandDisplay('both') // or 'logo' | 'name' — also `.brandLogoOnly()` / `.brandNameOnly()`
   .discoverResources('app/resources/admin')
-  .discoverPages('app/pages/admin') // `*_page.ts` / `*Page.ts`
+  .discoverPages('app/pages/admin')
 ```
 
 | Kind | Base class | Routes |
 |------|------------|--------|
-| Custom | `Page` | `GET /:slug` |
-| Form | `FormPage` | `GET|POST /:slug`, `POST /:slug/form-state` |
-| List | `ListPage` | `GET /:slug` (reuses list UI; no create/edit by default) |
+| Custom | `Page` (no `content()`) | `GET /:slug` |
+| Composite | `Page` + `content()` | `GET /:slug`, `POST /:slug/sections/:section`, `POST /:slug/sections/:section/form-state` |
+| Form | `FormPage` | `GET\|POST /:slug`, `POST /:slug/form-state` |
+| List | `ListPage` | `GET /:slug` (table), `GET /:slug/:id` (read-only infolist; derived from columns or `static infolist()`) |
 
-Page slugs must not collide with resource slugs or reserved names (`assets`, `profile`).
-Resource routes like `/:slug/:id/edit` redirect to the page when `slug` is a registered page.
+Page slugs must not collide with resource slugs or reserved names (`assets`, `profile`, `media`).
+Resource routes like `/:slug/:id/edit` redirect to the page when `slug` is a registered **form/custom** page. List pages keep `GET /:slug/:id` as the record view.
+
+Table sections on a composite page use prefixed query params (`{sectionKey}_page`, `{sectionKey}_search`, …) so several tables can share one URL.
 
 `brandDisplay` (on `.branding({ brandDisplay })` or `.brandDisplay()`) controls whether the shell shows **logo + name**, **logo only**, or **name only**.
-| `apiPrefix` | JSON API prefix (default `/api/shamar`) |
-| `adapter` | Escape hatch: custom `DataAdapter` (or factory) for all panels |
-| `auth` | Session / API / policy wiring (see below) |
+
+#### Media library
+
+Enable a File Manager (sidebar **Files**) and `FilePicker` form fields:
+
+```ts
+import { defineConfig, panel } from '@shamar/adonis'
+import { createMongooseMediaLibraryAdapter } from '@shamar/mongoose'
+import MediaFolder from '#models/media_folder'
+import MediaFile from '#models/media_file'
+
+export default defineConfig({
+  media: {
+    enabled: true,
+    root: 'storage/media',       // local blob disk (default)
+    publicPath: '/media',        // ungated URL for public files
+    adapter: () =>
+      createMongooseMediaLibraryAdapter({
+        Folder: MediaFolder,
+        File: MediaFile,
+      }),
+  },
+  panels: [panel('admin').path('/admin').discoverResources('app/resources/admin')],
+})
+```
+
+Lucid hosts use `createLucidMediaLibraryAdapter` from `@shamar/lucid` with folder/file models.
+
+- **Manager** — folder tree, icons/tiles/list/details, multi-select, cut/copy/paste, public/private
+- **FilePicker** — browse + upload in the field dialog; `.accept('image/*')`, optional public uploads
+- **Visibility** — `public` files at `{publicPath}/:id`; private files require panel auth (`/{panel}/media/files/:id/raw`)
+- **Abilities** — `media.view`, `media.upload`, `media.manage` (or `media.*` / `*`)
 
 ### Auth
 

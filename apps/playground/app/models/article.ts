@@ -6,6 +6,8 @@ export interface ArticleAttrs {
   body?: string | null
   publishedAt?: Date | null
   coverUrl?: string | null
+  /** Media library file id (FilePicker). */
+  coverMediaId?: string | null
   draft?: boolean
   deletedAt?: Date | null
 }
@@ -17,6 +19,7 @@ const articleSchema = new Schema<ArticleAttrs>(
     body: { type: String, default: null },
     publishedAt: { type: Date, default: null },
     coverUrl: { type: String, default: null, trim: true },
+    coverMediaId: { type: String, default: null, trim: true },
     draft: { type: Boolean, default: true },
     deletedAt: { type: Date, default: null },
   },

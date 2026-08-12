@@ -26,6 +26,25 @@ export function isValidationException(error: unknown): error is ValidationExcept
   );
 }
 
+/**
+ * Absolute http(s) URLs, plus path-absolute URLs used by the media library
+ * (e.g. `/admin/media/files/:id/raw`).
+ */
+export function isValidUrlValue(value: string): boolean {
+  const str = value.trim();
+  if (!str) return false;
+  if (str.startsWith('/') && !str.startsWith('//')) {
+    // Path-absolute (same-origin media / asset paths).
+    return !/\s/.test(str);
+  }
+  try {
+    const parsed = new URL(str);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 function resolveUniqueOptions(field: FieldConfig): UniqueOptions | null {
   if (!field.unique) return null;
   if (field.unique === true) {
@@ -123,10 +142,7 @@ export function validateFieldConstraints(
     }
 
     if (field.type === 'url') {
-      try {
-        // Require an absolute URL.
-        new URL(str);
-      } catch {
+      if (!isValidUrlValue(str)) {
         errors[field.name] = `The ${label} must be a valid URL.`;
         continue;
       }

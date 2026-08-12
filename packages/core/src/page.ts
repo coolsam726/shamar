@@ -1,5 +1,7 @@
 import { form } from './form.js';
+import { infolist, columnsToInfolistSchema } from './infolist.js';
 import { table } from './table.js';
+import type { PageSectionDefinition, PageSectionMeta } from './page-content.js';
 import type {
   ActionConfig,
   FieldConfig,
@@ -9,7 +11,7 @@ import type {
   ShamarUser,
 } from './types.js';
 
-export type PageKind = 'custom' | 'form' | 'list';
+export type PageKind = 'custom' | 'form' | 'list' | 'composite';
 
 /** Minimal request context passed into page lifecycle hooks. */
 export interface PageRequestContext {
@@ -55,11 +57,13 @@ export interface PageMeta {
    * Only set when kind is `list`.
    */
   listResource?: ResourceMeta;
+  /** Declarative sections when kind is `composite`. */
+  sections?: PageSectionMeta[];
 }
 
 /**
- * Filament-style custom page (view + mount + optional header actions).
- * Prefer {@link FormPage} or {@link ListPage} when you need a form or table.
+ * Filament-style panel page — custom view, declarative sections, or header actions.
+ * Use {@link FormPage} or {@link ListPage} for a single form or table shortcut.
  */
 export abstract class Page {
   static slug = 'page';
@@ -97,7 +101,44 @@ export abstract class Page {
     return null;
   }
 
+  /**
+   * Declarative sections (forms, tables, infolists, Edge blocks).
+   * When non-empty, the page renders as a composite layout (`shamar::page-sections`).
+   */
+  static content(): PageSectionDefinition[] {
+    return [];
+  }
+
   static configure(): PageMeta {
+    const definitions = this.content();
+    if (definitions.length > 0) {
+      const sections = definitions.map((section) => {
+        const meta = { ...section.meta };
+        if (meta.kind === 'infolist' && meta.infolistResource) {
+          meta.infolistResource = {
+            ...meta.infolistResource,
+            slug: `${this.slug}__${meta.key}`,
+          };
+        }
+        return meta;
+      });
+
+      return {
+        kind: 'composite',
+        slug: this.slug,
+        label: this.label,
+        navigationGroup: this.navigationGroup,
+        navigationSubGroup: this.navigationSubGroup,
+        navigationSort: this.navigationSort,
+        navigationHidden: this.navigationHidden,
+        icon: this.icon,
+        view: this.view ?? 'shamar::page-sections',
+        contentMaxWidth: this.contentMaxWidth,
+        actions: this.headerActions(),
+        sections,
+      };
+    }
+
     return {
       kind: 'custom',
       slug: this.slug,
@@ -167,6 +208,14 @@ export abstract class ListPage extends Page {
     return table(() => undefined);
   }
 
+  /**
+   * Optional show/infolist for row clicks (`GET /:slug/:id`).
+   * Defaults to entries derived from {@link table} columns.
+   */
+  static infolist(): ReturnType<typeof infolist> | undefined {
+    return undefined;
+  }
+
   static listActions(): ActionConfig[] {
     // Read-only list by default — no create/edit/delete chrome.
     return [];
@@ -175,6 +224,8 @@ export abstract class ListPage extends Page {
   static override configure(): PageMeta {
     const tableSchema = this.table();
     const actionList = this.listActions();
+    const explicitInfolist = this.infolist();
+    const infolistSchema = explicitInfolist ?? columnsToInfolistSchema(tableSchema.columns);
 
     const searchableFields = tableSchema.columns
       .filter((column) => column.searchable)
@@ -194,8 +245,8 @@ export abstract class ListPage extends Page {
       fields: [],
       form: { fields: [], sections: [], schema: [] },
       columns: tableSchema.columns,
-      infolist: { entries: [], sections: [], schema: [] },
-      hasExplicitInfolist: false,
+      infolist: infolistSchema,
+      hasExplicitInfolist: explicitInfolist !== undefined,
       actions: actionList,
       searchableFields: [...new Set(searchableFields)],
       defaultSort: tableSchema.defaultSort,
@@ -236,4 +287,9 @@ export function isListPage(value: PageClass): value is typeof ListPage {
     current = Object.getPrototypeOf(current);
   }
   return false;
+}
+
+/** True when the page declares one or more {@link Page.content} sections. */
+export function hasPageSections(value: PageClass): boolean {
+  return value.content().length > 0;
 }

@@ -1,6 +1,6 @@
 # @shamar/core
 
-Filament-inspired **Resource DSL** for Shamar — forms, tables, infolists, actions, navigation, and auth contracts. ORM-agnostic: persistence lives in adapters (`@shamar/lucid`, `@shamar/mongoose`) or your own `DataAdapter`.
+Filament-inspired **Resource DSL** for Shamar — forms, tables, infolists, panel pages, actions, navigation, and auth contracts. ORM-agnostic: persistence lives in adapters (`@shamar/lucid`, `@shamar/mongoose`) or your own `DataAdapter`.
 
 Most apps consume this transitively via [`@shamar/adonis`](../adonis). Use `@shamar/core` directly when building a custom host or adapter.
 
@@ -96,6 +96,7 @@ export default class UserResource extends Resource {
 | `form((f) => …)` | Create / edit schemas |
 | `table((t) => …)` | List columns, filters, group-by defaults |
 | `infolist((i) => …)` | Show / view schemas |
+| `pageContent((p) => …)` | Composite `Page` sections (edge, form, table, infolist) |
 | `actions((a) => …)` | Create, view, edit, delete, bulk, header, and row actions |
 | `panel(id)` | Multi-panel registration (also re-exported from `@shamar/adonis`) |
 
@@ -107,7 +108,7 @@ Containers use `.schema([...])` for children. Layout width uses `.columns(n)` on
 
 ### Form fields
 
-`TextInput`, `Textarea`, `Select`, `Toggle`, `Checkbox`, `Radio`, `CheckboxList`, `Hidden`, `ColorPicker`, `TagsInput`, `DatePicker`, `DateTimePicker`, `FileUpload`, `RelationTable`, `PermissionsAssignment`, `AbilitiesAssignment`
+`TextInput`, `Textarea`, `Select`, `Toggle`, `Checkbox`, `Radio`, `CheckboxList`, `Hidden`, `ColorPicker`, `TagsInput`, `DatePicker`, `DateTimePicker`, `FileUpload`, `FilePicker`, `RelationTable`, `PermissionsAssignment`, `AbilitiesAssignment`
 
 ### Table / infolist
 
@@ -115,8 +116,33 @@ Containers use `.schema([...])` for children. Layout width uses `.columns(n)` on
 
 - `TextEntry.make('payload').textarea()` — scrollable, break-all block for long unbroken strings
 - Derived show schemas (no `infolist()`) wrap fields in a card `Section` by default
+- `ListPage` without `infolist()` derives the record view from table columns
 
-### Layout width
+## Pages
+
+`Page`, `FormPage`, and `ListPage` are panel screens discovered next to resources (see [`@shamar/adonis`](../adonis#pages-filament-style)).
+
+```ts
+import { Page, pageContent, form, table, infolist } from '@shamar/core'
+
+export default class OpsDashboardPage extends Page {
+  static override slug = 'ops-dashboard'
+  static override label = 'Ops dashboard'
+
+  static override content() {
+    return pageContent((p) => {
+      p.edge('banner', { view: 'pages/admin/ops_banner', data: { title: 'Hi' } })
+      p.form('settings', { form: () => form((f) => { /* … */ }), save: async () => ({}) })
+      p.table('items', { model: Product, table: () => table((t) => { /* … */ }) })
+      p.infolist('meta', { record: { env: 'test' }, infolist: () => infolist((i) => { /* … */ }) })
+    })
+  }
+}
+```
+
+`FormPage` / `ListPage` remain shortcuts for a single form or table. List row clicks open `GET /:slug/:id` using `static infolist()` or columns.
+
+## Layout width
 
 Default for form and detail pages: `screen-xl` (1280px) — fills the column up to that cap.
 

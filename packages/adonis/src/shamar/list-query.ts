@@ -541,7 +541,9 @@ export function formInputType(field: { type: string; revealable?: boolean }): st
     case 'tel':
       return 'tel';
     case 'url':
-      return 'url';
+      // Use text so path-absolute media URLs (e.g. /admin/media/files/:id/raw)
+      // are not rejected by the browser's native type=url constraint.
+      return 'text';
     case 'date':
       return 'date';
     case 'datetime':
@@ -551,6 +553,7 @@ export function formInputType(field: { type: string; revealable?: boolean }): st
     case 'hidden':
       return 'hidden';
     case 'file':
+    case 'filePicker':
     case 'image':
       return 'file';
     default:
@@ -810,6 +813,176 @@ function pruneDetailNodes(nodes: import('@shamar/core').SchemaNode[]): import('@
     .filter((n): n is import('@shamar/core').SchemaNode => n != null);
 }
 
+
+export function sectionQueryPrefix(sectionKey: string): string {
+  return `${sectionKey}_`;
+}
+
+export function readPrefixedListQuery(
+  input: Record<string, unknown>,
+  sectionKey: string,
+): ListViewQuery {
+  const prefix = sectionQueryPrefix(sectionKey);
+  const read = (name: string) => input[`${prefix}${name}`];
+  return {
+    page: read('page') as ListViewQuery['page'],
+    perPage: read('perPage') as ListViewQuery['perPage'],
+    search: read('search') as ListViewQuery['search'],
+    sort: read('sort') as ListViewQuery['sort'],
+    direction: read('direction') as ListViewQuery['direction'],
+    filters: read('filters') as ListViewQuery['filters'],
+    groupBy: read('groupBy') as ListViewQuery['groupBy'],
+    trashed: read('trashed') as ListViewQuery['trashed'],
+  };
+}
+
+export function buildPrefixedListQueryString(
+  sectionKey: string,
+  query: ListViewQuery = {},
+  overrides: ListViewQuery = {},
+  options?: { defaultPerPage?: number; preserveQuery?: string },
+): string {
+  const prefix = sectionQueryPrefix(sectionKey);
+  const params = new URLSearchParams(options?.preserveQuery?.replace(/^\?/, '') ?? '');
+  for (const key of [...params.keys()]) {
+    if (key.startsWith(prefix)) params.delete(key);
+  }
+
+  const merged = normalizeListQuery({ ...query, ...overrides }, { perPage: options?.defaultPerPage });
+  const defaultPerPage = options?.defaultPerPage ?? DEFAULT_LIST_PER_PAGE;
+
+  if (merged.search) params.set(`${prefix}search`, merged.search);
+
+  if (merged.sort) {
+    params.set(`${prefix}sort`, merged.sort);
+    if (merged.direction === 'asc' || merged.direction === 'desc') {
+      params.set(`${prefix}direction`, merged.direction);
+    }
+  }
+
+  if (
+    merged.perPage >= LIST_ALL_RECORDS_PER_PAGE ||
+    overrides.perPage === 'all' ||
+    String(merged.perPage).toLowerCase() === 'all'
+  ) {
+    params.set(`${prefix}perPage`, 'all');
+  } else if (merged.perPage !== defaultPerPage) {
+    params.set(`${prefix}perPage`, String(merged.perPage));
+  }
+
+  if (merged.page > 1) params.set(`${prefix}page`, String(merged.page));
+
+  if (merged.filters?.length) {
+    params.set(`${prefix}filters`, JSON.stringify(merged.filters));
+  } else if (overrides.filters === '[]' || (Array.isArray(overrides.filters) && overrides.filters.length === 0)) {
+    params.set(`${prefix}filters`, '[]');
+  }
+
+  if (merged.groupBy) {
+    params.set(`${prefix}groupBy`, merged.groupBy);
+  } else if (overrides.groupBy === '') {
+    params.set(`${prefix}groupBy`, '');
+  }
+
+  const value = params.toString();
+  return value ? `?${value}` : '';
+}
+
+export function pageSectionListPath(
+  basePath: string,
+  pageSlug: string,
+  sectionKey: string,
+  query: ListViewQuery = {},
+  overrides: ListViewQuery = {},
+  options?: { defaultPerPage?: number; preserveQuery?: string },
+): string {
+  return `${basePath}/${pageSlug}${buildPrefixedListQueryString(sectionKey, query, overrides, options)}`;
+}
+
+export function pageSectionSortColumnUrl(
+  basePath: string,
+  pageSlug: string,
+  sectionKey: string,
+  query: ListViewQuery,
+  column: string,
+  options?: { defaultPerPage?: number; preserveQuery?: string },
+): string {
+  const nextDirection =
+    query.sort === column && query.direction !== 'desc' ? 'desc' : 'asc';
+  return pageSectionListPath(
+    basePath,
+    pageSlug,
+    sectionKey,
+    query,
+    { sort: column, direction: nextDirection, page: 1 },
+    options,
+  );
+}
+
+export function buildPageSectionPaginationContext(
+  basePath: string,
+  pageSlug: string,
+  sectionKey: string,
+  query: ListViewQuery,
+  result: PaginatedResult,
+  options?: { defaultPerPage?: number; preserveQuery?: string },
+): PaginationContext {
+  const pathOpts = {
+    defaultPerPage: options?.defaultPerPage,
+    preserveQuery: options?.preserveQuery,
+  };
+  const links: PaginationLink[] = paginationWindow(result.page, result.pageCount).map(
+    (entry) => {
+      if (entry === 'ellipsis') {
+        return { type: 'ellipsis' };
+      }
+      return {
+        type: 'page',
+        page: entry,
+        label: String(entry),
+        active: entry === result.page,
+        href: pageSectionListPath(
+          basePath,
+          pageSlug,
+          sectionKey,
+          query,
+          { page: entry },
+          pathOpts,
+        ),
+      };
+    },
+  );
+
+  return {
+    page: result.page,
+    pageCount: result.pageCount,
+    total: result.total,
+    formAction: `${basePath}/${pageSlug}`,
+    prevHref:
+      result.page > 1
+        ? pageSectionListPath(
+            basePath,
+            pageSlug,
+            sectionKey,
+            query,
+            { page: result.page - 1 },
+            pathOpts,
+          )
+        : undefined,
+    nextHref:
+      result.page < result.pageCount
+        ? pageSectionListPath(
+            basePath,
+            pageSlug,
+            sectionKey,
+            query,
+            { page: result.page + 1 },
+            pathOpts,
+          )
+        : undefined,
+    links,
+  };
+}
 
 export { resolveGridItemStyle } from '@shamar/core';
 

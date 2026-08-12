@@ -11,6 +11,8 @@ export interface AppSettingsAttrs {
   name?: string | null
   logo?: string | null
   logoDark?: string | null
+  logoMediaId?: string | null
+  logoDarkMediaId?: string | null
   logoHeight?: string | null
   brandDisplay?: BrandDisplayMode | null
   /** Preferences */
@@ -26,6 +28,8 @@ const appSettingsSchema = new Schema<AppSettingsAttrs>(
     name: { type: String, default: null, trim: true },
     logo: { type: String, default: null, trim: true },
     logoDark: { type: String, default: null, trim: true },
+    logoMediaId: { type: String, default: null, trim: true },
+    logoDarkMediaId: { type: String, default: null, trim: true },
     logoHeight: { type: String, default: null, trim: true },
     brandDisplay: {
       type: String,
@@ -81,6 +85,8 @@ export async function upsertAppSettings(
         name: data.name ?? null,
         logo: data.logo ?? null,
         logoDark: data.logoDark ?? null,
+        logoMediaId: data.logoMediaId ?? null,
+        logoDarkMediaId: data.logoDarkMediaId ?? null,
         logoHeight: data.logoHeight ?? null,
         brandDisplay,
         channels: Array.isArray(data.channels) ? data.channels : [],

@@ -1,0 +1,12 @@
+<div class="shamar-card rounded-xl p-6 space-y-4">
+  @each(node in section.detailSchema)
+    @!component('shamar::partials/schema-node', {
+      node: node,
+      schemaMode: 'detail',
+      mode: 'show',
+      record: section.record,
+      formErrors: {},
+      relationUi: section.relationUi || {},
+    })
+  @endeach
+</div>

@@ -56,6 +56,7 @@ export default class ShamarProvider {
 
       const {
         sortColumnUrl,
+        pageSectionSortColumnUrl,
         cellValue,
         detailValue,
         badgeValues,
@@ -67,6 +68,7 @@ export default class ShamarProvider {
       } = await import('./shamar/list-query.js');
 
       edge.global('sortColumnUrl', sortColumnUrl);
+      edge.global('pageSectionSortColumnUrl', pageSectionSortColumnUrl);
       edge.global('cellValue', cellValue);
       edge.global('detailValue', detailValue);
       edge.global('badgeValues', badgeValues);

@@ -1,0 +1,36 @@
+<div class="shamar-card rounded-xl p-6">
+  <form
+    id="shamar-form-{{ section.key }}"
+    method="post"
+    action="{{ section.saveAction }}"
+    class="space-y-6"
+    x-data='shamarForm({
+      endpoint: {{ jsonAttr(section.formStateEndpoint) }},
+      operation: "edit",
+      recordId: null,
+      fields: {{ jsonAttr(section.formLiveFields) }},
+      state: {{ jsonAttr(section.formInitialState) }},
+    })'
+  >
+    @include('shamar::partials/csrf')
+
+    @each(node in section.formSchema)
+      @!component('shamar::partials/schema-node', {
+        node: node,
+        schemaMode: 'form',
+        mode: 'edit',
+        record: section.record,
+        formErrors: section.formErrors || {},
+        relationUi: section.relationUi || {},
+      })
+    @endeach
+
+    <div class="flex items-center justify-end gap-2 pt-2">
+      <button
+        type="submit"
+        form="shamar-form-{{ section.key }}"
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-md bg-fg-brand hover:opacity-90 transition"
+      >Save</button>
+    </div>
+  </form>
+</div>

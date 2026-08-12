@@ -161,6 +161,26 @@ describe('@shamar/core field constraints', () => {
     );
   });
 
+  it('accepts path-absolute media URLs on url fields', () => {
+    const meta = ConstraintsResource.configure();
+    validateFieldConstraints(meta, {
+      name: 'abcd',
+      code: 'ABCD',
+      qty: 3,
+      site: '/admin/media/files/abc/raw',
+    });
+    assert.throws(
+      () =>
+        validateFieldConstraints(meta, {
+          name: 'abcd',
+          code: 'ABCD',
+          qty: 3,
+          site: 'not a url',
+        }),
+      ValidationException,
+    );
+  });
+
   it('skips dehydrated(false) fields and validates via validateFormData', async () => {
     const meta = ConstraintsResource.configure();
     const adapter = stubAdapter([]);

@@ -72,6 +72,21 @@ export default class OrderResource extends Resource {
 
 When enabled, list/find exclude rows with the stamp set; `delete` updates the field instead of hard-deleting.
 
+## Media library
+
+Pass Lucid folder + file models into `createLucidMediaLibraryAdapter` and enable `media` in `@shamar/adonis` `defineConfig` (see [Media library](../adonis#media-library)).
+
+```ts
+import { createLucidMediaLibraryAdapter } from '@shamar/lucid'
+import MediaFolder from '#models/media_folder'
+import MediaFile from '#models/media_file'
+
+createLucidMediaLibraryAdapter({
+  Folder: MediaFolder,
+  File: MediaFile,
+})
+```
+
 ## Behavior notes
 
 - **List** — pagination, sort, search (searchable columns), filters, group-by, and policy `scopeList` equals clauses

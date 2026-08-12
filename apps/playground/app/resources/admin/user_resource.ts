@@ -51,7 +51,7 @@ export default class UserResource extends Resource {
             Select.make('companyId')
               .label('Company')
               .relationship('companies', 'name')
-              .helperText('Optional — company logo overrides global branding for this user.')
+              .helperText('Optional — used for scoping records and demos.')
               .columnSpanFull(),
             TagsInput.make('permissions')
               .label('Direct permissions')

@@ -21,6 +21,7 @@ export type FieldType =
   | 'url'
   | 'file'
   | 'image'
+  | 'filePicker'
   | 'hidden'
   | 'radio'
   | 'color'
@@ -205,6 +206,14 @@ export interface FieldConfig {
   extraInputAttributes?: Record<string, string>;
   /** File input accept filter (e.g. `image/*`). */
   accept?: string;
+  /**
+   * FilePicker: constrain browsing to this folder id (and descendants).
+   * Omit / null = entire library.
+   */
+  /** Constrain FilePicker browse root to a media folder id. */
+  mediaFolderId?: string | null;
+  /** When true, FilePicker marks selected files public on confirm. */
+  mediaMakePublic?: boolean;
   /** Horizontal alignment of the field control (Filament-style). */
   alignment?: Alignment;
 }

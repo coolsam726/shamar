@@ -12,7 +12,11 @@ import Asset from '#models/asset'
 import Campaign from '#models/campaign'
 import LockedItem from '#models/locked_item'
 import Category from '#models/category'
+import MediaFolder from '#models/media_folder'
+import MediaFile from '#models/media_file'
 import { upsertAppSettings, getAppSettings } from '#models/app_settings'
+import { mkdir, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
 
 /**
  * Connects Mongoose for Shamar resources and app auth (User).
@@ -38,6 +42,7 @@ export default class MongoProvider {
     await this.seedPreferences()
     await this.seedTickets()
     await this.seedAssets()
+    await this.seedMediaLibrary()
     await this.seedCampaigns()
     await this.seedLockedItems()
   }
@@ -59,8 +64,6 @@ export default class MongoProvider {
           industry: 'technology',
           notes: 'Primary demo company.',
           active: true,
-          logo: 'https://picsum.photos/seed/sav-logo/240/80',
-          logoHeight: '40',
         },
         {
           name: 'All Saints Cathedral',
@@ -73,16 +76,6 @@ export default class MongoProvider {
         },
       ])
     }
-
-    await Company.updateOne(
-      { code: 'SAV', $or: [{ logo: null }, { logo: '' }, { logo: { $exists: false } }] },
-      {
-        $set: {
-          logo: 'https://picsum.photos/seed/sav-logo/240/80',
-          logoHeight: '40',
-        },
-      },
-    )
   }
 
   private async seedAppSettings() {
@@ -583,5 +576,32 @@ export default class MongoProvider {
         notes: 'canEdit/canDelete return false while locked.',
       },
     ])
+  }
+
+  /** Seed media folders + a tiny placeholder file on the local media disk. */
+  private async seedMediaLibrary() {
+    if ((await MediaFolder.countDocuments()) > 0) return
+
+    const branding = await MediaFolder.create({ name: 'Branding', parentId: null })
+    const docs = await MediaFolder.create({ name: 'Documents', parentId: null })
+    await MediaFolder.create({ name: 'Covers', parentId: String(branding.id) })
+
+    const mediaRoot = join(this.app.makePath('storage/media'))
+    await mkdir(mediaRoot, { recursive: true })
+    const key = `seed/welcome.txt`
+    const abs = join(mediaRoot, key)
+    await mkdir(join(mediaRoot, 'seed'), { recursive: true })
+    const body = Buffer.from('Welcome to the Shamar media library.\n')
+    await writeFile(abs, body)
+
+    await MediaFile.create({
+      name: 'welcome.txt',
+      folderId: String(docs.id),
+      disk: 'shamar',
+      key,
+      mime: 'text/plain',
+      size: body.byteLength,
+      checksum: null,
+    })
   }
 }
