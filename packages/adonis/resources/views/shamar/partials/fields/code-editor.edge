@@ -1,0 +1,33 @@
+@let(language = (field.widget && field.widget.language) ? field.widget.language : 'javascript')
+@let(languages = (field.widget && field.widget.languages) ? field.widget.languages : [])
+<div
+  class="shamar-code-editor{{ formErrors && formErrors[field.name] ? ' is-invalid' : '' }}"
+  x-data="shamarCodeEditor({
+    name: {{ jsonAttr(field.name) }},
+    language: {{ jsonAttr(language) }},
+    languages: {{ jsonAttr(languages) }},
+    getValue: () => {{ stateRef }},
+    setValue: (v) => { {{ stateRef }} = v; onFieldChange({{ jsonAttr(field.name) }}); },
+    isDisabled: () => isDisabled({{ jsonAttr(field.name) }}),
+  })"
+>
+  @if(languages && languages.length)
+    <div class="shamar-code-editor__lang">
+      <label class="sr-only" for="field-{{ field.name }}-lang">Language</label>
+      <select
+        id="field-{{ field.name }}-lang"
+        class="shamar-select shamar-code-editor__lang-select"
+        x-model="language"
+        @change="setLanguage(language)"
+      >
+        @each(lang in languages)
+          <option value="{{ lang }}">{{ lang }}</option>
+        @endeach
+      </select>
+    </div>
+  @endif
+  <div class="shamar-code-editor__surface" x-ref="editor"></div>
+  @if(!nestedField)
+    <input type="hidden" name="{{ field.name }}" :value="doc" />
+  @endif
+</div>

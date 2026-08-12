@@ -1,11 +1,17 @@
-import type { ListQuery, PaginatedResult, ResourceMeta } from '@shamar/core';
+import type { FieldValueHost, ListQuery, PaginatedResult, ResourceMeta } from '@shamar/core';
 import {
   DEFAULT_LIST_PER_PAGE,
   formatCurrencyValue,
   getRecordValue,
+  hydrateField,
+  parseDateValue,
+  parseCurrencyInput,
   resolveRelationDisplayBinding,
+  toFormDateInputValue,
 } from '@shamar/core';
 import { parseListFilters } from './list-headers.js';
+
+export { parseDateValue, parseCurrencyInput, toFormDateInputValue };
 
 export interface ListViewQuery {
   search?: string;
@@ -315,6 +321,22 @@ export function listRecordHref(
   return `${basePath}/${meta.slug}/${record.id}${navQuery}`;
 }
 
+function formatObjectValue(value: unknown): string {
+  if (value == null) return '';
+  if (typeof value !== 'object') return String(value);
+  if (Array.isArray(value)) {
+    return value.map((item) => formatObjectValue(item)).filter(Boolean).join(', ');
+  }
+  const record = value as Record<string, unknown>;
+  if ('key' in record && 'value' in record) {
+    return `${record.key}: ${record.value ?? ''}`;
+  }
+  return Object.entries(record)
+    .filter(([key]) => key !== '_id' && key !== '__v')
+    .map(([key, entry]) => `${key}: ${entry ?? ''}`)
+    .join(' · ');
+}
+
 export function cellValue(
   record: Record<string, unknown>,
   column: {
@@ -335,7 +357,23 @@ export function cellValue(
   if (value == null || value === '') return '—';
 
   if (Array.isArray(value)) {
+    if (value.some((item) => item && typeof item === 'object')) {
+      return (
+        value
+          .map((item) => formatObjectValue(item))
+          .filter(Boolean)
+          .join('; ') || '—'
+      );
+    }
     return value.map((item) => String(item)).filter(Boolean).join(', ') || '—';
+  }
+
+  if (value && typeof value === 'object' && !(value instanceof Date)) {
+    const bson = value as { _bsontype?: string };
+    if (bson._bsontype === 'ObjectId' || bson._bsontype === 'ObjectID') {
+      return String(value);
+    }
+    return formatObjectValue(value) || '—';
   }
 
   if (column.format === 'currency' || column.currency) {
@@ -389,56 +427,6 @@ function resolveDateFormat(column: {
   return null;
 }
 
-/** Parse Date, ISO strings, YYYY-MM-DD, epoch ms, and Luxon-like objects. */
-export function parseDateValue(value: unknown): Date | null {
-  if (value instanceof Date) {
-    return Number.isNaN(value.getTime()) ? null : value;
-  }
-
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? null : date;
-  }
-
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-    if (!trimmed) return null;
-
-    // Date-only: keep calendar day stable across timezones.
-    const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
-    if (dateOnly) {
-      const date = new Date(
-        Number(dateOnly[1]),
-        Number(dateOnly[2]) - 1,
-        Number(dateOnly[3]),
-      );
-      return Number.isNaN(date.getTime()) ? null : date;
-    }
-
-    const date = new Date(trimmed);
-    return Number.isNaN(date.getTime()) ? null : date;
-  }
-
-  if (value && typeof value === 'object') {
-    const object = value as {
-      toJSDate?: () => Date;
-      toISO?: () => string | null;
-      toISOString?: () => string;
-    };
-    if (typeof object.toJSDate === 'function') {
-      return parseDateValue(object.toJSDate());
-    }
-    if (typeof object.toISO === 'function') {
-      return parseDateValue(object.toISO());
-    }
-    if (typeof object.toISOString === 'function') {
-      return parseDateValue(object.toISOString());
-    }
-  }
-
-  return null;
-}
-
 /**
  * Human-readable date / datetime (locale-aware).
  * e.g. "Jan 15, 2024" or "Jan 15, 2024, 3:45 PM"
@@ -467,57 +455,9 @@ export function formatDateValue(
   }).format(date);
 }
 
-/**
- * Normalize stored dates for native `date` / `datetime-local` inputs (local calendar).
- */
-export function toFormDateInputValue(
-  value: unknown,
-  mode: 'date' | 'datetime',
-): string {
-  const date = parseDateValue(value);
-  if (!date) return '';
-
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  if (mode === 'date') return `${y}-${m}-${d}`;
-
-  const hh = String(date.getHours()).padStart(2, '0');
-  const mm = String(date.getMinutes()).padStart(2, '0');
-  return `${y}-${m}-${d}T${hh}:${mm}`;
-}
-
 /** Coerce adapter values into form-control-friendly state. */
-export function toFormControlValue(
-  value: unknown,
-  field: { type: string; currency?: { precision?: number } },
-): unknown {
-  if (field.type === 'date') return toFormDateInputValue(value, 'date');
-  if (field.type === 'datetime') return toFormDateInputValue(value, 'datetime');
-  if (field.type === 'number' || field.currency) {
-    if (value == null || value === '') return '';
-    const num = typeof value === 'number' ? value : Number(value);
-    return Number.isFinite(num) ? num : value;
-  }
-  if (field.type === 'color' && (value == null || value === '')) {
-    return '#000000';
-  }
-  if (field.type === 'select' && (field as { multiple?: boolean }).multiple) {
-    if (Array.isArray(value)) return value.map((item) => String(item));
-    if (value == null || value === '') return [];
-    return [String(value)];
-  }
-  return value;
-}
-
-/** Parse currency-ish user input into a finite number (or empty string). */
-export function parseCurrencyInput(value: unknown): number | '' {
-  if (value == null || value === '') return '';
-  if (typeof value === 'number') return Number.isFinite(value) ? value : '';
-  const cleaned = String(value).replace(/[^\d.-]/g, '');
-  if (!cleaned || cleaned === '-' || cleaned === '.' || cleaned === '-.') return '';
-  const num = Number(cleaned);
-  return Number.isFinite(num) ? num : '';
+export function toFormControlValue(value: unknown, field: FieldValueHost): unknown {
+  return hydrateField(field, value);
 }
 
 export function recordTitle(
@@ -541,16 +481,26 @@ export function formInputType(field: { type: string; revealable?: boolean }): st
     case 'tel':
       return 'tel';
     case 'url':
-      return 'url';
+      // Use text so path-absolute media URLs (e.g. /admin/media/files/:id/raw)
+      // are not rejected by the browser's native type=url constraint.
+      return 'text';
     case 'date':
+    case 'week':
       return 'date';
+    case 'month':
+      return 'month';
     case 'datetime':
       return 'datetime-local';
+    case 'time':
+      return 'time';
+    case 'slider':
+      return 'range';
     case 'color':
       return 'color';
     case 'hidden':
       return 'hidden';
     case 'file':
+    case 'filePicker':
     case 'image':
       return 'file';
     default:
@@ -810,6 +760,176 @@ function pruneDetailNodes(nodes: import('@shamar/core').SchemaNode[]): import('@
     .filter((n): n is import('@shamar/core').SchemaNode => n != null);
 }
 
+
+export function sectionQueryPrefix(sectionKey: string): string {
+  return `${sectionKey}_`;
+}
+
+export function readPrefixedListQuery(
+  input: Record<string, unknown>,
+  sectionKey: string,
+): ListViewQuery {
+  const prefix = sectionQueryPrefix(sectionKey);
+  const read = (name: string) => input[`${prefix}${name}`];
+  return {
+    page: read('page') as ListViewQuery['page'],
+    perPage: read('perPage') as ListViewQuery['perPage'],
+    search: read('search') as ListViewQuery['search'],
+    sort: read('sort') as ListViewQuery['sort'],
+    direction: read('direction') as ListViewQuery['direction'],
+    filters: read('filters') as ListViewQuery['filters'],
+    groupBy: read('groupBy') as ListViewQuery['groupBy'],
+    trashed: read('trashed') as ListViewQuery['trashed'],
+  };
+}
+
+export function buildPrefixedListQueryString(
+  sectionKey: string,
+  query: ListViewQuery = {},
+  overrides: ListViewQuery = {},
+  options?: { defaultPerPage?: number; preserveQuery?: string },
+): string {
+  const prefix = sectionQueryPrefix(sectionKey);
+  const params = new URLSearchParams(options?.preserveQuery?.replace(/^\?/, '') ?? '');
+  for (const key of [...params.keys()]) {
+    if (key.startsWith(prefix)) params.delete(key);
+  }
+
+  const merged = normalizeListQuery({ ...query, ...overrides }, { perPage: options?.defaultPerPage });
+  const defaultPerPage = options?.defaultPerPage ?? DEFAULT_LIST_PER_PAGE;
+
+  if (merged.search) params.set(`${prefix}search`, merged.search);
+
+  if (merged.sort) {
+    params.set(`${prefix}sort`, merged.sort);
+    if (merged.direction === 'asc' || merged.direction === 'desc') {
+      params.set(`${prefix}direction`, merged.direction);
+    }
+  }
+
+  if (
+    merged.perPage >= LIST_ALL_RECORDS_PER_PAGE ||
+    overrides.perPage === 'all' ||
+    String(merged.perPage).toLowerCase() === 'all'
+  ) {
+    params.set(`${prefix}perPage`, 'all');
+  } else if (merged.perPage !== defaultPerPage) {
+    params.set(`${prefix}perPage`, String(merged.perPage));
+  }
+
+  if (merged.page > 1) params.set(`${prefix}page`, String(merged.page));
+
+  if (merged.filters?.length) {
+    params.set(`${prefix}filters`, JSON.stringify(merged.filters));
+  } else if (overrides.filters === '[]' || (Array.isArray(overrides.filters) && overrides.filters.length === 0)) {
+    params.set(`${prefix}filters`, '[]');
+  }
+
+  if (merged.groupBy) {
+    params.set(`${prefix}groupBy`, merged.groupBy);
+  } else if (overrides.groupBy === '') {
+    params.set(`${prefix}groupBy`, '');
+  }
+
+  const value = params.toString();
+  return value ? `?${value}` : '';
+}
+
+export function pageSectionListPath(
+  basePath: string,
+  pageSlug: string,
+  sectionKey: string,
+  query: ListViewQuery = {},
+  overrides: ListViewQuery = {},
+  options?: { defaultPerPage?: number; preserveQuery?: string },
+): string {
+  return `${basePath}/${pageSlug}${buildPrefixedListQueryString(sectionKey, query, overrides, options)}`;
+}
+
+export function pageSectionSortColumnUrl(
+  basePath: string,
+  pageSlug: string,
+  sectionKey: string,
+  query: ListViewQuery,
+  column: string,
+  options?: { defaultPerPage?: number; preserveQuery?: string },
+): string {
+  const nextDirection =
+    query.sort === column && query.direction !== 'desc' ? 'desc' : 'asc';
+  return pageSectionListPath(
+    basePath,
+    pageSlug,
+    sectionKey,
+    query,
+    { sort: column, direction: nextDirection, page: 1 },
+    options,
+  );
+}
+
+export function buildPageSectionPaginationContext(
+  basePath: string,
+  pageSlug: string,
+  sectionKey: string,
+  query: ListViewQuery,
+  result: PaginatedResult,
+  options?: { defaultPerPage?: number; preserveQuery?: string },
+): PaginationContext {
+  const pathOpts = {
+    defaultPerPage: options?.defaultPerPage,
+    preserveQuery: options?.preserveQuery,
+  };
+  const links: PaginationLink[] = paginationWindow(result.page, result.pageCount).map(
+    (entry) => {
+      if (entry === 'ellipsis') {
+        return { type: 'ellipsis' };
+      }
+      return {
+        type: 'page',
+        page: entry,
+        label: String(entry),
+        active: entry === result.page,
+        href: pageSectionListPath(
+          basePath,
+          pageSlug,
+          sectionKey,
+          query,
+          { page: entry },
+          pathOpts,
+        ),
+      };
+    },
+  );
+
+  return {
+    page: result.page,
+    pageCount: result.pageCount,
+    total: result.total,
+    formAction: `${basePath}/${pageSlug}`,
+    prevHref:
+      result.page > 1
+        ? pageSectionListPath(
+            basePath,
+            pageSlug,
+            sectionKey,
+            query,
+            { page: result.page - 1 },
+            pathOpts,
+          )
+        : undefined,
+    nextHref:
+      result.page < result.pageCount
+        ? pageSectionListPath(
+            basePath,
+            pageSlug,
+            sectionKey,
+            query,
+            { page: result.page + 1 },
+            pathOpts,
+          )
+        : undefined,
+    links,
+  };
+}
 
 export { resolveGridItemStyle } from '@shamar/core';
 

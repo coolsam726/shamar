@@ -1,0 +1,37 @@
+@include('shamar::partials/shell-open')
+
+<div
+  class="mx-auto space-y-8 {{ contentMaxWidthClass || 'w-full max-w-screen-xl' }}"
+  @if(contentMaxWidthStyle)
+    style="{{ contentMaxWidthStyle }}"
+  @endif
+>
+  @each(section in pageSections)
+    @if(section.title)
+      <div class="space-y-3">
+        <h2 class="text-base font-semibold text-heading">{{ section.title }}</h2>
+        @if(section.kind === 'edge')
+          @include('shamar::partials/page-section-edge')
+        @elseif(section.kind === 'form')
+          @include('shamar::partials/page-section-form')
+        @elseif(section.kind === 'table')
+          @include('shamar::partials/page-section-table')
+        @elseif(section.kind === 'infolist')
+          @include('shamar::partials/page-section-infolist')
+        @endif
+      </div>
+    @else
+      @if(section.kind === 'edge')
+        @include('shamar::partials/page-section-edge')
+      @elseif(section.kind === 'form')
+        @include('shamar::partials/page-section-form')
+      @elseif(section.kind === 'table')
+        @include('shamar::partials/page-section-table')
+      @elseif(section.kind === 'infolist')
+        @include('shamar::partials/page-section-infolist')
+      @endif
+    @endif
+  @endeach
+</div>
+
+@include('shamar::partials/shell-close')

@@ -11,7 +11,7 @@ import {
   Textarea,
   Toggle,
   DatePicker,
-  FileUpload,
+  FilePicker,
   TextColumn,
   TextEntry,
   ImageEntry,
@@ -27,7 +27,7 @@ function slugify(value: unknown): string {
 }
 
 /**
- * Demos: createOnly slug, length(), markdown body, FileUpload/ImageEntry,
+ * Demos: createOnly slug, length(), markdown body, FilePicker/ImageEntry,
  * softDelete, Flex/Group/Placeholder, live slug generation.
  */
 export default class ArticleResource extends Resource {
@@ -80,12 +80,22 @@ export default class ArticleResource extends Resource {
             .schema([
               Placeholder.make('cover')
                 .label('Cover')
-                .content('Optional cover image URL or upload for the detail view.'),
-              TextInput.make('coverUrl').url().placeholder('https://…/cover.jpg'),
-              FileUpload.make('coverFile')
+                .content('Pick an image from the media library, or paste an external URL.'),
+              FilePicker.make('coverMediaId')
                 .image()
-                .dehydrated(false)
-                .helperText('Demo upload control — filename is not persisted yet.'),
+                .label('Cover image')
+                .helperText('Select from Files (media library).')
+                .live()
+                .afterStateUpdated(({ get, set }) => {
+                  const id = String(get('coverMediaId') ?? '').trim()
+                  if (id) {
+                    set('coverUrl', `/admin/media/files/${id}/raw`)
+                  }
+                }),
+              TextInput.make('coverUrl')
+                .url()
+                .placeholder('https://…/cover.jpg')
+                .helperText('Filled from the library picker, or paste an external URL.'),
             ]),
         ]).columnSpanFull(),
         Section.make('Body').schema([
@@ -121,6 +131,7 @@ export default class ArticleResource extends Resource {
             TextEntry.make('publishedAt').date(),
             TextEntry.make('draft').boolean().badge(),
             ImageEntry.make('coverUrl').label('Cover'),
+            TextEntry.make('coverMediaId').label('Cover media id').copyable(),
             TextEntry.make('body').markdown().columnSpanFull(),
           ]),
       ])

@@ -18,3 +18,15 @@ export function shamarAlpineJsPath(): string {
 export function shamarUiJsPath(): string {
   return join(shamarAssetsDir(), 'shamar-ui.js');
 }
+
+export function shamarFlowbiteDatepickerCssPath(): string {
+  return join(shamarAssetsDir(), 'vendor/flowbite-datepicker.min.css');
+}
+
+export function shamarFlowbiteDatepickerJsPath(): string {
+  return join(shamarAssetsDir(), 'vendor/flowbite-datepicker.min.js');
+}
+
+export function shamarRichEditorAssetPath(file: string): string {
+  return join(shamarAssetsDir(), 'rich-editor', file);
+}

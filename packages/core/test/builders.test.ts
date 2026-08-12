@@ -17,6 +17,22 @@ import {
   ColorPicker,
   TagsInput,
   FileUpload,
+  FilePicker,
+  TimePicker,
+  DatePicker,
+  DateTimePicker,
+  RichEditor,
+  MarkdownEditor,
+  CodeEditor,
+  Repeater,
+  KeyValue,
+  Slider,
+  Rating,
+  ToggleButtons,
+  CheckboxList,
+  registerFieldType,
+  getFieldType,
+  fieldValueKind,
   Section,
   Fieldset,
   Grid,
@@ -389,6 +405,8 @@ describe('@shamar/core Filament-style builders', () => {
               .options([{ label: 'Admin', value: 'admin' }]),
             Select.make('status').native().options([{ label: 'Open', value: 'open' }]),
             FileUpload.make('avatar').image().accept('image/png'),
+            FilePicker.make('coverId').image().folder(null).makePublic(),
+            FilePicker.make('attachments').multiple().accept('application/pdf'),
           ]);
         });
       }
@@ -423,6 +441,104 @@ describe('@shamar/core Filament-style builders', () => {
     assert.equal(byName.status?.nativeSelect, true);
     assert.equal(byName.avatar?.type, 'image');
     assert.equal(byName.avatar?.accept, 'image/png');
+    assert.equal(byName.coverId?.type, 'filePicker');
+    assert.equal(byName.coverId?.accept, 'image/*,image/svg+xml,.svg');
+    assert.equal(byName.coverId?.mediaMakePublic, true);
+    assert.equal(byName.coverId?.mediaFolderId, null);
+    assert.equal(byName.attachments?.type, 'filePicker');
+    assert.equal(byName.attachments?.multiple, true);
+    assert.equal(byName.attachments?.accept, 'application/pdf');
+  });
+
+  it('builds editor, collection, and choice field types', () => {
+    class WidgetResource extends Resource {
+      static override slug = 'widgets';
+      static override label = 'Widgets';
+      static override singularLabel = 'Widget';
+      static override model = 'Widget';
+
+      static override form() {
+        return form((f) => {
+          f.schema([
+            DatePicker.make('day'),
+            DateTimePicker.make('startsAt').seconds(),
+            TimePicker.make('opensAt').seconds().native(),
+            RichEditor.make('html').toolbar(['bold', 'italic']),
+            RichEditor.make('spec').document().label('Spec'),
+            RichEditor.make('notes').notion(),
+            RichEditor.make('blurb').simple(),
+            MarkdownEditor.make('md'),
+            CodeEditor.make('source').language('json').languages(['json', 'css']),
+            Repeater.make('items')
+              .schema([TextInput.make('sku').required(), TextInput.make('qty')])
+              .minItems(1)
+              .maxItems(5)
+              .itemLabel('Line')
+              .defaultItems(1),
+            KeyValue.make('meta').keyLabel('Name').valueLabel('Value'),
+            Slider.make('volume').min(0).max(10).showValue(),
+            Rating.make('stars').allowZero(false),
+            Radio.make('plan')
+              .options([
+                { label: 'A', value: 'a' },
+                { label: 'B', value: 'b' },
+              ])
+              .buttons(),
+            ToggleButtons.make('size')
+              .options([
+                { label: 'S', value: 's' },
+                { label: 'M', value: 'm' },
+              ])
+              .grouped(),
+            ToggleButtons.make('channels')
+              .options([{ label: 'Web', value: 'web' }])
+              .multiple(),
+            CheckboxList.make('flags').options([{ label: 'On', value: 'on' }]),
+          ]);
+        });
+      }
+
+      static override table() {
+        return table((t) => {
+          t.schema([TextColumn.make('sku')]);
+        });
+      }
+    }
+
+    const meta = WidgetResource.configure();
+    const byName = Object.fromEntries(meta.fields.map((field) => [field.name, field]));
+    assert.equal(byName.opensAt?.type, 'time');
+    assert.equal(byName.opensAt?.widget?.seconds, true);
+    assert.equal(byName.startsAt?.type, 'datetime');
+    assert.equal(byName.html?.type, 'richEditor');
+    assert.deepEqual(byName.html?.widget?.toolbar, ['bold', 'italic']);
+    assert.equal(byName.html?.widget?.editorMode, 'simple');
+    assert.equal(byName.spec?.widget?.editorMode, 'document');
+    assert.equal(byName.notes?.widget?.editorMode, 'notion');
+    assert.equal(byName.blurb?.widget?.editorMode, 'simple');
+    assert.equal(RichEditor.make('d').docx().build().widget?.editorMode, 'document');
+    assert.equal(byName.md?.type, 'markdownEditor');
+    assert.equal(byName.source?.type, 'codeEditor');
+    assert.equal(byName.source?.widget?.language, 'json');
+    assert.equal(byName.items?.type, 'repeater');
+    assert.equal(byName.items?.widget?.minItems, 1);
+    assert.equal(byName.items?.widget?.maxItems, 5);
+    const nested = byName.items?.widget?.schema as { fields?: Array<{ name: string }> };
+    assert.ok(nested?.fields?.some((field) => field.name === 'sku'));
+    assert.equal(byName.meta?.type, 'keyValue');
+    assert.equal(byName.volume?.type, 'slider');
+    assert.equal(byName.stars?.type, 'rating');
+    assert.equal(byName.plan?.display, 'buttons');
+    assert.equal(byName.size?.type, 'radio');
+    assert.equal(byName.size?.display, 'buttons');
+    assert.equal(byName.channels?.type, 'checkboxList');
+    assert.equal(byName.channels?.display, 'buttons');
+    assert.equal(byName.flags?.type, 'checkboxList');
+    assert.equal(byName.opensAt?.widget?.native, true);
+    assert.notEqual(byName.day?.widget?.native, true);
+    assert.equal(fieldValueKind('repeater'), 'nested');
+    registerFieldType({ type: 'signature', valueKind: 'scalar', label: 'Signature' });
+    assert.equal(getFieldType('signature')?.label, 'Signature');
   });
 
   it('falls back to infolist from form fields', () => {

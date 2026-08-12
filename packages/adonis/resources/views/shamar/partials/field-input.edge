@@ -1,8 +1,15 @@
+@let(stateRef = fieldStateRef(field.name, bindRoot))
+@let(nestedField = !!(typeof bindRoot === 'string' && bindRoot))
+@let(relationBound = !!(relationUi && relationUi[field.name]))
+@let(useRelationWidget = relationBound && (field.type === 'relation' || field.type === 'checkboxList' || field.type === 'relationTable'))
+@let(customFieldView = useRelationWidget ? '' : fieldView(field.type))
 @if(field.type === 'hidden')
   <input
     type="hidden"
-    name="{{ field.name }}"
-    x-model="state['{{ field.name }}']"
+    @if(!nestedField)
+      name="{{ field.name }}"
+    @endif
+    x-model="{{ stateRef }}"
   />
 @else
 @let(fieldLabelText = field.label ?? humanizeLabel(field.name))
@@ -32,15 +39,19 @@
     </div>
   @endif
 
-  @if(field.type === 'boolean')
+  @if(customFieldView)
+    @include(customFieldView)
+  @elseif(field.type === 'boolean')
     <label class="shamar-toggle{{ field.inline ? ' shamar-toggle--inline' : '' }}" for="field-{{ field.name }}" :class="{ 'is-disabled': isDisabled('{{ field.name }}') }">
       <input
         id="field-{{ field.name }}"
         type="checkbox"
-        name="{{ field.name }}"
+        @if(!nestedField)
+          name="{{ field.name }}"
+        @endif
         value="true"
         class="shamar-toggle__input"
-        x-model="state['{{ field.name }}']"
+        x-model="{{ stateRef }}"
         @change="onFieldChange('{{ field.name }}')"
         :disabled="isDisabled('{{ field.name }}')"
         {{ field.required ? 'required' : '' }}
@@ -70,10 +81,12 @@
       <input
         id="field-{{ field.name }}"
         type="checkbox"
-        name="{{ field.name }}"
+        @if(!nestedField)
+          name="{{ field.name }}"
+        @endif
         value="true"
         class="shamar-checkbox__input"
-        x-model="state['{{ field.name }}']"
+        x-model="{{ stateRef }}"
         @change="onFieldChange('{{ field.name }}')"
         :disabled="isDisabled('{{ field.name }}')"
         {{ field.required ? 'required' : '' }}
@@ -95,45 +108,8 @@
         </span>
       @endif
     </label>
-  @elseif(field.type === 'radio')
-    <div class="shamar-radio{{ field.inline ? ' shamar-radio--inline' : '' }}">
-      @if(relationUi && relationUi[field.name] && relationUi[field.name].options)
-        @each(option in relationUi[field.name].options)
-          <label class="shamar-radio__option">
-            <input
-              type="radio"
-              name="{{ field.name }}"
-              value="{{ option.id }}"
-              x-model="state['{{ field.name }}']"
-              @change="onFieldChange('{{ field.name }}')"
-              :disabled="isDisabled('{{ field.name }}')"
-              {{ field.required ? 'required' : '' }}
-            />
-            <span>{{ option.label }}</span>
-          </label>
-        @endeach
-        @if(relationUi[field.name].options.length === 0)
-          <p class="text-xs text-body-subtle">No options available.</p>
-        @endif
-      @else
-        @each(option in field.options)
-          <label class="shamar-radio__option">
-            <input
-              type="radio"
-              name="{{ field.name }}"
-              value="{{ option.value }}"
-              x-model="state['{{ field.name }}']"
-              @change="onFieldChange('{{ field.name }}')"
-              :disabled="isDisabled('{{ field.name }}')"
-              {{ field.required ? 'required' : '' }}
-            />
-            <span>{{ option.label }}</span>
-          </label>
-        @endeach
-      @endif
-    </div>
-  @elseif(field.type === 'relation' || field.type === 'checkboxList' || field.type === 'relationTable')
-    @if(!(relationUi && relationUi[field.name]))
+  @elseif(field.type === 'relation' || field.type === 'relationTable' || (field.type === 'checkboxList' && relationBound))
+    @if(!relationBound)
       <p class="text-xs text-fg-danger">Relation field "{{ field.name }}" is missing UI config.</p>
     @elseif(relationUi[field.name].widget === 'table' || field.type === 'relationTable')
       @!component('shamar::partials/field-relation-table', {
@@ -156,70 +132,17 @@
         relationConfig: relationUi[field.name],
       })
     @endif
-  @elseif(field.type === 'tags')
-    <div class="shamar-tags">
-      <div class="shamar-tags__list">
-        <template x-for="(tag, tagIndex) in (Array.isArray(state['{{ field.name }}']) ? state['{{ field.name }}'] : [])" :key="tagIndex">
-          <span class="shamar-tags__chip">
-            <span x-text="tag"></span>
-            <button
-              type="button"
-              class="shamar-tags__remove"
-              @click="state['{{ field.name }}'] = (state['{{ field.name }}'] || []).filter((_, i) => i !== tagIndex); onFieldChange('{{ field.name }}')"
-              aria-label="Remove"
-            >&times;</button>
-          </span>
-        </template>
-      </div>
-      <input
-        type="text"
-        class="shamar-input"
-        :placeholder='fieldMeta[{{ jsonAttr(field.name) }}]?.placeholder || {{ jsonAttr(field.placeholder ?? "Add tag…") }}'
-        @keydown.enter.prevent="
-          const v = String($event.target.value || '').trim();
-          if (!v) return;
-          const cur = Array.isArray(state['{{ field.name }}']) ? [...state['{{ field.name }}']] : [];
-          if (!cur.includes(v)) { state['{{ field.name }}'] = [...cur, v]; onFieldChange('{{ field.name }}'); }
-          $event.target.value = '';
-        "
-        :disabled="isDisabled('{{ field.name }}')"
-      />
-      <template x-for="(tag, tagIndex) in (Array.isArray(state['{{ field.name }}']) ? state['{{ field.name }}'] : [])" :key="'h'+tagIndex">
-        <input type="hidden" name="{{ field.name }}[]" :value="tag" />
-      </template>
-    </div>
-  @elseif(field.type === 'color')
-    <div class="shamar-color">
-      <input
-        id="field-{{ field.name }}"
-        type="color"
-        class="shamar-color__swatch"
-        x-model="state['{{ field.name }}']"
-        @change="onFieldChange('{{ field.name }}')"
-        :disabled="isDisabled('{{ field.name }}')"
-        {{ field.required ? 'required' : '' }}
-      />
-      <input
-        type="text"
-        name="{{ field.name }}"
-        class="shamar-input shamar-color__value"
-        x-model="state['{{ field.name }}']"
-        readonly
-        tabindex="-1"
-        :disabled="isDisabled('{{ field.name }}')"
-        placeholder="#000000"
-        aria-label="Selected color"
-      />
-    </div>
   @elseif(field.type === 'textarea')
     <textarea
       id="field-{{ field.name }}"
-      name="{{ field.name }}"
+      @if(!nestedField)
+        name="{{ field.name }}"
+      @endif
       rows="{{ field.rows ?? 4 }}"
       {{ field.required ? 'required' : '' }}
       {{ field.readonly ? 'readonly' : '' }}
       {{{ fieldInputAttrs(field) }}}
-      x-model="state['{{ field.name }}']"
+      x-model="{{ stateRef }}"
       @input="onFieldInput('{{ field.name }}')"
       @change="onFieldChange('{{ field.name }}')"
       @blur="onFieldBlur('{{ field.name }}')"
@@ -228,7 +151,7 @@
       class="shamar-input{{ formErrors && formErrors[field.name] ? ' is-invalid' : '' }}"
     ></textarea>
     @if(field.maxLength)
-      <p class="shamar-field__counter" x-text="String(state['{{ field.name }}'] ?? '').length + ' / {{ field.maxLength }}'"></p>
+      <p class="shamar-field__counter" x-text="String({{ stateRef }} ?? '').length + ' / {{ field.maxLength }}'"></p>
     @endif
   @elseif(field.type === 'select')
     @if(field.nativeSelect)
@@ -237,7 +160,7 @@
         name="{{ field.name }}{{ field.multiple ? '[]' : '' }}"
         {{ field.multiple ? 'multiple' : '' }}
         {{{ fieldInputAttrs(field) }}}
-        x-model="state['{{ field.name }}']"
+        x-model="{{ stateRef }}"
         @change="onFieldChange('{{ field.name }}')"
         :disabled="isDisabled('{{ field.name }}')"
         :required="isRequired('{{ field.name }}')"
@@ -260,8 +183,8 @@
           options: {{ jsonAttr(field.options ?? []) }},
           placeholder: {{ jsonAttr(field.placeholder ?? 'Select...') }},
           selectablePlaceholder: {{ field.selectablePlaceholder !== false ? 'true' : 'false' }},
-          getValue: () => state[{{ jsonAttr(field.name) }}],
-          setValue: (v) => { state[{{ jsonAttr(field.name) }}] = v; onFieldChange({{ jsonAttr(field.name) }}); },
+          getValue: () => {{ stateRef }},
+          setValue: (v) => { {{ stateRef }} = v; onFieldChange({{ jsonAttr(field.name) }}); },
           isDisabled: () => isDisabled({{ jsonAttr(field.name) }}),
         })"
         @focusout="onFocusOut($event)"
@@ -391,15 +314,152 @@
           </div>
         </div>
 
-        @if(field.multiple)
-          <template x-for="value in selectedValues" :key="'h-' + value">
-            <input type="hidden" name="{{ field.name }}[]" :value="value" />
-          </template>
-        @else
-          <input type="hidden" name="{{ field.name }}" :value="selectedValues[0] || ''" />
+        @if(!nestedField)
+          @if(field.multiple)
+            <template x-for="value in selectedValues" :key="'h-' + value">
+              <input type="hidden" name="{{ field.name }}[]" :value="value" />
+            </template>
+          @else
+            <input type="hidden" name="{{ field.name }}" :value="selectedValues[0] || ''" />
+          @endif
         @endif
       </div>
     @endif
+  @elseif(field.type === 'filePicker')
+    <div
+      class="shamar-file-picker{{ formErrors && formErrors[field.name] ? ' is-invalid' : '' }}"
+      x-data="shamarFilePicker({
+        name: {{ jsonAttr(field.name) }},
+        multiple: {{ field.multiple ? 'true' : 'false' }},
+        accept: {{ jsonAttr(field.accept ?? '') }},
+        folderId: {{ jsonAttr(field.mediaFolderId ?? null) }},
+        makePublic: {{ field.mediaMakePublic ? 'true' : 'false' }},
+        apiBase: {{ jsonAttr((basePath || '/admin') + '/media') }},
+        getValue: () => {{ stateRef }},
+        setValue: (v) => { {{ stateRef }} = v; onFieldChange({{ jsonAttr(field.name) }}); },
+        isDisabled: () => isDisabled({{ jsonAttr(field.name) }}),
+      })"
+    >
+      <div class="shamar-file-picker__selected">
+        <template x-if="!selectedItems.length">
+          <span class="shamar-file-picker__empty">No file selected</span>
+        </template>
+        <template x-for="item in selectedItems" :key="item.id">
+          <span class="shamar-file-picker__chip">
+            <img x-show="item.isImage" :src="item.url" alt="" class="shamar-file-picker__thumb" />
+            <span x-text="item.name"></span>
+            <button type="button" class="shamar-file-picker__remove" @click="remove(item.id)" :disabled="disabled" aria-label="Remove">&times;</button>
+          </span>
+        </template>
+      </div>
+      <div class="shamar-file-picker__actions">
+        <button type="button" class="shamar-btn shamar-btn--secondary" @click="openPicker()" :disabled="disabled">
+          Choose from library
+        </button>
+        <button type="button" class="shamar-btn shamar-btn--ghost" x-show="selectedItems.length" @click="clear()" :disabled="disabled">
+          Clear
+        </button>
+      </div>
+
+      <template x-if="multiple">
+        <template x-for="id in selectedIds" :key="'h-' + id">
+          <input type="hidden" name="{{ field.name }}[]" :value="id" />
+        </template>
+      </template>
+      <template x-if="!multiple">
+        <input type="hidden" name="{{ field.name }}" :value="selectedIds[0] || ''" />
+      </template>
+
+      <div class="shamar-file-picker__modal" x-show="open" x-cloak @keydown.escape.window="closePicker()">
+        <div class="shamar-file-picker__backdrop" @click="closePicker()"></div>
+        <div class="shamar-file-picker__dialog" role="dialog" aria-modal="true" aria-label="Choose file">
+          <header class="shamar-file-picker__dialog-head">
+            <h3>Media library</h3>
+            <div class="shamar-file-picker__dialog-head-actions">
+              <label class="shamar-btn shamar-btn--secondary" :class="{ 'is-disabled': uploading }">
+                <span x-show="!uploading">Upload</span>
+                <span x-show="uploading" x-cloak>Uploading…</span>
+                <input
+                  type="file"
+                  class="sr-only"
+                  multiple
+                  :accept="acceptInputAttr()"
+                  :disabled="uploading"
+                  @change="onUploadInput($event)"
+                />
+              </label>
+              <button type="button" class="shamar-btn shamar-btn--ghost" @click="closePicker()">Close</button>
+            </div>
+          </header>
+          <div class="shamar-file-picker__dialog-body">
+            <div class="shamar-file-picker__toolbar">
+              <div class="shamar-media__crumbs">
+                <button type="button" class="shamar-media__crumb" @click="goFolder(null)">Library</button>
+                <template x-for="crumb in browseBreadcrumbs" :key="crumb.id">
+                  <span class="shamar-media__crumb-wrap">
+                    <span class="shamar-media__crumb-sep">/</span>
+                    <button type="button" class="shamar-media__crumb" @click="goFolder(crumb.id)" x-text="crumb.name"></button>
+                  </span>
+                </template>
+              </div>
+            </div>
+            <p class="shamar-file-picker__upload-status" x-show="uploadStatus" x-text="uploadStatus" x-cloak></p>
+            <div
+              class="shamar-file-picker__drop"
+              :class="{ 'is-dragover': pickerDragover, 'is-uploading': uploading }"
+              @dragover.prevent="onPickerDragOver($event)"
+              @dragleave.prevent="onPickerDragLeave($event)"
+              @drop.prevent="onPickerDrop($event)"
+            >
+              <p class="shamar-file-picker__drop-hint" x-show="pickerDragover && !uploading" x-cloak>Drop files to upload</p>
+              <div class="shamar-media__grid shamar-media__grid--compact" x-show="browseFolders.length || browseFiles.length">
+                <template x-for="item in browseFolders" :key="'pf-' + item.id">
+                  <button type="button" class="shamar-media__tile is-folder" @click="goFolder(item.id)">
+                    <span class="shamar-media__tile-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+                    </span>
+                    <span class="shamar-media__tile-name" x-text="item.name"></span>
+                  </button>
+                </template>
+                <template x-for="item in browseFiles" :key="'pfile-' + item.id">
+                  <button
+                    type="button"
+                    class="shamar-media__tile"
+                    :class="{ 'is-selected': isPicked(item.id) }"
+                    @click="togglePick(item)"
+                    @dblclick="pickOnDoubleClick(item)"
+                  >
+                    <span class="shamar-media__tile-preview">
+                      <img x-show="item.isImage" :src="item.url" :alt="item.name" />
+                      <span x-show="!item.isImage" class="shamar-media__tile-icon" x-text="(item.mime || '').split('/')[1] || 'file'"></span>
+                    </span>
+                    <span class="shamar-media__tile-name" x-text="item.name"></span>
+                  </button>
+                </template>
+              </div>
+              <div class="shamar-file-picker__empty" x-show="!browseFolders.length && !browseFiles.length && !uploading" x-cloak>
+                <p>This folder is empty.</p>
+                <p class="text-body-subtle text-sm">Upload a file or browse another folder.</p>
+                <label class="shamar-btn shamar-btn--secondary">
+                  Upload file
+                  <input
+                    type="file"
+                    class="sr-only"
+                    multiple
+                    :accept="acceptInputAttr()"
+                    @change="onUploadInput($event)"
+                  />
+                </label>
+              </div>
+            </div>
+          </div>
+          <footer class="shamar-file-picker__dialog-foot">
+            <button type="button" class="shamar-btn shamar-btn--secondary" @click="closePicker()" :disabled="uploading">Cancel</button>
+            <button type="button" class="shamar-btn shamar-btn--primary" @click="confirmPick()" :disabled="uploading">Use selection</button>
+          </footer>
+        </div>
+      </div>
+    </div>
   @elseif(field.type === 'file' || field.type === 'image')
     <input
       id="field-{{ field.name }}"
@@ -407,7 +467,7 @@
       name="{{ field.name }}{{ field.multiple ? '[]' : '' }}"
       {{ field.required ? 'required' : '' }}
       {{{ fieldInputAttrs(field) }}}
-      @change="state['{{ field.name }}'] = $event.target.files && $event.target.files.length ? ($event.target.files.length > 1 ? Array.from($event.target.files).map(f => f.name) : $event.target.files[0].name) : null; onFieldChange('{{ field.name }}')"
+      @change="{{ stateRef }} = $event.target.files && $event.target.files.length ? ($event.target.files.length > 1 ? Array.from($event.target.files).map(f => f.name) : $event.target.files[0].name) : null; onFieldChange('{{ field.name }}')"
       :disabled="isDisabled('{{ field.name }}')"
       class="shamar-input shamar-input--file{{ formErrors && formErrors[field.name] ? ' is-invalid' : '' }}"
     />
@@ -468,11 +528,13 @@
               @else
                 type="{{ formInputType(field) }}"
               @endif
-              name="{{ field.name }}"
+              @if(!nestedField)
+                name="{{ field.name }}"
+              @endif
               {{ field.required ? 'required' : '' }}
               {{ field.readonly ? 'readonly' : '' }}
               {{{ fieldInputAttrs(field) }}}
-              x-model="state['{{ field.name }}']"
+              x-model="{{ stateRef }}"
               @input="onFieldInput('{{ field.name }}')"
               @change="onFieldChange('{{ field.name }}')"
               @blur="onFieldBlur('{{ field.name }}')"
@@ -502,7 +564,7 @@
             <button
               type="button"
               class="shamar-input-group__affix shamar-input-group__affix--action"
-              @click="navigator.clipboard.writeText(String(state['{{ field.name }}'] ?? ''))"
+              @click="navigator.clipboard.writeText(String({{ stateRef }} ?? ''))"
               aria-label="Copy"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16" aria-hidden="true">
@@ -540,11 +602,13 @@
         <input
           id="field-{{ field.name }}"
           type="{{ formInputType(field) }}"
-          name="{{ field.name }}"
+          @if(!nestedField)
+            name="{{ field.name }}"
+          @endif
           {{ field.required ? 'required' : '' }}
           {{ field.readonly ? 'readonly' : '' }}
           {{{ fieldInputAttrs(field) }}}
-          x-model="state['{{ field.name }}']"
+          x-model="{{ stateRef }}"
           @input="onFieldInput('{{ field.name }}')"
           @change="onFieldChange('{{ field.name }}')"
           @blur="onFieldBlur('{{ field.name }}')"
@@ -573,7 +637,7 @@
       </datalist>
     @endif
     @if(field.maxLength)
-      <p class="shamar-field__counter" x-text="String(state['{{ field.name }}'] ?? '').length + ' / {{ field.maxLength }}'"></p>
+      <p class="shamar-field__counter" x-text="String({{ stateRef }} ?? '').length + ' / {{ field.maxLength }}'"></p>
     @endif
   @endif
 

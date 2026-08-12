@@ -72,6 +72,21 @@ export default class TicketResource extends Resource {
 
 List/find skip stamped documents; delete sets the timestamp instead of removing the document.
 
+## Media library
+
+Pass folder + file Mongoose models into `createMongooseMediaLibraryAdapter` and enable `media` in `@shamar/adonis` `defineConfig` (see [Media library](../adonis#media-library)).
+
+```ts
+import { createMongooseMediaLibraryAdapter } from '@shamar/mongoose'
+import MediaFolder from '#models/media_folder'
+import MediaFile from '#models/media_file'
+
+createMongooseMediaLibraryAdapter({
+  Folder: MediaFolder,
+  File: MediaFile,
+})
+```
+
 ## Standalone
 
 ```ts

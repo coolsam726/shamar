@@ -2,15 +2,22 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   FormPage,
+  SettingsPage,
   ListPage,
   Page,
   PageRegistry,
   form,
   table,
+  pageContent,
+  infolist,
+  Section,
   TextInput,
   TextColumn,
+  TextEntry,
   isFormPage,
+  isSettingsPage,
   isListPage,
+  hasPageSections,
 } from '../src/index.js';
 
 class WelcomePage extends Page {
@@ -33,6 +40,17 @@ class BrandingPage extends FormPage {
   }
 }
 
+class AppSettingsPage extends SettingsPage {
+  static override slug = 'settings';
+  static override label = 'Settings';
+
+  static override form() {
+    return form((f) => {
+      f.schema([TextInput.make('theme')]);
+    });
+  }
+}
+
 class CatalogPage extends ListPage {
   static override slug = 'catalog';
   static override label = 'Catalog';
@@ -42,6 +60,32 @@ class CatalogPage extends ListPage {
   static override table() {
     return table((t) => {
       t.schema([TextColumn.make('name').searchable()]);
+    });
+  }
+}
+
+class DashboardPage extends Page {
+  static override slug = 'dashboard';
+  static override label = 'Dashboard';
+
+  static override content() {
+    return pageContent((p) => {
+      p.edge('banner', { view: 'pages/banner', data: { title: 'Hi' } });
+      p.form('prefs', {
+        form: () => form((f) => f.schema([TextInput.make('theme')])),
+        save: async () => ({ message: 'Saved' }),
+      });
+      p.table('items', {
+        model: 'Product',
+        table: () => table((t) => t.schema([TextColumn.make('name')])),
+      });
+      p.infolist('meta', {
+        record: { env: 'test' },
+        infolist: () =>
+          infolist((i) => {
+            i.schema([Section.make('Runtime').schema([TextEntry.make('env')])]);
+          }),
+      });
     });
   }
 }
@@ -63,12 +107,36 @@ describe('Page.configure', () => {
     assert.equal(isListPage(BrandingPage), false);
   });
 
+  it('configures a settings page with 7xl content width', () => {
+    const meta = AppSettingsPage.configure();
+    assert.equal(meta.kind, 'form');
+    assert.equal(meta.contentMaxWidth, '7xl');
+    assert.equal(meta.view, 'shamar::page-form');
+    assert.equal(isFormPage(AppSettingsPage), true);
+    assert.equal(isSettingsPage(AppSettingsPage), true);
+    assert.equal(isSettingsPage(BrandingPage), false);
+  });
+
   it('configures a list page with listResource meta', () => {
     const meta = CatalogPage.configure();
     assert.equal(meta.kind, 'list');
     assert.ok(meta.listResource);
     assert.equal(meta.listResource?.columns[0]?.name, 'name');
+    assert.equal(meta.listResource?.infolist.entries[0]?.name, 'name');
     assert.equal(isListPage(CatalogPage), true);
+  });
+
+  it('configures a composite page with sections', () => {
+    const meta = DashboardPage.configure();
+    assert.equal(meta.kind, 'composite');
+    assert.equal(meta.view, 'shamar::page-sections');
+    assert.equal(meta.sections?.length, 4);
+    assert.equal(meta.sections?.[0]?.kind, 'edge');
+    assert.equal(meta.sections?.[1]?.kind, 'form');
+    assert.equal(meta.sections?.[2]?.kind, 'table');
+    assert.equal(meta.sections?.[3]?.kind, 'infolist');
+    assert.equal(hasPageSections(DashboardPage), true);
+    assert.equal(hasPageSections(WelcomePage), false);
   });
 });
 

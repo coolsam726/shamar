@@ -4,6 +4,9 @@ import {
   Resource,
   form,
   TextInput,
+  Repeater,
+  Slider,
+  RichEditor,
   validateUniqueFields,
   validateFieldConstraints,
   validateFormData,
@@ -161,6 +164,26 @@ describe('@shamar/core field constraints', () => {
     );
   });
 
+  it('accepts path-absolute media URLs on url fields', () => {
+    const meta = ConstraintsResource.configure();
+    validateFieldConstraints(meta, {
+      name: 'abcd',
+      code: 'ABCD',
+      qty: 3,
+      site: '/admin/media/files/abc/raw',
+    });
+    assert.throws(
+      () =>
+        validateFieldConstraints(meta, {
+          name: 'abcd',
+          code: 'ABCD',
+          qty: 3,
+          site: 'not a url',
+        }),
+      ValidationException,
+    );
+  });
+
   it('skips dehydrated(false) fields and validates via validateFormData', async () => {
     const meta = ConstraintsResource.configure();
     const adapter = stubAdapter([]);
@@ -171,3 +194,56 @@ describe('@shamar/core field constraints', () => {
     );
   });
 });
+
+describe('widget field constraints', () => {
+  class WidgetResource extends Resource {
+    static override slug = 'widgets';
+    static override label = 'Widgets';
+    static override singularLabel = 'Widget';
+    static override model = 'Widget';
+
+    static override form() {
+      return form((f) => {
+        f.schema([
+          Repeater.make('items')
+            .schema([TextInput.make('sku').required()])
+            .minItems(1)
+            .maxItems(2),
+          Slider.make('volume').min(0).max(10),
+          RichEditor.make('html').required(),
+        ]);
+      });
+    }
+  }
+
+  it('enforces repeater item counts and nested required fields', () => {
+    const meta = WidgetResource.configure();
+    assert.throws(
+      () => validateFieldConstraints(meta, { items: [], volume: 3, html: '<p>Hi</p>' }),
+      ValidationException,
+    );
+    assert.throws(
+      () =>
+        validateFieldConstraints(meta, {
+          items: [{ sku: '' }, { sku: 'A' }, { sku: 'B' }],
+          volume: 3,
+          html: '<p>Hi</p>',
+        }),
+      ValidationException,
+    );
+    assert.throws(
+      () => validateFieldConstraints(meta, { items: [{ sku: '' }], volume: 3, html: '<p>Hi</p>' }),
+      ValidationException,
+    );
+    validateFieldConstraints(meta, { items: [{ sku: 'A' }], volume: 3, html: '<p>Hi</p>' });
+  });
+
+  it('treats empty rich HTML as blank', () => {
+    const meta = WidgetResource.configure();
+    assert.throws(
+      () => validateFieldConstraints(meta, { items: [{ sku: 'A' }], volume: 3, html: '<p></p>' }),
+      ValidationException,
+    );
+  });
+});
+

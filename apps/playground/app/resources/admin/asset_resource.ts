@@ -14,17 +14,18 @@ import {
 import Asset from '#models/asset'
 
 /**
- * Demos: FileUpload accept/multiple, readonly fields, copyable checksum, ImageEntry.
- * Slug is `files` (not `assets`) — `/admin/assets/*` is reserved for panel static assets.
+ * Legacy FileUpload demo — hidden from nav; use the built-in Files media manager instead.
+ * Slug remains `files` (not `assets`) — `/admin/assets/*` is reserved for panel static assets.
  */
 export default class AssetResource extends Resource {
   static override model = Asset
   static override slug = 'files'
-  static override label = 'Files'
-  static override singularLabel = 'File'
+  static override label = 'Legacy files'
+  static override singularLabel = 'Legacy file'
   static override recordTitleField = 'name'
   static override navigationGroup = 'Ops'
-  static override navigationSort = 20
+  static override navigationSort = 99
+  static override navigationHidden = true
 
   static override form() {
     return form((f) => {

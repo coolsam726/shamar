@@ -57,6 +57,13 @@ export function navigationGroups(
     authorizer?: Authorizer;
     authCtx?: AuthorizationContext;
     pages?: PageRegistry;
+    /** When set, inject the built-in File Manager into nav. */
+    mediaNav?: {
+      label: string;
+      navigationGroup: string;
+      navigationSort: number;
+      navigationIcon: string;
+    };
   },
 ): NavigationGroup[] {
   const canView = (slug: string) => {
@@ -78,7 +85,19 @@ export function navigationGroups(
     return PageClass.canAccess(options.authCtx.user);
   });
 
-  return mergeNavigationGroups(resourceGroups, pageItems);
+  const mediaItems = options?.mediaNav
+    ? [
+        {
+          slug: 'media',
+          label: options.mediaNav.label,
+          icon: options.mediaNav.navigationIcon,
+          navigationGroup: options.mediaNav.navigationGroup,
+          navigationSort: options.mediaNav.navigationSort,
+        },
+      ]
+    : [];
+
+  return mergeNavigationGroups(resourceGroups, [...pageItems, ...mediaItems]);
 }
 
 export async function buildShellContext(options: {
@@ -105,12 +124,19 @@ export async function buildShellContext(options: {
   recordBreadcrumb?: RecordBreadcrumbOptions;
   /** Dev masquerade session (shared password login). */
   masquerade?: { active: true };
+  mediaNav?: {
+    label: string;
+    navigationGroup: string;
+    navigationSort: number;
+    navigationIcon: string;
+  };
 }): Promise<AdminShellContext> {
   const basePath = options.basePath ?? options.config.path ?? '/admin';
   const groups = navigationGroups(options.registry, {
     authorizer: options.authorizer,
     authCtx: options.authCtx,
     pages: options.pages,
+    mediaNav: options.mediaNav,
   });
   const currentSlug = options.currentSlug ?? options.meta?.slug;
   const menu = menuLayoutContext(

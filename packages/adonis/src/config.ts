@@ -4,7 +4,7 @@ import type {
   CherubimUser,
   RoleResolver,
 } from '@shamar/cherubim';
-import type { PolicyClass } from '@shamar/core';
+import type { MediaLibraryAdapter, PolicyClass } from '@shamar/core';
 import type {
   DataAdapter,
   PanelConfig,
@@ -19,10 +19,38 @@ import {
   type BrandingOverride,
   type BrandingOverrideContext,
 } from './shamar/branding.js';
+import type { MediaStorage } from './shamar/media-storage.js';
 
 export type ShamarOrm = 'lucid' | 'mongoose';
 
 export type { BrandingOverride, BrandingOverrideContext };
+
+export interface ShamarMediaConfig {
+  /** Enable the File Manager + FilePicker APIs (default false until configured). */
+  enabled?: boolean;
+  /** Storage disk name stored on media file records (default `shamar`). */
+  disk?: string;
+  /**
+   * Local filesystem root for blob storage (relative to app root or absolute).
+   * Default: `storage/media`.
+   */
+  root?: string;
+  /** Inject a custom MediaLibraryAdapter (ORM metadata). */
+  adapter?: MediaLibraryAdapter | (() => MediaLibraryAdapter);
+  /** Inject custom blob storage (defaults to local disk under `root`). */
+  storage?: MediaStorage | (() => MediaStorage);
+  /**
+   * Ungated public media URL prefix (default `/media`).
+   * Public files are served at `{publicPath}/:id` without panel auth.
+   */
+  publicPath?: string;
+  /** Nav label (default `Files`). */
+  label?: string;
+  /** Navigation group (default `System`). */
+  navigationGroup?: string;
+  navigationSort?: number;
+  navigationIcon?: string;
+}
 
 export interface ShamarConfig {
   /** @deprecated Prefer `panels`. Kept for single-panel apps. */
@@ -145,6 +173,11 @@ export interface ShamarConfig {
   resolveBrandingOverrides?: (
     ctx: BrandingOverrideContext,
   ) => BrandingOverride | null | undefined | Promise<BrandingOverride | null | undefined>;
+  /**
+   * Media library (File Manager + FilePicker).
+   * Provide `adapter` (or register via ORM package models in the host app).
+   */
+  media?: ShamarMediaConfig;
   /**
    * Optional REST / OpenAPI docs settings (consumed by `@shamar/rest`).
    * Prefer nesting here or use a separate `config/shamar_rest.ts`.

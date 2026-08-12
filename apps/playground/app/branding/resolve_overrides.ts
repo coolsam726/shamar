@@ -1,5 +1,4 @@
 import type { BrandingOverride, BrandingOverrideContext } from '@shamar/adonis'
-import Company from '#models/company'
 import { getAppSettings } from '#models/app_settings'
 
 function nonEmpty(value: unknown): string | undefined {
@@ -9,11 +8,10 @@ function nonEmpty(value: unknown): string | undefined {
 }
 
 /**
- * Merge order (later wins): AppSettings singleton → company (when `companyId` is set).
- * Panel / `defineConfig({ branding })` remains the base under these overrides.
+ * Merge order: AppSettings singleton overrides panel / `defineConfig({ branding })`.
  */
 export async function resolvePlaygroundBrandingOverrides(
-  ctx: BrandingOverrideContext,
+  _ctx: BrandingOverrideContext,
 ): Promise<BrandingOverride | undefined> {
   const settings = await getAppSettings()
   const brandDisplay =
@@ -31,28 +29,7 @@ export async function resolvePlaygroundBrandingOverrides(
     brandDisplay,
   }
 
-  const companyId = ctx.companyId ?? ctx.user?.companyId
-  if (!companyId) {
-    return hasAny(global) ? global : undefined
-  }
-
-  const company = await Company.findById(companyId).lean()
-  if (!company) {
-    return hasAny(global) ? global : undefined
-  }
-
-  const merged: BrandingOverride = {
-    name: global.name,
-    logo: nonEmpty(company.logo) ?? global.logo,
-    logoDark: nonEmpty(company.logoDark) ?? global.logoDark,
-    logoHeight:
-      company.logoHeight != null && company.logoHeight !== ''
-        ? company.logoHeight
-        : global.logoHeight,
-    brandDisplay: global.brandDisplay,
-  }
-
-  return hasAny(merged) ? merged : undefined
+  return hasAny(global) ? global : undefined
 }
 
 function hasAny(override: BrandingOverride): boolean {

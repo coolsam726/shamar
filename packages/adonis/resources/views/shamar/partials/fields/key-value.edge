@@ -1,0 +1,55 @@
+@let(keyLabel = (field.widget && field.widget.keyLabel) ? field.widget.keyLabel : 'Key')
+@let(valueLabel = (field.widget && field.widget.valueLabel) ? field.widget.valueLabel : 'Value')
+@let(reorderable = !(field.widget && field.widget.reorderable === false))
+
+<div class="shamar-key-value{{ formErrors && formErrors[field.name] ? ' is-invalid' : '' }}">
+  <div class="shamar-key-value__head">
+    <span>{{ keyLabel }}</span>
+    <span>{{ valueLabel }}</span>
+    <span class="shamar-key-value__head-actions"></span>
+  </div>
+  <template x-for="(row, index) in ensureKeyValue({{ jsonAttr(field.name) }})" :key="index">
+    <div class="shamar-key-value__row">
+      <input
+        type="text"
+        class="shamar-input"
+        x-model="{{ stateRef }}[index].key"
+        @input="onFieldInput('{{ field.name }}')"
+        @change="onFieldChange('{{ field.name }}')"
+        :disabled="isDisabled('{{ field.name }}')"
+        placeholder="{{ keyLabel }}"
+      />
+      <input
+        type="text"
+        class="shamar-input"
+        x-model="{{ stateRef }}[index].value"
+        @input="onFieldInput('{{ field.name }}')"
+        @change="onFieldChange('{{ field.name }}')"
+        :disabled="isDisabled('{{ field.name }}')"
+        placeholder="{{ valueLabel }}"
+      />
+      <div class="shamar-key-value__row-actions">
+        @if(reorderable)
+          <button type="button" class="shamar-repeater__icon-btn" @click="moveKeyValueRow({{ jsonAttr(field.name) }}, index, -1)" :disabled="index === 0" aria-label="Move up">↑</button>
+          <button type="button" class="shamar-repeater__icon-btn" @click="moveKeyValueRow({{ jsonAttr(field.name) }}, index, 1)" aria-label="Move down">↓</button>
+        @endif
+        <button type="button" class="shamar-repeater__icon-btn shamar-repeater__icon-btn--danger" @click="removeKeyValueRow({{ jsonAttr(field.name) }}, index)" aria-label="Remove">×</button>
+      </div>
+    </div>
+  </template>
+  <button
+    type="button"
+    class="shamar-btn shamar-btn--secondary"
+    @click="addKeyValueRow({{ jsonAttr(field.name) }})"
+    :disabled="isDisabled({{ jsonAttr(field.name) }})"
+  >Add row</button>
+  @if(!nestedField)
+    <input
+      type="hidden"
+      name="{{ field.name }}"
+      data-shamar-json="{{ field.name }}"
+      data-shamar-json-kind="record"
+      :value="JSON.stringify({{ stateRef }} || [])"
+    />
+  @endif
+</div>

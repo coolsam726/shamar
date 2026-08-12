@@ -9,11 +9,6 @@ export interface CompanyAttrs {
   industry?: string | null
   notes?: string | null
   active?: boolean
-  /** Overrides global / panel logo when the user belongs to this company. */
-  logo?: string | null
-  logoDark?: string | null
-  /** CSS length or px number as string (e.g. `40`, `2.5rem`). */
-  logoHeight?: string | null
 }
 
 const companySchema = new Schema<CompanyAttrs>(
@@ -26,9 +21,6 @@ const companySchema = new Schema<CompanyAttrs>(
     industry: { type: String, default: null, trim: true },
     notes: { type: String, default: null, trim: true },
     active: { type: Boolean, default: true },
-    logo: { type: String, default: null, trim: true },
-    logoDark: { type: String, default: null, trim: true },
-    logoHeight: { type: String, default: null, trim: true },
   },
   {
     timestamps: true,

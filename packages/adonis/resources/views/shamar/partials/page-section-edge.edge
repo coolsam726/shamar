@@ -1,0 +1,5 @@
+<div class="shamar-card rounded-xl p-6">
+  {{-- @include only accepts a template path (shared parent scope), not locals.
+       Edge sections pass data via component props. --}}
+  @!component(section.view, section.edgeLocals || {})
+</div>

@@ -1,0 +1,22 @@
+@let(toolbar = (field.widget && field.widget.toolbar) ? field.widget.toolbar : ['bold', 'italic', 'strike', 'code', 'h2', 'h3', 'bulletList', 'orderedList', 'blockquote', 'link', 'undo', 'redo'])
+@let(rawMode = field.widget && field.widget.editorMode)
+@let(editorMode = rawMode === 'document' ? 'document' : rawMode === 'notion' ? 'notion' : 'simple')
+<div
+  class="shamar-rich-editor shamar-rich-editor--{{ editorMode }}{{ formErrors && formErrors[field.name] ? ' is-invalid' : '' }}"
+  data-shamar-rich-mode="{{ editorMode }}"
+  x-data="shamarRichEditor({
+    name: {{ jsonAttr(field.name) }},
+    mode: {{ jsonAttr(editorMode) }},
+    toolbar: {{ jsonAttr(toolbar) }},
+    basePath: {{ jsonAttr(basePath || '') }},
+    brandLabel: {{ jsonAttr(panelTitle || 'Shamar') }},
+    getValue: () => {{ stateRef }},
+    setValue: (v) => { {{ stateRef }} = v; onFieldChange({{ jsonAttr(field.name) }}); },
+    isDisabled: () => isDisabled({{ jsonAttr(field.name) }}),
+  })"
+>
+  <div class="shamar-rich-editor__host" x-ref="host"></div>
+  @if(!nestedField)
+    <input type="hidden" name="{{ field.name }}" :value="html" />
+  @endif
+</div>

@@ -1,0 +1,14 @@
+<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <p class="text-sm font-medium text-heading">Welcome{{ userName ? `, ${userName}` : '' }}</p>
+    <p class="mt-1 text-sm text-body-subtle">
+      This dashboard combines Edge content, a form, a table, and an infolist on one page.
+    </p>
+  </div>
+  @if(orderCount !== undefined)
+    <div class="rounded-lg border border-default bg-surface-inset px-4 py-2 text-center">
+      <p class="text-xs uppercase tracking-wide text-body-subtle">Products</p>
+      <p class="text-lg font-semibold text-heading">{{ orderCount }}</p>
+    </div>
+  @endif
+</div>

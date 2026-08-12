@@ -497,75 +497,9 @@
       : 'Refresh (double-click for auto-refresh every 10s)';
   }
 
+  /** Legacy FileUpload helpers — superseded by File Manager / FilePicker. */
   function bindMediaUploads() {
-    document.querySelectorAll('[data-shamar-media-file]').forEach((input) => {
-      if (!(input instanceof HTMLInputElement)) return;
-      input.addEventListener('change', async () => {
-        const file = input.files?.[0];
-        if (!file) return;
-        const root = input.closest('[data-shamar-media-field]');
-        const hidden = root?.querySelector('[data-shamar-media-value]');
-        const status = root?.querySelector('[data-shamar-media-status]');
-        const uploadUrl = input.dataset.uploadUrl;
-        const fieldName = input.dataset.fieldName;
-        const maxBytes = Number(input.dataset.maxBytes || 0);
-        if (!uploadUrl || !fieldName || !(hidden instanceof HTMLInputElement)) return;
-        if (maxBytes > 0 && file.size > maxBytes) {
-          if (status instanceof HTMLElement) {
-            status.hidden = false;
-            status.textContent = `File exceeds ${maxBytes} bytes.`;
-          }
-          input.value = '';
-          return;
-        }
-        const reader = new FileReader();
-        reader.onload = async () => {
-          try {
-            if (status instanceof HTMLElement) {
-              status.hidden = false;
-              status.textContent = 'Uploading…';
-            }
-            const data = String(reader.result ?? '');
-            const res = await fetch(uploadUrl, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-                'X-CSRF-Token': csrfToken() || '',
-              },
-              credentials: 'same-origin',
-              body: JSON.stringify({
-                field: fieldName,
-                filename: file.name,
-                mimeType: file.type || 'application/octet-stream',
-                data,
-              }),
-            });
-            const payload = await res.json();
-            if (!res.ok) throw new Error(payload?.message || 'Upload failed');
-            hidden.value = payload.media?.url || '';
-            if (status instanceof HTMLElement) {
-              status.textContent = 'Uploaded.';
-            }
-            const preview = root?.querySelector('[data-shamar-media-preview]');
-            if (preview instanceof HTMLElement && hidden.value) {
-              if (input.dataset.fieldType === 'image') {
-                preview.innerHTML = `<img src="${hidden.value}" alt="" class="max-h-32 rounded-md border border-default object-contain" />`;
-              } else {
-                preview.innerHTML = `<a href="${hidden.value}" class="text-sm text-fg-brand hover:underline" target="_blank" rel="noopener">View file</a>`;
-              }
-            }
-          } catch (error) {
-            if (status instanceof HTMLElement) {
-              status.textContent =
-                error instanceof Error ? error.message : 'Upload failed';
-            }
-            input.value = '';
-          }
-        };
-        reader.readAsDataURL(file);
-      });
-    });
+    // no-op: media library uses shamarMediaManager + multipart /media/upload
   }
 
   function bindListRefresh() {
@@ -1919,6 +1853,22 @@
             this.state[field.name] = field.value;
           }
         }
+        const formEl = this.$el?.tagName === 'FORM' ? this.$el : this.$el?.closest?.('form');
+        if (formEl) {
+          formEl.addEventListener('submit', () => this.syncJsonFields());
+        }
+      },
+
+      syncJsonFields() {
+        const root =
+          this.$el?.tagName === 'FORM' ? this.$el : this.$el?.closest?.('form') || this.$el;
+        if (!root?.querySelectorAll) return;
+        root.querySelectorAll('[data-shamar-json]').forEach((input) => {
+          const name = input.getAttribute('data-shamar-json');
+          if (!name) return;
+          const fallback = input.getAttribute('data-shamar-json-kind') === 'record' ? {} : [];
+          input.value = JSON.stringify(this.state[name] ?? fallback);
+        });
       },
 
       isVisible(name) {
@@ -2103,11 +2053,304 @@
           }
         }
       },
+
+      ensureRepeater(name, emptyItem) {
+        if (!Array.isArray(this.state[name])) this.state[name] = [];
+        void emptyItem;
+        return this.state[name];
+      },
+
+      addRepeaterItem(name, emptyItem) {
+        const cur = Array.isArray(this.state[name]) ? [...this.state[name]] : [];
+        cur.push({ ...(emptyItem && typeof emptyItem === 'object' ? emptyItem : {}) });
+        this.state[name] = cur;
+        this.onFieldChange(name);
+      },
+
+      removeRepeaterItem(name, index) {
+        const cur = Array.isArray(this.state[name]) ? [...this.state[name]] : [];
+        cur.splice(index, 1);
+        this.state[name] = cur;
+        this.onFieldChange(name);
+      },
+
+      moveRepeaterItem(name, index, delta) {
+        const cur = Array.isArray(this.state[name]) ? [...this.state[name]] : [];
+        const next = index + delta;
+        if (next < 0 || next >= cur.length) return;
+        const [row] = cur.splice(index, 1);
+        cur.splice(next, 0, row);
+        this.state[name] = cur;
+        this.onFieldChange(name);
+      },
+
+      ensureKeyValue(name) {
+        if (!Array.isArray(this.state[name])) this.state[name] = [];
+        return this.state[name];
+      },
+
+      addKeyValueRow(name) {
+        const cur = Array.isArray(this.state[name]) ? [...this.state[name]] : [];
+        cur.push({ key: '', value: '' });
+        this.state[name] = cur;
+        this.onFieldChange(name);
+      },
+
+      removeKeyValueRow(name, index) {
+        const cur = Array.isArray(this.state[name]) ? [...this.state[name]] : [];
+        cur.splice(index, 1);
+        this.state[name] = cur;
+        this.onFieldChange(name);
+      },
+
+      moveKeyValueRow(name, index, delta) {
+        const cur = Array.isArray(this.state[name]) ? [...this.state[name]] : [];
+        const next = index + delta;
+        if (next < 0 || next >= cur.length) return;
+        const [row] = cur.splice(index, 1);
+        cur.splice(next, 0, row);
+        this.state[name] = cur;
+        this.onFieldChange(name);
+      },
     };
   }
 
   // Available before Alpine boots (defer scripts run before Alpine.start).
   window.shamarForm = createShamarForm;
+
+  const esmCache = new Map();
+  function loadEsm(url) {
+    if (!esmCache.has(url)) esmCache.set(url, import(url));
+    return esmCache.get(url);
+  }
+
+  function pickExport(mod, name) {
+    if (!mod) return null;
+    if (name && typeof mod[name] === 'function') return mod[name];
+    if (typeof mod.default === 'function') return mod.default;
+    if (mod.default && typeof mod.default[name] === 'function') return mod.default[name];
+    return mod.default || mod;
+  }
+
+  function createShamarRichEditor(cfg = {}) {
+    const mode =
+      cfg.mode === 'document' ? 'document' : cfg.mode === 'notion' ? 'notion' : 'simple';
+    const basePath = String(
+      cfg.basePath ||
+        (typeof document !== 'undefined' ? document.body?.dataset?.shamarBasePath : '') ||
+        '',
+    ).replace(/\/$/, '');
+
+    return {
+      html: '',
+      editor: null,
+      mount: null,
+      mode,
+      async init() {
+        this.html = typeof cfg.getValue === 'function' ? cfg.getValue() || '' : '';
+        const disabled = typeof cfg.isDisabled === 'function' ? cfg.isDisabled() : false;
+        const host = this.$refs.host;
+        if (!host) return;
+        const assetBase = basePath || '';
+        try {
+          if (mode === 'document') {
+            const mod = await import(`${assetBase}/assets/rich-editor/document.js`);
+            this.mount = mod.mountDocumentEditor(host, {
+              brandLabel: cfg.brandLabel || 'Shamar',
+              documentTitle: cfg.name || 'Document',
+              initialHtml: this.html,
+              editable: !disabled,
+              placeholder: 'Start typing your document…',
+              onChange: (html) => {
+                this.html = html;
+                if (typeof cfg.setValue === 'function') cfg.setValue(html);
+              },
+            });
+            this.editor = this.mount.editor;
+            return;
+          }
+
+          if (mode === 'notion') {
+            const mod = await import(`${assetBase}/assets/rich-editor/notion.js`);
+            this.mount = mod.mountNotionEditor(host, {
+              initialHtml: this.html,
+              editable: !disabled,
+              placeholder: "Type '/' for commands…",
+              onChange: (html) => {
+                this.html = html;
+                if (typeof cfg.setValue === 'function') cfg.setValue(html);
+              },
+            });
+            this.editor = this.mount.editor;
+            return;
+          }
+
+          const mod = await import(`${assetBase}/assets/rich-editor/simple.js`);
+          this.mount = mod.mountSimpleEditor(host, {
+            initialHtml: this.html,
+            editable: !disabled,
+            toolbar: Array.isArray(cfg.toolbar) ? cfg.toolbar : undefined,
+            placeholder: 'Start writing…',
+            onChange: (html) => {
+              this.html = html;
+              if (typeof cfg.setValue === 'function') cfg.setValue(html);
+            },
+          });
+          this.editor = this.mount.editor;
+        } catch (err) {
+          console.error(err);
+          host.innerHTML =
+            '<p class="text-xs text-fg-danger px-3 py-2">Rich editor failed to load.</p>';
+        }
+      },
+      destroy() {
+        this.mount?.destroy?.();
+        this.editor?.destroy?.();
+        this.mount = null;
+        this.editor = null;
+      },
+    };
+  }
+
+  const CODEMIRROR_LANGS = {
+    javascript: ['https://esm.sh/@codemirror/lang-javascript@6', 'javascript'],
+    typescript: ['https://esm.sh/@codemirror/lang-javascript@6', 'javascript'],
+    json: ['https://esm.sh/@codemirror/lang-json@6', 'json'],
+    html: ['https://esm.sh/@codemirror/lang-html@6', 'html'],
+    css: ['https://esm.sh/@codemirror/lang-css@6', 'css'],
+    markdown: ['https://esm.sh/@codemirror/lang-markdown@6', 'markdown'],
+    python: ['https://esm.sh/@codemirror/lang-python@6', 'python'],
+    sql: ['https://esm.sh/@codemirror/lang-sql@6', 'sql'],
+    xml: ['https://esm.sh/@codemirror/lang-xml@6', 'xml'],
+  };
+
+  function createShamarCodeEditor(cfg = {}) {
+    return {
+      doc: '',
+      language: cfg.language || 'javascript',
+      view: null,
+      async init() {
+        this.doc = typeof cfg.getValue === 'function' ? cfg.getValue() || '' : '';
+        this.language = cfg.language || this.language || 'javascript';
+        await this.mount();
+      },
+      async loadLanguage(id) {
+        const spec = CODEMIRROR_LANGS[id] || CODEMIRROR_LANGS.javascript;
+        const mod = await loadEsm(spec[0]);
+        const fn = pickExport(mod, spec[1]);
+        return typeof fn === 'function' ? fn() : [];
+      },
+      async mount() {
+        try {
+          const cm = await loadEsm('https://esm.sh/codemirror@6.0.1');
+          const EditorView = pickExport(cm, 'EditorView');
+          const basicSetup = cm.basicSetup || cm.default?.basicSetup;
+          const lang = await this.loadLanguage(this.language);
+          if (this.view) {
+            this.view.destroy();
+            this.view = null;
+          }
+          this.view = new EditorView({
+            doc: this.doc || '',
+            parent: this.$refs.editor,
+            extensions: [
+              basicSetup,
+              lang,
+              EditorView.updateListener.of((update) => {
+                if (!update.docChanged) return;
+                this.doc = update.state.doc.toString();
+                if (typeof cfg.setValue === 'function') cfg.setValue(this.doc);
+              }),
+            ],
+          });
+        } catch {
+          if (this.$refs.editor) {
+            this.$refs.editor.innerHTML =
+              '<p class="text-xs text-fg-danger">Code editor failed to load.</p>';
+          }
+        }
+      },
+      async setLanguage(id) {
+        this.language = id;
+        await this.mount();
+      },
+      destroy() {
+        this.view?.destroy?.();
+      },
+    };
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function renderMarkdownPreview(source) {
+    const escaped = escapeHtml(source);
+    const html = escaped
+      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+      .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" rel="noopener noreferrer">$1</a>')
+      .replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>')
+      .replace(/^(?:- |\* )(.+)$/gm, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>\n?)+/g, (block) => `<ul>${block}</ul>`)
+      .replace(/\n{2,}/g, '</p><p>')
+      .replace(/\n/g, '<br />');
+    return `<p>${html}</p>`;
+  }
+
+  function createShamarMarkdownEditor(cfg = {}) {
+    return {
+      tab: 'write',
+      doc: '',
+      disabled: false,
+      init() {
+        this.doc = typeof cfg.getValue === 'function' ? cfg.getValue() || '' : '';
+        this.disabled = typeof cfg.isDisabled === 'function' ? cfg.isDisabled() : false;
+      },
+      get previewHtml() {
+        return renderMarkdownPreview(this.doc);
+      },
+      onInput() {
+        if (typeof cfg.setValue === 'function') cfg.setValue(this.doc);
+      },
+      insert(kind) {
+        const ta = this.$refs.input;
+        if (!ta || this.disabled) return;
+        const start = ta.selectionStart ?? this.doc.length;
+        const end = ta.selectionEnd ?? this.doc.length;
+        const selected = this.doc.slice(start, end);
+        const wraps = {
+          bold: ['**', '**', 'bold'],
+          italic: ['*', '*', 'italic'],
+          code: ['`', '`', 'code'],
+          link: ['[', '](url)', 'text'],
+          h2: ['## ', '', 'Heading'],
+          ul: ['- ', '', 'item'],
+          ol: ['1. ', '', 'item'],
+          quote: ['> ', '', 'quote'],
+        };
+        const spec = wraps[kind];
+        if (!spec) return;
+        const inner = selected || spec[2];
+        const next = this.doc.slice(0, start) + spec[0] + inner + spec[1] + this.doc.slice(end);
+        this.doc = next;
+        this.onInput();
+        this.$nextTick(() => {
+          ta.focus();
+          const pos = start + spec[0].length + inner.length;
+          ta.setSelectionRange(pos, pos);
+        });
+      },
+    };
+  }
 
   function createShamarCombobox(cfg = {}) {
     const options = Array.isArray(cfg.options)
@@ -2366,6 +2609,1004 @@
 
   window.shamarCombobox = createShamarCombobox;
 
+  function shamarAssetUrl(path) {
+    const base = document.body?.dataset?.shamarBasePath || '';
+    return `${base}${path}`;
+  }
+
+  let flowbiteDatepickerReady = null;
+  function loadFlowbiteDatepicker() {
+    if (typeof window.Datepicker === 'function') return Promise.resolve();
+    if (!flowbiteDatepickerReady) {
+      flowbiteDatepickerReady = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = shamarAssetUrl('/assets/vendor/flowbite-datepicker.min.js');
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Failed to load Flowbite datepicker'));
+        document.head.appendChild(script);
+      });
+    }
+    return flowbiteDatepickerReady;
+  }
+
+  function pad2(n) {
+    return String(n).padStart(2, '0');
+  }
+
+  function parsePickerBounds(raw) {
+    if (raw == null || raw === '') return null;
+    const str = String(raw).trim();
+    const ym = /^(\d{4})-(\d{2})$/.exec(str);
+    if (ym) return new Date(Number(ym[1]), Number(ym[2]) - 1, 1);
+    const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(str);
+    if (dateOnly) {
+      return new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]));
+    }
+    const dt = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/.exec(str);
+    if (dt) {
+      return new Date(
+        Number(dt[1]),
+        Number(dt[2]) - 1,
+        Number(dt[3]),
+        Number(dt[4]),
+        Number(dt[5]),
+        dt[6] != null ? Number(dt[6]) : 0,
+      );
+    }
+    const timeOnly = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(str);
+    if (timeOnly) {
+      const d = new Date();
+      d.setHours(Number(timeOnly[1]), Number(timeOnly[2]), timeOnly[3] != null ? Number(timeOnly[3]) : 0, 0);
+      return d;
+    }
+    const parsed = new Date(str);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  function parsePickerValue(raw, mode) {
+    if (raw == null || raw === '') return null;
+    const str = String(raw).trim();
+    if (mode === 'time') {
+      const m = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(str);
+      if (!m) return null;
+      return {
+        year: null,
+        month: null,
+        day: null,
+        hour: Number(m[1]),
+        minute: Number(m[2]),
+        second: m[3] != null ? Number(m[3]) : 0,
+      };
+    }
+    const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(str);
+    if (dateOnly) {
+      return {
+        year: Number(dateOnly[1]),
+        month: Number(dateOnly[2]),
+        day: Number(dateOnly[3]),
+        hour: 0,
+        minute: 0,
+        second: 0,
+      };
+    }
+    const dt = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/.exec(str);
+    if (dt) {
+      return {
+        year: Number(dt[1]),
+        month: Number(dt[2]),
+        day: Number(dt[3]),
+        hour: Number(dt[4]),
+        minute: Number(dt[5]),
+        second: dt[6] != null ? Number(dt[6]) : 0,
+      };
+    }
+    const parsed = parsePickerBounds(str);
+    if (!parsed) return null;
+    return {
+      year: parsed.getFullYear(),
+      month: parsed.getMonth() + 1,
+      day: parsed.getDate(),
+      hour: parsed.getHours(),
+      minute: parsed.getMinutes(),
+      second: parsed.getSeconds(),
+    };
+  }
+
+  function formatPickerState(parts, mode, withSeconds) {
+    if (!parts) return '';
+    if (mode === 'time') {
+      return withSeconds
+        ? `${pad2(parts.hour)}:${pad2(parts.minute)}:${pad2(parts.second)}`
+        : `${pad2(parts.hour)}:${pad2(parts.minute)}`;
+    }
+    const date = `${parts.year}-${pad2(parts.month)}-${pad2(parts.day)}`;
+    if (mode === 'date' || mode === 'week' || mode === 'month') return date;
+    const time = withSeconds
+      ? `T${pad2(parts.hour)}:${pad2(parts.minute)}:${pad2(parts.second)}`
+      : `T${pad2(parts.hour)}:${pad2(parts.minute)}`;
+    return date + time;
+  }
+
+  function dateOnlyStamp(date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  }
+
+  function isoWeekStart(date, weekStart = 1) {
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const diff = (d.getDay() - weekStart + 7) % 7;
+    d.setDate(d.getDate() - diff);
+    return d;
+  }
+
+  function isoWeekNumber(date) {
+    const d = new Date(date.getTime());
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
+    const week1 = new Date(d.getFullYear(), 0, 4);
+    return (
+      1 +
+      Math.round(
+        ((d.getTime() - week1.getTime()) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7,
+      )
+    );
+  }
+
+  function resolveTimeDisplayFormat(preferred) {
+    if (preferred === '12' || preferred === '24') return preferred;
+    try {
+      return new Intl.DateTimeFormat(undefined, { hour: 'numeric' }).resolvedOptions().hour12
+        ? '12'
+        : '24';
+    } catch {
+      return '24';
+    }
+  }
+
+  function resolveMinuteStep(cfg, withSeconds) {
+    if (cfg.minuteStep != null && Number.isFinite(Number(cfg.minuteStep))) {
+      return Math.max(1, Math.min(30, Math.floor(Number(cfg.minuteStep))));
+    }
+    return withSeconds ? 1 : 5;
+  }
+
+  function formatTimeDisplay(parts, format, withSeconds) {
+    if (!parts) return '';
+    const minute = pad2(parts.minute);
+    const second = pad2(parts.second ?? 0);
+    if (format === '24') {
+      const base = `${pad2(parts.hour)}:${minute}`;
+      return withSeconds ? `${base}:${second}` : base;
+    }
+    const hour24 = ((parts.hour % 24) + 24) % 24;
+    const meridiem = hour24 >= 12 ? 'PM' : 'AM';
+    const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
+    const base = `${pad2(hour12)}:${minute}`;
+    return withSeconds ? `${base}:${second} ${meridiem}` : `${base} ${meridiem}`;
+  }
+
+  function timeMaskDigitCapacity(withSeconds) {
+    return withSeconds ? 6 : 4;
+  }
+
+  function formatTimeMaskDraft(digits, meridiem, format, withSeconds) {
+    const raw = String(digits || '').replace(/\D/g, '');
+    let result = '';
+    if (raw.length <= 2) {
+      result = raw;
+    } else if (raw.length <= 4) {
+      result = `${raw.slice(0, 2)}:${raw.slice(2)}`;
+    } else {
+      const capped = raw.slice(0, timeMaskDigitCapacity(withSeconds));
+      result = `${capped.slice(0, 2)}:${capped.slice(2, 4)}:${capped.slice(4)}`;
+    }
+    if (format === '12' && meridiem) {
+      return result ? `${result} ${meridiem}` : meridiem;
+    }
+    return result;
+  }
+
+  function timeMaskFromParts(parts, format, withSeconds) {
+    const hour24 = ((parts.hour % 24) + 24) % 24;
+    const hour = format === '12' ? (hour24 % 12 === 0 ? 12 : hour24 % 12) : hour24;
+    let digits = `${pad2(hour)}${pad2(parts.minute)}`;
+    if (withSeconds) digits += pad2(parts.second ?? 0);
+    const meridiem = format === '12' ? (hour24 >= 12 ? 'PM' : 'AM') : '';
+    return { digits, meridiem };
+  }
+
+  function parseTimeMaskState(state, format, withSeconds) {
+    const need = timeMaskDigitCapacity(withSeconds);
+    const digits = String(state.digits || '').replace(/\D/g, '');
+    if (digits.length < need) return null;
+    if (format === '12' && !state.meridiem) return null;
+    const hour = Number(digits.slice(0, 2));
+    const minute = Number(digits.slice(2, 4));
+    const second = withSeconds ? Number(digits.slice(4, 6)) : 0;
+    if (!Number.isFinite(hour) || !Number.isFinite(minute) || !Number.isFinite(second)) {
+      return null;
+    }
+    if (minute > 59 || second > 59) return null;
+    if (format === '12') {
+      if (hour < 1 || hour > 12) return null;
+      const meridiem = state.meridiem;
+      const hour24 =
+        meridiem === 'AM' ? (hour === 12 ? 0 : hour) : hour === 12 ? 12 : hour + 12;
+      return { hour: hour24, minute, second };
+    }
+    if (hour > 23) return null;
+    return { hour, minute, second };
+  }
+
+  function applyTimeMaskKey(state, key, format, withSeconds) {
+    const max = timeMaskDigitCapacity(withSeconds);
+    const digits = String(state.digits || '').replace(/\D/g, '').slice(0, max);
+    let meridiem = state.meridiem || '';
+    const draftOf = (nextDigits, nextMeridiem) =>
+      formatTimeMaskDraft(nextDigits, nextMeridiem, format, withSeconds);
+
+    if (/^[0-9]$/.test(key)) {
+      if (digits.length >= max) {
+        return { digits, meridiem, draft: draftOf(digits, meridiem), handled: true };
+      }
+      const pos = digits.length;
+      const d = Number(key);
+      let next = digits;
+
+      if (pos === 0) {
+        if (format === '24' && d > 2) next = `0${key}`;
+        else if (format === '12' && d > 1) next = `0${key}`;
+        else next = key;
+      } else if (pos === 1) {
+        const hour = Number(`${digits[0]}${key}`);
+        if (format === '24' && hour > 23) {
+          return { digits, meridiem, draft: draftOf(digits, meridiem), handled: true };
+        }
+        if (format === '12' && (hour > 12 || hour === 0)) {
+          if (digits.length + 2 > max) {
+            return { digits, meridiem, draft: draftOf(digits, meridiem), handled: true };
+          }
+          next = `0${digits[0]}${key}`;
+        } else {
+          next = `${digits}${key}`;
+        }
+      } else if (pos === 2 || pos === 4) {
+        if (d > 5) {
+          if (digits.length + 2 > max) {
+            return { digits, meridiem, draft: draftOf(digits, meridiem), handled: true };
+          }
+          next = `${digits}0${key}`;
+        } else {
+          next = `${digits}${key}`;
+        }
+      } else {
+        next = `${digits}${key}`;
+      }
+
+      next = next.slice(0, max);
+      return { digits: next, meridiem, draft: draftOf(next, meridiem), handled: true };
+    }
+
+    if (format === '12' && (key === 'a' || key === 'A' || key === 'p' || key === 'P')) {
+      meridiem = key === 'a' || key === 'A' ? 'AM' : 'PM';
+      return { digits, meridiem, draft: draftOf(digits, meridiem), handled: true };
+    }
+
+    if (key === 'Backspace' || key === 'Delete') {
+      if (format === '12' && meridiem) {
+        meridiem = '';
+        return { digits, meridiem, draft: draftOf(digits, meridiem), handled: true };
+      }
+      const next = digits.slice(0, -1);
+      return { digits: next, meridiem, draft: draftOf(next, meridiem), handled: true };
+    }
+
+    if (key === ':' || key === ' ') {
+      return { digits, meridiem, draft: draftOf(digits, meridiem), handled: true };
+    }
+
+    if (key.length === 1) {
+      return { digits, meridiem, draft: draftOf(digits, meridiem), handled: true };
+    }
+
+    return { digits, meridiem, draft: draftOf(digits, meridiem), handled: false };
+  }
+
+  function parseFlexibleTimeInput(raw, format = '24') {
+    const str = String(raw || '').trim();
+    if (!str) return null;
+    const meridiemMatch = /(a\.?m\.?|p\.?m\.?|[ap])\s*$/i.exec(str);
+    const meridiemToken = meridiemMatch ? meridiemMatch[1].toLowerCase().replace(/\./g, '') : null;
+    const meridiem =
+      meridiemToken == null ? null : meridiemToken.startsWith('a') ? 'am' : 'pm';
+    const cleaned = str
+      .replace(/(a\.?m\.?|p\.?m\.?|[ap])\s*$/i, '')
+      .replace(/\s+/g, '')
+      .replace(/\./g, '');
+    let hour = 0;
+    let minute = 0;
+    let second = 0;
+    const colon = /^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/.exec(cleaned);
+    if (colon) {
+      hour = Number(colon[1]);
+      minute = Number(colon[2]);
+      second = colon[3] != null ? Number(colon[3]) : 0;
+    } else if (/^\d{3,6}$/.test(cleaned)) {
+      if (cleaned.length <= 4) {
+        const padded = cleaned.padStart(4, '0');
+        hour = Number(padded.slice(0, 2));
+        minute = Number(padded.slice(2, 4));
+      } else {
+        const padded = cleaned.padStart(6, '0');
+        hour = Number(padded.slice(0, 2));
+        minute = Number(padded.slice(2, 4));
+        second = Number(padded.slice(4, 6));
+      }
+    } else {
+      return null;
+    }
+    if (minute > 59 || second > 59) return null;
+    if (meridiem || format === '12') {
+      if (hour < 0 || hour > 12) return null;
+      let hour24;
+      if (meridiem === 'am') hour24 = hour === 12 ? 0 : hour;
+      else if (meridiem === 'pm') hour24 = hour === 12 ? 12 : hour + 12;
+      else hour24 = hour === 12 ? 12 : hour;
+      return { hour: hour24, minute, second };
+    }
+    if (hour > 23) return null;
+    return { hour, minute, second };
+  }
+
+  function nudgeTimePart(parts, unit, delta, minuteStep = 5) {
+    let { hour, minute, second } = parts;
+    if (unit === 'meridiem') return { hour: (hour + 12) % 24, minute, second };
+    if (unit === 'hour') return { hour: (hour + delta + 24) % 24, minute, second };
+    if (unit === 'second') return { hour, minute, second: (second + delta + 60) % 60 };
+    const step = Math.max(1, minuteStep);
+    const next = minute + delta * step;
+    if (next >= 60) {
+      return { hour: (hour + Math.floor(next / 60)) % 24, minute: next % 60, second };
+    }
+    if (next < 0) {
+      const borrow = Math.ceil(-next / 60);
+      return {
+        hour: (hour - borrow + 240) % 24,
+        minute: ((next % 60) + 60) % 60,
+        second,
+      };
+    }
+    return { hour, minute: next, second };
+  }
+
+  function createShamarFlowbitePicker(cfg = {}) {
+    const mode = cfg.mode || 'date';
+    const withSeconds = !!cfg.seconds;
+    const timeFormat = resolveTimeDisplayFormat(cfg.timeFormat);
+    const minuteStep = resolveMinuteStep(cfg, withSeconds);
+    let picker = null;
+    let selectedWeekStart = null;
+
+    return {
+      name: cfg.name || '',
+      mode,
+      seconds: withSeconds,
+      timeFormat,
+      minuteStep,
+      placeholder: cfg.placeholder || '',
+      timeValue: '',
+      timeDraft: '',
+      timeMaskDigits: '',
+      timeMaskMeridiem: '',
+      timeOpen: false,
+      hour: 0,
+      minute: 0,
+      second: 0,
+      _syncing: false,
+      _outsideClose: null,
+
+      getValue: typeof cfg.getValue === 'function' ? cfg.getValue : () => '',
+      setValue: typeof cfg.setValue === 'function' ? cfg.setValue : () => {},
+      isDisabled: typeof cfg.isDisabled === 'function' ? cfg.isDisabled : () => false,
+
+      async init() {
+        try {
+          await loadFlowbiteDatepicker();
+        } catch {
+          return;
+        }
+        this.syncTimeFromState();
+        if (this.mode !== 'time') {
+          this.initPicker();
+        }
+        this.bindOutsideClose();
+        this.$watch(
+          () => this.getValue(),
+          () => {
+            if (this._syncing) return;
+            this.syncPickerFromState();
+            this.syncTimeFromState();
+          },
+        );
+      },
+
+      destroy() {
+        this.unbindOutsideClose();
+        picker?.destroy?.();
+        picker = null;
+      },
+
+      get disabled() {
+        return !!this.isDisabled();
+      },
+
+      get defaultPlaceholder() {
+        if (this.mode === 'time') return 'Select time';
+        if (this.mode === 'datetime') return 'Select date and time';
+        if (this.mode === 'week') return 'Select week';
+        if (this.mode === 'month') return 'Select month';
+        return 'Select date';
+      },
+
+      get timePlaceholder() {
+        if (this.timeFormat === '12') {
+          return withSeconds ? 'hh:mm:ss AM' : 'hh:mm AM';
+        }
+        return withSeconds ? 'HH:mm:ss' : 'HH:mm';
+      },
+
+      get stateValue() {
+        const raw = this.getValue();
+        return raw == null ? '' : String(raw);
+      },
+
+      get displayHour() {
+        if (this.timeFormat === '12') {
+          const h = this.hour % 24;
+          const hour12 = h % 12 === 0 ? 12 : h % 12;
+          return String(hour12);
+        }
+        return pad2(this.hour);
+      },
+
+      get meridiem() {
+        return this.hour % 24 >= 12 ? 'PM' : 'AM';
+      },
+
+      padTime(n) {
+        return pad2(n);
+      },
+
+      refreshTimeDraft() {
+        if (!this.timeValue) {
+          this.timeDraft = '';
+          this.timeMaskDigits = '';
+          this.timeMaskMeridiem = '';
+          return;
+        }
+        const mask = timeMaskFromParts(
+          { hour: this.hour, minute: this.minute, second: this.second },
+          this.timeFormat,
+          withSeconds,
+        );
+        this.timeMaskDigits = mask.digits;
+        this.timeMaskMeridiem = mask.meridiem;
+        this.timeDraft = formatTimeMaskDraft(
+          mask.digits,
+          mask.meridiem,
+          this.timeFormat,
+          withSeconds,
+        );
+      },
+
+      buildDisplayFormat() {
+        const self = this;
+        return {
+          toValue(date) {
+            if (!(date instanceof Date) || Number.isNaN(date.getTime())) return undefined;
+            if (self.mode === 'month') {
+              return new Date(date.getFullYear(), date.getMonth(), 1).getTime();
+            }
+            if (self.mode === 'week') {
+              return isoWeekStart(date, 1).getTime();
+            }
+            return dateOnlyStamp(date);
+          },
+          toDisplay(date) {
+            if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+            if (self.mode === 'week') {
+              const start = isoWeekStart(date, 1);
+              return `Week ${isoWeekNumber(start)}, ${start.getFullYear()}`;
+            }
+            if (self.mode === 'month') {
+              return new Intl.DateTimeFormat(undefined, {
+                year: 'numeric',
+                month: 'long',
+              }).format(date);
+            }
+            return new Intl.DateTimeFormat(undefined, {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            }).format(date);
+          },
+        };
+      },
+
+      buildPickerOptions() {
+        // Keep in sync with packages/adonis/src/shamar/flowbite-picker.ts
+        // Flowbite 1.3 resolves `container` via document.querySelector — Element refs break it.
+        const opts = {
+          autohide: this.mode === 'date' || this.mode === 'week' || this.mode === 'month',
+          todayBtn: true,
+          todayBtnMode: 1,
+          todayHighlight: true,
+          clearBtn: true,
+          format: this.buildDisplayFormat(),
+          orientation: 'bottom',
+          weekStart: 1,
+          container: 'body',
+        };
+        if (cfg.min) opts.minDate = cfg.min;
+        if (cfg.max) opts.maxDate = cfg.max;
+
+        if (this.mode === 'month') {
+          opts.pickLevel = 1;
+          opts.startView = 1;
+        }
+
+        if (this.mode === 'week') {
+          opts.calendarWeeks = true;
+          opts.beforeShowDay = (date) => {
+            if (!selectedWeekStart) return undefined;
+            const start = dateOnlyStamp(selectedWeekStart);
+            const end = start + 6 * 86400000;
+            const stamp = dateOnlyStamp(date);
+            if (stamp >= start && stamp <= end) {
+              return { classes: 'range bg-gray-200 dark:bg-gray-600' };
+            }
+            return undefined;
+          };
+        }
+
+        return opts;
+      },
+
+      bindOutsideClose() {
+        this.unbindOutsideClose();
+        this._outsideClose = (ev) => {
+          const target = ev.target;
+          if (!(target instanceof Node)) return;
+
+          if (this.timeOpen) {
+            const timeWrap = this.$refs.timeWrap;
+            if (!timeWrap || !timeWrap.contains(target)) {
+              this.closeTime();
+            }
+          }
+
+          if (!picker?.active) return;
+          const input = this.$refs.dateInput;
+          const pickerEl = picker.pickerElement;
+          if (input && (target === input || input.contains(target))) return;
+          if (pickerEl && pickerEl.contains(target)) return;
+          picker.hide();
+        };
+        document.addEventListener('pointerdown', this._outsideClose, true);
+      },
+
+      unbindOutsideClose() {
+        if (!this._outsideClose) return;
+        document.removeEventListener('pointerdown', this._outsideClose, true);
+        this._outsideClose = null;
+      },
+
+      onEscape() {
+        if (this.timeOpen) {
+          this.closeTime();
+          return;
+        }
+        if (picker?.active) picker.hide();
+      },
+
+      initPicker() {
+        const input = this.$refs.dateInput;
+        if (!input || typeof window.Datepicker !== 'function') return;
+
+        const options = this.buildPickerOptions();
+        if (options.container != null && typeof options.container !== 'string') {
+          throw new TypeError('Flowbite datepicker container must be a CSS selector string');
+        }
+        picker = new window.Datepicker(input, options);
+
+        input.addEventListener('changeDate', (ev) => {
+          if (this._syncing || this.disabled) return;
+          const detailDate = ev.detail?.date;
+          const picked = detailDate ?? picker.getDate?.();
+          if (!picked) {
+            this.commitState('');
+            selectedWeekStart = null;
+            return;
+          }
+          const date = picked instanceof Date ? picked : new Date(picked);
+          if (Number.isNaN(date.getTime())) return;
+
+          if (this.mode === 'week') {
+            selectedWeekStart = isoWeekStart(date, 1);
+            const next = formatPickerState(
+              {
+                year: selectedWeekStart.getFullYear(),
+                month: selectedWeekStart.getMonth() + 1,
+                day: selectedWeekStart.getDate(),
+                hour: 0,
+                minute: 0,
+                second: 0,
+              },
+              'week',
+              false,
+            );
+            this.commitState(next);
+            this._syncing = true;
+            picker.setDate(selectedWeekStart, { render: true });
+            queueMicrotask(() => {
+              this._syncing = false;
+            });
+            return;
+          }
+
+          if (this.mode === 'month') {
+            const first = new Date(date.getFullYear(), date.getMonth(), 1);
+            this.commitState(
+              formatPickerState(
+                {
+                  year: first.getFullYear(),
+                  month: first.getMonth() + 1,
+                  day: first.getDate(),
+                  hour: 0,
+                  minute: 0,
+                  second: 0,
+                },
+                'month',
+                false,
+              ),
+            );
+            return;
+          }
+
+          if (this.mode === 'datetime') {
+            this.commitDateTime(date);
+            return;
+          }
+
+          this.commitState(
+            formatPickerState(
+              {
+                year: date.getFullYear(),
+                month: date.getMonth() + 1,
+                day: date.getDate(),
+                hour: 0,
+                minute: 0,
+                second: 0,
+              },
+              'date',
+              false,
+            ),
+          );
+        });
+
+        this.syncPickerFromState();
+      },
+
+      syncPickerFromState() {
+        if (!picker) return;
+        const raw = String(this.getValue() || '').trim();
+        if (!raw) {
+          picker.setDate({ clear: true });
+          selectedWeekStart = null;
+          return;
+        }
+        const bounds = parsePickerBounds(raw);
+        if (!bounds) return;
+        this._syncing = true;
+        if (this.mode === 'week') {
+          selectedWeekStart = isoWeekStart(bounds, 1);
+          picker.setDate(selectedWeekStart);
+        } else if (this.mode === 'month') {
+          picker.setDate(new Date(bounds.getFullYear(), bounds.getMonth(), 1));
+        } else {
+          picker.setDate(bounds);
+        }
+        queueMicrotask(() => {
+          this._syncing = false;
+        });
+      },
+
+      syncTimeFromState() {
+        if (this.mode !== 'datetime' && this.mode !== 'time') return;
+        const parts = parsePickerValue(String(this.getValue() || ''), this.mode);
+        if (!parts) {
+          this.timeValue = '';
+          this.timeDraft = '';
+          this.hour = 0;
+          this.minute = 0;
+          this.second = 0;
+          return;
+        }
+        this.hour = parts.hour;
+        this.minute = parts.minute;
+        this.second = parts.second;
+        this.timeValue = withSeconds
+          ? `${pad2(parts.hour)}:${pad2(parts.minute)}:${pad2(parts.second)}`
+          : `${pad2(parts.hour)}:${pad2(parts.minute)}`;
+        this.refreshTimeDraft();
+      },
+
+      commitState(value) {
+        this._syncing = true;
+        this.setValue(value);
+        queueMicrotask(() => {
+          this._syncing = false;
+        });
+      },
+
+      commitDateTime(datePart) {
+        this.commitState(
+          formatPickerState(
+            {
+              year: datePart.getFullYear(),
+              month: datePart.getMonth() + 1,
+              day: datePart.getDate(),
+              hour: this.hour || 0,
+              minute: this.minute || 0,
+              second: this.second || 0,
+            },
+            'datetime',
+            withSeconds,
+          ),
+        );
+      },
+
+      composeTimeValue() {
+        return withSeconds
+          ? `${pad2(this.hour)}:${pad2(this.minute)}:${pad2(this.second)}`
+          : `${pad2(this.hour)}:${pad2(this.minute)}`;
+      },
+
+      applyTimeParts() {
+        this.timeValue = this.composeTimeValue();
+        this.refreshTimeDraft();
+        this.onTimeChange();
+      },
+
+      openTimeAssist() {
+        if (this.disabled) return;
+        if (picker?.active) picker.hide();
+        this.timeOpen = true;
+      },
+
+      toggleTime() {
+        if (this.disabled) return;
+        if (this.timeOpen) {
+          this.closeTime();
+          return;
+        }
+        if (!this.timeValue) {
+          const now = new Date();
+          this.hour = now.getHours();
+          this.minute = now.getMinutes();
+          this.second = withSeconds ? now.getSeconds() : 0;
+          this.applyTimeParts();
+        } else {
+          this.refreshTimeDraft();
+        }
+        this.openTimeAssist();
+      },
+
+      closeTime() {
+        this.timeOpen = false;
+      },
+
+      onTimeFocus() {
+        this.openTimeAssist();
+      },
+
+      onTimeKeydown(event) {
+        if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+        if (event.key === 'ArrowUp') {
+          event.preventDefault();
+          this.nudge('minute', 1);
+          return;
+        }
+        if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          this.nudge('minute', -1);
+          return;
+        }
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          this.commitTimeDraft();
+          this.closeTime();
+          return;
+        }
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          this.refreshTimeDraft();
+          this.closeTime();
+          return;
+        }
+        if (
+          event.key === 'Tab' ||
+          event.key === 'ArrowLeft' ||
+          event.key === 'ArrowRight' ||
+          event.key === 'Home' ||
+          event.key === 'End'
+        ) {
+          return;
+        }
+
+        const result = applyTimeMaskKey(
+          { digits: this.timeMaskDigits, meridiem: this.timeMaskMeridiem },
+          event.key,
+          this.timeFormat,
+          withSeconds,
+        );
+        if (!result.handled) return;
+        event.preventDefault();
+        this.timeMaskDigits = result.digits;
+        this.timeMaskMeridiem = result.meridiem;
+        this.timeDraft = result.draft;
+
+        const parsed = parseTimeMaskState(
+          { digits: result.digits, meridiem: result.meridiem },
+          this.timeFormat,
+          withSeconds,
+        );
+        if (parsed) {
+          this.hour = parsed.hour;
+          this.minute = parsed.minute;
+          this.second = withSeconds ? parsed.second : 0;
+          this.applyTimeParts();
+        }
+      },
+
+      onTimePaste(event) {
+        event.preventDefault();
+        const text = event.clipboardData?.getData('text') || '';
+        const parsed = parseFlexibleTimeInput(text, this.timeFormat);
+        if (!parsed) return;
+        this.hour = parsed.hour;
+        this.minute = parsed.minute;
+        this.second = withSeconds ? parsed.second : 0;
+        this.applyTimeParts();
+      },
+
+      commitTimeDraft() {
+        if (this.disabled) return;
+        const raw = String(this.timeDraft || '').trim();
+        if (!raw) {
+          this.clearTime({ keepOpen: true });
+          return;
+        }
+        const fromMask = parseTimeMaskState(
+          { digits: this.timeMaskDigits, meridiem: this.timeMaskMeridiem },
+          this.timeFormat,
+          withSeconds,
+        );
+        if (fromMask) {
+          this.hour = fromMask.hour;
+          this.minute = fromMask.minute;
+          this.second = withSeconds ? fromMask.second : 0;
+          this.applyTimeParts();
+          return;
+        }
+        const need = timeMaskDigitCapacity(withSeconds);
+        const typing =
+          this.timeMaskDigits.length > 0 &&
+          (this.timeMaskDigits.length < need ||
+            (this.timeFormat === '12' && !this.timeMaskMeridiem));
+        if (typing) {
+          this.refreshTimeDraft();
+          return;
+        }
+        const parsed = parseFlexibleTimeInput(raw, this.timeFormat);
+        if (!parsed) {
+          this.refreshTimeDraft();
+          return;
+        }
+        this.hour = parsed.hour;
+        this.minute = parsed.minute;
+        this.second = withSeconds ? parsed.second : 0;
+        this.applyTimeParts();
+      },
+
+      nudge(unit, delta) {
+        if (this.disabled) return;
+        if (!this.timeValue) {
+          const now = new Date();
+          this.hour = now.getHours();
+          this.minute = now.getMinutes();
+          this.second = withSeconds ? now.getSeconds() : 0;
+        }
+        const next = nudgeTimePart(
+          { hour: this.hour, minute: this.minute, second: this.second },
+          unit,
+          delta,
+          this.minuteStep,
+        );
+        this.hour = next.hour;
+        this.minute = next.minute;
+        this.second = next.second;
+        this.applyTimeParts();
+      },
+
+      setTimeNow() {
+        const now = new Date();
+        this.hour = now.getHours();
+        this.minute = now.getMinutes();
+        this.second = withSeconds ? now.getSeconds() : 0;
+        this.applyTimeParts();
+      },
+
+      clearTime(opts = {}) {
+        this.hour = 0;
+        this.minute = 0;
+        this.second = 0;
+        this.timeValue = '';
+        this.timeDraft = '';
+        this.timeMaskDigits = '';
+        this.timeMaskMeridiem = '';
+        if (this.mode === 'time') {
+          this.commitState('');
+          if (!opts.keepOpen) this.closeTime();
+          return;
+        }
+        if (this.mode === 'datetime') {
+          const parts = parsePickerValue(String(this.getValue() || ''), 'datetime');
+          if (!parts) {
+            this.commitState('');
+            if (!opts.keepOpen) this.closeTime();
+            return;
+          }
+          // Clear means drop time to midnight while keeping the date.
+          parts.hour = 0;
+          parts.minute = 0;
+          parts.second = 0;
+          this.timeValue = this.composeTimeValue();
+          this.refreshTimeDraft();
+          this.commitState(formatPickerState(parts, 'datetime', withSeconds));
+        }
+        if (!opts.keepOpen) this.closeTime();
+      },
+
+      onTimeChange() {
+        if (this.disabled) return;
+        if (this.mode === 'time') {
+          this.commitState(this.timeValue || '');
+          return;
+        }
+        if (this.mode === 'datetime') {
+          const parts = parsePickerValue(String(this.getValue() || ''), 'datetime');
+          const now = new Date();
+          const base = parts || {
+            year: now.getFullYear(),
+            month: now.getMonth() + 1,
+            day: now.getDate(),
+            hour: 0,
+            minute: 0,
+            second: 0,
+          };
+          base.hour = this.hour || 0;
+          base.minute = this.minute || 0;
+          base.second = this.second || 0;
+          this.commitState(formatPickerState(base, 'datetime', withSeconds));
+        }
+      },
+    };
+  }
+
+  window.shamarFlowbitePicker = createShamarFlowbitePicker;
+  window.shamarDatePicker = createShamarFlowbitePicker;
+
   /**
    * Dropdown menu that uses position:fixed so it escapes overflow:hidden /
    * overflow:auto ancestors (list tables, cards, scroll roots).
@@ -2419,6 +3660,1312 @@
 
   window.shamarFloatingMenu = createShamarFloatingMenu;
 
+  const MEDIA_DND_MIME = 'application/x-shamar-media';
+  const MEDIA_CLIPBOARD_KEY = 'shamar-media-clipboard';
+
+  function normalizeMediaClipboard(parsed) {
+    if (!parsed?.mode) return null;
+    if (Array.isArray(parsed.items) && parsed.items.length) {
+      return {
+        mode: parsed.mode,
+        items: parsed.items.filter((item) => item?.kind && item?.id),
+      };
+    }
+    if (parsed.kind && parsed.id) {
+      return {
+        mode: parsed.mode,
+        items: [{ kind: parsed.kind, id: parsed.id, name: parsed.name }],
+      };
+    }
+    return null;
+  }
+
+  function readMediaClipboard() {
+    try {
+      const raw = sessionStorage.getItem(MEDIA_CLIPBOARD_KEY);
+      if (!raw) return null;
+      return normalizeMediaClipboard(JSON.parse(raw));
+    } catch {
+      return null;
+    }
+  }
+
+  function writeMediaClipboard(value) {
+    if (!value) {
+      sessionStorage.removeItem(MEDIA_CLIPBOARD_KEY);
+      return;
+    }
+    const normalized = normalizeMediaClipboard(value);
+    if (!normalized?.items?.length) {
+      sessionStorage.removeItem(MEDIA_CLIPBOARD_KEY);
+      return;
+    }
+    sessionStorage.setItem(MEDIA_CLIPBOARD_KEY, JSON.stringify(normalized));
+  }
+
+  const MEDIA_VIEW_MODES = ['icons', 'tiles', 'list', 'details'];
+  const MEDIA_SORT_COLUMNS = ['name', 'type', 'size', 'visibility'];
+
+  function readMediaViewMode() {
+    try {
+      const mode = localStorage.getItem('shamar-media-view-mode');
+      return MEDIA_VIEW_MODES.includes(mode) ? mode : 'icons';
+    } catch {
+      return 'icons';
+    }
+  }
+
+  function readMediaSortColumn() {
+    try {
+      const col = localStorage.getItem('shamar-media-sort-column');
+      return MEDIA_SORT_COLUMNS.includes(col) ? col : 'name';
+    } catch {
+      return 'name';
+    }
+  }
+
+  function readMediaSortDirection() {
+    try {
+      const dir = localStorage.getItem('shamar-media-sort-direction');
+      return dir === 'desc' ? 'desc' : 'asc';
+    } catch {
+      return 'asc';
+    }
+  }
+
+  function createShamarMediaManager(cfg = {}) {
+    return {
+      apiBase: cfg.apiBase || '/admin/media',
+      folderId: cfg.folderId ?? null,
+      folders: Array.isArray(cfg.folders) ? cfg.folders : [],
+      folderTree: Array.isArray(cfg.folderTree) ? cfg.folderTree : [],
+      files: (Array.isArray(cfg.files) ? cfg.files : []).map((file) => ({
+        ...file,
+        visibility: file.visibility === 'public' ? 'public' : 'private',
+      })),
+      breadcrumbs: Array.isArray(cfg.breadcrumbs) ? cfg.breadcrumbs : [],
+      viewMode: readMediaViewMode(),
+      sortColumn: readMediaSortColumn(),
+      sortDirection: readMediaSortDirection(),
+      expandedIds: {},
+      dragover: null,
+      dropTarget: null,
+      status: '',
+      selection: [],
+      details: null,
+      clipboard: readMediaClipboard(),
+      menu: { open: false, style: {}, kind: null, item: null },
+      _menuOpenedAt: 0,
+      _selectionAnchor: null,
+      _dragging: null,
+
+      init() {
+        this.clipboard = readMediaClipboard();
+        this.syncExpandedFromPath();
+      },
+
+      setViewMode(mode) {
+        if (!MEDIA_VIEW_MODES.includes(mode)) return;
+        this.viewMode = mode;
+        try {
+          localStorage.setItem('shamar-media-view-mode', mode);
+        } catch {
+          /* ignore */
+        }
+      },
+
+      toggleSort(column) {
+        if (!MEDIA_SORT_COLUMNS.includes(column)) return;
+        if (this.sortColumn === column) {
+          this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.sortColumn = column;
+          this.sortDirection = 'asc';
+        }
+        try {
+          localStorage.setItem('shamar-media-sort-column', this.sortColumn);
+          localStorage.setItem('shamar-media-sort-direction', this.sortDirection);
+        } catch {
+          /* ignore */
+        }
+      },
+
+      sortIndicator(column) {
+        if (this.sortColumn !== column) return '';
+        return this.sortDirection === 'asc' ? '↑' : '↓';
+      },
+
+      isSorted(column) {
+        return this.sortColumn === column;
+      },
+
+      typeSortKey(row) {
+        return row.kind === 'folder' ? 'Folder' : this.fileTypeLabel(row.item);
+      },
+
+      sizeSortKey(row) {
+        return row.kind === 'folder' ? -1 : Number(row.item.size) || 0;
+      },
+
+      visibilitySortKey(row) {
+        if (row.kind === 'folder') return -1;
+        return row.item.visibility === 'public' ? 1 : 0;
+      },
+
+      browseItemsRaw() {
+        const rows = [];
+        for (const item of this.folders || []) {
+          rows.push({ kind: 'folder', item, key: `folder:${item.id}` });
+        }
+        for (const item of this.files || []) {
+          rows.push({ kind: 'file', item, key: `file:${item.id}` });
+        }
+        return rows;
+      },
+
+      defaultBrowseItems() {
+        const folders = [...(this.folders || [])].sort((a, b) =>
+          String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' }),
+        );
+        const files = [...(this.files || [])].sort((a, b) =>
+          String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' }),
+        );
+        return [
+          ...folders.map((item) => ({ kind: 'folder', item, key: `folder:${item.id}` })),
+          ...files.map((item) => ({ kind: 'file', item, key: `file:${item.id}` })),
+        ];
+      },
+
+      sortBrowseItems(rows) {
+        const dir = this.sortDirection === 'desc' ? -1 : 1;
+        const col = this.sortColumn;
+        return [...rows].sort((a, b) => {
+          let cmp = 0;
+          if (col === 'type') {
+            cmp = this.typeSortKey(a).localeCompare(this.typeSortKey(b), undefined, {
+              sensitivity: 'base',
+            });
+          } else if (col === 'size') {
+            cmp = this.sizeSortKey(a) - this.sizeSortKey(b);
+          } else if (col === 'visibility') {
+            cmp = this.visibilitySortKey(a) - this.visibilitySortKey(b);
+          } else {
+            cmp = String(a.item.name || '').localeCompare(String(b.item.name || ''), undefined, {
+              sensitivity: 'base',
+            });
+          }
+          if (cmp === 0) {
+            cmp = String(a.item.name || '').localeCompare(String(b.item.name || ''), undefined, {
+              sensitivity: 'base',
+            });
+          }
+          return cmp * dir;
+        });
+      },
+
+      sortedBrowseItems() {
+        if (this.viewMode === 'icons' || this.viewMode === 'tiles') {
+          return this.defaultBrowseItems();
+        }
+        return this.sortBrowseItems(this.browseItemsRaw());
+      },
+
+      selectionKey(kind, id) {
+        return `${kind}:${id}`;
+      },
+
+      isItemSelected(kind, id) {
+        const key = this.selectionKey(kind, id);
+        return this.selection.some((entry) => this.selectionKey(entry.kind, entry.id) === key);
+      },
+
+      primarySelection() {
+        return this.selection.length ? this.selection[this.selection.length - 1] : null;
+      },
+
+      browseItems() {
+        return this.sortedBrowseItems();
+      },
+
+      clearSelection() {
+        this.selection = [];
+        this._selectionAnchor = null;
+      },
+
+      selectionLabel() {
+        const n = this.selection.length;
+        if (!n) return '';
+        if (n === 1) return this.selection[0].item?.name || '1 item';
+        return `${n} items selected`;
+      },
+
+      selectedFiles() {
+        return this.selection.filter((entry) => entry.kind === 'file');
+      },
+
+      fileTypeLabel(item) {
+        if (!item) return '—';
+        const mime = String(item.mime || '');
+        if (!mime) return 'File';
+        const parts = mime.split('/');
+        if (parts[1]) return `${parts[1].toUpperCase()} file`;
+        return parts[0];
+      },
+
+      onItemClick(event, kind, item) {
+        const normalized = kind === 'file' ? this.normalizeFileItem(item) : item;
+        const rows = this.browseItems();
+        const index = rows.findIndex(
+          (row) => row.kind === kind && String(row.item.id) === String(item.id),
+        );
+        const entry = { kind, id: normalized.id, item: normalized };
+
+        if (event.shiftKey && this._selectionAnchor != null && index >= 0) {
+          const start = Math.min(this._selectionAnchor, index);
+          const end = Math.max(this._selectionAnchor, index);
+          const range = rows.slice(start, end + 1).map((row) => ({
+            kind: row.kind,
+            id: row.item.id,
+            item: row.kind === 'file' ? this.normalizeFileItem(row.item) : row.item,
+          }));
+          if (event.metaKey || event.ctrlKey) {
+            const map = new Map(
+              this.selection.map((sel) => [this.selectionKey(sel.kind, sel.id), sel]),
+            );
+            for (const sel of range) map.set(this.selectionKey(sel.kind, sel.id), sel);
+            this.selection = [...map.values()];
+          } else {
+            this.selection = range;
+          }
+        } else if (event.metaKey || event.ctrlKey) {
+          if (this.isItemSelected(kind, item.id)) {
+            this.selection = this.selection.filter(
+              (sel) => !(sel.kind === kind && String(sel.id) === String(item.id)),
+            );
+          } else {
+            this.selection = [...this.selection, entry];
+          }
+          this._selectionAnchor = index;
+        } else {
+          this.selection = [entry];
+          this._selectionAnchor = index;
+        }
+        this.closeMenu();
+      },
+
+      selectAllItems() {
+        this.selection = this.browseItems().map((row) => ({
+          kind: row.kind,
+          id: row.item.id,
+          item: row.kind === 'file' ? this.normalizeFileItem(row.item) : row.item,
+        }));
+        this._selectionAnchor = 0;
+      },
+
+      clipboardLabel() {
+        const clip = this.clipboard || readMediaClipboard();
+        if (!clip?.items?.length) return '';
+        const verb = clip.mode === 'cut' ? 'Cut' : 'Copied';
+        if (clip.items.length === 1) {
+          return `${verb}: ${clip.items[0].name || clip.items[0].id}`;
+        }
+        return `${verb}: ${clip.items.length} items`;
+      },
+
+      /** Expand ancestors + current folder so the open path is visible. */
+      syncExpandedFromPath() {
+        const next = { ...this.expandedIds };
+        for (const crumb of this.breadcrumbs || []) {
+          if (crumb?.id != null) next[String(crumb.id)] = true;
+        }
+        if (this.folderId != null) next[String(this.folderId)] = true;
+        this.expandedIds = next;
+      },
+
+      isExpanded(id) {
+        return !!this.expandedIds[String(id)];
+      },
+
+      toggleExpand(id, event) {
+        event?.preventDefault?.();
+        event?.stopPropagation?.();
+        const key = String(id);
+        this.expandedIds = {
+          ...this.expandedIds,
+          [key]: !this.expandedIds[key],
+        };
+      },
+
+      foldersByParent() {
+        const folders = Array.isArray(this.folderTree) ? this.folderTree : [];
+        const byParent = new Map();
+        for (const folder of folders) {
+          const key = folder.parentId == null ? '' : String(folder.parentId);
+          if (!byParent.has(key)) byParent.set(key, []);
+          byParent.get(key).push(folder);
+        }
+        for (const list of byParent.values()) {
+          list.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+        }
+        return byParent;
+      },
+
+      /**
+       * Visible tree rows: top-level folders always, plus children of expanded nodes.
+       * The open path is auto-expanded via syncExpandedFromPath().
+       */
+      treeNodes() {
+        const byParent = this.foldersByParent();
+        const out = [];
+        const walk = (parentId, depth) => {
+          const key = parentId == null ? '' : String(parentId);
+          for (const folder of byParent.get(key) || []) {
+            const childKey = String(folder.id);
+            const hasChildren = (byParent.get(childKey) || []).length > 0;
+            const expanded = hasChildren && this.isExpanded(folder.id);
+            out.push({ ...folder, depth, hasChildren, expanded });
+            if (expanded) walk(folder.id, depth + 1);
+          }
+        };
+        walk(null, 0);
+        return out;
+      },
+
+      humanSize(bytes) {
+        const n = Number(bytes) || 0;
+        if (n < 1024) return `${n} B`;
+        if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+        return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+      },
+
+      humanSizeExact(bytes) {
+        const n = Number(bytes) || 0;
+        return `${n.toLocaleString()} bytes`;
+      },
+
+      formatDate(value) {
+        if (!value) return '—';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '—';
+        return date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+      },
+
+      fileExtension(name) {
+        const base = String(name || '');
+        const idx = base.lastIndexOf('.');
+        if (idx <= 0 || idx === base.length - 1) return '';
+        return base.slice(idx + 1).toUpperCase();
+      },
+
+      detailsLocation() {
+        const parts = ['Library', ...(this.breadcrumbs || []).map((crumb) => crumb.name)];
+        return parts.filter(Boolean).join(' › ');
+      },
+
+      detailsDimensions() {
+        if (!this.details?.width || !this.details?.height) return null;
+        return `${this.details.width} × ${this.details.height} px`;
+      },
+
+      async copyDetailsUrl() {
+        if (!this.details?.url) return;
+        try {
+          await navigator.clipboard.writeText(this.details.url);
+          this.status = 'URL copied to clipboard';
+        } catch {
+          this.status = 'Unable to copy URL';
+        }
+      },
+
+      isCutItem(kind, id) {
+        const clip = this.clipboard || readMediaClipboard();
+        if (!clip || clip.mode !== 'cut') return false;
+        return (clip.items || []).some(
+          (item) => item.kind === kind && String(item.id) === String(id),
+        );
+      },
+
+      openDetails(item) {
+        if (!item) return;
+        const file = this.normalizeFileItem(item);
+        this.selection = [{ kind: 'file', id: file.id, item: file }];
+        this.closeMenu();
+        this.details = { ...file };
+      },
+
+      openDetailsFromMenu() {
+        const item = this.menu.item;
+        this.closeMenu();
+        if (item) this.openDetails(item);
+      },
+
+      closeDetails() {
+        this.details = null;
+      },
+
+      closeMenu() {
+        if (this.menu?.open) this.menu.open = false;
+      },
+
+      onMenuOutside() {
+        if (Date.now() - (this._menuOpenedAt || 0) < 400) return;
+        this.closeMenu();
+      },
+
+      menuStyleAt(clientX, clientY) {
+        const pad = 8;
+        const estWidth = 190;
+        const estHeight = 320;
+        let left = Number(clientX) || 0;
+        let top = Number(clientY) || 0;
+        if (left + estWidth > window.innerWidth - pad) left = window.innerWidth - estWidth - pad;
+        if (top + estHeight > window.innerHeight - pad) top = window.innerHeight - estHeight - pad;
+        return {
+          position: 'fixed',
+          top: `${Math.max(pad, top)}px`,
+          left: `${Math.max(pad, left)}px`,
+          zIndex: '2000',
+        };
+      },
+
+      normalizeFileItem(item) {
+        if (!item) return item;
+        return {
+          ...item,
+          visibility: item.visibility === 'public' ? 'public' : 'private',
+        };
+      },
+
+      menuTargets() {
+        if (this.selection.length) return this.selection;
+        if (this.menu.item && this.menu.kind) {
+          return [
+            {
+              kind: this.menu.kind,
+              id: this.menu.item.id,
+              item: this.menu.item,
+            },
+          ];
+        }
+        return [];
+      },
+
+      syncDetails() {
+        if (!this.details) return;
+        const updated = (this.files || []).find(
+          (file) => String(file.id) === String(this.details.id),
+        );
+        if (updated) this.details = this.normalizeFileItem(updated);
+        else this.details = null;
+      },
+
+      async refreshFolderTree() {
+        const res = await fetch(`${this.apiBase}/folders`, {
+          headers: { Accept: 'application/json' },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        this.folderTree = data.folders || [];
+      },
+
+      async refresh() {
+        const params = new URLSearchParams({ format: 'json' });
+        if (this.folderId) params.set('folderId', this.folderId);
+        const res = await fetch(`${this.apiBase}/browse?${params}`, {
+          headers: { Accept: 'application/json' },
+        });
+        if (!res.ok) {
+          this.status = 'Unable to load library';
+          return;
+        }
+        const data = await res.json();
+        this.folders = data.folders || [];
+        this.files = (data.files || []).map((file) => this.normalizeFileItem(file));
+        this.breadcrumbs = data.breadcrumbs || [];
+        this.folderId = data.folder?.id ?? null;
+        this.clipboard = readMediaClipboard();
+        this.syncDetails();
+        this.pruneSelection();
+        await this.refreshFolderTree();
+        this.syncExpandedFromPath();
+      },
+
+      pruneSelection() {
+        const folderIds = new Set((this.folders || []).map((folder) => String(folder.id)));
+        const fileIds = new Set((this.files || []).map((file) => String(file.id)));
+        this.selection = this.selection.filter(
+          (entry) =>
+            (entry.kind === 'folder' && folderIds.has(String(entry.id))) ||
+            (entry.kind === 'file' && fileIds.has(String(entry.id))),
+        );
+      },
+
+      goFolder(id) {
+        const url = new URL(window.location.href);
+        if (id) url.searchParams.set('folderId', id);
+        else url.searchParams.delete('folderId');
+        window.location.href = url.toString();
+      },
+
+      async promptNewFolder(parentId = this.folderId) {
+        const name = window.prompt('Folder name');
+        if (!name?.trim()) return;
+        this.status = 'Creating folder…';
+        const res = await fetch(`${this.apiBase}/folders`, {
+          method: 'POST',
+          headers: csrfHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }),
+          body: JSON.stringify({ name: name.trim(), parentId: parentId ?? null }),
+        });
+        this.status = '';
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          this.status = body.message || 'Unable to create folder';
+          return;
+        }
+        await this.refresh();
+      },
+
+      async uploadFiles(fileList, targetFolderId = this.folderId) {
+        const files = Array.from(fileList || []);
+        if (!files.length) return;
+        this.status = `Uploading ${files.length} file(s)…`;
+        const body = new FormData();
+        if (targetFolderId) body.append('folderId', targetFolderId);
+        for (const file of files) body.append('file', file);
+        const res = await fetch(`${this.apiBase}/upload`, {
+          method: 'POST',
+          headers: csrfHeaders({ Accept: 'application/json' }),
+          body,
+        });
+        this.status = '';
+        if (!res.ok) {
+          const payload = await res.json().catch(() => ({}));
+          this.status = payload.message || 'Upload failed';
+          return;
+        }
+        if (String(targetFolderId ?? '') === String(this.folderId ?? '')) {
+          await this.refresh();
+        } else {
+          this.goFolder(targetFolderId);
+        }
+      },
+
+      onUpload(event) {
+        this.uploadFiles(event.target.files);
+        event.target.value = '';
+      },
+
+      openFile(item) {
+        if (item?.url) window.open(item.url, '_blank', 'noopener');
+      },
+
+      parseDragPayload(event) {
+        const raw =
+          event.dataTransfer?.getData(MEDIA_DND_MIME) ||
+          event.dataTransfer?.getData('text/plain') ||
+          '';
+        if (!raw) return null;
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed?.items?.length) return parsed;
+          if (parsed?.kind && parsed?.id) return parsed;
+          return null;
+        } catch {
+          return null;
+        }
+      },
+
+      dragItemsFromPayload(payload) {
+        if (!payload) return [];
+        if (Array.isArray(payload.items)) return payload.items;
+        if (payload.kind && payload.id) return [payload];
+        return [];
+      },
+
+      async moveDragItemsTo(folderId, payload) {
+        const items = this.dragItemsFromPayload(payload);
+        if (!items.length) return;
+        let failed = false;
+        for (const item of items) {
+          if (item.kind === 'folder' && String(item.id) === String(folderId ?? '')) {
+            this.status = 'Cannot move a folder into itself';
+            failed = true;
+            continue;
+          }
+          const ok = await this.moveItemTo(item.kind, item.id, folderId, { refresh: false });
+          if (!ok) failed = true;
+        }
+        await this.refresh();
+        if (!failed && this.clipboard?.mode === 'cut') {
+          const cutIds = new Set(
+            (this.clipboard.items || []).map((entry) => this.selectionKey(entry.kind, entry.id)),
+          );
+          const movedIds = new Set(items.map((entry) => this.selectionKey(entry.kind, entry.id)));
+          const remaining = (this.clipboard.items || []).filter(
+            (entry) => !movedIds.has(this.selectionKey(entry.kind, entry.id)),
+          );
+          if (remaining.length) writeMediaClipboard({ mode: 'cut', items: remaining });
+          else this.clearClipboard();
+          if ([...movedIds].some((id) => cutIds.has(id))) this.clearSelection();
+        }
+      },
+
+      onDragStart(event, kind, item) {
+        if (!this.isItemSelected(kind, item.id)) {
+          this.onItemClick({ metaKey: false, ctrlKey: false, shiftKey: false }, kind, item);
+        }
+        const dragItems =
+          this.selection.length > 1
+            ? this.selection.map((entry) => ({
+                kind: entry.kind,
+                id: entry.id,
+                name: entry.item?.name,
+              }))
+            : [{ kind, id: item.id, name: item.name }];
+        this._dragging = dragItems.length === 1 ? dragItems[0] : { items: dragItems };
+        this.closeMenu();
+        const payload = JSON.stringify(this._dragging);
+        event.dataTransfer.setData(MEDIA_DND_MIME, payload);
+        event.dataTransfer.setData('text/plain', payload);
+        event.dataTransfer.effectAllowed = 'move';
+      },
+
+      onDragEnd() {
+        this._dragging = null;
+        this.dragover = null;
+        this.dropTarget = null;
+      },
+
+      onDragOverTarget(event, targetKey, _folderId) {
+        const hasFiles = Array.from(event.dataTransfer?.types || []).includes('Files');
+        const hasMedia =
+          Array.from(event.dataTransfer?.types || []).includes(MEDIA_DND_MIME) ||
+          !!this._dragging;
+        if (!hasFiles && !hasMedia) return;
+        event.dataTransfer.dropEffect = hasFiles ? 'copy' : 'move';
+        this.dropTarget = targetKey;
+        this.dragover = hasFiles ? 'upload' : 'move';
+      },
+
+      clearDropTarget() {
+        this.dropTarget = null;
+      },
+
+      onCanvasDragOver(event) {
+        const types = Array.from(event.dataTransfer?.types || []);
+        if (types.includes('Files')) {
+          this.dragover = 'upload';
+          event.dataTransfer.dropEffect = 'copy';
+          return;
+        }
+        if (types.includes(MEDIA_DND_MIME) || this._dragging) {
+          this.dragover = 'move';
+          event.dataTransfer.dropEffect = 'move';
+        }
+      },
+
+      onCanvasDragLeave(event) {
+        if (event.currentTarget && !event.currentTarget.contains(event.relatedTarget)) {
+          this.dragover = null;
+        }
+      },
+
+      async onCanvasDrop(event) {
+        this.dragover = null;
+        this.dropTarget = null;
+        const files = event.dataTransfer?.files;
+        if (files && files.length) {
+          await this.uploadFiles(files, this.folderId);
+          return;
+        }
+        const payload = this.parseDragPayload(event) || this._dragging;
+        if (payload) await this.moveDragItemsTo(this.folderId, payload);
+      },
+
+      async onDropOnTarget(event, targetFolderId) {
+        this.dragover = null;
+        this.dropTarget = null;
+        const files = event.dataTransfer?.files;
+        if (files && files.length) {
+          await this.uploadFiles(files, targetFolderId);
+          return;
+        }
+        const payload = this.parseDragPayload(event) || this._dragging;
+        if (payload) await this.moveDragItemsTo(targetFolderId, payload);
+      },
+
+      async moveItemTo(kind, id, folderId, options = {}) {
+        const path =
+          kind === 'folder'
+            ? `${this.apiBase}/folders/${id}/move`
+            : `${this.apiBase}/files/${id}/move`;
+        if (!options.refresh) this.status = 'Moving…';
+        const res = await fetch(path, {
+          method: 'POST',
+          headers: csrfHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }),
+          body: JSON.stringify({ folderId }),
+        });
+        if (!options.refresh) this.status = '';
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          this.status = body.message || 'Move failed';
+          return false;
+        }
+        if (options.refresh !== false) await this.refresh();
+        return true;
+      },
+
+      openMenu(event, kind, item) {
+        event.preventDefault();
+        event.stopPropagation();
+        const normalized = kind === 'file' ? this.normalizeFileItem(item) : item;
+        if (!this.isItemSelected(kind, item.id)) {
+          this.selection = [{ kind, id: normalized.id, item: normalized }];
+        }
+        this._menuOpenedAt = Date.now();
+        this.menu = {
+          open: true,
+          kind,
+          item: normalized,
+          style: this.menuStyleAt(event.clientX, event.clientY),
+        };
+      },
+
+      openEmptyMenu(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        this._menuOpenedAt = Date.now();
+        this.menu = {
+          open: true,
+          kind: null,
+          item: null,
+          style: this.menuStyleAt(event.clientX, event.clientY),
+        };
+      },
+
+      openFromMenu() {
+        const item = this.menu.item;
+        const kind = this.menu.kind;
+        this.closeMenu();
+        if (!item) return;
+        if (kind === 'folder') this.goFolder(item.id);
+        else this.openFile(item);
+      },
+
+      cutItem() {
+        const targets = this.menuTargets();
+        this.closeMenu();
+        if (!targets.length) return;
+        const items = targets.map((entry) => ({
+          kind: entry.kind,
+          id: entry.id,
+          name: entry.item?.name,
+        }));
+        this.clipboard = { mode: 'cut', items };
+        writeMediaClipboard(this.clipboard);
+        this.status =
+          items.length === 1
+            ? `Cut “${items[0].name}” — paste into a folder`
+            : `Cut ${items.length} items — paste into a folder`;
+      },
+
+      copyItem() {
+        const targets = this.menuTargets().filter((entry) => entry.kind === 'file');
+        this.closeMenu();
+        if (!targets.length) {
+          this.status = 'Only files can be copied';
+          return;
+        }
+        const items = targets.map((entry) => ({
+          kind: 'file',
+          id: entry.id,
+          name: entry.item?.name,
+        }));
+        this.clipboard = { mode: 'copy', items };
+        writeMediaClipboard(this.clipboard);
+        this.status =
+          items.length === 1 ? `Copied “${items[0].name}”` : `Copied ${items.length} files`;
+      },
+
+      clearClipboard() {
+        this.clipboard = null;
+        writeMediaClipboard(null);
+      },
+
+      async pasteHere() {
+        this.closeMenu();
+        const clip = this.clipboard || readMediaClipboard();
+        if (!clip?.items?.length) {
+          this.status = 'Clipboard is empty';
+          return;
+        }
+        if (clip.mode === 'cut') {
+          let failed = false;
+          for (const item of clip.items) {
+            const ok = await this.moveItemTo(item.kind, item.id, this.folderId, { refresh: false });
+            if (!ok) failed = true;
+          }
+          if (!failed) this.clearClipboard();
+          await this.refresh();
+          this.clearSelection();
+          return;
+        }
+        const files = clip.items.filter((item) => item.kind === 'file');
+        if (!files.length) {
+          this.status = 'Only files can be pasted as copies';
+          return;
+        }
+        this.status = 'Pasting…';
+        let failed = false;
+        for (const item of files) {
+          const res = await fetch(`${this.apiBase}/files/${item.id}/copy`, {
+            method: 'POST',
+            headers: csrfHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }),
+            body: JSON.stringify({ folderId: this.folderId }),
+          });
+          if (!res.ok) failed = true;
+        }
+        this.status = failed ? 'Some items could not be pasted' : '';
+        await this.refresh();
+      },
+
+      async setVisibility(visibility, targets = null) {
+        let items = targets;
+        if (!items?.length) items = this.menuTargets();
+        if (!items?.length && this.details) {
+          items = [{ kind: 'file', id: this.details.id, item: this.details }];
+        }
+        items = items.filter((entry) => entry.kind === 'file');
+        this.closeMenu();
+        if (!items.length) return;
+        this.status = visibility === 'public' ? 'Making public…' : 'Making private…';
+        let failed = false;
+        for (const entry of items) {
+          const res = await fetch(`${this.apiBase}/files/${entry.id}/visibility`, {
+            method: 'POST',
+            headers: csrfHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }),
+            body: JSON.stringify({ visibility }),
+          });
+          if (!res.ok) failed = true;
+        }
+        this.status = failed ? 'Unable to update some items' : '';
+        await this.refresh();
+      },
+
+      async bulkDelete() {
+        const targets = this.selection.length ? this.selection : this.menuTargets();
+        this.closeMenu();
+        if (!targets.length) return;
+        const label =
+          targets.length === 1
+            ? `Delete “${targets[0].item?.name}”?`
+            : `Delete ${targets.length} items?`;
+        if (!window.confirm(label)) return;
+        let failed = false;
+        for (const entry of targets) {
+          const path =
+            entry.kind === 'folder'
+              ? `${this.apiBase}/folders/${entry.id}/delete`
+              : `${this.apiBase}/files/${entry.id}/delete`;
+          const res = await fetch(path, {
+            method: 'POST',
+            headers: csrfHeaders({ Accept: 'application/json' }),
+          });
+          if (!res.ok) failed = true;
+        }
+        this.clearSelection();
+        this.details = null;
+        await this.refresh();
+        if (failed) this.status = 'Some items could not be deleted';
+      },
+
+      async bulkSetVisibility(visibility) {
+        await this.setVisibility(visibility, this.selection);
+      },
+
+      async renameItem() {
+        const primary = this.primarySelection() || this.menuTargets()[0];
+        const kind = primary?.kind || this.menu.kind;
+        const item = primary?.item || this.menu.item;
+        this.closeMenu();
+        if (!item || !kind) return;
+        const name = window.prompt('Rename', item.name);
+        if (!name?.trim() || name.trim() === item.name) return;
+        const path =
+          kind === 'folder'
+            ? `${this.apiBase}/folders/${item.id}/rename`
+            : `${this.apiBase}/files/${item.id}/rename`;
+        const res = await fetch(path, {
+          method: 'POST',
+          headers: csrfHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }),
+          body: JSON.stringify({ name: name.trim() }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          this.status = body.message || 'Rename failed';
+          return;
+        }
+        await this.refresh();
+      },
+
+      async deleteItem() {
+        await this.bulkDelete();
+      },
+
+      onKeydown(event) {
+        const tag = String(event.target?.tagName || '').toLowerCase();
+        if (tag === 'input' || tag === 'textarea' || event.target?.isContentEditable) return;
+
+        const meta = event.metaKey || event.ctrlKey;
+        if (meta && event.key.toLowerCase() === 'a') {
+          event.preventDefault();
+          this.selectAllItems();
+          return;
+        }
+        if (meta && event.key.toLowerCase() === 'x') {
+          event.preventDefault();
+          if (this.selection.length) this.cutItem();
+          return;
+        }
+        if (meta && event.key.toLowerCase() === 'c') {
+          event.preventDefault();
+          if (this.selection.length) this.copyItem();
+          return;
+        }
+        if (meta && event.key.toLowerCase() === 'v') {
+          event.preventDefault();
+          this.pasteHere();
+          return;
+        }
+        if (event.key === 'Escape') {
+          if (this.menu.open) {
+            this.closeMenu();
+            return;
+          }
+          if (this.selection.length) {
+            this.clearSelection();
+            return;
+          }
+          if (this.details) {
+            this.closeDetails();
+            return;
+          }
+        }
+        if (event.key === 'Delete' || event.key === 'Backspace') {
+          if (!this.selection.length) return;
+          event.preventDefault();
+          this.bulkDelete();
+        }
+      },
+    };
+  }
+
+  window.shamarMediaManager = createShamarMediaManager;
+
+  function createShamarFilePicker(cfg = {}) {
+    return {
+      name: cfg.name || '',
+      multiple: !!cfg.multiple,
+      accept: cfg.accept || '',
+      rootFolderId: cfg.folderId ?? null,
+      apiBase: cfg.apiBase || '/admin/media',
+      getValue: typeof cfg.getValue === 'function' ? cfg.getValue : () => null,
+      setValue: typeof cfg.setValue === 'function' ? cfg.setValue : () => {},
+      isDisabled: typeof cfg.isDisabled === 'function' ? cfg.isDisabled : () => false,
+      makePublic: !!cfg.makePublic,
+
+      open: false,
+      folderId: cfg.folderId ?? null,
+      browseFolders: [],
+      browseFiles: [],
+      browseBreadcrumbs: [],
+      selectedItems: [],
+      draftIds: [],
+      uploading: false,
+      uploadStatus: '',
+      pickerDragover: false,
+
+      get disabled() {
+        return !!this.isDisabled();
+      },
+
+      acceptsImages() {
+        const accept = String(this.accept || '');
+        return /image\/|\.svg/i.test(accept);
+      },
+
+      isImageFile(file) {
+        const mime = String(file?.mime || '').toLowerCase();
+        if (mime.startsWith('image/') || file?.isImage) return true;
+        return /\.svg$/i.test(String(file?.name || ''));
+      },
+
+      matchesAccept(file) {
+        if (!this.accept) return true;
+        if (this.acceptsImages()) return this.isImageFile(file);
+        const tokens = String(this.accept)
+          .split(',')
+          .map((t) => t.trim().toLowerCase())
+          .filter(Boolean);
+        if (!tokens.length) return true;
+        const mime = String(file?.mime || '').toLowerCase();
+        const name = String(file?.name || '').toLowerCase();
+        return tokens.some((token) => {
+          if (token.startsWith('.')) return name.endsWith(token);
+          if (token.endsWith('/*')) return mime.startsWith(token.slice(0, -1));
+          return mime === token;
+        });
+      },
+
+      get selectedIds() {
+        const raw = this.getValue();
+        if (this.multiple) {
+          if (Array.isArray(raw)) return raw.map(String);
+          if (raw == null || raw === '') return [];
+          return [String(raw)];
+        }
+        if (raw == null || raw === '') return [];
+        return [String(raw)];
+      },
+
+      init() {
+        this.hydrateSelected();
+        this.$watch(
+          () => this.getValue(),
+          () => this.hydrateSelected(),
+        );
+      },
+
+      async hydrateSelected() {
+        const ids = this.selectedIds;
+        if (!ids.length) {
+          this.selectedItems = [];
+          return;
+        }
+        const items = [];
+        for (const id of ids) {
+          try {
+            const res = await fetch(`${this.apiBase}/files/${id}`, {
+              headers: { Accept: 'application/json' },
+            });
+            if (!res.ok) continue;
+            const data = await res.json();
+            if (data.file) {
+              items.push({
+                ...data.file,
+                isImage: this.isImageFile(data.file),
+              });
+            }
+          } catch {
+            /* ignore */
+          }
+        }
+        this.selectedItems = items;
+      },
+
+      async openPicker() {
+        if (this.disabled) return;
+        this.open = true;
+        this.folderId = this.rootFolderId;
+        this.draftIds = [...this.selectedIds];
+        await this.loadBrowse();
+      },
+
+      closePicker() {
+        this.open = false;
+        this.uploadStatus = '';
+        this.pickerDragover = false;
+      },
+
+      acceptInputAttr() {
+        const accept = String(this.accept || '').trim();
+        return accept || undefined;
+      },
+
+      onPickerDragOver(event) {
+        if (this.uploading) return;
+        event.preventDefault();
+        this.pickerDragover = true;
+      },
+
+      onPickerDragLeave(event) {
+        if (event.currentTarget && !event.currentTarget.contains(event.relatedTarget)) {
+          this.pickerDragover = false;
+        }
+      },
+
+      onPickerDrop(event) {
+        event.preventDefault();
+        this.pickerDragover = false;
+        if (this.uploading) return;
+        this.uploadFiles(event.dataTransfer?.files);
+      },
+
+      onUploadInput(event) {
+        this.uploadFiles(event.target.files);
+        event.target.value = '';
+      },
+
+      async uploadFiles(fileList) {
+        const files = Array.from(fileList || []);
+        if (!files.length || this.uploading) return;
+
+        if (this.accept) {
+          const rejected = files.filter((file) => {
+            const fake = { name: file.name, mime: file.type };
+            return !this.matchesAccept(fake);
+          });
+          if (rejected.length === files.length) {
+            this.uploadStatus = 'Selected file type is not allowed';
+            return;
+          }
+        }
+
+        this.uploading = true;
+        this.uploadStatus = `Uploading ${files.length} file(s)…`;
+        const body = new FormData();
+        if (this.folderId) body.append('folderId', this.folderId);
+        if (this.makePublic) body.append('visibility', 'public');
+        for (const file of files) body.append('file', file);
+
+        try {
+          const res = await fetch(`${this.apiBase}/upload`, {
+            method: 'POST',
+            headers: csrfHeaders({ Accept: 'application/json' }),
+            body,
+          });
+          if (!res.ok) {
+            const payload = await res.json().catch(() => ({}));
+            this.uploadStatus = payload.message || 'Upload failed';
+            return;
+          }
+          const data = await res.json();
+          const uploaded = (data.files || [])
+            .map((file) => ({ ...file, isImage: this.isImageFile(file) }))
+            .filter((file) => this.matchesAccept(file));
+
+          await this.loadBrowse();
+
+          if (uploaded.length) {
+            if (this.multiple) {
+              const next = new Set(this.draftIds.map(String));
+              for (const file of uploaded) next.add(String(file.id));
+              this.draftIds = [...next];
+            } else {
+              this.draftIds = [String(uploaded[0].id)];
+            }
+            this.uploadStatus = `Uploaded ${uploaded.length} file(s)`;
+          } else {
+            this.uploadStatus = 'Upload complete — no matching files for this field';
+          }
+        } catch {
+          this.uploadStatus = 'Upload failed';
+        } finally {
+          this.uploading = false;
+          window.setTimeout(() => {
+            if (this.uploadStatus.startsWith('Uploaded') || this.uploadStatus === 'Upload complete — no matching files for this field') {
+              this.uploadStatus = '';
+            }
+          }, 2500);
+        }
+      },
+
+      async loadBrowse() {
+        const params = new URLSearchParams({ format: 'json' });
+        if (this.folderId) params.set('folderId', this.folderId);
+        // Prefer server-side image filter, but keep SVG-friendly client filter too
+        // (browsers sometimes upload SVG as application/octet-stream).
+        if (this.acceptsImages() && !/\.svg/i.test(String(this.accept || ''))) {
+          params.set('mime', 'image/');
+        }
+        const res = await fetch(`${this.apiBase}/browse?${params}`, {
+          headers: { Accept: 'application/json' },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        this.browseFolders = data.folders || [];
+        const files = (data.files || []).map((f) => ({
+          ...f,
+          isImage: this.isImageFile(f),
+        }));
+        this.browseFiles = this.accept ? files.filter((f) => this.matchesAccept(f)) : files;
+        this.browseBreadcrumbs = data.breadcrumbs || [];
+      },
+
+      goFolder(id) {
+        this.folderId = id;
+        this.loadBrowse();
+      },
+
+      isPicked(id) {
+        return this.draftIds.includes(String(id));
+      },
+
+      togglePick(item) {
+        const id = String(item.id);
+        if (this.multiple) {
+          if (this.draftIds.includes(id)) {
+            this.draftIds = this.draftIds.filter((x) => x !== id);
+          } else {
+            this.draftIds = [...this.draftIds, id];
+          }
+        } else {
+          this.draftIds = [id];
+        }
+      },
+
+      /** Single-select: double-click confirms immediately. Multi-select: just toggle. */
+      pickOnDoubleClick(item) {
+        if (this.multiple) {
+          this.togglePick(item);
+          return;
+        }
+        this.draftIds = [String(item.id)];
+        return this.confirmPick();
+      },
+
+      async confirmPick() {
+        const ids = this.multiple ? this.draftIds : this.draftIds[0] ? [this.draftIds[0]] : [];
+        if (this.makePublic && ids.length) {
+          await Promise.all(
+            ids.map(async (id) => {
+              try {
+                await fetch(`${this.apiBase}/files/${id}/visibility`, {
+                  method: 'POST',
+                  headers: csrfHeaders({
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                  }),
+                  body: JSON.stringify({ visibility: 'public' }),
+                });
+              } catch {
+                /* ignore */
+              }
+            }),
+          );
+        }
+        if (this.multiple) this.setValue(this.draftIds);
+        else this.setValue(this.draftIds[0] || '');
+        this.closePicker();
+        this.hydrateSelected();
+      },
+
+      remove(id) {
+        if (this.multiple) {
+          this.setValue(this.selectedIds.filter((x) => x !== String(id)));
+        } else {
+          this.setValue('');
+        }
+      },
+
+      clear() {
+        this.setValue(this.multiple ? [] : '');
+      },
+    };
+  }
+
+  window.shamarFilePicker = createShamarFilePicker;
+
   function registerShamarAlpineComponents() {
     if (registerShamarAlpineComponents._done) return;
     registerShamarAlpineComponents._done = true;
@@ -2434,8 +4981,17 @@
     window.shamarForm = createShamarForm;
     Alpine.data('shamarForm', (cfg) => createShamarForm(cfg));
     Alpine.data('shamarCombobox', (cfg) => createShamarCombobox(cfg));
+    Alpine.data('shamarFlowbitePicker', (cfg) => createShamarFlowbitePicker(cfg));
+    Alpine.data('shamarDatePicker', (cfg) => createShamarFlowbitePicker(cfg));
+    window.shamarFlowbitePicker = createShamarFlowbitePicker;
+    window.shamarDatePicker = createShamarFlowbitePicker;
     window.shamarFloatingMenu = createShamarFloatingMenu;
     Alpine.data('shamarFloatingMenu', () => createShamarFloatingMenu());
+    Alpine.data('shamarMediaManager', (cfg) => createShamarMediaManager(cfg));
+    Alpine.data('shamarFilePicker', (cfg) => createShamarFilePicker(cfg));
+    Alpine.data('shamarRichEditor', (cfg) => createShamarRichEditor(cfg));
+    Alpine.data('shamarCodeEditor', (cfg) => createShamarCodeEditor(cfg));
+    Alpine.data('shamarMarkdownEditor', (cfg) => createShamarMarkdownEditor(cfg));
 
     window.shamarTabs = (active = 1) => ({ active: Number(active) || 1 });
     Alpine.data('shamarTabs', (active = 1) => window.shamarTabs(active));
@@ -2489,6 +5045,7 @@
       headers: Array.isArray(cfg.headers) ? cfg.headers : [],
       basePath: cfg.basePath || '',
       slug: cfg.slug || '',
+      queryPrefix: cfg.queryPrefix || '',
       view: cfg.view || 'table',
       allPerPage: cfg.allPerPage || 1000,
       defaultPerPage: String(cfg.defaultPerPage || 15),
@@ -2511,35 +5068,44 @@
       },
       buildUrl() {
         const fieldChips = this.chips.filter((c) => c.field !== null);
+        const prefix = this.queryPrefix || '';
         const path =
           this.view === 'kanban'
             ? `${this.basePath}/${this.slug}/kanban`
             : `${this.basePath}/${this.slug}`;
-        const params = new URLSearchParams();
+        const params = new URLSearchParams(
+          typeof window !== 'undefined' ? window.location.search : '',
+        );
+        if (prefix) {
+          for (const key of [...params.keys()]) {
+            if (key.startsWith(prefix)) params.delete(key);
+          }
+        } else {
+          params.forEach((_value, key) => params.delete(key));
+        }
         const search = (this.searchInput || '').trim();
-        if (search) params.set('search', search);
+        if (search) params.set(`${prefix}search`, search);
         if (this.sort) {
-          params.set('sort', this.sort);
+          params.set(`${prefix}sort`, this.sort);
           if (this.direction === 'asc' || this.direction === 'desc') {
-            params.set('direction', this.direction);
+            params.set(`${prefix}direction`, this.direction);
           }
         }
         if (this.perPage && this.perPage !== String(this.defaultPerPage || 15)) {
-          params.set('perPage', String(this.perPage));
+          params.set(`${prefix}perPage`, String(this.perPage));
         }
         if (fieldChips.length) {
-          params.set('filters', JSON.stringify(fieldChips));
+          params.set(`${prefix}filters`, JSON.stringify(fieldChips));
         } else if (this.filtersLockedEmpty) {
-          // Explicit empty — do not re-apply resource defaultFilters.
-          params.set('filters', '[]');
+          params.set(`${prefix}filters`, '[]');
         }
         if (this.groupBy) {
-          params.set('groupBy', this.groupBy);
+          params.set(`${prefix}groupBy`, this.groupBy);
         } else if (this.groupLockedEmpty) {
-          params.set('groupBy', '');
+          params.set(`${prefix}groupBy`, '');
         }
         if (this.trashed === true || this.trashed === 'only' || this.trashed === '1') {
-          params.set('trashed', '1');
+          params.set(`${prefix}trashed`, '1');
         }
         const qs = params.toString();
         return qs ? `${path}?${qs}` : path;
@@ -3629,8 +6195,19 @@
     bindFormSaveShortcut();
     bindFormAutosave();
     bindRecordPagerNav();
+    bindStickyPageHeading();
   });
 
+  function bindStickyPageHeading() {
+    const root = document.querySelector('[data-shamar-scroll-root]');
+    const heading = document.querySelector('.shamar-page-heading');
+    if (!(root instanceof HTMLElement) || !(heading instanceof HTMLElement)) return;
+    const sync = () => {
+      heading.dataset.stuck = root.scrollTop > 4 ? 'true' : 'false';
+    };
+    root.addEventListener('scroll', sync, { passive: true });
+    sync();
+  }
   function bindListRowNavigation() {
     document.addEventListener('click', (event) => {
       if (!(event instanceof MouseEvent) || event.button !== 0) return;
@@ -3751,6 +6328,12 @@
   }
 
   function formDataFrom(form) {
+    try {
+      const alpine = window.Alpine?.$data?.(form);
+      if (typeof alpine?.syncJsonFields === 'function') alpine.syncJsonFields();
+    } catch {
+      /* ignore */
+    }
     const data = new FormData(form);
     const relationConfigs = relationConfigsFromForm(form);
     const relationFields = new Set(relationConfigs.map((cfg) => cfg.name));
@@ -3762,20 +6345,7 @@
         // Relation widgets manage their own hidden inputs — do not clobber them with stale state.
         for (const [key, value] of Object.entries(state)) {
           if (value === undefined || relationFields.has(key)) continue;
-          if (typeof value === 'boolean') {
-            if (value) data.set(key, 'true');
-            else data.delete(key);
-            continue;
-          }
-          if (Array.isArray(value)) {
-            data.delete(key);
-            data.delete(`${key}[]`);
-            for (const item of value) {
-              data.append(`${key}[]`, item == null ? '' : String(item));
-            }
-            continue;
-          }
-          data.set(key, value == null ? '' : String(value));
+          appendAlpineStateToFormData(data, key, value);
         }
       }
     } catch {
@@ -3785,6 +6355,32 @@
     syncRelationValuesToFormData(form, data);
 
     return data;
+  }
+
+  function appendAlpineStateToFormData(data, key, value) {
+    if (typeof value === 'boolean') {
+      if (value) data.set(key, 'true');
+      else data.delete(key);
+      return;
+    }
+    if (Array.isArray(value)) {
+      data.delete(key);
+      data.delete(`${key}[]`);
+      const hasObjects = value.some((item) => item && typeof item === 'object');
+      if (hasObjects) {
+        data.set(key, JSON.stringify(value));
+        return;
+      }
+      for (const item of value) {
+        data.append(`${key}[]`, item == null ? '' : String(item));
+      }
+      return;
+    }
+    if (value && typeof value === 'object') {
+      data.set(key, JSON.stringify(value));
+      return;
+    }
+    data.set(key, value == null ? '' : String(value));
   }
 
   function bindFormSaveShortcut() {

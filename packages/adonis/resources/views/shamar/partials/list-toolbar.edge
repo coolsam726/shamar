@@ -12,7 +12,8 @@
     trashed: {{ jsonAttr(query.trashed) }},
     headers: {{ jsonAttr(listHeaders) }},
     basePath: {{ jsonAttr(basePath) }},
-    slug: {{ jsonAttr(resource.slug) }},
+    slug: {{ jsonAttr(queryPrefix ? (page && page.slug ? page.slug : resource.slug) : resource.slug) }},
+    queryPrefix: {{ jsonAttr(queryPrefix || '') }},
     view: {{ jsonAttr('table') }},
     allPerPage: {{ jsonAttr(listAllPerPage) }},
     defaultPerPage: {{ jsonAttr(defaultPerPage) }}

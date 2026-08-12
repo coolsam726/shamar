@@ -10,7 +10,7 @@
     </svg>
   </button>
 
-  <div class="hidden md:flex flex-1 min-w-0 overflow-visible">
+  <div class="shamar-topbar__menu flex-1 min-w-0 overflow-visible">
     <nav
       class="shamar-app-menu flex-1 min-w-0 flex flex-wrap items-center gap-1 overflow-visible"
       aria-label="{{ menuActiveRoot ? `${menuActiveRoot.label} menu` : 'App menu' }}"
@@ -71,10 +71,10 @@
       aria-label="Toggle dark mode"
       class="p-1.5 rounded-md text-body hover:bg-surface-hover hover:text-heading"
     >
-      <svg class="w-4 h-4 dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
+      <svg class="w-4 h-4 shamar-theme-icon shamar-theme-icon--light" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
         <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
       </svg>
-      <svg class="w-4 h-4 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
+      <svg class="w-4 h-4 shamar-theme-icon shamar-theme-icon--dark" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>
       </svg>
     </button>

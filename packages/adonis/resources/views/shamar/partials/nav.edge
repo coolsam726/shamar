@@ -8,13 +8,13 @@
         <img
           src="{{ branding.logoUrl }}"
           alt="{{ branding.brandName }}"
-          class="w-auto max-w-[9rem] object-contain dark:hidden"
+          class="shamar-brand-logo shamar-brand-logo--light w-auto max-w-[9rem] object-contain"
           style="height: var(--shamar-logo-height, {{ branding.logoHeight }})"
         />
         <img
           src="{{ branding.logoDarkUrl ?? branding.logoUrl }}"
           alt="{{ branding.brandName }}"
-          class="hidden w-auto max-w-[9rem] object-contain dark:block"
+          class="shamar-brand-logo shamar-brand-logo--dark w-auto max-w-[9rem] object-contain"
           style="height: var(--shamar-logo-height, {{ branding.logoHeight }})"
         />
       @endif
@@ -34,7 +34,7 @@
     </button>
   </div>
 
-  <nav class="hidden md:block flex-1 px-2 py-3 space-y-0.5 overflow-y-auto" aria-label="Applications">
+  <nav class="shamar-sidebar__roots flex-1 px-2 py-3 space-y-0.5 overflow-y-auto" aria-label="Applications">
     @each(root in menuRoots)
       <a
         href="{{ root.href }}"
@@ -49,11 +49,11 @@
     @endeach
   </nav>
 
-  <div class="md:hidden flex-1 min-h-0 flex flex-col overflow-hidden">
+  <div class="shamar-sidebar__mobile flex-1 min-h-0 flex flex-col overflow-hidden">
     @include('shamar::partials/nav-mobile')
   </div>
 
-  <div class="mt-auto px-4 py-3 text-xs text-body-subtle hidden md:block border-t border-card-border/80">
+  <div class="shamar-sidebar__user px-4 py-3 text-xs text-body-subtle border-t border-card-border/80">
     @if(branding.copyrightText)
       <p class="mb-2 leading-relaxed">{{ branding.copyrightText }}</p>
     @endif

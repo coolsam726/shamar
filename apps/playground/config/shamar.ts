@@ -1,8 +1,11 @@
 import { defineConfig, panel, type LdapDomainConfig } from '@shamar/adonis'
+import { createMongooseMediaLibraryAdapter } from '@shamar/mongoose'
 import { toCherubimUser, sanitizeRoleIds, type AuthLoginMode } from '@shamar/cherubim'
 import { resolveDatabaseRolePermissions } from '#auth/role_resolver'
 import { resolvePlaygroundApiKeyUser } from '#auth/api_key_store'
 import { resolvePlaygroundBrandingOverrides } from '#branding/resolve_overrides'
+import MediaFolder from '#models/media_folder'
+import MediaFile from '#models/media_file'
 
 function envStr(key: string, fallback = ''): string {
   const value = process.env[key]
@@ -149,6 +152,21 @@ export default defineConfig({
     googleFont: { family: 'Poppins', weights: [400, 500, 600, 700, 800, 900] },
   },
   resolveBrandingOverrides: resolvePlaygroundBrandingOverrides,
+  media: {
+    enabled: true,
+    disk: 'shamar',
+    root: 'storage/media',
+    publicPath: '/media',
+    label: 'Files',
+    navigationGroup: 'System',
+    navigationSort: 50,
+    navigationIcon: 'folder',
+    adapter: () =>
+      createMongooseMediaLibraryAdapter({
+        Folder: MediaFolder as never,
+        File: MediaFile as never,
+      }),
+  },
   rest: {
     openapi: {
       title: 'Shamar Playground API',

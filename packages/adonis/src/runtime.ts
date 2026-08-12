@@ -2,6 +2,7 @@ import {
   PageRegistry,
   ResourceRegistry,
   type DataAdapter,
+  type MediaLibraryAdapter,
   type PageClass,
   type PanelConfig,
   type Resource,
@@ -12,6 +13,22 @@ import { defineConfig, type ShamarConfig, type ShamarOrm } from './config.js';
 import { createAuthorizer } from './shamar/auth.js';
 import { PolicyRegistry, type Authorizer } from '@shamar/cherubim';
 import { discoverPages, discoverResources } from './discover.js';
+import {
+  createLocalMediaStorage,
+  type MediaStorage,
+} from './shamar/media-storage.js';
+import { join } from 'node:path';
+
+export interface PanelMediaRuntime {
+  adapter: MediaLibraryAdapter;
+  storage: MediaStorage;
+  /** Ungated public media URL prefix (default `/media`). */
+  publicPath: string;
+  label: string;
+  navigationGroup: string;
+  navigationSort: number;
+  navigationIcon: string;
+}
 
 export interface PanelRuntime {
   id: string;
@@ -20,6 +37,7 @@ export interface PanelRuntime {
   registry: ResourceRegistry;
   pages: PageRegistry;
   adapter: DataAdapter;
+  media?: PanelMediaRuntime;
 }
 
 export interface ShamarRuntime {
@@ -74,6 +92,7 @@ export async function createShamarRuntime(
       registry: new ResourceRegistry(resources),
       pages: new PageRegistry(pages),
       adapter: resolveAdapter(resolved, panelResolved),
+      media: resolveMedia(resolved, options.appRoot),
     });
   }
 
@@ -121,7 +140,7 @@ function assertNoSlugCollisions(
   pages: PageClass[],
   panelId: string,
 ): void {
-  const reserved = new Set(['assets', 'profile']);
+  const reserved = new Set(['assets', 'profile', 'media']);
   const resourceSlugs = new Set(resources.map((r) => r.slug));
   for (const page of pages) {
     if (reserved.has(page.slug)) {
@@ -146,4 +165,42 @@ function resolveAdapter(config: ShamarConfig, panel: PanelConfig): DataAdapter {
   }
 
   return createLucidAdapter();
+}
+
+function resolveMedia(
+  config: ShamarConfig,
+  appRoot?: string,
+): PanelMediaRuntime | undefined {
+  const media = config.media;
+  if (!media?.enabled) return undefined;
+  if (!media.adapter) {
+    throw new Error(
+      'Shamar media library is enabled but `media.adapter` is missing. ' +
+        'Pass createMongooseMediaLibraryAdapter(...) or createLucidMediaLibraryAdapter(...).',
+    );
+  }
+
+  const adapter =
+    typeof media.adapter === 'function' ? media.adapter() : media.adapter;
+  const disk = media.disk?.trim() || 'shamar';
+  const root = media.root
+    ? media.root.startsWith('/')
+      ? media.root
+      : join(appRoot ?? process.cwd(), media.root)
+    : join(appRoot ?? process.cwd(), 'storage/media');
+
+  const storage =
+    typeof media.storage === 'function'
+      ? media.storage()
+      : media.storage ?? createLocalMediaStorage({ disk, root });
+
+  return {
+    adapter,
+    storage,
+    publicPath: media.publicPath?.trim() || '/media',
+    label: media.label?.trim() || 'Files',
+    navigationGroup: media.navigationGroup?.trim() || 'System',
+    navigationSort: media.navigationSort ?? 50,
+    navigationIcon: media.navigationIcon?.trim() || 'folder',
+  };
 }

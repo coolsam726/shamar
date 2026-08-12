@@ -1,5 +1,5 @@
 import type { ShamarHttpContext } from '../context.js';
-import type { ResourceRegistry, ResourceMeta, PageMeta } from '@shamar/core';
+import type { ResourceRegistry, ResourceMeta, PageMeta, PageSectionMeta } from '@shamar/core';
 import {
   resolveDefaultPerPage,
   resolveGridItemStyle,
@@ -8,6 +8,11 @@ import {
   relationUsesListTable,
   isFormPage,
   validateFormData,
+  assignFieldFormState,
+  dehydrateField,
+  hydrateField,
+  FIELD_ABSENT,
+  type PageSectionDefinition,
 } from '@shamar/core';
 import { sanitizeStringIds } from '@shamar/cherubim';
 import type { Authorizer } from '@shamar/cherubim';
@@ -56,8 +61,9 @@ import {
   RECORD_NAV_CAP,
   recordNavQuery,
   buildRecordPager,
-  toFormControlValue,
-  parseCurrencyInput,
+  readPrefixedListQuery,
+  buildPageSectionPaginationContext,
+  sectionQueryPrefix,
   type ListViewQuery,
   type RecordPager,
 } from '../shamar/list-query.js';
@@ -223,6 +229,14 @@ export class AdminController {
       authCtx,
       flash: readFlash(ctx),
       masquerade: isMasqueradeSession(ctx.session) ? { active: true } : undefined,
+      mediaNav: this.panel.media
+        ? {
+            label: this.panel.media.label,
+            navigationGroup: this.panel.media.navigationGroup,
+            navigationSort: this.panel.media.navigationSort,
+            navigationIcon: this.panel.media.navigationIcon,
+          }
+        : undefined,
       showCreateButton:
         showCreateButton === true ? policy?.create ?? true : showCreateButton,
       showEditButton:
@@ -350,8 +364,7 @@ export class AdminController {
   }
 
   async create(ctx: ShamarHttpContext, options?: { asJson?: boolean }) {
-    const pageRedirect = this.redirectPageSlugAwayFromResourceRoutes(ctx, options?.asJson);
-    if (pageRedirect) return pageRedirect;
+    if (this.redirectPageSlugAwayFromResourceRoutes(ctx, options?.asJson)) return;
     const meta = this.requireResource(ctx);
     const authResult = await this.ensureResourceAction(ctx, meta, 'create', undefined, options?.asJson);
     if (!this.isAuthContext(authResult)) return authResult;
@@ -402,6 +415,11 @@ export class AdminController {
   async store(ctx: ShamarHttpContext, options?: { asJson?: boolean }) {
     const pageMeta = this.pages.get(ctx.params.slug);
     if (pageMeta) {
+      if (pageMeta.kind === 'composite') {
+        return ctx.response.badRequest({
+          message: 'Use POST /:slug/sections/:section to save a form section',
+        });
+      }
       return this.savePage(ctx, pageMeta, options);
     }
 
@@ -456,8 +474,11 @@ export class AdminController {
   }
 
   async show(ctx: ShamarHttpContext, options?: { asJson?: boolean }) {
-    const pageRedirect = this.redirectPageSlugAwayFromResourceRoutes(ctx, options?.asJson);
-    if (pageRedirect) return pageRedirect;
+    const pageMeta = this.pages.get(ctx.params.slug);
+    if (pageMeta?.kind === 'list') {
+      return this.renderListPageRecord(ctx, pageMeta, options);
+    }
+    if (this.redirectPageSlugAwayFromResourceRoutes(ctx, options?.asJson)) return;
     const meta = this.requireResource(ctx);
     const { id } = ctx.params;
     const record = await this.resources.show(meta, id);
@@ -510,8 +531,7 @@ export class AdminController {
   }
 
   async edit(ctx: ShamarHttpContext, options?: { asJson?: boolean }) {
-    const pageRedirect = this.redirectPageSlugAwayFromResourceRoutes(ctx, options?.asJson);
-    if (pageRedirect) return pageRedirect;
+    if (this.redirectPageSlugAwayFromResourceRoutes(ctx, options?.asJson)) return;
     const meta = this.requireResource(ctx);
     const { id } = ctx.params;
     const record = await this.resources.show(meta, id);
@@ -888,8 +908,7 @@ export class AdminController {
   }
 
   async update(ctx: ShamarHttpContext, options?: { asJson?: boolean }) {
-    const pageRedirect = this.redirectPageSlugAwayFromResourceRoutes(ctx, options?.asJson);
-    if (pageRedirect) return pageRedirect;
+    if (this.redirectPageSlugAwayFromResourceRoutes(ctx, options?.asJson)) return;
     const meta = this.requireResource(ctx);
     const { id } = ctx.params;
 
@@ -939,8 +958,7 @@ export class AdminController {
   }
 
   async destroy(ctx: ShamarHttpContext, options?: { asJson?: boolean }) {
-    const pageRedirect = this.redirectPageSlugAwayFromResourceRoutes(ctx, options?.asJson);
-    if (pageRedirect) return pageRedirect;
+    if (this.redirectPageSlugAwayFromResourceRoutes(ctx, options?.asJson)) return;
     const meta = this.requireResource(ctx);
     const { id } = ctx.params;
     const record = await this.resources.show(meta, id);
@@ -1169,18 +1187,24 @@ export class AdminController {
 
   /**
    * Resource CRUD routes (`/:slug/:id/edit`, etc.) must not treat page slugs as
-   * resources. Form/list/custom pages live at `GET|POST /:slug` only.
+   * resources. Form/custom pages live at `GET|POST /:slug` only.
+   * List pages expose a read-only record view at `GET /:slug/:id` (handled separately).
+   *
+   * Returns true when this request was fully handled (redirect or JSON 404).
+   * `response.redirect()` is void — do not use its return value as a guard.
    */
   private redirectPageSlugAwayFromResourceRoutes(
     ctx: ShamarHttpContext,
     asJson = false,
-  ): unknown | null {
+  ): boolean {
     const slug = ctx.params.slug as string | undefined;
-    if (!slug || !this.pages.has(slug)) return null;
+    if (!slug || !this.pages.has(slug)) return false;
     if (asJson || this.wantsJson(ctx, asJson)) {
-      return ctx.response.notFound({ message: 'Not a resource' });
+      ctx.response.notFound({ message: 'Not a resource' });
+      return true;
     }
-    return ctx.response.redirect(`${this.basePath}/${slug}`);
+    ctx.response.redirect(`${this.basePath}/${slug}`);
+    return true;
   }
 
   private withPolicyScope(
@@ -1450,7 +1474,7 @@ export class AdminController {
       if (!(field.name in qs)) continue;
       const raw = qs[field.name];
       if (raw == null || raw === '') continue;
-      state[field.name] = toFormControlValue(raw, field);
+      state[field.name] = hydrateField(field, raw);
     }
     // Create & Edit often passes `?name=` for the title attribute.
     if ('name' in qs && qs.name != null && qs.name !== '') {
@@ -1471,29 +1495,7 @@ export class AdminController {
   ): Record<string, unknown> {
     const state: Record<string, unknown> = {};
     for (const field of meta.fields) {
-      if (record && field.name in record) {
-        state[field.name] = toFormControlValue(record[field.name], field);
-      } else if (field.default !== undefined && typeof field.default !== 'function') {
-        state[field.name] = toFormControlValue(field.default, field);
-      } else if (field.type === 'boolean' || field.type === 'checkbox') {
-        state[field.name] = false;
-      } else if (field.type === 'color') {
-        state[field.name] = '#000000';
-      } else if (field.type === 'relation' && field.relation?.kind === 'belongsTo') {
-        // BelongsTo values are owned by the M2O combobox widget, not form state.
-      } else if (
-        field.multiple ||
-        field.type === 'tags' ||
-        field.type === 'checkboxList' ||
-        field.type === 'relationTable' ||
-        (field.type === 'relation' && field.relation?.kind !== 'belongsTo')
-      ) {
-        state[field.name] = [];
-      } else if (field.type === 'select' && field.multiple) {
-        state[field.name] = [];
-      } else {
-        state[field.name] = '';
-      }
+      assignFieldFormState(state, field, record);
     }
     void operation;
     return state;
@@ -1590,48 +1592,8 @@ export class AdminController {
       if (field.dehydrated === false) continue;
       if (action === 'update' && field.createOnly) continue;
 
-      if (field.type === 'boolean' || field.type === 'checkbox') {
-        data[field.name] =
-          input[field.name] === true ||
-          input[field.name] === '1' ||
-          input[field.name] === 'on' ||
-          input[field.name] === 'true';
-        continue;
-      }
-
-      if (field.currency) {
-        const raw = field.name in input ? input[field.name] : undefined;
-        if (raw !== undefined) {
-          data[field.name] = parseCurrencyInput(raw);
-        }
-        continue;
-      }
-
-      if (
-        field.type === 'tags' ||
-        field.type === 'checkboxList' ||
-        (field.relation &&
-          (field.relation.kind === 'manyToMany' || field.multiple))
-      ) {
-        const raw = input[field.name] ?? input[`${field.name}[]`];
-        if (Array.isArray(raw)) {
-          data[field.name] = sanitizeStringIds(raw);
-        } else if (typeof raw === 'string' && raw.trim()) {
-          data[field.name] =
-            field.type === 'tags'
-              ? sanitizeStringIds(raw.split(','))
-              : sanitizeStringIds([raw]);
-        } else if (field.name in input || `${field.name}[]` in input) {
-          data[field.name] = [];
-        }
-        continue;
-      }
-
-      if (field.name in input) {
-        data[field.name] = input[field.name];
-      } else if (`${field.name}[]` in input) {
-        data[field.name] = input[`${field.name}[]`];
-      }
+      const value = dehydrateField(field, input);
+      if (value !== FIELD_ABSENT) data[field.name] = value;
     }
 
     return data;
@@ -1691,6 +1653,9 @@ export class AdminController {
     page: PageMeta,
     options?: { asJson?: boolean },
   ) {
+    if (page.kind === 'composite') {
+      return this.renderSectionsPage(ctx, page, options);
+    }
     if (page.kind === 'list') {
       return this.renderListPage(ctx, page, options);
     }
@@ -1729,6 +1694,14 @@ export class AdminController {
       authCtx: authResult,
       flash: readFlash(ctx),
       masquerade: isMasqueradeSession(ctx.session) ? { active: true } : undefined,
+      mediaNav: this.panel.media
+        ? {
+            label: this.panel.media.label,
+            navigationGroup: this.panel.media.navigationGroup,
+            navigationSort: this.panel.media.navigationSort,
+            navigationIcon: this.panel.media.navigationIcon,
+          }
+        : undefined,
     });
 
     const view = page.view ?? 'shamar::page';
@@ -1762,8 +1735,7 @@ export class AdminController {
     const formInitialState: Record<string, unknown> = {};
     for (const field of resourceMeta.fields) {
       if (field.hiddenOnForm) continue;
-      const raw = field.name in filled ? filled[field.name] : field.default;
-      formInitialState[field.name] = toFormControlValue(raw, field);
+      assignFieldFormState(formInitialState, field, filled);
     }
 
     if (this.wantsJson(ctx, options?.asJson)) {
@@ -1784,6 +1756,14 @@ export class AdminController {
       authCtx: authResult,
       flash: readFlash(ctx),
       masquerade: isMasqueradeSession(ctx.session) ? { active: true } : undefined,
+      mediaNav: this.panel.media
+        ? {
+            label: this.panel.media.label,
+            navigationGroup: this.panel.media.navigationGroup,
+            navigationSort: this.panel.media.navigationSort,
+            navigationIcon: this.panel.media.navigationIcon,
+          }
+        : undefined,
     });
 
     const view = page.view ?? 'shamar::page-form';
@@ -1883,6 +1863,14 @@ export class AdminController {
       authCtx: authResult,
       flash: readFlash(ctx),
       masquerade: isMasqueradeSession(ctx.session) ? { active: true } : undefined,
+      mediaNav: this.panel.media
+        ? {
+            label: this.panel.media.label,
+            navigationGroup: this.panel.media.navigationGroup,
+            navigationSort: this.panel.media.navigationSort,
+            navigationIcon: this.panel.media.navigationIcon,
+          }
+        : undefined,
       showCreateButton: false,
     });
 
@@ -1917,6 +1905,420 @@ export class AdminController {
       }),
       pageActions: page.actions.filter((a) => a.placement === 'header'),
     });
+  }
+
+  private async renderListPageRecord(
+    ctx: ShamarHttpContext,
+    page: PageMeta,
+    options?: { asJson?: boolean },
+  ) {
+    const authResult = await this.ensurePageAccess(ctx, page, options?.asJson);
+    if (!this.isAuthContext(authResult)) return authResult;
+
+    const meta = page.listResource;
+    if (!meta) {
+      return ctx.response.badRequest({ message: 'List page is missing table meta' });
+    }
+
+    const { id } = ctx.params;
+    const record = await this.resources.show(meta, id);
+    const authCtx = authResult;
+
+    await hydrateRecordsForDisplay(meta, [record], this.registry, this.panel.adapter);
+    decorateRevokedStatus([record]);
+
+    if (this.wantsJson(ctx, options?.asJson)) {
+      return ctx.response.json(record);
+    }
+
+    const embed = this.isEmbed(ctx);
+    const title = recordTitle(meta, record);
+    const shell = await this.shellOpts(ctx, authCtx, {
+      meta,
+      record,
+      pageTitle: title,
+      showEditButton: false,
+      showDeleteButton: false,
+      showBackToList: false,
+      recordBreadcrumb: {
+        mode: 'show',
+        recordTitle: title,
+      },
+    });
+
+    return ctx.view.render('shamar::show', {
+      ...shell,
+      page,
+      meta,
+      resource: meta,
+      record,
+      id: record.id,
+      embed,
+      detailSchema: detailSchemaTree(meta),
+      detailSections: detailSections(meta),
+      relationUi: {},
+      formErrors: {},
+      recordPager: embed
+        ? null
+        : await this.resolveRecordPager(ctx, meta, String(record.id), 'show'),
+      resolveGridItemStyle,
+      recordActions: [],
+    });
+  }
+
+  private pageSectionDefinition(
+    page: PageMeta,
+    sectionKey: string,
+  ): PageSectionDefinition | undefined {
+    const PageClass = this.pages.pageClass(page.slug);
+    if (!PageClass) return undefined;
+    return PageClass.content().find((section) => section.meta.key === sectionKey);
+  }
+
+  private sectionFormResourceMeta(page: PageMeta, section: PageSectionMeta): ResourceMeta {
+    return {
+      slug: page.slug,
+      label: section.title ?? section.key,
+      singularLabel: section.title ?? section.key,
+      model: 'Page',
+      recordTitleField: 'id',
+      fields: section.fields ?? [],
+      form: section.form ?? { fields: [], sections: [], schema: [] },
+      columns: [],
+      infolist: { entries: [], sections: [], schema: [] },
+      hasExplicitInfolist: false,
+      actions: [],
+      searchableFields: [],
+      contentMaxWidth: page.contentMaxWidth,
+    };
+  }
+
+  private preservePageQuery(ctx: ShamarHttpContext): string {
+    const url = ctx.request.url();
+    const queryIndex = url.indexOf('?');
+    return queryIndex >= 0 ? url.slice(queryIndex) : '';
+  }
+
+  private async buildPageSections(
+    ctx: ShamarHttpContext,
+    page: PageMeta,
+    pageCtx: import('@shamar/core').PageRequestContext,
+    authResult: AuthorizationContext,
+    options?: {
+      formErrors?: Record<string, Record<string, string>>;
+      formData?: Record<string, Record<string, unknown>>;
+    },
+  ): Promise<Record<string, unknown>[]> {
+    const PageClass = this.pages.pageClass(page.slug)!;
+    const definitions = PageClass.content();
+    const preserveQuery = this.preservePageQuery(ctx);
+    const rendered: Record<string, unknown>[] = [];
+
+    for (const definition of definitions) {
+      const meta = definition.meta;
+      const base = {
+        key: meta.key,
+        title: meta.title,
+        kind: meta.kind,
+      };
+
+      if (meta.kind === 'edge') {
+        const data = definition.handlers.edge?.data;
+        const edgeLocals =
+          typeof data === 'function' ? await data(pageCtx) : (data ?? {});
+        rendered.push({
+          ...base,
+          view: meta.view,
+          edgeLocals,
+        });
+        continue;
+      }
+
+      if (meta.kind === 'form') {
+        const handlers = definition.handlers.form;
+        if (!handlers) continue;
+
+        const resourceMeta = this.sectionFormResourceMeta(page, meta);
+        const filled = {
+          ...(handlers.fill ? await handlers.fill(pageCtx) : {}),
+          ...(options?.formData?.[meta.key] ?? {}),
+        };
+        const record: Record<string, unknown> = { ...filled };
+        const formInitialState: Record<string, unknown> = {};
+        for (const field of resourceMeta.fields) {
+          if (field.hiddenOnForm) continue;
+          assignFieldFormState(formInitialState, field, filled);
+        }
+
+        rendered.push({
+          ...base,
+          record,
+          formSchema: formSchemaTree(resourceMeta),
+          formInitialState,
+          formLiveFields: formClientFields(resourceMeta, {
+            state: formInitialState,
+            record,
+            operation: 'edit',
+          }),
+          formErrors: options?.formErrors?.[meta.key] ?? {},
+          relationUi: {},
+          saveAction: `${this.basePath}/${page.slug}/sections/${meta.key}`,
+          formStateEndpoint: `${this.basePath}/${page.slug}/sections/${meta.key}/form-state`,
+        });
+        continue;
+      }
+
+      if (meta.kind === 'table') {
+        const listMeta = meta.listResource;
+        if (!listMeta) continue;
+
+        const rawQuery = readPrefixedListQuery(
+          ctx.request.all() as Record<string, unknown>,
+          meta.key,
+        );
+        const listHeaders = buildListHeaders(listMeta);
+        const prefix = sectionQueryPrefix(meta.key);
+        const filtersParam = ctx.request.input(`${prefix}filters`);
+        const groupByParam = ctx.request.input(`${prefix}groupBy`);
+        const hasFiltersParam = filtersParam !== undefined && filtersParam !== null;
+        const hasGroupByParam = groupByParam !== undefined && groupByParam !== null;
+
+        const defaultPerPage = this.resolveListDefaultPerPage(listMeta);
+        const normalized = normalizeListQuery(rawQuery, { perPage: defaultPerPage });
+
+        if (!hasFiltersParam && listMeta.defaultFilters?.length) {
+          normalized.filters = resolveDefaultFilters(listMeta, listHeaders);
+        } else if (normalized.filters?.length) {
+          normalized.filters = labelListFilters(normalized.filters, listHeaders);
+        }
+
+        if (!hasGroupByParam && listMeta.defaultGroupBy) {
+          normalized.groupBy = listMeta.defaultGroupBy;
+        } else if (hasGroupByParam && String(groupByParam).trim() === '') {
+          normalized.groupBy = undefined;
+        }
+
+        const displayGroupBy = normalized.groupBy;
+        const groupHeader = listHeaders.find(
+          (header) => header.name === displayGroupBy || header.filterField === displayGroupBy,
+        );
+        const adapterGroupBy = groupHeader?.filterField || displayGroupBy;
+
+        let queryOverrides = definition.handlers.table?.query;
+        if (typeof queryOverrides === 'function') {
+          queryOverrides = await queryOverrides(pageCtx);
+        }
+
+        const query = {
+          ...normalized,
+          ...queryOverrides,
+          groupBy: adapterGroupBy,
+        };
+
+        const result = await this.resources.index(listMeta, query);
+        await hydrateRecordsForDisplay(listMeta, result.items, this.registry, this.panel.adapter);
+
+        const { query: viewQuery, pagination, perPageValue } = buildListContext({
+          basePath: this.basePath,
+          meta: listMeta,
+          query: rawQuery,
+          result,
+          defaultPerPage,
+        });
+
+        const sectionPagination = buildPageSectionPaginationContext(
+          this.basePath,
+          page.slug,
+          meta.key,
+          viewQuery,
+          result,
+          { defaultPerPage, preserveQuery },
+        );
+
+        rendered.push({
+          ...base,
+          resource: listMeta,
+          result,
+          groups: groupRecordsForDisplay(result.items, displayGroupBy, listHeaders),
+          query: {
+            ...viewQuery,
+            perPage: perPageValue,
+            filters: normalized.filters ?? [],
+            groupBy: displayGroupBy ?? null,
+          },
+          pagination: sectionPagination,
+          listHeaders,
+          listAllPerPage: LIST_ALL_RECORDS_PER_PAGE,
+          defaultPerPage,
+          perPageOptions: resolvePerPageOptions(defaultPerPage),
+          filtersLockedEmpty: hasFiltersParam && !(normalized.filters?.length),
+          groupLockedEmpty: hasGroupByParam && !displayGroupBy,
+          queryPrefix: prefix,
+        });
+        continue;
+      }
+
+      if (meta.kind === 'infolist') {
+        const infolistMeta = meta.infolistResource;
+        const recordSource = definition.handlers.infolist?.record;
+        if (!infolistMeta || !recordSource) continue;
+
+        const record =
+          typeof recordSource === 'function' ? await recordSource(pageCtx) : recordSource;
+
+        rendered.push({
+          ...base,
+          resource: infolistMeta,
+          record,
+          detailSchema: detailSchemaTree(infolistMeta),
+          relationUi: {},
+        });
+      }
+    }
+
+    void authResult;
+    return rendered;
+  }
+
+  private async renderSectionsPage(
+    ctx: ShamarHttpContext,
+    page: PageMeta,
+    options?: {
+      asJson?: boolean;
+      formErrors?: Record<string, Record<string, string>>;
+      formData?: Record<string, Record<string, unknown>>;
+    },
+  ) {
+    const authResult = await this.ensurePageAccess(ctx, page, options?.asJson);
+    if (!this.isAuthContext(authResult)) return authResult;
+
+    const PageClass = this.pages.pageClass(page.slug)!;
+    const pageCtx = this.pageRequestContext(ctx, authResult);
+    const mountLocals = await PageClass.mount(pageCtx);
+    const pageSections = await this.buildPageSections(ctx, page, pageCtx, authResult, {
+      formErrors: options?.formErrors,
+      formData: options?.formData,
+    });
+
+    if (this.wantsJson(ctx, options?.asJson)) {
+      return ctx.response.json({ page: page.slug, sections: pageSections, ...mountLocals });
+    }
+
+    const shellWithSlug = await buildShellContext({
+      config: this.config,
+      registry: this.registry,
+      pages: this.pages,
+      meta: page,
+      currentSlug: page.slug,
+      pageTitle: page.label,
+      basePath: this.basePath,
+      branding: this.panelBranding,
+      panelContentMaxWidth: page.contentMaxWidth ?? this.panelContentMaxWidth,
+      authorizer: this.authorizer,
+      authCtx: authResult,
+      flash: readFlash(ctx),
+      masquerade: isMasqueradeSession(ctx.session) ? { active: true } : undefined,
+      mediaNav: this.panel.media
+        ? {
+            label: this.panel.media.label,
+            navigationGroup: this.panel.media.navigationGroup,
+            navigationSort: this.panel.media.navigationSort,
+            navigationIcon: this.panel.media.navigationIcon,
+          }
+        : undefined,
+    });
+
+    const view = page.view ?? 'shamar::page-sections';
+    return ctx.view.render(view, {
+      ...shellWithSlug,
+      page,
+      pageSections,
+      preserveQuery: this.preservePageQuery(ctx),
+      pageActions: page.actions.filter((a) => a.placement === 'header'),
+      resolveGridItemStyle,
+      ...mountLocals,
+    });
+  }
+
+  async savePageSection(ctx: ShamarHttpContext, options?: { asJson?: boolean }) {
+    const page = this.pages.require(ctx.params.slug);
+    if (page.kind !== 'composite') {
+      return ctx.response.badRequest({ message: 'Not a composite page' });
+    }
+
+    const sectionKey = String(ctx.params.section ?? '');
+    const definition = this.pageSectionDefinition(page, sectionKey);
+    if (!definition || definition.meta.kind !== 'form' || !definition.handlers.form) {
+      return ctx.response.badRequest({ message: 'Unknown form section' });
+    }
+
+    const authResult = await this.ensurePageAccess(ctx, page, options?.asJson);
+    if (!this.isAuthContext(authResult)) return authResult;
+
+    const resourceMeta = this.sectionFormResourceMeta(page, definition.meta);
+    const data = this.resourcePayload(resourceMeta, ctx, 'update');
+
+    try {
+      await validateFormData(resourceMeta, data, this.panel.adapter);
+      const result = await definition.handlers.form.save(
+        data,
+        this.pageRequestContext(ctx, authResult),
+      );
+
+      if (this.wantsJson(ctx, options?.asJson)) {
+        return ctx.response.json({ ok: true, message: result?.message });
+      }
+
+      ctx.session.flash('success', result?.message ?? `${definition.meta.title ?? sectionKey} saved`);
+      const redirectTo = result?.redirectTo ?? `${this.basePath}/${page.slug}`;
+      return ctx.response.redirect(redirectTo);
+    } catch (error) {
+      if (!isValidationException(error)) throw error;
+
+      if (this.wantsJson(ctx, options?.asJson)) {
+        return ctx.response.status(422).json({
+          message: error.message,
+          errors: error.errors,
+        });
+      }
+
+      return this.renderSectionsPage(ctx, page, {
+        formErrors: { [sectionKey]: error.errors },
+        formData: { [sectionKey]: data },
+      });
+    }
+  }
+
+  async sectionFormState(ctx: ShamarHttpContext) {
+    const page = this.pages.require(ctx.params.slug);
+    if (page.kind !== 'composite') {
+      return ctx.response.badRequest({ message: 'Not a composite page' });
+    }
+
+    const sectionKey = String(ctx.params.section ?? '');
+    const definition = this.pageSectionDefinition(page, sectionKey);
+    if (!definition || definition.meta.kind !== 'form') {
+      return ctx.response.badRequest({ message: 'Unknown form section' });
+    }
+
+    const authResult = await this.ensurePageAccess(ctx, page, true);
+    if (!this.isAuthContext(authResult)) return authResult;
+
+    const resourceMeta = this.sectionFormResourceMeta(page, definition.meta);
+    const body = ctx.request.body() as {
+      operation?: string;
+      changed?: string;
+      state?: Record<string, unknown>;
+    };
+
+    const result = await evaluateFormState(resourceMeta, {
+      operation: 'edit',
+      changed: body.changed,
+      state: body.state ?? {},
+      record: body.state ?? {},
+    });
+
+    return ctx.response.json(result);
   }
 
   private async savePage(
@@ -1966,10 +2368,7 @@ export class AdminController {
       const formInitialState: Record<string, unknown> = {};
       for (const field of resourceMeta.fields) {
         if (field.hiddenOnForm) continue;
-        formInitialState[field.name] = toFormControlValue(
-          field.name in filled ? filled[field.name] : field.default,
-          field,
-        );
+        assignFieldFormState(formInitialState, field, filled);
       }
 
       const shellWithSlug = await buildShellContext({
@@ -1985,6 +2384,14 @@ export class AdminController {
         authorizer: this.authorizer,
         authCtx: authResult,
         flash: { type: 'error', message: error.message },
+        mediaNav: this.panel.media
+          ? {
+              label: this.panel.media.label,
+              navigationGroup: this.panel.media.navigationGroup,
+              navigationSort: this.panel.media.navigationSort,
+              navigationIcon: this.panel.media.navigationIcon,
+            }
+          : undefined,
       });
 
       return ctx.view.render(page.view ?? 'shamar::page-form', {

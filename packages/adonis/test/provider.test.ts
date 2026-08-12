@@ -140,4 +140,98 @@ describe('@shamar/adonis provider', () => {
       /collides with a resource/,
     );
   });
+
+  it('wires media library when enabled with an adapter', async () => {
+    const stubAdapter = {
+      browse: async () => ({ folder: null, breadcrumbs: [], folders: [], files: [] }),
+      getFolder: async () => null,
+      getFile: async () => null,
+      getFiles: async () => [],
+      listFolders: async () => [],
+      createFolder: async () => ({ id: '1', name: 'x', parentId: null }),
+      renameFolder: async () => ({ id: '1', name: 'x', parentId: null }),
+      moveFolder: async () => ({ id: '1', name: 'x', parentId: null }),
+      deleteFolder: async () => ({ files: [] }),
+      createFile: async () => ({
+        id: '1',
+        folderId: null,
+        name: 'a',
+        disk: 'shamar',
+        key: 'a',
+        mime: 'text/plain',
+        size: 1,
+        visibility: 'private' as const,
+      }),
+      renameFile: async () => ({
+        id: '1',
+        folderId: null,
+        name: 'a',
+        disk: 'shamar',
+        key: 'a',
+        mime: 'text/plain',
+        size: 1,
+        visibility: 'private' as const,
+      }),
+      moveFile: async () => ({
+        id: '1',
+        folderId: null,
+        name: 'a',
+        disk: 'shamar',
+        key: 'a',
+        mime: 'text/plain',
+        size: 1,
+        visibility: 'private' as const,
+      }),
+      setFileVisibility: async () => ({
+        id: '1',
+        folderId: null,
+        name: 'a',
+        disk: 'shamar',
+        key: 'a',
+        mime: 'text/plain',
+        size: 1,
+        visibility: 'public' as const,
+      }),
+      deleteFile: async () => ({
+        id: '1',
+        folderId: null,
+        name: 'a',
+        disk: 'shamar',
+        key: 'a',
+        mime: 'text/plain',
+        size: 1,
+        visibility: 'private' as const,
+      }),
+      search: async () => [],
+    };
+
+    await assert.rejects(
+      () =>
+        createShamarRuntime(
+          defineConfig({
+            resources: [CompanyResource],
+            media: { enabled: true },
+          }),
+        ),
+      /media\.adapter/,
+    );
+
+    const runtime = await createShamarRuntime(
+      defineConfig({
+        resources: [CompanyResource],
+        media: {
+          enabled: true,
+          adapter: stubAdapter,
+          root: '/tmp/shamar-media-test',
+          label: 'Library',
+        },
+      }),
+    );
+
+    const media = runtime.panel('admin').media;
+    assert.ok(media);
+    assert.equal(media.label, 'Library');
+    assert.equal(typeof media.adapter.browse, 'function');
+    assert.equal(typeof media.storage.put, 'function');
+  });
 });

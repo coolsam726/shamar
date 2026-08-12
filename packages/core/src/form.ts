@@ -1,6 +1,7 @@
 import type {
   BoolOrClosure,
   FieldConfig,
+  FieldOption,
   FieldType,
   FormSchema,
   FormSection,
@@ -30,6 +31,7 @@ import {
   type RelationshipOptions,
 } from './relation.js';
 import type { RelationWidget } from './types.js';
+import { getFieldType } from './field-registry.js';
 
 /**
  * Base for form field components (`TextInput::make()` style).
@@ -43,6 +45,12 @@ export abstract class FormComponent {
 
   protected constructor(name: string, type: FieldType) {
     this.config = { name, type };
+  }
+
+  /** Merge widget-specific options (editors, repeater, rating, …). */
+  setWidget(patch: Record<string, unknown>): this {
+    this.config.widget = { ...(this.config.widget ?? {}), ...patch };
+    return this;
   }
 
   /** Apply Filament-style relationship binding. */
@@ -427,6 +435,7 @@ export class TextInput extends FormComponent {
 
   url(): this {
     this.config.type = 'url';
+    this.config.inputMode = this.config.inputMode ?? 'url';
     return this;
   }
 
@@ -582,8 +591,14 @@ export class Radio extends FormComponent {
     this.config.options = [];
   }
 
-  options(entries: Array<{ label: string; value: string | number }>): this {
+  options(entries: FieldOption[]): this {
     this.config.options = entries;
+    return this;
+  }
+
+  /** Render options as a grouped toggle-button control. */
+  buttons(value = true): this {
+    this.config.display = value ? 'buttons' : 'list';
     return this;
   }
 
@@ -623,8 +638,14 @@ export class CheckboxList extends FormComponent {
     this.config.multiple = true;
   }
 
-  options(entries: Array<{ label: string; value: string | number }>): this {
+  options(entries: FieldOption[]): this {
     this.config.options = entries;
+    return this;
+  }
+
+  /** Render options as a grouped toggle-button control. */
+  buttons(value = true): this {
+    this.config.display = value ? 'buttons' : 'list';
     return this;
   }
 
@@ -855,6 +876,57 @@ export class DatePicker extends FormComponent {
   maxDate(value: string): this {
     return this.maxValue(value);
   }
+
+  /** Use the browser's native date input instead of the Flowbite calendar. */
+  native(value = true): this {
+    return this.setWidget({ native: value });
+  }
+}
+
+/** ISO week picker — stores the Monday of the selected week (`YYYY-MM-DD`). */
+export class WeekPicker extends FormComponent {
+  static make(name: string): WeekPicker {
+    return new WeekPicker(name);
+  }
+
+  private constructor(name: string) {
+    super(name, 'week');
+  }
+
+  minDate(value: string): this {
+    return this.minValue(value);
+  }
+
+  maxDate(value: string): this {
+    return this.maxValue(value);
+  }
+
+  native(value = true): this {
+    return this.setWidget({ native: value });
+  }
+}
+
+/** Month picker — stores the first day of the month (`YYYY-MM-DD`). */
+export class MonthPicker extends FormComponent {
+  static make(name: string): MonthPicker {
+    return new MonthPicker(name);
+  }
+
+  private constructor(name: string) {
+    super(name, 'month');
+  }
+
+  minDate(value: string): this {
+    return this.minValue(value);
+  }
+
+  maxDate(value: string): this {
+    return this.maxValue(value);
+  }
+
+  native(value = true): this {
+    return this.setWidget({ native: value });
+  }
 }
 
 /** Filament `DateTimePicker::make()`. */
@@ -874,6 +946,36 @@ export class DateTimePicker extends FormComponent {
   maxDate(value: string): this {
     return this.maxValue(value);
   }
+
+  seconds(value = true): this {
+    this.config.step = value ? 1 : 60;
+    return this.setWidget({ seconds: value });
+  }
+
+  /**
+   * Display clock format for the time portion. Stored values remain 24-hour.
+   * Omit to follow the browser locale.
+   */
+  timeFormat(value: '12' | '24'): this {
+    return this.setWidget({ timeFormat: value });
+  }
+
+  hours12(): this {
+    return this.timeFormat('12');
+  }
+
+  hours24(): this {
+    return this.timeFormat('24');
+  }
+
+  minuteStep(value: number): this {
+    return this.setWidget({ minuteStep: Math.max(1, Math.min(30, Math.floor(value) || 1)) });
+  }
+
+  /** Use the browser's native date-time input instead of the Shamar picker. */
+  native(value = true): this {
+    return this.setWidget({ native: value });
+  }
 }
 
 /** Filament `FileUpload::make()`. */
@@ -888,7 +990,7 @@ export class FileUpload extends FormComponent {
 
   image(): this {
     this.config.type = 'image';
-    this.config.accept = this.config.accept ?? 'image/*';
+    this.config.accept = this.config.accept ?? 'image/*,image/svg+xml,.svg';
     return this;
   }
 
@@ -899,6 +1001,51 @@ export class FileUpload extends FormComponent {
 
   multiple(value = true): this {
     this.config.multiple = value;
+    return this;
+  }
+}
+
+/**
+ * Pick one or more files from the Shamar media library.
+ * Stores media file id(s) in form state (string or string[] when multiple).
+ */
+export class FilePicker extends FormComponent {
+  static make(name: string): FilePicker {
+    return new FilePicker(name);
+  }
+
+  private constructor(name: string) {
+    super(name, 'filePicker');
+  }
+
+  /** Prefer images in the picker (raster + SVG). */
+  image(): this {
+    this.config.accept = this.config.accept ?? 'image/*,image/svg+xml,.svg';
+    return this;
+  }
+
+  accept(value: string): this {
+    this.config.accept = value;
+    return this;
+  }
+
+  multiple(value = true): this {
+    this.config.multiple = value;
+    return this;
+  }
+
+  /** Constrain browsing to a folder (and its descendants). */
+  folder(folderId: string | null): this {
+    this.config.mediaFolderId = folderId;
+    return this;
+  }
+
+  /**
+   * On confirm, mark selected library files as public (ungated URL).
+   * Useful for logos and other assets that must load when logged out.
+   */
+  makePublic(value = true): this {
+    this.config.mediaMakePublic = value;
     return this;
   }
 }
@@ -988,5 +1135,5 @@ export function form(callback: (builder: FormBuilder) => void): FormSchema {
 }
 
 export function fieldTypeLabel(type: FieldType): string {
-  return type.charAt(0).toUpperCase() + type.slice(1);
+  return getFieldType(type)?.label ?? type.charAt(0).toUpperCase() + type.slice(1);
 }

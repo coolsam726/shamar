@@ -1,5 +1,5 @@
 import {
-  FormPage,
+  SettingsPage,
   form,
   Tabs,
   Tab,
@@ -8,15 +8,21 @@ import {
   Select,
   Checkbox,
   Toggle,
+  FilePicker,
   type PageRequestContext,
   type PageSaveResult,
 } from '@shamar/core'
 import { getAppSettings, upsertAppSettings } from '#models/app_settings'
 
+function mediaUrlFromId(id: unknown): string {
+  const value = String(id ?? '').trim()
+  return value ? `/media/${value}` : ''
+}
+
 /**
- * Singleton Settings page — Branding + Preferences categories in one form.
+ * Singleton Settings page — Branding + Preferences via the shared SettingsPage layout.
  */
-export default class SettingsPage extends FormPage {
+export default class AppSettingsPage extends SettingsPage {
   static override slug = 'settings'
   static override label = 'Settings'
   static override navigationGroup = 'Settings'
@@ -34,7 +40,7 @@ export default class SettingsPage extends FormPage {
               .schema([
                 Section.make('App branding')
                   .description(
-                    'Overrides panel defaults for logo and display name. Company logos still win per user.',
+                    'Overrides panel defaults for logo and display name.',
                   )
                   .columns(2)
                   .schema([
@@ -43,15 +49,37 @@ export default class SettingsPage extends FormPage {
                       .placeholder('Shamar Playground')
                       .helperText('Optional override for the shell brand name.')
                       .columnSpanFull(),
+                    FilePicker.make('logoMediaId')
+                      .image()
+                      .makePublic()
+                      .label('Logo')
+                      .helperText('Light-mode logo (PNG, JPG, WebP, or SVG). Made public so it loads on the login page.')
+                      .live()
+                      .afterStateUpdated(({ get, set }) => {
+                        const id = String(get('logoMediaId') ?? '').trim()
+                        set('logo', id ? mediaUrlFromId(id) : '')
+                      })
+                      .columnSpanFull(),
+                    FilePicker.make('logoDarkMediaId')
+                      .image()
+                      .makePublic()
+                      .label('Dark logo')
+                      .helperText('Optional dark-mode logo. Made public so it loads when logged out.')
+                      .live()
+                      .afterStateUpdated(({ get, set }) => {
+                        const id = String(get('logoDarkMediaId') ?? '').trim()
+                        set('logoDark', id ? mediaUrlFromId(id) : '')
+                      })
+                      .columnSpanFull(),
                     TextInput.make('logo')
                       .url()
                       .label('Logo URL')
-                      .helperText('Light-mode logo.')
+                      .helperText('Filled by the picker, or paste an external URL.')
                       .columnSpanFull(),
                     TextInput.make('logoDark')
                       .url()
                       .label('Dark logo URL')
-                      .helperText('Optional dark-mode variant.')
+                      .helperText('Filled by the picker, or paste an external URL.')
                       .columnSpanFull(),
                     TextInput.make('logoHeight')
                       .label('Logo height')
@@ -112,6 +140,8 @@ export default class SettingsPage extends FormPage {
         name: '',
         logo: '',
         logoDark: '',
+        logoMediaId: '',
+        logoDarkMediaId: '',
         logoHeight: '',
         brandDisplay: '',
         channels: [],
@@ -124,6 +154,8 @@ export default class SettingsPage extends FormPage {
       name: doc.name ?? '',
       logo: doc.logo ?? '',
       logoDark: doc.logoDark ?? '',
+      logoMediaId: doc.logoMediaId ?? '',
+      logoDarkMediaId: doc.logoDarkMediaId ?? '',
       logoHeight: doc.logoHeight ?? '',
       brandDisplay: doc.brandDisplay ?? '',
       channels: Array.isArray(doc.channels) ? doc.channels : [],
@@ -143,10 +175,17 @@ export default class SettingsPage extends FormPage {
         ? brandDisplayRaw
         : null
 
+    const logoMediaId = String(data.logoMediaId ?? '').trim() || null
+    const logoDarkMediaId = String(data.logoDarkMediaId ?? '').trim() || null
+
     await upsertAppSettings({
       name: String(data.name ?? '').trim() || null,
-      logo: String(data.logo ?? '').trim() || null,
-      logoDark: String(data.logoDark ?? '').trim() || null,
+      logo: String(data.logo ?? '').trim() || (logoMediaId ? mediaUrlFromId(logoMediaId) : null),
+      logoDark:
+        String(data.logoDark ?? '').trim() ||
+        (logoDarkMediaId ? mediaUrlFromId(logoDarkMediaId) : null),
+      logoMediaId,
+      logoDarkMediaId,
       logoHeight: String(data.logoHeight ?? '').trim() || null,
       brandDisplay,
       channels: Array.isArray(data.channels)

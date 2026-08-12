@@ -8,7 +8,9 @@
     <div
       class="shamar-field-cell"
       style="{{ resolveGridItemStyle(field, 2) }}"
-      x-show="isVisible('{{ field.name }}')"
+      @if(!bindRoot)
+        x-show="isVisible('{{ field.name }}')"
+      @endif
     >
       @include('shamar::partials/field-input')
     </div>
@@ -46,6 +48,7 @@
             record: record,
             formErrors: formErrors,
             relationUi: relationUi,
+            bindRoot: bindRoot,
           })
         @endeach
       </div>
@@ -99,6 +102,7 @@
             record: record,
             formErrors: formErrors,
             relationUi: relationUi,
+            bindRoot: bindRoot,
           })
             @endeach
           </div>
@@ -139,6 +143,7 @@
             record: record,
             formErrors: formErrors,
             relationUi: relationUi,
+            bindRoot: bindRoot,
           })
             @endeach
           </div>
@@ -165,6 +170,7 @@
             record: record,
             formErrors: formErrors,
             relationUi: relationUi,
+            bindRoot: bindRoot,
           })
       </div>
     @endeach
@@ -187,6 +193,7 @@
             record: record,
             formErrors: formErrors,
             relationUi: relationUi,
+            bindRoot: bindRoot,
           })
       @endeach
     </div>
@@ -215,6 +222,7 @@
             record: record,
             formErrors: formErrors,
             relationUi: relationUi,
+            bindRoot: bindRoot,
           })
       @endeach
     </div>
@@ -282,6 +290,7 @@
             record: record,
             formErrors: formErrors,
             relationUi: relationUi,
+            bindRoot: bindRoot,
           })
         @endeach
       </div>

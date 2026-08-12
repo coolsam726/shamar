@@ -1,0 +1,57 @@
+@let(nestedNodes = repeaterSchemaNodes(field))
+@let(emptyItem = repeaterEmptyItem(field))
+@let(itemLabel = (field.widget && field.widget.itemLabel) ? field.widget.itemLabel : 'Item')
+@let(addLabel = (field.widget && field.widget.addActionLabel) ? field.widget.addActionLabel : 'Add item')
+@let(addable = !(field.widget && field.widget.addable === false))
+@let(deletable = !(field.widget && field.widget.deletable === false))
+@let(reorderable = !(field.widget && field.widget.reorderable === false))
+@let(itemBindRoot = 'item')
+
+<div class="shamar-repeater{{ formErrors && formErrors[field.name] ? ' is-invalid' : '' }}">
+  <template x-for="(item, index) in ensureRepeater({{ jsonAttr(field.name) }}, {{ jsonAttr(emptyItem) }})" :key="index">
+    <div class="shamar-repeater__item">
+      <header class="shamar-repeater__item-head">
+        <span class="shamar-repeater__item-label">{{ itemLabel }} <span x-text="index + 1"></span></span>
+        <div class="shamar-repeater__item-actions">
+          @if(reorderable)
+            <button type="button" class="shamar-repeater__icon-btn" @click="moveRepeaterItem({{ jsonAttr(field.name) }}, index, -1)" :disabled="index === 0" aria-label="Move up">↑</button>
+            <button type="button" class="shamar-repeater__icon-btn" @click="moveRepeaterItem({{ jsonAttr(field.name) }}, index, 1)" aria-label="Move down">↓</button>
+          @endif
+          @if(deletable)
+            <button type="button" class="shamar-repeater__icon-btn shamar-repeater__icon-btn--danger" @click="removeRepeaterItem({{ jsonAttr(field.name) }}, index)" aria-label="Remove">×</button>
+          @endif
+        </div>
+      </header>
+      <div class="shamar-form-grid" style="--shamar-form-cols: 2">
+        @each(childNode in nestedNodes)
+          @!component('shamar::partials/schema-node', {
+            node: childNode,
+            schemaMode: 'form',
+            mode: mode,
+            record: record,
+            formErrors: formErrors,
+            relationUi: relationUi,
+            bindRoot: itemBindRoot,
+          })
+        @endeach
+      </div>
+    </div>
+  </template>
+  @if(addable)
+    <button
+      type="button"
+      class="shamar-btn shamar-btn--secondary shamar-repeater__add"
+      @click="addRepeaterItem({{ jsonAttr(field.name) }}, {{ jsonAttr(emptyItem) }})"
+      :disabled="isDisabled({{ jsonAttr(field.name) }})"
+    >{{ addLabel }}</button>
+  @endif
+  @if(!nestedField)
+    <input
+      type="hidden"
+      name="{{ field.name }}"
+      data-shamar-json="{{ field.name }}"
+      data-shamar-json-kind="nested"
+      :value="JSON.stringify({{ stateRef }} || [])"
+    />
+  @endif
+</div>

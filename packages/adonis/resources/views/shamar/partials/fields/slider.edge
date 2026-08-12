@@ -1,0 +1,19 @@
+@let(showValue = !(field.widget && field.widget.showValue === false))
+<div class="shamar-slider">
+  <input
+    id="field-{{ field.name }}"
+    type="range"
+    class="shamar-slider__input"
+    @if(!nestedField)
+      name="{{ field.name }}"
+    @endif
+    {{{ fieldInputAttrs(field) }}}
+    x-model.number="{{ stateRef }}"
+    @input="onFieldInput('{{ field.name }}')"
+    @change="onFieldChange('{{ field.name }}')"
+    :disabled="isDisabled('{{ field.name }}')"
+  />
+  @if(showValue)
+    <output class="shamar-slider__value" x-text="{{ stateRef }}"></output>
+  @endif
+</div>

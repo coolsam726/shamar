@@ -1,0 +1,33 @@
+<div class="shamar-tags">
+  <div class="shamar-tags__list">
+    <template x-for="(tag, tagIndex) in (Array.isArray({{ stateRef }}) ? {{ stateRef }} : [])" :key="tagIndex">
+      <span class="shamar-tags__chip">
+        <span x-text="tag"></span>
+        <button
+          type="button"
+          class="shamar-tags__remove"
+          @click="{{ stateRef }} = ({{ stateRef }} || []).filter((_, i) => i !== tagIndex); onFieldChange('{{ field.name }}')"
+          aria-label="Remove"
+        >&times;</button>
+      </span>
+    </template>
+  </div>
+  <input
+    type="text"
+    class="shamar-input"
+    :placeholder='fieldMeta[{{ jsonAttr(field.name) }}]?.placeholder || {{ jsonAttr(field.placeholder ?? "Add tag…") }}'
+    @keydown.enter.prevent="
+      const v = String($event.target.value || '').trim();
+      if (!v) return;
+      const cur = Array.isArray({{ stateRef }}) ? [...{{ stateRef }}] : [];
+      if (!cur.includes(v)) { {{ stateRef }} = [...cur, v]; onFieldChange('{{ field.name }}'); }
+      $event.target.value = '';
+    "
+    :disabled="isDisabled('{{ field.name }}')"
+  />
+  @if(!nestedField)
+    <template x-for="(tag, tagIndex) in (Array.isArray({{ stateRef }}) ? {{ stateRef }} : [])" :key="'h'+tagIndex">
+      <input type="hidden" name="{{ field.name }}[]" :value="tag" />
+    </template>
+  @endif
+</div>

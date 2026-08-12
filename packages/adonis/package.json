@@ -35,7 +35,8 @@
     "stubs"
   ],
   "scripts": {
-    "build": "tsc && node -e \"const fs=require('fs'); for (const f of ['main.js','main.d.ts','commands.json']) try { fs.unlinkSync('dist/commands/'+f) } catch {}\" && pnpm index:commands",
+    "build": "pnpm copy:vendor && tsc && node -e \"const fs=require('fs'); for (const f of ['main.js','main.d.ts','commands.json']) try { fs.unlinkSync('dist/commands/'+f) } catch {}\" && pnpm index:commands",
+    "copy:vendor": "mkdir -p assets/vendor && cp node_modules/flowbite-datepicker/dist/js/datepicker-full.min.js assets/vendor/flowbite-datepicker.min.js && cp node_modules/flowbite-datepicker/dist/css/datepicker.min.css assets/vendor/flowbite-datepicker.min.css",
     "index:commands": "adonis-kit index dist/commands",
     "build:css": "pnpm dlx @tailwindcss/cli@4.3.2 -i ./assets/input.css -o ./assets/admin.css --minify",
     "dev": "pnpm dlx @tailwindcss/cli@4.3.2 -i ./assets/input.css -o ./assets/admin.css --watch",
@@ -47,7 +48,9 @@
     "@shamar/cherubim": "workspace:*",
     "@shamar/core": "workspace:*",
     "@shamar/lucid": "workspace:*",
-    "@shamar/mongoose": "workspace:*"
+    "@shamar/mongoose": "workspace:*",
+    "flowbite-datepicker": "1.3.2",
+    "vanillajs-datepicker": "^1.3.4"
   },
   "peerDependencies": {
     "@adonisjs/core": ">=6.0.0",
@@ -72,9 +75,11 @@
   },
   "devDependencies": {
     "@adonisjs/core": "^7.3.5",
-    "edge.js": "^6.5.1",
-    "ldapts": "^7.3.1",
+    "@types/jsdom": "^30.0.0",
     "@types/node": "^22.0.0",
+    "edge.js": "^6.5.1",
+    "jsdom": "^30.0.1",
+    "ldapts": "^7.3.1",
     "tsx": "^4.20.0",
     "typescript": "^5.7.0"
   },

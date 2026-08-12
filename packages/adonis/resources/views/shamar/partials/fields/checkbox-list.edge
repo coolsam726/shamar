@@ -1,0 +1,74 @@
+@let(asButtons = field.display === 'buttons')
+@let(options = field.options ?? [])
+@let(cols = field.checkboxColumns || 1)
+@let(grouped = !(field.widget && field.widget.grouped === false))
+
+@if(asButtons)
+  <div
+    class="shamar-toggle-buttons shamar-toggle-buttons--multiple{{ grouped ? ' shamar-toggle-buttons--grouped' : '' }}"
+    role="group"
+    aria-label="{{ fieldLabelText }}"
+  >
+    @each(option in options)
+      <label
+        class="shamar-toggle-buttons__btn{{ option.color ? ' shamar-toggle-buttons__btn--' + option.color : '' }}"
+        :class="{ 'is-active': ({{ stateRef }} || []).map(String).includes(String({{ jsonAttr(option.value) }})) }"
+      >
+        <input
+          type="checkbox"
+          class="shamar-toggle-buttons__input"
+          value="{{ option.value }}"
+          :checked="({{ stateRef }} || []).map(String).includes(String({{ jsonAttr(option.value) }}))"
+          @change="
+            const cur = Array.isArray({{ stateRef }}) ? [...{{ stateRef }}] : [];
+            const val = String({{ jsonAttr(option.value) }});
+            const idx = cur.map(String).indexOf(val);
+            if (idx >= 0) cur.splice(idx, 1); else cur.push({{ jsonAttr(option.value) }});
+            {{ stateRef }} = cur;
+            onFieldChange('{{ field.name }}');
+          "
+          :disabled="isDisabled('{{ field.name }}')"
+        />
+        @if(option.icon)
+          <span class="shamar-toggle-buttons__icon" aria-hidden="true">{{ option.icon }}</span>
+        @endif
+        <span>{{ option.label }}</span>
+      </label>
+    @endeach
+  </div>
+@else
+  <div
+    class="shamar-checkbox-list{{ field.checkboxFramed ? ' shamar-checkbox-list--framed' : '' }}"
+    style="--shamar-checkbox-cols: {{ cols }}"
+  >
+    @each(option in options)
+      <label class="shamar-checkbox-list__option">
+        <input
+          type="checkbox"
+          class="shamar-checkbox__input"
+          value="{{ option.value }}"
+          :checked="({{ stateRef }} || []).map(String).includes(String({{ jsonAttr(option.value) }}))"
+          @change="
+            const cur = Array.isArray({{ stateRef }}) ? [...{{ stateRef }}] : [];
+            const val = String({{ jsonAttr(option.value) }});
+            const idx = cur.map(String).indexOf(val);
+            if (idx >= 0) cur.splice(idx, 1); else cur.push({{ jsonAttr(option.value) }});
+            {{ stateRef }} = cur;
+            onFieldChange('{{ field.name }}');
+          "
+          :disabled="isDisabled('{{ field.name }}')"
+        />
+        <span>{{ option.label }}</span>
+      </label>
+    @endeach
+    @if(options.length === 0)
+      <p class="text-xs text-body-subtle">No options available.</p>
+    @endif
+  </div>
+@endif
+
+@if(!nestedField)
+  <template x-for="(val, i) in (Array.isArray({{ stateRef }}) ? {{ stateRef }} : [])" :key="'h'+i">
+    <input type="hidden" name="{{ field.name }}[]" :value="val" />
+  </template>
+@endif

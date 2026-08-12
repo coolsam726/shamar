@@ -1,27 +1,27 @@
-<div class="pt-1 pb-2">
-  @if(breadcrumbs && breadcrumbs.length)
-    <nav aria-label="Breadcrumb" class="mb-2 flex items-center gap-1.5 text-xs text-body-subtle flex-wrap">
-      @each(crumb in breadcrumbs)
-        @if(!$last)
-          @if(crumb.href)
-            <a href="{{ crumb.href }}" class="hover:text-fg-brand hover:underline transition-colors truncate max-w-[140px]">{{ crumb.label }}</a>
-          @else
-            <span class="truncate max-w-[140px]">{{ crumb.label }}</span>
-          @endif
-          <svg class="w-3 h-3 flex-shrink-0 text-body-subtle/50" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
-          </svg>
+@if(breadcrumbs && breadcrumbs.length)
+  <nav aria-label="Breadcrumb" class="shamar-page-crumbs mb-2 flex items-center gap-1.5 text-xs text-body-subtle flex-wrap">
+    @each(crumb in breadcrumbs)
+      @if(!$last)
+        @if(crumb.href)
+          <a href="{{ crumb.href }}" class="hover:text-fg-brand hover:underline transition-colors truncate max-w-[140px]">{{ crumb.label }}</a>
         @else
-          @if(crumb.href)
-            <a href="{{ crumb.href }}" class="text-body hover:text-fg-brand hover:underline transition-colors truncate max-w-[200px]">{{ crumb.label }}</a>
-          @else
-            <span class="text-body truncate max-w-[200px]">{{ crumb.label }}</span>
-          @endif
+          <span class="truncate max-w-[140px]">{{ crumb.label }}</span>
         @endif
-      @endeach
-    </nav>
-  @endif
+        <svg class="w-3 h-3 flex-shrink-0 text-body-subtle/50" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+        </svg>
+      @else
+        @if(crumb.href)
+          <a href="{{ crumb.href }}" class="text-body hover:text-fg-brand hover:underline transition-colors truncate max-w-[200px]">{{ crumb.label }}</a>
+        @else
+          <span class="text-body truncate max-w-[200px]">{{ crumb.label }}</span>
+        @endif
+      @endif
+    @endeach
+  </nav>
+@endif
 
+<div class="shamar-page-heading">
   <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <div class="min-w-0 flex items-center gap-3 flex-wrap">
       <div class="min-w-0">
@@ -39,6 +39,21 @@
     </div>
 
     <div class="flex flex-wrap items-center gap-2 shrink-0">
+      @if(pageActions && pageActions.length)
+        @each(action in pageActions)
+          <form method="post" action="{{ basePath }}/{{ page.slug }}/action/{{ action.name }}">
+            @include('shamar::partials/csrf')
+            <button
+              type="submit"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md border border-default text-body hover:bg-surface-hover transition {{ action.color === 'danger' ? 'text-fg-danger' : '' }}"
+              @if(action.confirm)
+                onclick="return confirm({{ JSON.stringify(action.confirm) }})"
+              @endif
+            >{{ action.label }}</button>
+          </form>
+        @endeach
+      @endif
+
       @if(showCreateButton)
         <a href="{{ basePath }}/{{ resource.slug }}/create" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-md bg-fg-brand hover:opacity-90 transition-opacity">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
@@ -48,7 +63,15 @@
         </a>
       @endif
 
-      @if(mode === 'edit' || mode === 'create')
+      @if(mode === 'form')
+        <button
+          type="submit"
+          form="shamar-form"
+          data-shamar-form-save
+          title="Save (Ctrl+S)"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-md bg-fg-brand hover:opacity-90 transition"
+        >Save</button>
+      @elseif(mode === 'edit' || mode === 'create')
         <button
           type="button"
           data-shamar-form-save
