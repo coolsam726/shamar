@@ -179,12 +179,12 @@ Use `resolveBrandingOverrides` to overlay logos from a DB (global settings) at r
 
 Custom panel pages live beside resources. Discover them with `.discoverPages('app/pages/admin')` (`*_page.ts` / `*Page.ts`).
 
-**Single-purpose shortcuts** — `FormPage` (one form) and `ListPage` (one table):
+**Single-purpose shortcuts** — `SettingsPage` (singleton settings layout), `FormPage` (generic form), and `ListPage` (one table):
 
 ```ts
-import { FormPage, ListPage, form, table, Section, TextInput, TextColumn } from '@shamar/core'
+import { SettingsPage, form, Section, TextInput } from '@shamar/core'
 
-export default class BrandingSettingsPage extends FormPage {
+export default class BrandingSettingsPage extends SettingsPage {
   static override slug = 'settings'
   static override label = 'Settings'
   static override navigationGroup = 'Settings'
@@ -199,6 +199,8 @@ export default class BrandingSettingsPage extends FormPage {
   static override async save(data) { /* persist */ return { message: 'Saved' } }
 }
 ```
+
+`SettingsPage` extends `FormPage` and defaults to `contentMaxWidth: '7xl'` plus the shared `shamar::page-form` view (Save lives in the sticky page actions). Use plain `FormPage` for other one-off forms when you do not want the settings defaults.
 
 **Composite `Page`** — multiple forms, tables, infolists, and Edge blocks on one screen via `content()` / `pageContent()`:
 
@@ -307,6 +309,55 @@ Lucid hosts use `createLucidMediaLibraryAdapter` from `@shamar/lucid` with folde
 - **FilePicker** — browse + upload in the field dialog; `.accept('image/*')`, optional public uploads
 - **Visibility** — `public` files at `{publicPath}/:id`; private files require panel auth (`/{panel}/media/files/:id/raw`)
 - **Abilities** — `media.view`, `media.upload`, `media.manage` (or `media.*` / `*`)
+
+#### Form widgets
+
+Built-in controls (resource forms, `FormPage`, and composite `p.form()` sections):
+
+| Class | Type | Notes |
+| --- | --- | --- |
+| `DatePicker` / `DateTimePicker` / `TimePicker` / `WeekPicker` / `MonthPicker` | `date` / `datetime` / `time` / `week` / `month` | [Flowbite datepicker](https://flowbite.com/docs/components/datepicker/) (lazy-loaded). `.seconds()` on date-time and time. `.native()` for browser inputs. |
+| `RichEditor` | `richEditor` | TipTap HTML. Modes: **simple** (default, TipTap Simple Editor–style toolbar), **notion** (slash + bubble), **document** (Docx page chrome). Helpers: `.simple()` / `.notion()` / `.document()` / `.docx()`. Document mode supports File → Import Document and Export DOCX. Optional `.toolbar([...])`. |
+| `MarkdownEditor` | `markdownEditor` | Write / preview. Markdown string. |
+| `CodeEditor` | `codeEditor` | CodeMirror 6 (lazy CDN). `.language()` / `.languages()` |
+| `Repeater` | `repeater` | Nested schema. JSON array payload. `.schema([...])` |
+| `KeyValue` | `keyValue` | Pair editor → record payload. |
+| `TagsInput` | `tags` | `string[]` |
+| `CheckboxList` | `checkboxList` | Static `.options()` or a relation |
+| `ColorPicker` | `color` | Swatch + hex |
+| `Slider` | `slider` | `.min()` / `.max()` / `.step()` / `.showValue()` |
+| `Rating` | `rating` | Star buttons. `.allowZero()` |
+| `Radio` / `ToggleButtons` | `radio` | `.buttons()` or `ToggleButtons.make()`. `.multiple()` → checkbox list |
+
+Extend:
+
+```ts
+import { FormComponent, registerFieldType, FIELD_ABSENT } from '@shamar/core'
+import { registerFieldView } from '@shamar/adonis'
+
+registerFieldType({
+  type: 'signature',
+  valueKind: 'scalar',
+  hydrate: (value) => value ?? '',
+  dehydrate: (field, input) => {
+    const raw = input[field.name]
+    return raw == null || raw === '' ? FIELD_ABSENT : String(raw)
+  },
+  empty: () => '',
+})
+registerFieldView('signature', 'views/fields/signature')
+
+export class SignatureInput extends FormComponent {
+  static make(name: string) {
+    return new SignatureInput(name)
+  }
+  private constructor(name: string) {
+    super(name, 'signature')
+  }
+}
+```
+
+The Edge view is included from `field-input` and receives `field`, `stateRef`, and `nestedField` (true inside a Repeater). Hydrate (stored → form) and dehydrate (request → stored) live on the field type, so custom inputs do not need changes in the admin controller.
 
 ### Auth
 

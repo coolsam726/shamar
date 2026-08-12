@@ -5,7 +5,7 @@ export type { Alignment, VerticalAlignment } from './alignment.js';
 import type { CurrencyOptions } from './currency.js';
 import type { Alignment, VerticalAlignment } from './alignment.js';
 
-export type FieldType =
+export type BuiltInFieldType =
   | 'text'
   | 'textarea'
   | 'number'
@@ -13,6 +13,9 @@ export type FieldType =
   | 'checkbox'
   | 'date'
   | 'datetime'
+  | 'time'
+  | 'week'
+  | 'month'
   | 'select'
   | 'relation'
   | 'email'
@@ -27,7 +30,20 @@ export type FieldType =
   | 'color'
   | 'tags'
   | 'checkboxList'
-  | 'relationTable';
+  | 'relationTable'
+  | 'richEditor'
+  | 'markdownEditor'
+  | 'codeEditor'
+  | 'repeater'
+  | 'keyValue'
+  | 'slider'
+  | 'rating';
+
+/**
+ * Built-in field types plus any string registered via {@link registerFieldType}.
+ * Custom types stay assignable without casting.
+ */
+export type FieldType = BuiltInFieldType | (string & {});
 
 export type RelationKind = 'belongsTo' | 'hasMany' | 'manyToMany';
 
@@ -56,6 +72,15 @@ export interface LiveOptions {
 export type LiveMode = boolean | LiveOptions;
 
 export type FormOperation = 'create' | 'edit' | 'view';
+
+export interface FieldOption {
+  label: string;
+  value: string | number;
+  /** Optional color token for ToggleButtons (`primary`, `danger`, or a CSS color). */
+  color?: string;
+  /** Optional icon slug shown beside the label. */
+  icon?: string;
+}
 
 export interface FieldContext {
   state: unknown;
@@ -131,7 +156,7 @@ export interface FieldConfig {
   help?: StringOrClosure;
   /** Short text beside the label (Filament `hint`). */
   hint?: StringOrClosure;
-  options?: Array<{ label: string; value: string | number }>;
+  options?: FieldOption[];
   checkboxColumns?: number;
   checkboxFramed?: boolean;
   cascadeWildcards?: boolean;
@@ -216,6 +241,15 @@ export interface FieldConfig {
   mediaMakePublic?: boolean;
   /** Horizontal alignment of the field control (Filament-style). */
   alignment?: Alignment;
+  /**
+   * Choice layout: `list` (default radio/checkbox) or `buttons` (toggle-button group).
+   */
+  display?: 'list' | 'buttons';
+  /**
+   * Widget-specific options (editors, repeater, keyValue, rating, …).
+   * Custom field types may store arbitrary keys here.
+   */
+  widget?: Record<string, unknown>;
 }
 
 /**

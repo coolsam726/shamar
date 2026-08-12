@@ -70,6 +70,20 @@ describe('date display formatting', () => {
     );
   });
 
+  it('formats object and repeater values for display', () => {
+    assert.equal(
+      cellValue({ meta: { color: 'red', size: 'm' } }, { name: 'meta' }),
+      'color: red · size: m',
+    );
+    assert.equal(
+      cellValue(
+        { variants: [{ sku: 'A', label: 'Red' }, { sku: 'B', label: 'Blue' }] },
+        { name: 'variants' },
+      ),
+      'sku: A · label: Red; sku: B · label: Blue',
+    );
+  });
+
   it('splits array values into badge labels', () => {
     assert.deepEqual(badgeValues({ tags: ['sale', 'new'] }, { name: 'tags' }), [
       'sale',

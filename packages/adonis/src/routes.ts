@@ -141,6 +141,15 @@ function registerPanelRoutes(
     router
       .get('/assets/alpine.min.js', assetHandler('alpineJs'))
       .as(`${routePrefix}.assets.alpineJs`);
+    router
+      .get('/assets/vendor/flowbite-datepicker.min.css', assetHandler('flowbiteDatepickerCss'))
+      .as(`${routePrefix}.assets.flowbiteDatepickerCss`);
+    router
+      .get('/assets/vendor/flowbite-datepicker.min.js', assetHandler('flowbiteDatepickerJs'))
+      .as(`${routePrefix}.assets.flowbiteDatepickerJs`);
+    router
+      .get('/assets/rich-editor/:file', assetHandler('richEditorAsset'))
+      .as(`${routePrefix}.assets.richEditor`);
 
     if (panel.media) {
       registerMediaRoutes(router, runtime, panel, routePrefix);

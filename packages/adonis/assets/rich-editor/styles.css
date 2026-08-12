@@ -1,0 +1,889 @@
+/* Document editor — TipTap Docx–style chrome (light / dark) */
+
+.shamar-re-doc {
+  /* TipTap UI tokens (from tiptap-ui-components) */
+  --tt-brand-color-100: rgba(222, 219, 255, 1);
+  --tt-brand-color-200: rgba(195, 189, 255, 1);
+  --tt-brand-color-500: rgba(98, 41, 255, 1);
+  --tt-brand-color-600: rgba(84, 0, 229, 1);
+  --tt-gray-light-a-50: rgba(56, 56, 56, 0.04);
+  --tt-gray-light-a-100: rgba(15, 22, 36, 0.05);
+  --tt-gray-light-a-200: rgba(37, 39, 45, 0.1);
+  --tt-gray-light-a-400: rgba(40, 44, 51, 0.42);
+  --tt-gray-light-a-600: rgba(36, 39, 46, 0.78);
+  --tt-gray-light-a-900: rgba(29, 30, 32, 0.98);
+  --tt-gray-light-100: rgba(244, 244, 245, 1);
+  --tt-gray-light-200: rgba(234, 234, 235, 1);
+  --tt-gray-light-300: rgba(213, 214, 215, 1);
+  --tt-radius-md: 0.5rem;
+  --tt-radius-lg: 0.75rem;
+  --tt-toolbar-height: 2.75rem;
+  --tt-button-hover-bg-color: var(--tt-gray-light-200);
+  --tt-button-active-bg-color: var(--tt-gray-light-a-200);
+  --tt-button-active-bg-color-emphasized: var(--tt-brand-color-100);
+  --tt-button-active-icon-color: var(--tt-brand-color-500);
+  --tt-button-default-icon-color: var(--tt-gray-light-a-600);
+  --tt-button-hover-icon-color: var(--tt-gray-light-a-900);
+  --tt-shadow-elevated-md: 0 2px 6px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.08);
+
+  --docx-ink: #1d1e20;
+  --docx-muted: rgba(36, 39, 46, 0.78);
+  --docx-line: var(--tt-gray-light-a-200);
+  --docx-surface: #f7f7f7;
+  --docx-panel: #ffffff;
+  --docx-panel-2: #fafafa;
+  --docx-accent: var(--tt-brand-color-500);
+  --docx-pill: var(--tt-gray-light-100);
+  --docx-shadow: 0 12px 40px rgba(15, 23, 42, 0.12);
+  --shamar-re-doc-page-w: 210mm;
+  --shamar-re-doc-page-h: 297mm;
+  --shamar-re-doc-margin: 22mm;
+  font-family: Inter, 'Segoe UI', system-ui, sans-serif;
+  color: var(--docx-ink);
+  border: 1px solid var(--docx-line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--docx-surface);
+  min-height: 640px;
+}
+
+:where(html.dark) .shamar-re-doc,
+:where(.dark) .shamar-re-doc {
+  --tt-brand-color-100: rgba(43, 25, 102, 1);
+  --tt-brand-color-200: rgba(56, 0, 153, 1);
+  --tt-brand-color-500: rgba(122, 82, 255, 1);
+  --tt-gray-light-a-100: rgba(231, 231, 243, 0.07);
+  --tt-gray-light-a-200: rgba(238, 238, 246, 0.11);
+  --tt-gray-light-a-600: rgba(247, 247, 253, 0.64);
+  --tt-gray-light-a-900: rgba(255, 255, 255, 0.96);
+  --tt-gray-light-100: rgba(32, 32, 34, 1);
+  --tt-gray-light-200: rgba(45, 45, 47, 1);
+  --tt-gray-light-300: rgba(70, 70, 73, 1);
+  --tt-button-hover-bg-color: var(--tt-gray-light-200);
+  --tt-button-active-bg-color: rgba(238, 238, 246, 0.11);
+  --tt-button-active-bg-color-emphasized: rgba(43, 25, 102, 1);
+  --tt-button-active-icon-color: var(--tt-brand-color-500);
+  --tt-button-default-icon-color: rgba(247, 247, 253, 0.64);
+  --tt-button-hover-icon-color: rgba(255, 255, 255, 0.96);
+
+  --docx-ink: #f5f5f5;
+  --docx-muted: rgba(247, 247, 253, 0.64);
+  --docx-line: rgba(238, 238, 246, 0.11);
+  --docx-surface: #0e0e11;
+  --docx-panel: #000000;
+  --docx-panel-2: #19191a;
+  --docx-accent: var(--tt-brand-color-500);
+  --docx-pill: #202022;
+  --docx-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+
+.shamar-re-doc-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 640px;
+  height: 72vh;
+  max-height: 960px;
+  background: var(--docx-surface);
+  color: var(--docx-ink);
+  position: relative;
+  overflow: visible;
+}
+
+/* Full-screen editor overlay */
+.shamar-re-doc.is-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  width: 100vw;
+  height: 100vh;
+  max-height: none;
+  min-height: 0;
+  border-radius: 0;
+  border: none;
+  background: var(--docx-surface, #f7f7f7);
+}
+.shamar-re-doc.is-fullscreen .shamar-re-doc-shell,
+.shamar-re-doc-shell.is-fullscreen {
+  height: 100%;
+  max-height: none;
+  min-height: 0;
+}
+html.shamar-re-doc-fs-lock,
+body.shamar-re-doc-fs-lock {
+  overflow: hidden !important;
+}
+
+/* —— Title strip —— */
+.shamar-re-doc-titlebar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 1rem;
+  align-items: stretch;
+  padding: 0.45rem 0.75rem 0.35rem;
+  background: var(--docx-panel);
+  border-bottom: 1px solid var(--docx-line);
+  min-height: 3.25rem;
+}
+
+.shamar-re-doc-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding-right: 0.35rem;
+  align-self: center;
+}
+.shamar-re-doc-logo-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 8px;
+  background: linear-gradient(145deg, var(--tt-brand-color-500), var(--tt-brand-color-600));
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+.shamar-re-doc-logo-meta { display: flex; flex-direction: column; line-height: 1.15; }
+.shamar-re-doc-logo-text { font-weight: 700; font-size: 0.85rem; letter-spacing: -0.02em; }
+.shamar-re-doc-logo-sub { font-size: 0.65rem; color: var(--docx-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+.shamar-re-doc-title-center {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  gap: 0.1rem;
+}
+
+.shamar-re-doc-doc-name {
+  width: 100%;
+  max-width: 32rem;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.92rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 6px;
+  color: var(--docx-ink);
+}
+.shamar-re-doc-doc-name:hover,
+.shamar-re-doc-doc-name:focus {
+  outline: none;
+  background: var(--docx-pill);
+}
+
+.shamar-re-doc-menubar { display: flex; gap: 0.1rem; flex-wrap: wrap; }
+.shamar-re-doc-menu { position: relative; }
+.shamar-re-doc-menu-trigger {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.8rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--docx-ink);
+}
+.shamar-re-doc-menu-trigger:hover { background: var(--tt-button-hover-bg-color); }
+.shamar-re-doc-menu-panel {
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 2px);
+  left: 0;
+  min-width: 13rem;
+  max-height: 20rem;
+  overflow: auto;
+  background: var(--docx-panel);
+  border: 1px solid var(--docx-line);
+  border-radius: var(--tt-radius-lg);
+  box-shadow: var(--tt-shadow-elevated-md);
+  padding: 0.3rem;
+}
+.shamar-re-doc-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.84rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 7px;
+  cursor: pointer;
+  color: var(--docx-ink);
+}
+.shamar-re-doc-menu-item:hover {
+  background: var(--tt-button-active-bg-color-emphasized);
+  color: var(--tt-brand-color-600);
+}
+.shamar-re-doc-menu-divider { height: 1px; background: var(--docx-line); margin: 0.25rem 0; }
+
+/* —— TipTap fixed toolbar —— */
+.shamar-re-doc-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: var(--tt-toolbar-height);
+  padding: 0 0.5rem;
+  background: var(--docx-panel);
+  border-bottom: 1px solid var(--docx-line);
+  z-index: 20;
+}
+.shamar-re-doc-toolbar-scroll {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.shamar-re-doc-toolbar-scroll::-webkit-scrollbar { display: none; }
+.shamar-re-doc-toolbar-reserved {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.shamar-re-doc-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  flex-shrink: 0;
+}
+
+.shamar-re-doc-btn {
+  border: none;
+  background: transparent;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0.5rem;
+  border-radius: var(--tt-radius-lg);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--tt-button-default-icon-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.shamar-re-doc-btn .shamar-re-doc-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+}
+.shamar-re-doc-btn:hover {
+  background: var(--tt-button-hover-bg-color);
+  color: var(--tt-button-hover-icon-color);
+}
+.shamar-re-doc-btn.is-active,
+.shamar-re-doc-btn[data-active-state='on'] {
+  background: var(--tt-button-active-bg-color-emphasized);
+  color: var(--tt-button-active-icon-color);
+}
+.shamar-re-doc-btn.is-active:hover,
+.shamar-re-doc-btn[data-active-state='on']:hover {
+  background: var(--tt-brand-color-200);
+}
+.shamar-re-doc-btn[data-weight='small'] {
+  width: 1.5rem;
+  min-width: 1.5rem;
+  padding-left: 0;
+  padding-right: 0;
+}
+.shamar-re-doc-btn[data-weight='xs'],
+.shamar-re-doc-btn-chevron {
+  width: 1.25rem;
+  min-width: 1.25rem;
+  padding: 0;
+  height: 2rem;
+  margin-left: -0.15rem;
+}
+.shamar-re-doc-btn-chevron .shamar-re-doc-icon {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+.shamar-re-doc-btn-ghost {
+  border-radius: var(--tt-radius-md);
+}
+.shamar-re-doc-btn-block {
+  width: 100%;
+  margin: 0.35rem 0;
+  border-radius: 8px !important;
+  height: auto !important;
+  padding: 0.5rem 0.65rem !important;
+  border: 1px solid var(--docx-line) !important;
+  background: var(--docx-panel-2) !important;
+  color: var(--docx-ink) !important;
+}
+
+.shamar-re-doc-sep {
+  width: 1px;
+  height: 1.25rem;
+  background: var(--docx-line);
+  margin: 0 0.2rem;
+  flex-shrink: 0;
+}
+
+.shamar-re-doc-select {
+  border: 0;
+  background: transparent;
+  color: var(--docx-ink);
+  border-radius: var(--tt-radius-md);
+  font: inherit;
+  font-size: 0.8125rem;
+  padding: 0.35rem 0.45rem;
+  max-width: 9rem;
+  height: 2rem;
+  cursor: pointer;
+}
+.shamar-re-doc-select:hover { background: var(--tt-button-hover-bg-color); }
+.shamar-re-doc-select-sm { max-width: 4.25rem; }
+.shamar-re-doc-color {
+  width: 2rem;
+  height: 2rem;
+  padding: 0.35rem;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--tt-radius-lg);
+}
+.shamar-re-doc-color:hover { background: var(--tt-button-hover-bg-color); }
+
+/* Zoom control (TipTap ZoomDropdownMenu) */
+.shamar-re-doc-zoom-control {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  position: relative;
+  flex-shrink: 0;
+}
+.shamar-re-doc-zoom-trigger-wrap {
+  position: relative;
+}
+.shamar-re-doc-zoom-label {
+  min-width: 4.25rem;
+  gap: 0.15rem;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--docx-ink);
+  padding-left: 0.45rem;
+  padding-right: 0.35rem;
+}
+.shamar-re-doc-zoom-label .shamar-re-doc-icon {
+  width: 0.85rem;
+  height: 0.85rem;
+  opacity: 0.7;
+}
+.shamar-re-doc-zoom-label-text {
+  min-width: 2.4rem;
+  text-align: center;
+}
+.shamar-re-doc-popover {
+  position: fixed;
+  z-index: 1000;
+  top: 0;
+  left: 0;
+  min-width: 11rem;
+  max-height: min(22rem, calc(100vh - 1rem));
+  overflow: auto;
+  background: var(--docx-panel);
+  border: 1px solid var(--docx-line);
+  border-radius: var(--tt-radius-lg);
+  box-shadow: var(--tt-shadow-elevated-md);
+  padding: 0.35rem;
+}
+.shamar-re-doc-zoom-input {
+  width: 100%;
+  text-align: center;
+  border: 1px solid var(--docx-line);
+  border-radius: var(--tt-radius-md);
+  padding: 0.4rem;
+  font: inherit;
+  font-size: 0.875rem;
+  background: var(--docx-panel-2);
+  color: var(--docx-ink);
+  margin-bottom: 0.25rem;
+  box-sizing: border-box;
+}
+.shamar-re-doc-popover-sep {
+  height: 1px;
+  background: var(--docx-line);
+  margin: 0.3rem 0;
+}
+.shamar-re-doc-popover-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 0.45rem 0.55rem;
+  border-radius: var(--tt-radius-md);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8125rem;
+  color: var(--docx-ink);
+}
+.shamar-re-doc-popover-item-text {
+  flex: 1;
+}
+.shamar-re-doc-popover-item .shamar-re-doc-icon {
+  width: 1rem;
+  height: 1rem;
+  color: var(--tt-button-default-icon-color);
+}
+.shamar-re-doc-popover-item:hover,
+.shamar-re-doc-popover-item.is-active {
+  background: var(--tt-button-active-bg-color-emphasized);
+  color: var(--tt-brand-color-600);
+}
+.shamar-re-doc-popover-item.is-active .shamar-re-doc-icon {
+  color: var(--tt-button-active-icon-color);
+}
+
+/* Numbering format dropdown (TipTap numbering-format-dropdown-menu) */
+.shamar-re-doc-numbering-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.shamar-re-doc-nf-popover {
+  min-width: 17rem;
+  padding: 0.5rem;
+}
+.shamar-re-doc-nf-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+.shamar-re-doc-nf-option {
+  border: 1px solid var(--docx-line);
+  background: var(--docx-panel);
+  border-radius: var(--tt-radius-md);
+  padding: 0.4rem;
+  cursor: pointer;
+  text-align: left;
+}
+.shamar-re-doc-nf-option:hover,
+.shamar-re-doc-nf-option.is-active {
+  border-color: var(--tt-brand-color-500);
+  background: var(--tt-button-active-bg-color-emphasized);
+  box-shadow: 0 0 0 1px var(--tt-brand-color-500);
+}
+.shamar-re-doc-nf-preview {
+  display: flex;
+  flex-direction: column;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.625rem;
+  color: var(--docx-ink);
+}
+.shamar-re-doc-nf-preview__item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding-left: var(--indent, 0);
+}
+.shamar-re-doc-nf-preview__item--l1 { --indent: 0; }
+.shamar-re-doc-nf-preview__item--l2 { --indent: 0.75rem; }
+.shamar-re-doc-nf-preview__item--l3 { --indent: 1.5rem; }
+.shamar-re-doc-nf-preview__marker { flex-shrink: 0; }
+.shamar-re-doc-nf-preview__line {
+  background: #9ca3af;
+  flex: 1;
+  height: 0.0625rem;
+}
+
+/* —— Stage —— */
+.shamar-re-doc-stage {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  min-height: 0;
+  background: var(--docx-surface);
+  position: relative;
+}
+.shamar-re-doc-stage.is-sidebar-open {
+  grid-template-columns: 1fr 300px;
+}
+
+.shamar-re-doc-canvas {
+  --shamar-re-doc-page-gap: 16mm;
+  overflow: auto;
+  padding: 1.35rem;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: var(--shamar-re-doc-page-gap);
+}
+
+.shamar-re-doc-page {
+  --shamar-re-doc-zoom: 1;
+  width: calc(var(--shamar-re-doc-page-w) * var(--shamar-re-doc-zoom));
+  min-height: calc(var(--shamar-re-doc-page-h) * var(--shamar-re-doc-zoom));
+  background: #fff;
+  box-shadow: var(--docx-shadow);
+  display: flex;
+  flex-direction: column;
+  transform-origin: top center;
+  color: #111827;
+}
+
+.shamar-re-doc-page-header,
+.shamar-re-doc-page-footer {
+  flex-shrink: 0;
+  position: relative;
+  border: 1px dashed transparent;
+  margin: 0 calc(8mm * var(--shamar-re-doc-zoom));
+  padding: calc(8mm * var(--shamar-re-doc-zoom)) calc(calc(var(--shamar-re-doc-margin) - 8mm) * var(--shamar-re-doc-zoom)) calc(3mm * var(--shamar-re-doc-zoom));
+  cursor: text;
+}
+.shamar-re-doc-page-footer {
+  margin-top: auto;
+  padding-top: calc(3mm * var(--shamar-re-doc-zoom));
+  padding-bottom: calc(8mm * var(--shamar-re-doc-zoom));
+}
+.shamar-re-doc-page-header.is-editing,
+.shamar-re-doc-page-footer.is-editing,
+.shamar-re-doc-page-header:hover,
+.shamar-re-doc-page-footer:hover {
+  border-color: rgba(40, 44, 51, 0.2);
+  background: rgba(56, 56, 56, 0.03);
+}
+.shamar-re-doc-hf-label {
+  position: absolute;
+  top: 2px;
+  right: 6px;
+  font-size: calc(9px * var(--shamar-re-doc-zoom));
+  color: var(--tt-brand-color-500);
+  opacity: 0;
+  pointer-events: none;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.shamar-re-doc-page-header:hover .shamar-re-doc-hf-label,
+.shamar-re-doc-page-footer:hover .shamar-re-doc-hf-label,
+.shamar-re-doc-page-header.is-editing .shamar-re-doc-hf-label,
+.shamar-re-doc-page-footer.is-editing .shamar-re-doc-hf-label {
+  opacity: 1;
+}
+
+.shamar-re-doc-editor-host {
+  flex: 1;
+  padding: calc(4mm * var(--shamar-re-doc-zoom)) calc(var(--shamar-re-doc-margin) * var(--shamar-re-doc-zoom));
+}
+
+.shamar-re-doc-editor-host .tiptap,
+.shamar-re-doc-prose {
+  outline: none;
+  min-height: calc(160mm * var(--shamar-re-doc-zoom));
+  font-family: Carlito, Calibri, 'Segoe UI', sans-serif;
+  font-size: calc(12pt * var(--shamar-re-doc-zoom));
+  line-height: 1.45;
+  color: #111827;
+}
+.shamar-re-doc-hf-prose {
+  outline: none;
+  font-family: Carlito, Calibri, 'Segoe UI', sans-serif;
+  font-size: calc(10pt * var(--shamar-re-doc-zoom));
+  color: #4b5563;
+  min-height: calc(8mm * var(--shamar-re-doc-zoom));
+}
+.shamar-re-doc-hf-prose p { margin: 0; }
+
+.shamar-re-doc-prose p { margin: 0 0 0.65em; }
+.shamar-re-doc-prose h1 { font-size: 1.6em; margin: 0 0 0.5em; }
+.shamar-re-doc-prose h2 { font-size: 1.3em; margin: 0 0 0.45em; }
+.shamar-re-doc-prose h3 { font-size: 1.15em; margin: 0 0 0.4em; }
+.shamar-re-doc-prose ul,
+.shamar-re-doc-prose ol { padding-left: 1.4em; margin: 0 0 0.65em; }
+.shamar-re-doc-prose blockquote {
+  border-left: 3px solid #cbd5e1;
+  margin: 0 0 0.65em;
+  padding-left: 0.85em;
+  color: #374151;
+}
+.shamar-re-doc-prose table.shamar-re-doc-table,
+.shamar-re-doc-prose table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 0 0 0.85em;
+  overflow: hidden;
+}
+.shamar-re-doc-prose table td,
+.shamar-re-doc-prose table th {
+  border: 1px solid #cbd5e1;
+  padding: 0.35em 0.5em;
+  vertical-align: top;
+  min-width: 1.5em;
+  position: relative;
+  box-sizing: border-box;
+}
+.shamar-re-doc-prose table th:not([data-background-color]) {
+  background: #f8fafc;
+  font-weight: 600;
+  text-align: left;
+}
+.shamar-re-doc-prose table th[data-background-color] {
+  font-weight: 600;
+  text-align: left;
+}
+.shamar-re-doc-prose table p {
+  margin: 0;
+}
+.shamar-re-doc-prose .selectedCell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--tt-brand-color-500) 12%, transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+.shamar-re-doc-prose .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--tt-brand-color-500);
+  pointer-events: none;
+}
+.shamar-re-doc-prose.resize-cursor {
+  cursor: col-resize;
+}
+.shamar-re-doc-prose .ProseMirror-selectednode.tableWrapper,
+.shamar-re-doc-prose table.ProseMirror-selectednode {
+  outline: 2px solid var(--tt-brand-color-500);
+  outline-offset: 2px;
+}
+
+/* Table tools (shown when caret is inside a table) */
+.shamar-re-doc-table-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.75rem;
+  border-bottom: 1px solid var(--tt-border-color, #e5e7eb);
+  background: color-mix(in srgb, var(--tt-brand-color-100, #f3e8ff) 55%, #fff);
+}
+.shamar-re-doc-table-bar[hidden] {
+  display: none !important;
+}
+.shamar-re-doc-table-bar-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--tt-brand-color-600, #7c3aed);
+  margin-right: 0.35rem;
+}
+:where(html.dark) .shamar-re-doc .shamar-re-doc-table-bar,
+:where(.dark) .shamar-re-doc .shamar-re-doc-table-bar {
+  background: color-mix(in srgb, var(--tt-brand-color-500, #8b5cf6) 18%, #1f2937);
+  border-bottom-color: #374151;
+}
+:where(html.dark) .shamar-re-doc .shamar-re-doc-table-bar-label,
+:where(.dark) .shamar-re-doc .shamar-re-doc-table-bar-label {
+  color: #ddd6fe;
+}
+.shamar-re-doc-prose a.shamar-re-doc-link { color: var(--tt-brand-color-500); text-decoration: underline; }
+.shamar-re-doc-prose p.is-editor-empty:first-child::before,
+.shamar-re-doc-hf-prose p.is-editor-empty:first-child::before {
+  color: #9ca3af;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Sidebar */
+.shamar-re-doc-sidebar {
+  background: var(--docx-panel);
+  border-left: 1px solid var(--docx-line);
+  overflow: auto;
+  padding: 0.85rem;
+}
+.shamar-re-doc-sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.65rem;
+}
+.shamar-re-doc-sidebar-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid var(--docx-line);
+  padding-bottom: 0.35rem;
+}
+.shamar-re-doc-sidebar-tabs button {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.8rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--docx-muted);
+}
+.shamar-re-doc-sidebar-tabs button.is-active {
+  background: var(--docx-pill);
+  color: var(--docx-ink);
+  font-weight: 600;
+}
+.shamar-re-doc-field {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 0.82rem;
+}
+.shamar-re-doc-field > span {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+.shamar-re-doc-field select,
+.shamar-re-doc-field input[type='number'],
+.shamar-re-doc-field input[type='color'] {
+  width: 100%;
+  font: inherit;
+  padding: 0.45rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid var(--docx-line);
+  background: var(--docx-panel-2);
+  color: var(--docx-ink);
+}
+.shamar-re-doc-field input[type='color'] { height: 2.25rem; padding: 0.2rem; }
+.shamar-re-doc-sidebar-note {
+  font-size: 0.78rem;
+  color: var(--docx-muted);
+  line-height: 1.4;
+}
+.shamar-re-doc-placeholders-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.55rem 0.85rem 0.65rem;
+  border-bottom: 1px solid var(--docx-line, #e5e7eb);
+  background: var(--docx-panel, #fff);
+}
+.shamar-re-doc-placeholders-strip-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.85rem;
+}
+.shamar-re-doc-placeholders-strip-head strong {
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--tt-brand-color-600, #7c3aed);
+}
+.shamar-re-doc-placeholders-hint {
+  font-size: 0.75rem;
+  color: var(--docx-muted, #6b7280);
+}
+.shamar-re-doc-token-list-strip {
+  max-height: 5.5rem;
+  overflow-y: auto;
+}
+.shamar-re-doc-token-list-stack {
+  flex-direction: column;
+  align-items: stretch;
+}
+.shamar-re-doc-token-panel { margin-top: 0.35rem; }
+.shamar-re-doc-token-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+.shamar-re-doc-token-chip {
+  display: inline-flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 0.05rem !important;
+  font-size: 0.72rem !important;
+  min-width: 0 !important;
+  height: auto !important;
+  padding: 0.3rem 0.5rem !important;
+  border-radius: 6px !important;
+  border: 1px dashed var(--tt-brand-color-200) !important;
+  background: var(--tt-brand-color-100) !important;
+  color: var(--tt-brand-color-600) !important;
+  cursor: pointer;
+  text-align: left !important;
+}
+.shamar-re-doc-token-chip:hover {
+  border-color: var(--tt-brand-color-500) !important;
+  background: color-mix(in srgb, var(--tt-brand-color-100) 70%, #fff) !important;
+}
+.shamar-re-doc-token-chip-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 600;
+  font-size: 0.78rem;
+  line-height: 1.2;
+}
+.shamar-re-doc-token-chip-label {
+  font-size: 0.65rem;
+  font-weight: 500;
+  opacity: 0.75;
+  text-transform: capitalize;
+  line-height: 1.2;
+}
+.shamar-re-doc-token-chip.is-stack {
+  width: 100%;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.5rem !important;
+}
+.shamar-re-doc-prose .shamar-re-merge-token {
+  background: var(--tt-brand-color-100);
+  color: var(--tt-brand-color-600);
+  border: 1px dashed var(--tt-brand-color-200);
+  border-radius: 4px;
+  padding: 0 0.25em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.92em;
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+}
+.shamar-re-doc-prose .shamar-re-merge-token.ProseMirror-selectednode {
+  outline: 2px solid var(--tt-brand-color-500);
+  outline-offset: 1px;
+}
+
+@media (max-width: 960px) {
+  .shamar-re-doc-stage.is-sidebar-open { grid-template-columns: 1fr; }
+  .shamar-re-doc-sidebar {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: min(300px, 92vw);
+    z-index: 30;
+    box-shadow: var(--docx-shadow);
+  }
+  .shamar-re-doc-logo-meta { display: none; }
+}
+
+@media print {
+  .shamar-re-doc-titlebar,
+  .shamar-re-doc-toolbar,
+  .shamar-re-doc-sidebar,
+  .shamar-re-doc-hf-label { display: none !important; }
+  .shamar-re-doc-shell { height: auto; max-height: none; }
+  .shamar-re-doc-canvas { padding: 0; background: #fff; }
+  .shamar-re-doc-page { box-shadow: none; width: auto; min-height: auto; }
+}

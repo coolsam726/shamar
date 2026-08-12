@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   FormPage,
+  SettingsPage,
   ListPage,
   Page,
   PageRegistry,
@@ -14,6 +15,7 @@ import {
   TextColumn,
   TextEntry,
   isFormPage,
+  isSettingsPage,
   isListPage,
   hasPageSections,
 } from '../src/index.js';
@@ -34,6 +36,17 @@ class BrandingPage extends FormPage {
   static override form() {
     return form((f) => {
       f.schema([TextInput.make('logo')]);
+    });
+  }
+}
+
+class AppSettingsPage extends SettingsPage {
+  static override slug = 'settings';
+  static override label = 'Settings';
+
+  static override form() {
+    return form((f) => {
+      f.schema([TextInput.make('theme')]);
     });
   }
 }
@@ -92,6 +105,16 @@ describe('Page.configure', () => {
     assert.equal(meta.fields?.[0]?.name, 'logo');
     assert.equal(isFormPage(BrandingPage), true);
     assert.equal(isListPage(BrandingPage), false);
+  });
+
+  it('configures a settings page with 7xl content width', () => {
+    const meta = AppSettingsPage.configure();
+    assert.equal(meta.kind, 'form');
+    assert.equal(meta.contentMaxWidth, '7xl');
+    assert.equal(meta.view, 'shamar::page-form');
+    assert.equal(isFormPage(AppSettingsPage), true);
+    assert.equal(isSettingsPage(AppSettingsPage), true);
+    assert.equal(isSettingsPage(BrandingPage), false);
   });
 
   it('configures a list page with listResource meta', () => {

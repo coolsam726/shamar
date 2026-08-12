@@ -8,6 +8,10 @@ import {
   relationUsesListTable,
   isFormPage,
   validateFormData,
+  assignFieldFormState,
+  dehydrateField,
+  hydrateField,
+  FIELD_ABSENT,
   type PageSectionDefinition,
 } from '@shamar/core';
 import { sanitizeStringIds } from '@shamar/cherubim';
@@ -57,8 +61,6 @@ import {
   RECORD_NAV_CAP,
   recordNavQuery,
   buildRecordPager,
-  toFormControlValue,
-  parseCurrencyInput,
   readPrefixedListQuery,
   buildPageSectionPaginationContext,
   sectionQueryPrefix,
@@ -1472,7 +1474,7 @@ export class AdminController {
       if (!(field.name in qs)) continue;
       const raw = qs[field.name];
       if (raw == null || raw === '') continue;
-      state[field.name] = toFormControlValue(raw, field);
+      state[field.name] = hydrateField(field, raw);
     }
     // Create & Edit often passes `?name=` for the title attribute.
     if ('name' in qs && qs.name != null && qs.name !== '') {
@@ -1493,29 +1495,7 @@ export class AdminController {
   ): Record<string, unknown> {
     const state: Record<string, unknown> = {};
     for (const field of meta.fields) {
-      if (record && field.name in record) {
-        state[field.name] = toFormControlValue(record[field.name], field);
-      } else if (field.default !== undefined && typeof field.default !== 'function') {
-        state[field.name] = toFormControlValue(field.default, field);
-      } else if (field.type === 'boolean' || field.type === 'checkbox') {
-        state[field.name] = false;
-      } else if (field.type === 'color') {
-        state[field.name] = '#000000';
-      } else if (field.type === 'relation' && field.relation?.kind === 'belongsTo') {
-        // BelongsTo values are owned by the M2O combobox widget, not form state.
-      } else if (
-        field.multiple ||
-        field.type === 'tags' ||
-        field.type === 'checkboxList' ||
-        field.type === 'relationTable' ||
-        (field.type === 'relation' && field.relation?.kind !== 'belongsTo')
-      ) {
-        state[field.name] = [];
-      } else if (field.type === 'select' && field.multiple) {
-        state[field.name] = [];
-      } else {
-        state[field.name] = '';
-      }
+      assignFieldFormState(state, field, record);
     }
     void operation;
     return state;
@@ -1612,48 +1592,8 @@ export class AdminController {
       if (field.dehydrated === false) continue;
       if (action === 'update' && field.createOnly) continue;
 
-      if (field.type === 'boolean' || field.type === 'checkbox') {
-        data[field.name] =
-          input[field.name] === true ||
-          input[field.name] === '1' ||
-          input[field.name] === 'on' ||
-          input[field.name] === 'true';
-        continue;
-      }
-
-      if (field.currency) {
-        const raw = field.name in input ? input[field.name] : undefined;
-        if (raw !== undefined) {
-          data[field.name] = parseCurrencyInput(raw);
-        }
-        continue;
-      }
-
-      if (
-        field.type === 'tags' ||
-        field.type === 'checkboxList' ||
-        (field.relation &&
-          (field.relation.kind === 'manyToMany' || field.multiple))
-      ) {
-        const raw = input[field.name] ?? input[`${field.name}[]`];
-        if (Array.isArray(raw)) {
-          data[field.name] = sanitizeStringIds(raw);
-        } else if (typeof raw === 'string' && raw.trim()) {
-          data[field.name] =
-            field.type === 'tags'
-              ? sanitizeStringIds(raw.split(','))
-              : sanitizeStringIds([raw]);
-        } else if (field.name in input || `${field.name}[]` in input) {
-          data[field.name] = [];
-        }
-        continue;
-      }
-
-      if (field.name in input) {
-        data[field.name] = input[field.name];
-      } else if (`${field.name}[]` in input) {
-        data[field.name] = input[`${field.name}[]`];
-      }
+      const value = dehydrateField(field, input);
+      if (value !== FIELD_ABSENT) data[field.name] = value;
     }
 
     return data;
@@ -1795,8 +1735,7 @@ export class AdminController {
     const formInitialState: Record<string, unknown> = {};
     for (const field of resourceMeta.fields) {
       if (field.hiddenOnForm) continue;
-      const raw = field.name in filled ? filled[field.name] : field.default;
-      formInitialState[field.name] = toFormControlValue(raw, field);
+      assignFieldFormState(formInitialState, field, filled);
     }
 
     if (this.wantsJson(ctx, options?.asJson)) {
@@ -2108,8 +2047,7 @@ export class AdminController {
         const formInitialState: Record<string, unknown> = {};
         for (const field of resourceMeta.fields) {
           if (field.hiddenOnForm) continue;
-          const raw = field.name in filled ? filled[field.name] : field.default;
-          formInitialState[field.name] = toFormControlValue(raw, field);
+          assignFieldFormState(formInitialState, field, filled);
         }
 
         rendered.push({
@@ -2430,10 +2368,7 @@ export class AdminController {
       const formInitialState: Record<string, unknown> = {};
       for (const field of resourceMeta.fields) {
         if (field.hiddenOnForm) continue;
-        formInitialState[field.name] = toFormControlValue(
-          field.name in filled ? filled[field.name] : field.default,
-          field,
-        );
+        assignFieldFormState(formInitialState, field, filled);
       }
 
       const shellWithSlug = await buildShellContext({

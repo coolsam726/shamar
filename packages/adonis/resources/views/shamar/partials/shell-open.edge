@@ -11,6 +11,7 @@
   @if(branding.fontUrl)
     <link rel="stylesheet" href="{{ branding.fontUrl }}" />
   @endif
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Carlito:ital,wght@0,400;0,700;1,400;1,700&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" />
   <link rel="stylesheet" href="{{ basePath }}/assets/admin.css" />
   <link rel="stylesheet" href="{{ basePath }}/assets/branding.css" />
   <style>:root { --shamar-logo-height: {{ branding.logoHeight }}; }</style>
@@ -61,7 +62,7 @@
 
     <div
       data-shamar-scroll-root
-      class="shamar-scroll-root flex-1 min-h-0 overflow-x-hidden overflow-y-auto px-3 md:px-4 pt-3 md:pt-4"
+      class="shamar-scroll-root flex-1 min-h-0 overflow-x-hidden overflow-y-auto px-3 md:px-4"
     >
 
       @include('shamar::partials/toast')

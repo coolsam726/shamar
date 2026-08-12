@@ -1,0 +1,24 @@
+<div class="shamar-color">
+  <input
+    id="field-{{ field.name }}"
+    type="color"
+    class="shamar-color__swatch"
+    x-model="{{ stateRef }}"
+    @change="onFieldChange('{{ field.name }}')"
+    :disabled="isDisabled('{{ field.name }}')"
+    {{ field.required ? 'required' : '' }}
+  />
+  <input
+    type="text"
+    @if(!nestedField)
+      name="{{ field.name }}"
+    @endif
+    class="shamar-input shamar-color__value"
+    x-model="{{ stateRef }}"
+    @input="onFieldInput('{{ field.name }}')"
+    @change="onFieldChange('{{ field.name }}')"
+    :disabled="isDisabled('{{ field.name }}')"
+    placeholder="#000000"
+    aria-label="Selected color"
+  />
+</div>

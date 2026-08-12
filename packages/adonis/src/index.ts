@@ -94,6 +94,7 @@ export {
   resolveMediaFileUrl,
 } from './shamar/media-url.js';
 export { MediaController } from './controllers/media_controller.js';
+export { registerFieldView, getFieldView, listFieldViews } from './shamar/field-views.js';
 export { discoverResources, discoverPages } from './discover.js';
 export { default as ApiKeyResource } from './resources/api_key_resource.js';
 export { default as RequireApiKeyMiddleware, createRequireApiKeyMiddleware } from './middleware/require_api_key_middleware.js';

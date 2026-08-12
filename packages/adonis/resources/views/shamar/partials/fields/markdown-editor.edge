@@ -1,0 +1,37 @@
+@let(toolbar = (field.widget && field.widget.toolbar) ? field.widget.toolbar : ['bold', 'italic', 'code', 'link', 'h2', 'ul', 'ol', 'quote'])
+<div
+  class="shamar-markdown-editor{{ formErrors && formErrors[field.name] ? ' is-invalid' : '' }}"
+  x-data="shamarMarkdownEditor({
+    name: {{ jsonAttr(field.name) }},
+    toolbar: {{ jsonAttr(toolbar) }},
+    getValue: () => {{ stateRef }},
+    setValue: (v) => { {{ stateRef }} = v; onFieldChange({{ jsonAttr(field.name) }}); },
+    isDisabled: () => isDisabled({{ jsonAttr(field.name) }}),
+  })"
+>
+  <div class="shamar-markdown-editor__bar">
+    <div class="shamar-markdown-editor__tabs">
+      <button type="button" class="shamar-markdown-editor__tab" :class="{ 'is-active': tab === 'write' }" @click="tab = 'write'">Write</button>
+      <button type="button" class="shamar-markdown-editor__tab" :class="{ 'is-active': tab === 'preview' }" @click="tab = 'preview'">Preview</button>
+    </div>
+    <div class="shamar-markdown-editor__tools" x-show="tab === 'write'">
+      @each(btn in toolbar)
+        <button type="button" class="shamar-markdown-editor__tool" @click="insert({{ jsonAttr(btn) }})" :disabled="disabled">{{ btn }}</button>
+      @endeach
+    </div>
+  </div>
+  <textarea
+    class="shamar-input shamar-markdown-editor__input"
+    rows="{{ field.rows ?? 10 }}"
+    x-show="tab === 'write'"
+    x-ref="input"
+    x-model="doc"
+    @input="onInput()"
+    :disabled="disabled"
+    :placeholder='fieldMeta[{{ jsonAttr(field.name) }}]?.placeholder || {{ jsonAttr(field.placeholder ?? "") }}'
+  ></textarea>
+  <div class="shamar-markdown-editor__preview" x-show="tab === 'preview'" x-cloak x-html="previewHtml"></div>
+  @if(!nestedField)
+    <input type="hidden" name="{{ field.name }}" :value="doc" />
+  @endif
+</div>

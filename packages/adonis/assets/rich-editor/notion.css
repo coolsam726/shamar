@@ -1,0 +1,213 @@
+/* Notion-style rich editor chrome */
+.shamar-re-notion {
+  position: relative;
+  border: 1px solid var(--color-card-border);
+  border-radius: 0.75rem;
+  background: var(--color-neutral-primary, #fff);
+  overflow: visible;
+  min-height: 14rem;
+}
+
+.shamar-re-notion.is-invalid {
+  border-color: var(--color-fg-danger);
+}
+
+.shamar-re-notion__surface {
+  position: relative;
+  min-height: 14rem;
+}
+
+.shamar-re-notion__editor {
+  padding: 1.25rem 1.5rem 1.25rem 2.75rem;
+}
+
+.shamar-re-notion__prose {
+  outline: none;
+  min-height: 10rem;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--color-heading, #0f172a);
+}
+
+.shamar-re-notion__prose p {
+  margin: 0.35rem 0;
+}
+
+.shamar-re-notion__prose h1 {
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 1.1rem 0 0.45rem;
+}
+
+.shamar-re-notion__prose h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  margin: 1rem 0 0.4rem;
+}
+
+.shamar-re-notion__prose h3 {
+  font-size: 1.15rem;
+  font-weight: 650;
+  margin: 0.85rem 0 0.35rem;
+}
+
+.shamar-re-notion__prose blockquote {
+  border-left: 3px solid var(--color-card-border);
+  margin: 0.6rem 0;
+  padding-left: 0.85rem;
+  color: var(--color-body-subtle);
+}
+
+.shamar-re-notion__prose pre {
+  background: var(--color-neutral-secondary, #f8fafc);
+  border-radius: 0.5rem;
+  padding: 0.75rem 0.9rem;
+  overflow-x: auto;
+  font-size: 0.85rem;
+}
+
+.shamar-re-notion__prose code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.9em;
+}
+
+.shamar-re-notion__prose hr {
+  border: 0;
+  border-top: 1px solid var(--color-card-border);
+  margin: 1rem 0;
+}
+
+.shamar-re-notion__prose .is-empty::before {
+  color: var(--color-body-subtle);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.shamar-re-notion__image {
+  max-width: 100%;
+  border-radius: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.shamar-re-notion__link {
+  color: var(--color-fg-brand);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.shamar-re-notion__plus {
+  position: absolute;
+  z-index: 5;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.35rem;
+  border: 1px solid var(--color-card-border);
+  background: var(--color-neutral-primary);
+  color: var(--color-body-subtle);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shamar-re-notion__plus:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-heading);
+}
+
+.shamar-re-notion__slash {
+  position: absolute;
+  z-index: 40;
+  width: min(18rem, calc(100% - 1rem));
+  max-height: 18rem;
+  overflow: auto;
+  border: 1px solid var(--color-card-border);
+  border-radius: 0.65rem;
+  background: var(--color-neutral-primary);
+  box-shadow: 0 12px 32px rgb(15 23 42 / 0.14);
+  padding: 0.3rem;
+}
+
+.shamar-re-notion__slash-item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  border-radius: 0.45rem;
+  padding: 0.45rem 0.55rem;
+  cursor: pointer;
+  color: inherit;
+}
+
+.shamar-re-notion__slash-item:hover,
+.shamar-re-notion__slash-item.is-active {
+  background: color-mix(in srgb, var(--color-fg-brand) 12%, transparent);
+}
+
+.shamar-re-notion__slash-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-heading);
+}
+
+.shamar-re-notion__slash-hint {
+  font-size: 0.75rem;
+  color: var(--color-body-subtle);
+}
+
+.shamar-re-notion__slash-empty {
+  padding: 0.65rem;
+  font-size: 0.8rem;
+  color: var(--color-body-subtle);
+}
+
+.shamar-re-notion__bubble {
+  position: absolute;
+  z-index: 35;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem;
+  padding: 0.25rem;
+  border: 1px solid var(--color-card-border);
+  border-radius: 0.55rem;
+  background: var(--color-neutral-primary);
+  box-shadow: 0 10px 28px rgb(15 23 42 / 0.14);
+}
+
+.shamar-re-notion__bubble-btn {
+  min-width: 1.75rem;
+  height: 1.75rem;
+  border: 0;
+  border-radius: 0.35rem;
+  background: transparent;
+  color: var(--color-body);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0 0.35rem;
+}
+
+.shamar-re-notion__bubble-btn:hover,
+.shamar-re-notion__bubble-btn.is-active {
+  background: color-mix(in srgb, var(--color-fg-brand) 14%, transparent);
+  color: var(--color-fg-brand);
+}
+
+:where(.dark, .dark *) .shamar-re-notion {
+  background: var(--color-neutral-primary);
+}
+
+:where(.dark, .dark *) .shamar-re-notion__slash,
+:where(.dark, .dark *) .shamar-re-notion__bubble {
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.45);
+}

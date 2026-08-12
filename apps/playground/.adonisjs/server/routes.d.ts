@@ -9,6 +9,9 @@ export type ScannedRoutes = {
     'shamar.admin.assets.shamarUi': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.legacyUi': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.alpineJs': { paramsTuple?: []; params?: {} }
+    'shamar.admin.assets.flowbiteDatepickerCss': { paramsTuple?: []; params?: {} }
+    'shamar.admin.assets.flowbiteDatepickerJs': { paramsTuple?: []; params?: {} }
+    'shamar.admin.assets.richEditor': { paramsTuple: [ParamValue]; params: {'file': ParamValue} }
     'shamar.admin.media.index': { paramsTuple?: []; params?: {} }
     'shamar.admin.media.browse': { paramsTuple?: []; params?: {} }
     'shamar.admin.media.folders.index': { paramsTuple?: []; params?: {} }
@@ -51,6 +54,9 @@ export type ScannedRoutes = {
     'shamar.app.assets.shamarUi': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.legacyUi': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.alpineJs': { paramsTuple?: []; params?: {} }
+    'shamar.app.assets.flowbiteDatepickerCss': { paramsTuple?: []; params?: {} }
+    'shamar.app.assets.flowbiteDatepickerJs': { paramsTuple?: []; params?: {} }
+    'shamar.app.assets.richEditor': { paramsTuple: [ParamValue]; params: {'file': ParamValue} }
     'shamar.app.media.index': { paramsTuple?: []; params?: {} }
     'shamar.app.media.browse': { paramsTuple?: []; params?: {} }
     'shamar.app.media.folders.index': { paramsTuple?: []; params?: {} }
@@ -109,6 +115,9 @@ export type ScannedRoutes = {
     'shamar.admin.assets.shamarUi': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.legacyUi': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.alpineJs': { paramsTuple?: []; params?: {} }
+    'shamar.admin.assets.flowbiteDatepickerCss': { paramsTuple?: []; params?: {} }
+    'shamar.admin.assets.flowbiteDatepickerJs': { paramsTuple?: []; params?: {} }
+    'shamar.admin.assets.richEditor': { paramsTuple: [ParamValue]; params: {'file': ParamValue} }
     'shamar.admin.media.index': { paramsTuple?: []; params?: {} }
     'shamar.admin.media.browse': { paramsTuple?: []; params?: {} }
     'shamar.admin.media.folders.index': { paramsTuple?: []; params?: {} }
@@ -127,6 +136,9 @@ export type ScannedRoutes = {
     'shamar.app.assets.shamarUi': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.legacyUi': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.alpineJs': { paramsTuple?: []; params?: {} }
+    'shamar.app.assets.flowbiteDatepickerCss': { paramsTuple?: []; params?: {} }
+    'shamar.app.assets.flowbiteDatepickerJs': { paramsTuple?: []; params?: {} }
+    'shamar.app.assets.richEditor': { paramsTuple: [ParamValue]; params: {'file': ParamValue} }
     'shamar.app.media.index': { paramsTuple?: []; params?: {} }
     'shamar.app.media.browse': { paramsTuple?: []; params?: {} }
     'shamar.app.media.folders.index': { paramsTuple?: []; params?: {} }
@@ -155,6 +167,9 @@ export type ScannedRoutes = {
     'shamar.admin.assets.shamarUi': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.legacyUi': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.alpineJs': { paramsTuple?: []; params?: {} }
+    'shamar.admin.assets.flowbiteDatepickerCss': { paramsTuple?: []; params?: {} }
+    'shamar.admin.assets.flowbiteDatepickerJs': { paramsTuple?: []; params?: {} }
+    'shamar.admin.assets.richEditor': { paramsTuple: [ParamValue]; params: {'file': ParamValue} }
     'shamar.admin.media.index': { paramsTuple?: []; params?: {} }
     'shamar.admin.media.browse': { paramsTuple?: []; params?: {} }
     'shamar.admin.media.folders.index': { paramsTuple?: []; params?: {} }
@@ -173,6 +188,9 @@ export type ScannedRoutes = {
     'shamar.app.assets.shamarUi': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.legacyUi': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.alpineJs': { paramsTuple?: []; params?: {} }
+    'shamar.app.assets.flowbiteDatepickerCss': { paramsTuple?: []; params?: {} }
+    'shamar.app.assets.flowbiteDatepickerJs': { paramsTuple?: []; params?: {} }
+    'shamar.app.assets.richEditor': { paramsTuple: [ParamValue]; params: {'file': ParamValue} }
     'shamar.app.media.index': { paramsTuple?: []; params?: {} }
     'shamar.app.media.browse': { paramsTuple?: []; params?: {} }
     'shamar.app.media.folders.index': { paramsTuple?: []; params?: {} }

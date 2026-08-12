@@ -108,7 +108,9 @@ Containers use `.schema([...])` for children. Layout width uses `.columns(n)` on
 
 ### Form fields
 
-`TextInput`, `Textarea`, `Select`, `Toggle`, `Checkbox`, `Radio`, `CheckboxList`, `Hidden`, `ColorPicker`, `TagsInput`, `DatePicker`, `DateTimePicker`, `FileUpload`, `FilePicker`, `RelationTable`, `PermissionsAssignment`, `AbilitiesAssignment`
+`TextInput`, `Textarea`, `Select`, `Toggle`, `Checkbox`, `Radio`, `ToggleButtons`, `CheckboxList`, `Hidden`, `ColorPicker`, `TagsInput`, `DatePicker`, `DateTimePicker`, `TimePicker`, `WeekPicker`, `MonthPicker` (Flowbite calendar by default; `.native()` for browser inputs), `RichEditor` (`.simple()` / `.notion()` / `.document()` modes; simple default), `MarkdownEditor`, `CodeEditor`, `Repeater`, `KeyValue`, `Slider`, `Rating`, `FileUpload`, `FilePicker`, `RelationTable`, `PermissionsAssignment`, `AbilitiesAssignment`
+
+Custom types: `registerFieldType({ type, valueKind, hydrate, dehydrate, empty })` in `@shamar/core`, then `registerFieldView(type, 'your::edge/view')` in `@shamar/adonis`. Field classes can extend `FormComponent` and store options on `.setWidget()` / `field.widget`. The admin host hydrates and dehydrates through the registry — adding a type does not require controller changes.
 
 ### Table / infolist
 
@@ -120,7 +122,7 @@ Containers use `.schema([...])` for children. Layout width uses `.columns(n)` on
 
 ## Pages
 
-`Page`, `FormPage`, and `ListPage` are panel screens discovered next to resources (see [`@shamar/adonis`](../adonis#pages-filament-style)).
+`Page`, `FormPage`, `SettingsPage`, and `ListPage` are panel screens discovered next to resources (see [`@shamar/adonis`](../adonis#pages-filament-style)).
 
 ```ts
 import { Page, pageContent, form, table, infolist } from '@shamar/core'
@@ -140,7 +142,7 @@ export default class OpsDashboardPage extends Page {
 }
 ```
 
-`FormPage` / `ListPage` remain shortcuts for a single form or table. List row clicks open `GET /:slug/:id` using `static infolist()` or columns.
+`SettingsPage` / `FormPage` / `ListPage` remain shortcuts for a settings form, generic form, or table. List row clicks open `GET /:slug/:id` using `static infolist()` or columns.
 
 ## Layout width
 

@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/*
+ * Flowbite datepicker ships a full Tailwind build. Import it into the utilities
+ * layer so its unlayered .hidden/.flex cannot beat Shamar's md: responsive rules.
+ */
+@import "./vendor/flowbite-datepicker.min.css" layer(utilities);
+@import "./rich-editor/styles.css";
+@import "./rich-editor/notion.css";
+@import "./rich-editor/simple.css";
+
 /* Package UI (Edge templates + client JS). */
 @source "../resources/views/**/*.edge";
 @source "./shamar-ui.js";
@@ -187,6 +196,70 @@
   margin-top: 1rem;
 }
 
+/* Toast / crumbs must not push the sticky title away from the topbar. */
+.shamar-scroll-root > #shamar-toast-stack,
+.shamar-scroll-root > .shamar-page-crumbs,
+.shamar-scroll-root > .shamar-page-heading {
+  margin-top: 0;
+}
+
+.shamar-page-crumbs {
+  padding-top: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .shamar-page-crumbs {
+    padding-top: 1rem;
+  }
+}
+
+/* When there are no crumbs, keep space above the title while unstuck. */
+.shamar-scroll-root > #shamar-toast-stack + .shamar-page-heading {
+  padding-top: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .shamar-scroll-root > #shamar-toast-stack + .shamar-page-heading {
+    padding-top: 1rem;
+  }
+}
+
+.shamar-scroll-root > #shamar-toast-stack + .shamar-page-heading[data-stuck='true'] {
+  padding-top: 0.5rem;
+}
+
+/* Title + actions only (breadcrumbs scroll away). Flush under topbar. */
+.shamar-page-heading {
+  position: sticky;
+  top: 0;
+  z-index: 25;
+  margin-left: -0.75rem;
+  margin-right: -0.75rem;
+  margin-top: 0;
+  padding: 0.5rem 0.75rem 0.75rem;
+  background-color: var(--color-shamar-shell);
+  border-bottom: 1px solid transparent;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+@media (min-width: 768px) {
+  .shamar-page-heading {
+    margin-left: -1rem;
+    margin-right: -1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+.shamar-page-heading[data-stuck='true'] {
+  border-bottom-color: var(--color-card-border);
+  box-shadow: 0 8px 16px -12px rgb(15 23 42 / 0.18);
+}
+
+:where(.dark, .dark *) .shamar-page-heading[data-stuck='true'] {
+  box-shadow: 0 8px 16px -12px rgb(0 0 0 / 0.45);
+}
+
 /* All native controls follow brand + light/dark tokens (including future inputs). */
 :where(html) {
   accent-color: var(--color-fg-brand);
@@ -313,6 +386,49 @@ button:disabled,
   box-shadow: inset 3px 0 0 0 var(--color-primary-400);
 }
 
+/*
+ * Sidebar-topbar shell: desktop shows group roots only; mobile shows the full tree.
+ * Dedicated classes (not only Tailwind .hidden/.flex) so vendored Tailwind CSS
+ * cannot override responsive display via unlayered utilities.
+ */
+.shamar-sidebar {
+  display: flex;
+  flex-direction: column;
+}
+.shamar-sidebar__roots {
+  display: none;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.shamar-sidebar__mobile {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.shamar-sidebar__user {
+  display: none;
+  margin-top: auto;
+  flex-shrink: 0;
+}
+.shamar-topbar__menu {
+  display: none;
+  align-items: center;
+}
+@media (width >= 48rem) {
+  .shamar-sidebar__roots {
+    display: block;
+  }
+  .shamar-sidebar__mobile {
+    display: none;
+  }
+  .shamar-sidebar__user {
+    display: block;
+  }
+  .shamar-topbar__menu {
+    display: flex;
+  }
+}
+
 .shamar-brand-panel,
 .shamar-topbar {
   box-shadow:
@@ -324,6 +440,38 @@ button:disabled,
   color: var(--color-heading);
   font-family: var(--shamar-font-family, inherit);
   letter-spacing: -0.02em;
+}
+
+/* Avoid Tailwind dark:/hidden cascade fights with vendored utilities. */
+.shamar-brand-logo {
+  width: auto;
+  max-width: 9rem;
+  object-fit: contain;
+}
+.shamar-brand-logo--light {
+  display: block;
+}
+.shamar-brand-logo--dark {
+  display: none;
+}
+:where(.dark, .dark *) .shamar-brand-logo--light {
+  display: none;
+}
+:where(.dark, .dark *) .shamar-brand-logo--dark {
+  display: block;
+}
+
+.shamar-theme-icon--light {
+  display: block;
+}
+.shamar-theme-icon--dark {
+  display: none;
+}
+:where(.dark, .dark *) .shamar-theme-icon--light {
+  display: none;
+}
+:where(.dark, .dark *) .shamar-theme-icon--dark {
+  display: block;
 }
 
 .shamar-topbar-link {
@@ -1059,7 +1207,7 @@ fieldset.shamar-card {
 .shamar-list-toolbar,
 .shamar-bulk-bar {
   position: relative;
-  z-index: 20;
+  z-index: 10;
 }
 
 .shamar-list-table-scroll {
@@ -3790,3 +3938,500 @@ select.shamar-input option {
   white-space: nowrap;
   border: 0;
 }
+
+.shamar-toggle-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.shamar-toggle-buttons--grouped {
+  gap: 0;
+  display: inline-flex;
+  flex-wrap: wrap;
+  border: 1px solid var(--color-card-border);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+}
+.shamar-toggle-buttons--grouped .shamar-toggle-buttons__btn {
+  border: 0;
+  border-radius: 0;
+  border-right: 1px solid var(--color-card-border);
+}
+.shamar-toggle-buttons--grouped .shamar-toggle-buttons__btn:last-child {
+  border-right: 0;
+}
+.shamar-toggle-buttons__btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 550;
+  color: var(--color-body);
+  background: var(--color-surface);
+  border: 1px solid var(--color-card-border);
+  border-radius: 0.45rem;
+  cursor: pointer;
+  user-select: none;
+}
+.shamar-toggle-buttons__input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  appearance: none;
+  border: 0;
+}
+.shamar-toggle-buttons__btn.is-active {
+  background: var(--color-brand-soft);
+  color: var(--color-fg-brand);
+  border-color: var(--color-brand);
+}
+.shamar-toggle-buttons__btn:focus-within {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-brand) 45%, transparent);
+  z-index: 1;
+}
+.shamar-toggle-buttons__btn--danger.is-active {
+  background: color-mix(in srgb, var(--color-fg-danger) 16%, transparent);
+  color: var(--color-fg-danger);
+  border-color: var(--color-fg-danger);
+}
+.shamar-toggle-buttons__icon { font-size: 0.9em; }
+
+.shamar-checkbox-list {
+  display: grid;
+  grid-template-columns: repeat(var(--shamar-checkbox-cols, 1), minmax(0, 1fr));
+  gap: 0.45rem 0.75rem;
+}
+.shamar-checkbox-list--framed .shamar-checkbox-list__option {
+  border: 1px solid var(--color-card-border);
+  border-radius: 0.45rem;
+  padding: 0.45rem 0.6rem;
+}
+.shamar-checkbox-list__option {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.875rem;
+}
+
+.shamar-slider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.shamar-slider__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  accent-color: var(--color-brand);
+}
+.shamar-slider__value {
+  min-width: 2.5rem;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8125rem;
+  color: var(--color-body-subtle);
+  text-align: right;
+}
+
+.shamar-rating {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+.shamar-rating__star {
+  border: 0;
+  background: transparent;
+  color: var(--color-card-border);
+  cursor: pointer;
+  padding: 0.15rem;
+}
+.shamar-rating__star.is-active { color: #eab308; }
+.shamar-rating__clear {
+  border: 0;
+  background: transparent;
+  font-size: 0.75rem;
+  color: var(--color-body-subtle);
+  cursor: pointer;
+  margin-right: 0.35rem;
+}
+.shamar-rating__clear.is-active { color: var(--color-heading); font-weight: 600; }
+
+/* Flowbite datepicker host — calendar UI comes from flowbite-datepicker.min.css */
+.shamar-flowbite-picker { width: 100%; }
+.shamar-flowbite-picker__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+.shamar-flowbite-picker__icon {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  display: flex;
+  align-items: center;
+  padding-inline-start: 0.65rem;
+  color: var(--color-body-subtle);
+  pointer-events: none;
+}
+.shamar-flowbite-picker__input,
+.shamar-flowbite-picker__time {
+  width: 100%;
+}
+.shamar-flowbite-picker__time-wrap {
+  position: relative;
+  flex: 0 0 auto;
+  min-width: 9.5rem;
+}
+.shamar-flowbite-picker--datetime .shamar-flowbite-picker__time-wrap {
+  flex: 1;
+  min-width: 8.5rem;
+}
+.shamar-flowbite-picker--time .shamar-flowbite-picker__time-wrap {
+  flex: 1;
+  min-width: 100%;
+}
+.shamar-flowbite-picker.is-invalid .shamar-input {
+  border-color: var(--color-danger, #ef4444);
+}
+.shamar-flowbite-picker.is-disabled .shamar-input {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+/* Picker is portaled to body — keep above dialogs/menus */
+.datepicker-dropdown {
+  z-index: 1200;
+}
+
+/* Today indicator — Flowbite adds `.today`; brand it for Shamar */
+.datepicker .datepicker-cell.today:not(.selected) {
+  color: var(--color-primary-700, #c94115);
+  font-weight: 700;
+  box-shadow: inset 0 0 0 2px var(--color-primary-500, #f1511b);
+  background-color: color-mix(in srgb, var(--color-primary-500, #f1511b) 12%, white);
+}
+.datepicker .datepicker-cell.today.selected {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, white 70%, transparent);
+}
+.dark .datepicker .datepicker-cell.today:not(.selected),
+:where(.dark) .datepicker .datepicker-cell.today:not(.selected) {
+  color: var(--color-primary-200, #fdc9b8);
+  background-color: color-mix(in srgb, var(--color-primary-500, #f1511b) 28%, #1f2937);
+  box-shadow: inset 0 0 0 2px var(--color-primary-400, #f36d3d);
+}
+
+.shamar-timepicker__control {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+}
+.shamar-timepicker__input {
+  width: 100%;
+  padding-inline-end: 2.25rem;
+}
+.shamar-timepicker__toggle {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-body-subtle);
+  cursor: pointer;
+}
+.shamar-timepicker__toggle:hover {
+  color: var(--color-heading);
+}
+.shamar-timepicker {
+  position: absolute;
+  inset-inline-start: 0;
+  top: calc(100% + 0.35rem);
+  z-index: 1300;
+  min-width: 100%;
+  width: max-content;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 0.65rem;
+  background: var(--color-surface, #fff);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+  padding: 0.65rem;
+}
+.dark .shamar-timepicker,
+:where(.dark) .shamar-timepicker {
+  background: var(--color-gray-900, #111827);
+  border-color: var(--color-gray-700, #374151);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+}
+.shamar-timepicker__steppers {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.shamar-timepicker__seconds {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.shamar-timepicker__stepper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  min-width: 2.75rem;
+}
+.shamar-timepicker__meridiem {
+  margin-inline-start: 0.25rem;
+}
+.shamar-timepicker__spin {
+  appearance: none;
+  border: 1px solid var(--color-border, #e5e7eb);
+  background: transparent;
+  border-radius: 0.35rem;
+  width: 2.25rem;
+  height: 1.5rem;
+  line-height: 1;
+  font: inherit;
+  cursor: pointer;
+  color: var(--color-heading, inherit);
+}
+.shamar-timepicker__spin:hover {
+  background: color-mix(in srgb, var(--color-primary-500, #f1511b) 12%, transparent);
+  border-color: var(--color-primary-500, #f1511b);
+}
+.shamar-timepicker__digit {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 1.05rem;
+  min-height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-heading, inherit);
+}
+.shamar-timepicker__sep {
+  font-weight: 700;
+  padding-bottom: 1.1rem;
+  color: var(--color-body-subtle);
+}
+.shamar-timepicker__unit {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-body-subtle);
+  min-height: 0.9rem;
+}
+.shamar-timepicker__chips {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--color-border, #e5e7eb);
+}
+.shamar-timepicker__chip {
+  appearance: none;
+  border: 1px solid var(--color-border, #e5e7eb);
+  background: transparent;
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  color: var(--color-heading, inherit);
+}
+.shamar-timepicker__chip:hover {
+  background: color-mix(in srgb, var(--color-primary-500, #f1511b) 10%, transparent);
+  border-color: var(--color-primary-500, #f1511b);
+}
+
+.shamar-repeater {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.shamar-repeater__item {
+  border: 1px solid var(--color-card-border);
+  border-radius: 0.65rem;
+  background: var(--color-surface);
+  padding: 0.75rem 0.85rem 0.9rem;
+}
+.shamar-repeater__item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+.shamar-repeater__item-label {
+  font-size: 0.75rem;
+  font-weight: 650;
+  color: var(--color-body-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.shamar-repeater__item-actions { display: flex; gap: 0.2rem; }
+.shamar-repeater__icon-btn {
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid var(--color-card-border);
+  border-radius: 0.35rem;
+  background: var(--color-surface);
+  color: var(--color-body);
+  cursor: pointer;
+  line-height: 1;
+}
+.shamar-repeater__icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.shamar-repeater__icon-btn--danger { color: var(--color-fg-danger); }
+.shamar-repeater__add { align-self: flex-start; }
+
+.shamar-key-value {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.shamar-key-value__head,
+.shamar-key-value__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 0.45rem;
+  align-items: center;
+}
+.shamar-key-value__head {
+  font-size: 0.75rem;
+  font-weight: 650;
+  color: var(--color-body-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.shamar-key-value__row-actions { display: flex; gap: 0.2rem; }
+
+.shamar-rich-editor,
+.shamar-code-editor,
+.shamar-markdown-editor {
+  border: 1px solid var(--color-card-border);
+  border-radius: 0.55rem;
+  background: var(--color-surface);
+  overflow: hidden;
+}
+.shamar-rich-editor--notion {
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  border-radius: 0;
+}
+.shamar-rich-editor--simple {
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  border-radius: 0;
+}
+.shamar-rich-editor--document {
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  border-radius: 0;
+}
+.shamar-rich-editor--document .shamar-re-doc {
+  min-height: 36rem;
+}
+.shamar-rich-editor.is-invalid,
+.shamar-code-editor.is-invalid,
+.shamar-markdown-editor.is-invalid {
+  border-color: var(--color-fg-danger);
+}
+.shamar-rich-editor--notion.is-invalid .shamar-re-notion,
+.shamar-rich-editor--simple.is-invalid .shamar-re-simple,
+.shamar-rich-editor--document.is-invalid .shamar-re-doc {
+  border-color: var(--color-fg-danger);
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 0.55rem;
+}
+.shamar-rich-editor__host {
+  min-width: 0;
+}
+.shamar-rich-editor__toolbar,
+.shamar-markdown-editor__bar,
+.shamar-code-editor__lang {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  padding: 0.35rem 0.45rem;
+  border-bottom: 1px solid var(--color-card-border);
+  background: var(--color-surface-inset, var(--color-neutral-secondary));
+}
+.shamar-rich-editor__btn,
+.shamar-markdown-editor__tool,
+.shamar-markdown-editor__tab {
+  border: 0;
+  background: transparent;
+  color: var(--color-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.45rem;
+  border-radius: 0.3rem;
+  cursor: pointer;
+}
+.shamar-rich-editor__btn:hover,
+.shamar-markdown-editor__tool:hover,
+.shamar-markdown-editor__tab:hover {
+  background: var(--color-surface-hover);
+}
+.shamar-markdown-editor__tab.is-active {
+  background: var(--color-brand-soft);
+  color: var(--color-fg-brand);
+}
+.shamar-rich-editor__surface {
+  min-height: 10rem;
+  padding: 0.65rem 0.85rem;
+}
+.shamar-rich-editor__surface .tiptap {
+  outline: none;
+  min-height: 8rem;
+}
+.shamar-rich-editor__surface .tiptap p { margin: 0.35rem 0; }
+.shamar-code-editor__surface {
+  min-height: 12rem;
+  font-size: 0.8125rem;
+}
+.shamar-code-editor__lang-select {
+  max-width: 10rem;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.4rem;
+}
+.shamar-markdown-editor__bar {
+  justify-content: space-between;
+  align-items: center;
+}
+.shamar-markdown-editor__tabs,
+.shamar-markdown-editor__tools { display: flex; flex-wrap: wrap; gap: 0.15rem; }
+.shamar-markdown-editor__input {
+  border: 0;
+  border-radius: 0;
+  min-height: 12rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.8125rem;
+}
+.shamar-markdown-editor__preview {
+  min-height: 12rem;
+  padding: 0.75rem 0.9rem;
+  font-size: 0.875rem;
+}
+.shamar-markdown-editor__preview h1,
+.shamar-markdown-editor__preview h2,
+.shamar-markdown-editor__preview h3 { font-weight: 700; margin: 0.6rem 0 0.35rem; }
+.shamar-markdown-editor__preview code {
+  font-size: 0.8em;
+  background: var(--color-surface-inset, var(--color-neutral-secondary));
+  padding: 0.05rem 0.3rem;
+  border-radius: 0.25rem;
+}
+

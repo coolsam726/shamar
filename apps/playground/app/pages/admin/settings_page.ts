@@ -1,5 +1,5 @@
 import {
-  FormPage,
+  SettingsPage,
   form,
   Tabs,
   Tab,
@@ -20,9 +20,9 @@ function mediaUrlFromId(id: unknown): string {
 }
 
 /**
- * Singleton Settings page — Branding + Preferences categories in one form.
+ * Singleton Settings page — Branding + Preferences via the shared SettingsPage layout.
  */
-export default class SettingsPage extends FormPage {
+export default class AppSettingsPage extends SettingsPage {
   static override slug = 'settings'
   static override label = 'Settings'
   static override navigationGroup = 'Settings'

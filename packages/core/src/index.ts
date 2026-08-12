@@ -1,3 +1,6 @@
+export * from './field-values.js';
+export * from './field-registry.js';
+export * from './fields.js';
 export * from './types.js';
 export * from './media.js';
 export * from './schemas.js';

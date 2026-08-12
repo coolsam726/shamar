@@ -1,0 +1,102 @@
+@let(asButtons = field.display === 'buttons')
+@let(grouped = !(field.widget && field.widget.grouped === false))
+@let(hasRelationOptions = !!(relationUi && relationUi[field.name] && relationUi[field.name].options))
+
+@if(asButtons)
+  <div
+    class="shamar-toggle-buttons{{ grouped ? ' shamar-toggle-buttons--grouped' : '' }}{{ field.inline ? ' shamar-toggle-buttons--wrap' : '' }}"
+    role="radiogroup"
+    aria-label="{{ fieldLabelText }}"
+  >
+    @if(hasRelationOptions)
+      @each(option in relationUi[field.name].options)
+        <label
+          class="shamar-toggle-buttons__btn"
+          :class="{ 'is-active': String({{ stateRef }} ?? '') === String({{ jsonAttr(option.id) }}) }"
+        >
+          <input
+            type="radio"
+            class="shamar-toggle-buttons__input"
+            @if(!nestedField)
+              name="{{ field.name }}"
+            @endif
+            value="{{ option.id }}"
+            x-model="{{ stateRef }}"
+            @change="onFieldChange('{{ field.name }}')"
+            :disabled="isDisabled('{{ field.name }}')"
+            {{ field.required ? 'required' : '' }}
+          />
+          <span>{{ option.label }}</span>
+        </label>
+      @endeach
+      @if(relationUi[field.name].options.length === 0)
+        <p class="text-xs text-body-subtle">No options available.</p>
+      @endif
+    @else
+      @each(option in (field.options ?? []))
+        <label
+          class="shamar-toggle-buttons__btn{{ option.color ? ' shamar-toggle-buttons__btn--' + option.color : '' }}"
+          :class="{ 'is-active': String({{ stateRef }} ?? '') === String({{ jsonAttr(option.value) }}) }"
+        >
+          <input
+            type="radio"
+            class="shamar-toggle-buttons__input"
+            @if(!nestedField)
+              name="{{ field.name }}"
+            @endif
+            value="{{ option.value }}"
+            x-model="{{ stateRef }}"
+            @change="onFieldChange('{{ field.name }}')"
+            :disabled="isDisabled('{{ field.name }}')"
+            {{ field.required ? 'required' : '' }}
+          />
+          @if(option.icon)
+            <span class="shamar-toggle-buttons__icon" aria-hidden="true">{{ option.icon }}</span>
+          @endif
+          <span>{{ option.label }}</span>
+        </label>
+      @endeach
+    @endif
+  </div>
+@else
+  <div class="shamar-radio{{ field.inline ? ' shamar-radio--inline' : '' }}">
+    @if(hasRelationOptions)
+      @each(option in relationUi[field.name].options)
+        <label class="shamar-radio__option">
+          <input
+            type="radio"
+            @if(!nestedField)
+              name="{{ field.name }}"
+            @endif
+            value="{{ option.id }}"
+            x-model="{{ stateRef }}"
+            @change="onFieldChange('{{ field.name }}')"
+            :disabled="isDisabled('{{ field.name }}')"
+            {{ field.required ? 'required' : '' }}
+          />
+          <span>{{ option.label }}</span>
+        </label>
+      @endeach
+      @if(relationUi[field.name].options.length === 0)
+        <p class="text-xs text-body-subtle">No options available.</p>
+      @endif
+    @else
+      @each(option in (field.options ?? []))
+        <label class="shamar-radio__option">
+          <input
+            type="radio"
+            @if(!nestedField)
+              name="{{ field.name }}"
+            @endif
+            value="{{ option.value }}"
+            x-model="{{ stateRef }}"
+            @change="onFieldChange('{{ field.name }}')"
+            :disabled="isDisabled('{{ field.name }}')"
+            {{ field.required ? 'required' : '' }}
+          />
+          <span>{{ option.label }}</span>
+        </label>
+      @endeach
+    @endif
+  </div>
+@endif

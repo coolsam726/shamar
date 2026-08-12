@@ -1,0 +1,34 @@
+@let(maxStars = field.maxValue != null ? Number(field.maxValue) : 5)
+@let(allowZero = !(field.widget && field.widget.allowZero === false))
+<div
+  class="shamar-rating"
+  role="radiogroup"
+  aria-label="{{ fieldLabelText }}"
+>
+  @if(allowZero)
+    <button
+      type="button"
+      class="shamar-rating__clear"
+      @click="{{ stateRef }} = 0; onFieldChange('{{ field.name }}')"
+      :disabled="isDisabled('{{ field.name }}')"
+      :class="{ 'is-active': Number({{ stateRef }} || 0) === 0 }"
+    >None</button>
+  @endif
+  @each(star in times(maxStars))
+    <button
+      type="button"
+      class="shamar-rating__star"
+      :class="{ 'is-active': Number({{ stateRef }} || 0) >= {{ star }} }"
+      @click="{{ stateRef }} = {{ star }}; onFieldChange('{{ field.name }}')"
+      :disabled="isDisabled('{{ field.name }}')"
+      aria-label="{{ star }} star{{ star === 1 ? '' : 's' }}"
+    >
+      <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20" aria-hidden="true">
+        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+      </svg>
+    </button>
+  @endeach
+  @if(!nestedField)
+    <input type="hidden" name="{{ field.name }}" :value="{{ stateRef }}" />
+  @endif
+</div>

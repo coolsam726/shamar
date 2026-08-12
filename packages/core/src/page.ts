@@ -195,6 +195,16 @@ export abstract class FormPage extends Page {
 }
 
 /**
+ * Canonical singleton settings page for panels (branding, prefs, app config).
+ * Same API as {@link FormPage}; defaults to a `7xl` content column so every
+ * project’s settings screen shares one layout.
+ */
+export abstract class SettingsPage extends FormPage {
+  static override contentMaxWidth = '7xl';
+  static override view = 'shamar::page-form';
+}
+
+/**
  * Standalone list page — reuses Resource table builders + list UI without full CRUD routes.
  */
 export abstract class ListPage extends Page {
@@ -270,11 +280,21 @@ export abstract class ListPage extends Page {
 
 export type PageClass = typeof Page;
 
-/** True when `value` is FormPage or a subclass. */
+/** True when `value` is FormPage or a subclass (including {@link SettingsPage}). */
 export function isFormPage(value: PageClass): value is typeof FormPage {
   let current: unknown = value;
   while (typeof current === 'function') {
-    if (current === FormPage) return true;
+    if (current === FormPage || current === SettingsPage) return true;
+    current = Object.getPrototypeOf(current);
+  }
+  return false;
+}
+
+/** True when `value` is SettingsPage or a subclass. */
+export function isSettingsPage(value: PageClass): value is typeof SettingsPage {
+  let current: unknown = value;
+  while (typeof current === 'function') {
+    if (current === SettingsPage) return true;
     current = Object.getPrototypeOf(current);
   }
   return false;

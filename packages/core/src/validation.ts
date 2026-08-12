@@ -1,6 +1,7 @@
 import type { DataAdapter, FieldConfig, ResourceMeta, UniqueOptions } from './types.js';
 import { humanizeLabel } from './labels.js';
 import { createFieldContext, resolveClosure } from './reactivity.js';
+import { repeaterSchema, widgetNumber } from './fields.js';
 
 export class ValidationException extends Error {
   readonly errors: Record<string, string>;
@@ -57,7 +58,22 @@ function resolveUniqueOptions(field: FieldConfig): UniqueOptions | null {
 }
 
 function isBlank(value: unknown): boolean {
-  return value == null || value === '' || (Array.isArray(value) && value.length === 0);
+  if (value == null || value === '') return true;
+  if (Array.isArray(value)) return value.length === 0;
+  if (typeof value === 'object') {
+    if (value instanceof Date) return Number.isNaN(value.getTime());
+    return Object.keys(value as object).length === 0;
+  }
+  return false;
+}
+
+function isBlankHtml(value: unknown): boolean {
+  const text = String(value ?? '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return !text;
 }
 
 function fieldLabel(field: FieldConfig): string {
@@ -102,12 +118,53 @@ export function validateFieldConstraints(
 
     if (!(field.name in data) && !required) continue;
 
-    if (required && isBlank(raw)) {
+    const blank =
+      field.type === 'richEditor' ? isBlankHtml(raw) || isBlank(raw) : isBlank(raw);
+
+    if (required && blank) {
       errors[field.name] = `The ${label} field is required.`;
       continue;
     }
 
-    if (isBlank(raw)) continue;
+    if (field.type === 'repeater') {
+      const items = Array.isArray(raw) ? raw : [];
+      const minItems = widgetNumber(field, 'minItems');
+      const maxItems = widgetNumber(field, 'maxItems');
+      if (minItems != null && items.length < minItems) {
+        errors[field.name] = `The ${label} must have at least ${minItems} ${minItems === 1 ? 'item' : 'items'}.`;
+        continue;
+      }
+      if (maxItems != null && items.length > maxItems) {
+        errors[field.name] = `The ${label} must not have more than ${maxItems} ${maxItems === 1 ? 'item' : 'items'}.`;
+        continue;
+      }
+      const nested = repeaterSchema(field);
+      if (nested) {
+        for (let index = 0; index < items.length; index += 1) {
+          const item = items[index];
+          const record = item && typeof item === 'object' && !Array.isArray(item)
+            ? (item as Record<string, unknown>)
+            : {};
+          for (const child of nested.fields) {
+            if (child.dehydrated === false) continue;
+            const childRequired = Boolean(resolveClosure(child.required, ctx, false));
+            if (!childRequired) continue;
+            const childRaw = record[child.name];
+            const childBlank =
+              child.type === 'richEditor' ? isBlankHtml(childRaw) || isBlank(childRaw) : isBlank(childRaw);
+            if (childBlank) {
+              errors[field.name] = `The ${fieldLabel(child)} field is required.`;
+              break;
+            }
+          }
+          if (errors[field.name]) break;
+        }
+      }
+      if (errors[field.name]) continue;
+      if (blank) continue;
+    }
+
+    if (blank) continue;
 
     const str = asString(raw);
 
@@ -148,9 +205,18 @@ export function validateFieldConstraints(
       }
     }
 
-    if (field.type === 'number' || field.minValue != null || field.maxValue != null) {
+    if (
+      field.type === 'number' ||
+      field.type === 'slider' ||
+      field.type === 'rating' ||
+      field.minValue != null ||
+      field.maxValue != null
+    ) {
       const num = typeof raw === 'number' ? raw : Number(str);
-      if (field.type === 'number' && Number.isNaN(num)) {
+      if (
+        (field.type === 'number' || field.type === 'slider' || field.type === 'rating') &&
+        Number.isNaN(num)
+      ) {
         errors[field.name] = `The ${label} must be a number.`;
         continue;
       }

@@ -80,10 +80,25 @@ export default class ShamarProvider {
       edge.global('resolveGridItemStyle', resolveGridItemStyle);
       const { partitionRowActions } = await import('./shamar/resource-actions.js');
       edge.global('partitionRowActions', partitionRowActions);
-      const { humanizeLabel, resolveAlignmentClass, alignmentTextClass } = await import('@shamar/core');
+      const { humanizeLabel, resolveAlignmentClass, alignmentTextClass, emptyRepeaterItem, repeaterSchema } = await import('@shamar/core');
       edge.global('humanizeLabel', humanizeLabel);
       edge.global('resolveAlignmentClass', resolveAlignmentClass);
       edge.global('alignmentTextClass', alignmentTextClass);
+      const { fieldView } = await import('./shamar/field-views.js');
+      const { fieldStateRef } = await import('./shamar/field-payload.js');
+      edge.global('fieldView', fieldView);
+      edge.global('fieldStateRef', fieldStateRef);
+      edge.global('times', (count: number) => {
+        const n = Math.max(0, Math.min(24, Number(count) || 0));
+        return Array.from({ length: n }, (_, index) => index + 1);
+      });
+      edge.global('repeaterSchemaNodes', (field: { widget?: Record<string, unknown> }) => {
+        return repeaterSchema(field)?.schema ?? [];
+      });
+      edge.global('repeaterEmptyItem', (field: { widget?: Record<string, unknown> }) => {
+        const schema = repeaterSchema(field);
+        return schema ? emptyRepeaterItem(schema) : {};
+      });
       edge.global('jsonAttr', (value: unknown) => {
         return JSON.stringify(value ?? null).replace(/</g, '\\u003c');
       });

@@ -1,6 +1,7 @@
 import type {
   BoolOrClosure,
   FieldConfig,
+  FieldOption,
   FieldType,
   FormSchema,
   FormSection,
@@ -30,6 +31,7 @@ import {
   type RelationshipOptions,
 } from './relation.js';
 import type { RelationWidget } from './types.js';
+import { getFieldType } from './field-registry.js';
 
 /**
  * Base for form field components (`TextInput::make()` style).
@@ -43,6 +45,12 @@ export abstract class FormComponent {
 
   protected constructor(name: string, type: FieldType) {
     this.config = { name, type };
+  }
+
+  /** Merge widget-specific options (editors, repeater, rating, …). */
+  setWidget(patch: Record<string, unknown>): this {
+    this.config.widget = { ...(this.config.widget ?? {}), ...patch };
+    return this;
   }
 
   /** Apply Filament-style relationship binding. */
@@ -583,8 +591,14 @@ export class Radio extends FormComponent {
     this.config.options = [];
   }
 
-  options(entries: Array<{ label: string; value: string | number }>): this {
+  options(entries: FieldOption[]): this {
     this.config.options = entries;
+    return this;
+  }
+
+  /** Render options as a grouped toggle-button control. */
+  buttons(value = true): this {
+    this.config.display = value ? 'buttons' : 'list';
     return this;
   }
 
@@ -624,8 +638,14 @@ export class CheckboxList extends FormComponent {
     this.config.multiple = true;
   }
 
-  options(entries: Array<{ label: string; value: string | number }>): this {
+  options(entries: FieldOption[]): this {
     this.config.options = entries;
+    return this;
+  }
+
+  /** Render options as a grouped toggle-button control. */
+  buttons(value = true): this {
+    this.config.display = value ? 'buttons' : 'list';
     return this;
   }
 
@@ -856,6 +876,57 @@ export class DatePicker extends FormComponent {
   maxDate(value: string): this {
     return this.maxValue(value);
   }
+
+  /** Use the browser's native date input instead of the Flowbite calendar. */
+  native(value = true): this {
+    return this.setWidget({ native: value });
+  }
+}
+
+/** ISO week picker — stores the Monday of the selected week (`YYYY-MM-DD`). */
+export class WeekPicker extends FormComponent {
+  static make(name: string): WeekPicker {
+    return new WeekPicker(name);
+  }
+
+  private constructor(name: string) {
+    super(name, 'week');
+  }
+
+  minDate(value: string): this {
+    return this.minValue(value);
+  }
+
+  maxDate(value: string): this {
+    return this.maxValue(value);
+  }
+
+  native(value = true): this {
+    return this.setWidget({ native: value });
+  }
+}
+
+/** Month picker — stores the first day of the month (`YYYY-MM-DD`). */
+export class MonthPicker extends FormComponent {
+  static make(name: string): MonthPicker {
+    return new MonthPicker(name);
+  }
+
+  private constructor(name: string) {
+    super(name, 'month');
+  }
+
+  minDate(value: string): this {
+    return this.minValue(value);
+  }
+
+  maxDate(value: string): this {
+    return this.maxValue(value);
+  }
+
+  native(value = true): this {
+    return this.setWidget({ native: value });
+  }
 }
 
 /** Filament `DateTimePicker::make()`. */
@@ -874,6 +945,36 @@ export class DateTimePicker extends FormComponent {
 
   maxDate(value: string): this {
     return this.maxValue(value);
+  }
+
+  seconds(value = true): this {
+    this.config.step = value ? 1 : 60;
+    return this.setWidget({ seconds: value });
+  }
+
+  /**
+   * Display clock format for the time portion. Stored values remain 24-hour.
+   * Omit to follow the browser locale.
+   */
+  timeFormat(value: '12' | '24'): this {
+    return this.setWidget({ timeFormat: value });
+  }
+
+  hours12(): this {
+    return this.timeFormat('12');
+  }
+
+  hours24(): this {
+    return this.timeFormat('24');
+  }
+
+  minuteStep(value: number): this {
+    return this.setWidget({ minuteStep: Math.max(1, Math.min(30, Math.floor(value) || 1)) });
+  }
+
+  /** Use the browser's native date-time input instead of the Shamar picker. */
+  native(value = true): this {
+    return this.setWidget({ native: value });
   }
 }
 
@@ -1034,5 +1135,5 @@ export function form(callback: (builder: FormBuilder) => void): FormSchema {
 }
 
 export function fieldTypeLabel(type: FieldType): string {
-  return type.charAt(0).toUpperCase() + type.slice(1);
+  return getFieldType(type)?.label ?? type.charAt(0).toUpperCase() + type.slice(1);
 }

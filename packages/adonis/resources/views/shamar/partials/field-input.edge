@@ -1,8 +1,15 @@
+@let(stateRef = fieldStateRef(field.name, bindRoot))
+@let(nestedField = !!(typeof bindRoot === 'string' && bindRoot))
+@let(relationBound = !!(relationUi && relationUi[field.name]))
+@let(useRelationWidget = relationBound && (field.type === 'relation' || field.type === 'checkboxList' || field.type === 'relationTable'))
+@let(customFieldView = useRelationWidget ? '' : fieldView(field.type))
 @if(field.type === 'hidden')
   <input
     type="hidden"
-    name="{{ field.name }}"
-    x-model="state['{{ field.name }}']"
+    @if(!nestedField)
+      name="{{ field.name }}"
+    @endif
+    x-model="{{ stateRef }}"
   />
 @else
 @let(fieldLabelText = field.label ?? humanizeLabel(field.name))
@@ -32,15 +39,19 @@
     </div>
   @endif
 
-  @if(field.type === 'boolean')
+  @if(customFieldView)
+    @include(customFieldView)
+  @elseif(field.type === 'boolean')
     <label class="shamar-toggle{{ field.inline ? ' shamar-toggle--inline' : '' }}" for="field-{{ field.name }}" :class="{ 'is-disabled': isDisabled('{{ field.name }}') }">
       <input
         id="field-{{ field.name }}"
         type="checkbox"
-        name="{{ field.name }}"
+        @if(!nestedField)
+          name="{{ field.name }}"
+        @endif
         value="true"
         class="shamar-toggle__input"
-        x-model="state['{{ field.name }}']"
+        x-model="{{ stateRef }}"
         @change="onFieldChange('{{ field.name }}')"
         :disabled="isDisabled('{{ field.name }}')"
         {{ field.required ? 'required' : '' }}
@@ -70,10 +81,12 @@
       <input
         id="field-{{ field.name }}"
         type="checkbox"
-        name="{{ field.name }}"
+        @if(!nestedField)
+          name="{{ field.name }}"
+        @endif
         value="true"
         class="shamar-checkbox__input"
-        x-model="state['{{ field.name }}']"
+        x-model="{{ stateRef }}"
         @change="onFieldChange('{{ field.name }}')"
         :disabled="isDisabled('{{ field.name }}')"
         {{ field.required ? 'required' : '' }}
@@ -95,45 +108,8 @@
         </span>
       @endif
     </label>
-  @elseif(field.type === 'radio')
-    <div class="shamar-radio{{ field.inline ? ' shamar-radio--inline' : '' }}">
-      @if(relationUi && relationUi[field.name] && relationUi[field.name].options)
-        @each(option in relationUi[field.name].options)
-          <label class="shamar-radio__option">
-            <input
-              type="radio"
-              name="{{ field.name }}"
-              value="{{ option.id }}"
-              x-model="state['{{ field.name }}']"
-              @change="onFieldChange('{{ field.name }}')"
-              :disabled="isDisabled('{{ field.name }}')"
-              {{ field.required ? 'required' : '' }}
-            />
-            <span>{{ option.label }}</span>
-          </label>
-        @endeach
-        @if(relationUi[field.name].options.length === 0)
-          <p class="text-xs text-body-subtle">No options available.</p>
-        @endif
-      @else
-        @each(option in field.options)
-          <label class="shamar-radio__option">
-            <input
-              type="radio"
-              name="{{ field.name }}"
-              value="{{ option.value }}"
-              x-model="state['{{ field.name }}']"
-              @change="onFieldChange('{{ field.name }}')"
-              :disabled="isDisabled('{{ field.name }}')"
-              {{ field.required ? 'required' : '' }}
-            />
-            <span>{{ option.label }}</span>
-          </label>
-        @endeach
-      @endif
-    </div>
-  @elseif(field.type === 'relation' || field.type === 'checkboxList' || field.type === 'relationTable')
-    @if(!(relationUi && relationUi[field.name]))
+  @elseif(field.type === 'relation' || field.type === 'relationTable' || (field.type === 'checkboxList' && relationBound))
+    @if(!relationBound)
       <p class="text-xs text-fg-danger">Relation field "{{ field.name }}" is missing UI config.</p>
     @elseif(relationUi[field.name].widget === 'table' || field.type === 'relationTable')
       @!component('shamar::partials/field-relation-table', {
@@ -156,70 +132,17 @@
         relationConfig: relationUi[field.name],
       })
     @endif
-  @elseif(field.type === 'tags')
-    <div class="shamar-tags">
-      <div class="shamar-tags__list">
-        <template x-for="(tag, tagIndex) in (Array.isArray(state['{{ field.name }}']) ? state['{{ field.name }}'] : [])" :key="tagIndex">
-          <span class="shamar-tags__chip">
-            <span x-text="tag"></span>
-            <button
-              type="button"
-              class="shamar-tags__remove"
-              @click="state['{{ field.name }}'] = (state['{{ field.name }}'] || []).filter((_, i) => i !== tagIndex); onFieldChange('{{ field.name }}')"
-              aria-label="Remove"
-            >&times;</button>
-          </span>
-        </template>
-      </div>
-      <input
-        type="text"
-        class="shamar-input"
-        :placeholder='fieldMeta[{{ jsonAttr(field.name) }}]?.placeholder || {{ jsonAttr(field.placeholder ?? "Add tag…") }}'
-        @keydown.enter.prevent="
-          const v = String($event.target.value || '').trim();
-          if (!v) return;
-          const cur = Array.isArray(state['{{ field.name }}']) ? [...state['{{ field.name }}']] : [];
-          if (!cur.includes(v)) { state['{{ field.name }}'] = [...cur, v]; onFieldChange('{{ field.name }}'); }
-          $event.target.value = '';
-        "
-        :disabled="isDisabled('{{ field.name }}')"
-      />
-      <template x-for="(tag, tagIndex) in (Array.isArray(state['{{ field.name }}']) ? state['{{ field.name }}'] : [])" :key="'h'+tagIndex">
-        <input type="hidden" name="{{ field.name }}[]" :value="tag" />
-      </template>
-    </div>
-  @elseif(field.type === 'color')
-    <div class="shamar-color">
-      <input
-        id="field-{{ field.name }}"
-        type="color"
-        class="shamar-color__swatch"
-        x-model="state['{{ field.name }}']"
-        @change="onFieldChange('{{ field.name }}')"
-        :disabled="isDisabled('{{ field.name }}')"
-        {{ field.required ? 'required' : '' }}
-      />
-      <input
-        type="text"
-        name="{{ field.name }}"
-        class="shamar-input shamar-color__value"
-        x-model="state['{{ field.name }}']"
-        readonly
-        tabindex="-1"
-        :disabled="isDisabled('{{ field.name }}')"
-        placeholder="#000000"
-        aria-label="Selected color"
-      />
-    </div>
   @elseif(field.type === 'textarea')
     <textarea
       id="field-{{ field.name }}"
-      name="{{ field.name }}"
+      @if(!nestedField)
+        name="{{ field.name }}"
+      @endif
       rows="{{ field.rows ?? 4 }}"
       {{ field.required ? 'required' : '' }}
       {{ field.readonly ? 'readonly' : '' }}
       {{{ fieldInputAttrs(field) }}}
-      x-model="state['{{ field.name }}']"
+      x-model="{{ stateRef }}"
       @input="onFieldInput('{{ field.name }}')"
       @change="onFieldChange('{{ field.name }}')"
       @blur="onFieldBlur('{{ field.name }}')"
@@ -228,7 +151,7 @@
       class="shamar-input{{ formErrors && formErrors[field.name] ? ' is-invalid' : '' }}"
     ></textarea>
     @if(field.maxLength)
-      <p class="shamar-field__counter" x-text="String(state['{{ field.name }}'] ?? '').length + ' / {{ field.maxLength }}'"></p>
+      <p class="shamar-field__counter" x-text="String({{ stateRef }} ?? '').length + ' / {{ field.maxLength }}'"></p>
     @endif
   @elseif(field.type === 'select')
     @if(field.nativeSelect)
@@ -237,7 +160,7 @@
         name="{{ field.name }}{{ field.multiple ? '[]' : '' }}"
         {{ field.multiple ? 'multiple' : '' }}
         {{{ fieldInputAttrs(field) }}}
-        x-model="state['{{ field.name }}']"
+        x-model="{{ stateRef }}"
         @change="onFieldChange('{{ field.name }}')"
         :disabled="isDisabled('{{ field.name }}')"
         :required="isRequired('{{ field.name }}')"
@@ -260,8 +183,8 @@
           options: {{ jsonAttr(field.options ?? []) }},
           placeholder: {{ jsonAttr(field.placeholder ?? 'Select...') }},
           selectablePlaceholder: {{ field.selectablePlaceholder !== false ? 'true' : 'false' }},
-          getValue: () => state[{{ jsonAttr(field.name) }}],
-          setValue: (v) => { state[{{ jsonAttr(field.name) }}] = v; onFieldChange({{ jsonAttr(field.name) }}); },
+          getValue: () => {{ stateRef }},
+          setValue: (v) => { {{ stateRef }} = v; onFieldChange({{ jsonAttr(field.name) }}); },
           isDisabled: () => isDisabled({{ jsonAttr(field.name) }}),
         })"
         @focusout="onFocusOut($event)"
@@ -391,12 +314,14 @@
           </div>
         </div>
 
-        @if(field.multiple)
-          <template x-for="value in selectedValues" :key="'h-' + value">
-            <input type="hidden" name="{{ field.name }}[]" :value="value" />
-          </template>
-        @else
-          <input type="hidden" name="{{ field.name }}" :value="selectedValues[0] || ''" />
+        @if(!nestedField)
+          @if(field.multiple)
+            <template x-for="value in selectedValues" :key="'h-' + value">
+              <input type="hidden" name="{{ field.name }}[]" :value="value" />
+            </template>
+          @else
+            <input type="hidden" name="{{ field.name }}" :value="selectedValues[0] || ''" />
+          @endif
         @endif
       </div>
     @endif
@@ -410,8 +335,8 @@
         folderId: {{ jsonAttr(field.mediaFolderId ?? null) }},
         makePublic: {{ field.mediaMakePublic ? 'true' : 'false' }},
         apiBase: {{ jsonAttr((basePath || '/admin') + '/media') }},
-        getValue: () => state[{{ jsonAttr(field.name) }}],
-        setValue: (v) => { state[{{ jsonAttr(field.name) }}] = v; onFieldChange({{ jsonAttr(field.name) }}); },
+        getValue: () => {{ stateRef }},
+        setValue: (v) => { {{ stateRef }} = v; onFieldChange({{ jsonAttr(field.name) }}); },
         isDisabled: () => isDisabled({{ jsonAttr(field.name) }}),
       })"
     >
@@ -502,6 +427,7 @@
                     class="shamar-media__tile"
                     :class="{ 'is-selected': isPicked(item.id) }"
                     @click="togglePick(item)"
+                    @dblclick="pickOnDoubleClick(item)"
                   >
                     <span class="shamar-media__tile-preview">
                       <img x-show="item.isImage" :src="item.url" :alt="item.name" />
@@ -541,7 +467,7 @@
       name="{{ field.name }}{{ field.multiple ? '[]' : '' }}"
       {{ field.required ? 'required' : '' }}
       {{{ fieldInputAttrs(field) }}}
-      @change="state['{{ field.name }}'] = $event.target.files && $event.target.files.length ? ($event.target.files.length > 1 ? Array.from($event.target.files).map(f => f.name) : $event.target.files[0].name) : null; onFieldChange('{{ field.name }}')"
+      @change="{{ stateRef }} = $event.target.files && $event.target.files.length ? ($event.target.files.length > 1 ? Array.from($event.target.files).map(f => f.name) : $event.target.files[0].name) : null; onFieldChange('{{ field.name }}')"
       :disabled="isDisabled('{{ field.name }}')"
       class="shamar-input shamar-input--file{{ formErrors && formErrors[field.name] ? ' is-invalid' : '' }}"
     />
@@ -602,11 +528,13 @@
               @else
                 type="{{ formInputType(field) }}"
               @endif
-              name="{{ field.name }}"
+              @if(!nestedField)
+                name="{{ field.name }}"
+              @endif
               {{ field.required ? 'required' : '' }}
               {{ field.readonly ? 'readonly' : '' }}
               {{{ fieldInputAttrs(field) }}}
-              x-model="state['{{ field.name }}']"
+              x-model="{{ stateRef }}"
               @input="onFieldInput('{{ field.name }}')"
               @change="onFieldChange('{{ field.name }}')"
               @blur="onFieldBlur('{{ field.name }}')"
@@ -636,7 +564,7 @@
             <button
               type="button"
               class="shamar-input-group__affix shamar-input-group__affix--action"
-              @click="navigator.clipboard.writeText(String(state['{{ field.name }}'] ?? ''))"
+              @click="navigator.clipboard.writeText(String({{ stateRef }} ?? ''))"
               aria-label="Copy"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" width="16" height="16" aria-hidden="true">
@@ -674,11 +602,13 @@
         <input
           id="field-{{ field.name }}"
           type="{{ formInputType(field) }}"
-          name="{{ field.name }}"
+          @if(!nestedField)
+            name="{{ field.name }}"
+          @endif
           {{ field.required ? 'required' : '' }}
           {{ field.readonly ? 'readonly' : '' }}
           {{{ fieldInputAttrs(field) }}}
-          x-model="state['{{ field.name }}']"
+          x-model="{{ stateRef }}"
           @input="onFieldInput('{{ field.name }}')"
           @change="onFieldChange('{{ field.name }}')"
           @blur="onFieldBlur('{{ field.name }}')"
@@ -707,7 +637,7 @@
       </datalist>
     @endif
     @if(field.maxLength)
-      <p class="shamar-field__counter" x-text="String(state['{{ field.name }}'] ?? '').length + ' / {{ field.maxLength }}'"></p>
+      <p class="shamar-field__counter" x-text="String({{ stateRef }} ?? '').length + ' / {{ field.maxLength }}'"></p>
     @endif
   @endif
 

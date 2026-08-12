@@ -124,4 +124,25 @@ describe('shamar edge templates', () => {
     assert.match(html, /pasteHere|Cut|Copy|Paste/);
     assert.doesNotMatch(html, /Cannot resolve/);
   });
+
+  it('renders dynamic page edge sections via @!component (not @include with locals)', async () => {
+    const source = await readFile(join(viewsRoot, 'partials/page-section-edge.edge'), 'utf8');
+    assert.match(source, /@!component\(section\.view,\s*section\.edgeLocals/);
+    assert.doesNotMatch(source, /@include\(section\.view,/);
+
+    edge.mount('shamar', viewsRoot);
+    const bannerRoot = join(dirname(fileURLToPath(import.meta.url)), '../../../apps/playground/resources/views');
+    edge.mount(bannerRoot);
+
+    const html = await edge.render('shamar::partials/page-section-edge', {
+      section: {
+        view: 'pages/admin/ops_banner',
+        edgeLocals: { userName: 'Ada', orderCount: 3 },
+      },
+    });
+
+    assert.match(html, /Welcome,\s*Ada/);
+    assert.match(html, />3</);
+    assert.match(html, /shamar-card/);
+  });
 });

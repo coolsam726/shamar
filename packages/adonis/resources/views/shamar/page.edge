@@ -6,31 +6,6 @@
     style="{{ contentMaxWidthStyle }}"
   @endif
 >
-  <div class="flex flex-wrap items-start justify-between gap-3">
-    <div>
-      <h1 class="text-xl font-semibold text-heading tracking-tight">{{ pageTitle }}</h1>
-      @if(pageSubtitle)
-        <p class="mt-1 text-sm text-body-subtle">{{ pageSubtitle }}</p>
-      @endif
-    </div>
-    @if(pageActions && pageActions.length)
-      <div class="flex flex-wrap items-center gap-2">
-        @each(action in pageActions)
-          <form method="post" action="{{ basePath }}/{{ page.slug }}/action/{{ action.name }}">
-            @include('shamar::partials/csrf')
-            <button
-              type="submit"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md border border-default text-body hover:bg-surface-hover transition"
-              @if(action.confirm)
-                onclick="return confirm({{ JSON.stringify(action.confirm) }})"
-              @endif
-            >{{ action.label }}</button>
-          </form>
-        @endeach
-      </div>
-    @endif
-  </div>
-
   @if(content)
     {{{ content }}}
   @else
