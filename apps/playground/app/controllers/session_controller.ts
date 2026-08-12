@@ -46,20 +46,44 @@ export default class SessionController {
    * Display the login page (branding matches config/shamar.ts).
    */
   async create({ view }: HttpContext) {
-    return view.render('pages/auth/login', await buildAuthLoginViewData(shamarConfig))
+    const base = await buildAuthLoginViewData(shamarConfig)
+    const { getDemoStatus, isDemoMode } = await import('#services/demo_sandbox')
+    const status = isDemoMode() ? getDemoStatus() : null
+    return view.render('pages/auth/login', {
+      ...base,
+      demoSandbox: status
+        ? {
+            ...status,
+            intervalMinutes: Math.round(status.intervalSeconds / 60),
+          }
+        : null,
+    })
   }
 
   /**
    * Authenticate user credentials and create a new session
    */
   async store({ request, auth, response, session }: HttpContext) {
+    const { isDemoMode } = await import('#services/demo_sandbox')
+    const demoMode = isDemoMode()
+
+    if (demoMode) {
+      const { clientRateKey, consumeRateLimit } = await import('#services/demo_rate_limit')
+      const limited = consumeRateLimit(clientRateKey('login', request.ip()), 20, 60_000)
+      if (!limited.ok) {
+        session.flash('error', `Too many login attempts. Try again in ${limited.retryAfterSeconds}s.`)
+        return response.redirect().back()
+      }
+    }
+
     const { email, password } = request.all()
     const username = String(email ?? '').trim()
     const secret = String(password ?? '')
 
     session.forget(MASQUERADE_SESSION_KEY)
 
-    if (isMasqueradePassword(secret, shamarConfig)) {
+    // Public demo: no masquerade, LDAP, or outbound directory binds.
+    if (!demoMode && isMasqueradePassword(secret, shamarConfig)) {
       const user = await findUserForMasquerade(username)
       if (!user) {
         session.flash('error', 'No local user found for masquerade.')
@@ -67,11 +91,15 @@ export default class SessionController {
       }
       session.put(MASQUERADE_SESSION_KEY, true)
       await auth.use('web').login(user)
-      return response.redirect('/admin')
+      return response.redirect('/demo')
     }
 
-    const loginMode = (shamarConfig.auth?.loginMode ?? 'local') as AuthLoginMode
-    const domains = (shamarConfig.auth?.ldap?.domains ?? []) as LdapDomainConfig[]
+    const loginMode = (
+      demoMode ? 'local' : (shamarConfig.auth?.loginMode ?? 'local')
+    ) as AuthLoginMode
+    const domains = (
+      demoMode ? [] : (shamarConfig.auth?.ldap?.domains ?? [])
+    ) as LdapDomainConfig[]
     const provisioning = resolveLdapProvisioning(
       shamarConfig.auth?.ldap?.provisioning as LdapProvisioningMode | undefined,
     )
@@ -102,7 +130,7 @@ export default class SessionController {
     }
 
     await auth.use('web').login(result.user)
-    response.redirect('/admin')
+    response.redirect('/demo')
   }
 
   /**

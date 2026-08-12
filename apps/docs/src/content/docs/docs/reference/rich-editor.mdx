@@ -1,0 +1,20 @@
+---
+title: Rich editor
+description: TipTap simple, notion, and document modes.
+---
+
+```ts
+import { RichEditor } from '@shamar/core'
+
+RichEditor.make('description').simple()
+RichEditor.make('notes').notion()
+RichEditor.make('documentBody').document() // alias .docx()
+```
+
+| Mode | Feel |
+|------|------|
+| **simple** (default) | TipTap Simple Editor toolbar — marks, lists, align, highlight, link, image, find/replace |
+| **notion** | Slash commands + bubble menu |
+| **document** | Page chrome, zoom, headers/footers, DOCX import/export |
+
+Document chrome follows the **global** admin light/dark theme (no separate editor theme toggle).

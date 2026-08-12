@@ -17,6 +17,11 @@ import MediaFile from '#models/media_file'
 import { upsertAppSettings, getAppSettings } from '#models/app_settings'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import {
+  isDemoMode,
+  startDemoResetScheduler,
+  stopDemoResetScheduler,
+} from '#services/demo_sandbox'
 
 /**
  * Connects Mongoose for Shamar resources and app auth (User).
@@ -32,6 +37,28 @@ export default class MongoProvider {
   }
 
   async ready() {
+    await seedPlaygroundData(this.app)
+    if (isDemoMode()) {
+      startDemoResetScheduler(this.app)
+    }
+  }
+
+  async shutdown() {
+    stopDemoResetScheduler()
+    await mongoose.disconnect()
+  }
+}
+
+/** Seed (or top-up) playground fixtures. Used on boot and after demo wipes. */
+export async function seedPlaygroundData(app: ApplicationService) {
+  const seeder = new PlaygroundDataSeeder(app)
+  await seeder.run()
+}
+
+class PlaygroundDataSeeder {
+  constructor(private app: ApplicationService) {}
+
+  async run() {
     await this.seedCompanies()
     await this.seedAdminUser()
     await this.seedAppSettings()
@@ -45,10 +72,6 @@ export default class MongoProvider {
     await this.seedMediaLibrary()
     await this.seedCampaigns()
     await this.seedLockedItems()
-  }
-
-  async shutdown() {
-    await mongoose.disconnect()
   }
 
   private async seedCompanies() {

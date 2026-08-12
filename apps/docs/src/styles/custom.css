@@ -1,0 +1,172 @@
+/* Shamar docs — brand theme on Starlight */
+
+@import url('https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Sora:wght@500;600;700;800&display=swap');
+
+:root {
+  --sl-font: 'Figtree', ui-sans-serif, system-ui, sans-serif;
+  --sl-font-system: var(--sl-font);
+  --sl-font-headings: 'Sora', ui-sans-serif, system-ui, sans-serif;
+
+  --shamar-ember: #f1511b;
+  --shamar-ember-deep: #c73d12;
+  --shamar-ink: #0f172a;
+  --shamar-sand: #f7f1eb;
+  --shamar-mist: #ebe3da;
+
+  --sl-color-accent-low: #fde4d8;
+  --sl-color-accent: var(--shamar-ember);
+  --sl-color-accent-high: var(--shamar-ember-deep);
+  --sl-color-text-accent: var(--shamar-ember-deep);
+  --sl-color-bg: var(--shamar-sand);
+  --sl-color-bg-nav: #fffaf6;
+  --sl-color-bg-sidebar: #fffaf6;
+  --sl-color-hairline: color-mix(in srgb, var(--shamar-ink) 12%, transparent);
+}
+
+:root[data-theme='dark'] {
+  --sl-color-accent-low: #4a1f12;
+  --sl-color-accent: #ff7a45;
+  --sl-color-accent-high: #ffb08a;
+  --sl-color-text-accent: #ffb08a;
+  --sl-color-bg: #14110f;
+  --sl-color-bg-nav: #1a1613;
+  --sl-color-bg-sidebar: #1a1613;
+  --sl-color-hairline: rgba(255, 255, 255, 0.1);
+}
+
+.site-title {
+  font-family: var(--sl-font-headings);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+/* Brand lockup in Starlight header */
+.site-title img,
+header .site-title img {
+  height: 2rem;
+  width: auto;
+  max-width: 9.5rem;
+}
+
+.sidebar-pane .site-title img {
+  height: 1.85rem;
+}
+
+/* Splash / hero atmosphere */
+.hero {
+  position: relative;
+  isolation: isolate;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: -20% -10% auto;
+  height: 70%;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 20%, color-mix(in srgb, var(--shamar-ember) 28%, transparent), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 85% 10%, color-mix(in srgb, #286291 18%, transparent), transparent 65%);
+  pointer-events: none;
+}
+
+.hero h1 {
+  font-family: var(--sl-font-headings);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  font-size: clamp(2.4rem, 5vw, 3.6rem);
+  line-height: 1.08;
+  max-width: 14ch;
+}
+
+.hero .tagline {
+  font-size: 1.15rem;
+  max-width: 42ch;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+/* Docs content polish */
+.sl-markdown-content {
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+.sl-markdown-content :is(h1, h2, h3, h4) {
+  font-family: var(--sl-font-headings);
+  letter-spacing: -0.03em;
+  font-weight: 650;
+}
+
+/* Demo credentials card */
+.shamar-demo-card {
+  border: 1px solid var(--sl-color-hairline);
+  border-radius: 1rem;
+  padding: 1.25rem 1.35rem;
+  background: color-mix(in srgb, var(--sl-color-bg-nav) 92%, var(--shamar-ember));
+  box-shadow: 0 18px 40px -28px rgba(15, 23, 42, 0.45);
+  margin: 1.25rem 0;
+}
+
+.shamar-demo-card h3 {
+  margin: 0 0 0.35rem;
+  font-family: var(--sl-font-headings);
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+}
+
+.shamar-demo-card p {
+  margin: 0.25rem 0;
+}
+
+.shamar-demo-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  margin-top: 0.85rem;
+  font-size: 0.92rem;
+}
+
+.shamar-demo-meta code {
+  font-size: 0.9em;
+}
+
+.shamar-countdown {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--sl-color-text-accent);
+}
+
+.shamar-demo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+.shamar-demo-actions a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 0.55rem;
+  font-weight: 600;
+  text-decoration: none;
+  background: var(--shamar-ember);
+  color: #fff;
+}
+
+.shamar-demo-actions a.secondary {
+  background: transparent;
+  color: var(--sl-color-text-accent);
+  border: 1px solid var(--sl-color-hairline);
+}
+
+:root[data-theme='dark'] .shamar-demo-card {
+  background: color-mix(in srgb, var(--sl-color-bg-nav) 88%, #4a1f12);
+}
+
+/* Feature cards on splash */
+.sl-markdown-content .card {
+  border-radius: 0.9rem;
+}

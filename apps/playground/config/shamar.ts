@@ -173,12 +173,13 @@ export default defineConfig({
       version: '0.1.3',
       description: 'JSON API for playground resources and custom /api routes.',
     },
-    docs: { path: '/docs' },
+    // Keep OpenAPI off /docs — Starlight owns that path on the unified site.
+    docs: { path: '/api/docs' },
     discover: { prefixes: ['/api'] },
   },
   panels: [
     panel('admin')
-      .path('/admin')
+      .path('/demo')
       .branding({
         name: 'SHAMAR',
         // Icon mark in the sidebar; brand name rendered beside it.

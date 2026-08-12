@@ -1,0 +1,52 @@
+---
+title: Your first resource
+description: Declare a Filament-style resource with form and table schemas.
+---
+
+A **resource** is a CRUD surface: list, create, edit, show — driven by builders on a model class.
+
+```ts
+import { Resource, form, table, TextInput, TextColumn } from '@shamar/core'
+import Product from '#models/product'
+
+export default class ProductResource extends Resource {
+  static model = Product
+  static slug = 'products'
+  static label = 'Products'
+  static navigationGroup = 'Catalog'
+
+  static form() {
+    return form((f) => {
+      f.schema([
+        TextInput.make('name').required(),
+        TextInput.make('sku').required(),
+        TextInput.make('price').numeric().required(),
+      ])
+    })
+  }
+
+  static table() {
+    return table((t) => {
+      t.schema([
+        TextColumn.make('name').searchable().sortable(),
+        TextColumn.make('sku').searchable(),
+        TextColumn.make('price').sortable(),
+      ])
+    })
+  }
+}
+```
+
+Register the resource on a panel in `config/shamar.ts`, then open `/admin/products`.
+
+## Tips
+
+- Use `Section`, `Tabs`, and `Grid` inside `form()` for layout (Filament-style schema nodes).
+- Mark columns `.searchable()` / `.sortable()` for list chrome.
+- Prefer [field catalog](/docs/reference/fields/) widgets over raw HTML.
+
+## Related
+
+- [Forms & fields](/docs/concepts/forms/)
+- [Tables & lists](/docs/concepts/tables/)
+- [Resources](/docs/concepts/resources/)

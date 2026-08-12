@@ -17,7 +17,13 @@ export default class RbacProvider {
   constructor(protected app: ApplicationService) {}
 
   async ready() {
-    const runtime = await this.app.container.make('shamar.runtime')
+    await seedRbacCatalog(this.app)
+  }
+}
+
+/** Sync permissions, roles, and demo API key. Used on boot and after demo wipes. */
+export async function seedRbacCatalog(app: ApplicationService) {
+    const runtime = await app.container.make('shamar.runtime')
 
     await syncPermissionCatalog(runtime.registry)
 
@@ -169,5 +175,5 @@ export default class RbacProvider {
       },
       { upsert: true, new: true },
     )
-  }
 }
+

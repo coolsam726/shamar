@@ -1,0 +1,105 @@
+---
+/**
+ * Shared top nav for marketing pages.
+ */
+const pathname = Astro.url.pathname;
+const links = [
+  { href: '/docs/', label: 'Docs' },
+  { href: '/docs/guides/first-resource/', label: 'Examples' },
+  { href: '/demo', label: 'Demo' },
+];
+---
+
+<header class="site-nav">
+  <a class="site-nav__brand" href="/" aria-label="Shamar home">
+    <img
+      class="site-nav__lockup"
+      src="/branding/shamar-banner.svg"
+      width="180"
+      height="48"
+      alt="Shamar"
+    />
+  </a>
+  <nav class="site-nav__links" aria-label="Primary">
+    {
+      links.map((link) => (
+        <a
+          href={link.href}
+          aria-current={pathname === link.href || pathname.startsWith(link.href.replace(/\/$/, '')) ? 'page' : undefined}
+        >
+          {link.label}
+        </a>
+      ))
+    }
+  </nav>
+  <a class="site-nav__cta" href="/demo">Try demo</a>
+</header>
+
+<style>
+  .site-nav {
+    position: relative;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1.15rem clamp(1.25rem, 4vw, 3rem);
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .site-nav__brand {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .site-nav__lockup {
+    height: 2.35rem;
+    width: auto;
+    display: block;
+  }
+
+  .site-nav__links {
+    display: none;
+    gap: 1.35rem;
+    margin-left: auto;
+  }
+
+  .site-nav__links a {
+    text-decoration: none;
+    color: inherit;
+    opacity: 0.72;
+    font-family: var(--font-body, 'Figtree', sans-serif);
+    font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: -0.01em;
+  }
+
+  .site-nav__links a:hover,
+  .site-nav__links a[aria-current='page'] {
+    opacity: 1;
+  }
+
+  .site-nav__cta {
+    margin-left: auto;
+    text-decoration: none;
+    font-family: var(--font-display, 'Sora', sans-serif);
+    font-weight: 650;
+    font-size: 0.88rem;
+    letter-spacing: -0.02em;
+    padding: 0.55rem 1rem;
+    border-radius: 0.55rem;
+    background: var(--shamar-ember, #f1511b);
+    color: #fff;
+  }
+
+  @media (min-width: 720px) {
+    .site-nav__links {
+      display: flex;
+    }
+    .site-nav__cta {
+      margin-left: 0;
+    }
+  }
+</style>

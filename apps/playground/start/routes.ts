@@ -11,7 +11,28 @@ import { middleware } from '#start/kernel'
 import { controllers } from '#generated/controllers'
 import router from '@adonisjs/core/services/router'
 
-router.on('/').render('pages/home').as('home')
+router
+  .group(() => {
+    router.get('demo-status', [controllers.DemoSandbox, 'status'])
+    router.route('demo-status', ['OPTIONS'], [controllers.DemoSandbox, 'statusOptions'])
+    router.post('demo-reset', [controllers.DemoSandbox, 'reset'])
+  })
+
+/**
+ * Marketing landing is the Astro build synced into public/index.html.
+ * Keep this ahead of catch-alls; static middleware also serves /docs/*.
+ */
+router.get('/', async ({ response, view }) => {
+  const { default: app } = await import('@adonisjs/core/services/app')
+  const { access } = await import('node:fs/promises')
+  const landing = app.publicPath('index.html')
+  try {
+    await access(landing)
+    return response.download(landing)
+  } catch {
+    return view.render('pages/home')
+  }
+})
 
 router
   .group(() => {
@@ -31,7 +52,7 @@ router
 
 /**
  * Example custom API route documented by @shamar/rest.
- * Open /api/shamar/docs to see it alongside Shamar resource CRUD.
+ * Open /api/docs to see it alongside Shamar resource CRUD.
  */
 const { dto, string, optional, number, array } = await import('@shamar/rest')
 const vine = (await import('@vinejs/vine')).default

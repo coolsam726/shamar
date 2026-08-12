@@ -27,4 +27,9 @@ export default await Env.create(new URL('../', import.meta.url), {
 
   // MongoDB (Shamar resources when orm: 'mongoose')
   MONGO_URI: Env.schema.string(),
+
+  // Public sandbox (docs live demo). Optional — defaults off.
+  SHAMAR_DEMO_MODE: Env.schema.boolean.optional(),
+  DEMO_RESET_TOKEN: Env.schema.string.optional(),
+  DEMO_DOCS_ORIGIN: Env.schema.string.optional(),
 })

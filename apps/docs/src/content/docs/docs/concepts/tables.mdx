@@ -1,0 +1,27 @@
+---
+title: Tables & lists
+description: Columns, filters, grouping, and row actions.
+---
+
+```ts
+import { table, TextColumn } from '@shamar/core'
+
+static table() {
+  return table((t) => {
+    t.defaultSort('createdAt', 'desc')
+    t.schema([
+      TextColumn.make('name').searchable().sortable(),
+      TextColumn.make('status').badge(),
+      TextColumn.make('createdAt').dateTime().sortable(),
+    ])
+  })
+}
+```
+
+## List chrome
+
+Shamar’s Adonis host provides search, filters, grouping, bulk actions, pagination, and sticky page headings. Row clicks can open show/edit depending on resource configuration.
+
+## List pages
+
+For read-heavy surfaces without full CRUD routes, use `ListPage` — same table builders, dedicated routes. See [Pages](/docs/concepts/pages/).

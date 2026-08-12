@@ -1,0 +1,44 @@
+# Fly.io — Shamar public demo (playground + Mongo)
+# From monorepo root:
+#   fly apps create shamar-demo
+#   fly secrets set -a shamar-demo APP_KEY=… MONGO_URI=… DEMO_RESET_TOKEN=… DEMO_DOCS_ORIGIN=https://shamar.dev
+#   fly deploy --config apps/playground/fly.toml
+#   fly certs add demo.shamar.dev -a shamar-demo
+# See DEPLOY.md at the repo root.
+
+app = 'shamar-demo'
+primary_region = 'lhr'
+
+[build]
+  # Paths relative to this config file (apps/playground).
+  dockerfile = '../../Dockerfile'
+  docker_build_target = 'production'
+
+[env]
+  HOST = '0.0.0.0'
+  PORT = '8080'
+  NODE_ENV = 'production'
+  SESSION_DRIVER = 'cookie'
+  LOG_LEVEL = 'info'
+  SHAMAR_DEMO_MODE = 'true'
+  APP_URL = 'https://shamar.savannabits.com'
+  DEMO_DOCS_ORIGIN = 'https://shamar.savannabits.com,http://localhost:3333,http://localhost:4321'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = '30s'
+    timeout = '5s'
+    grace_period = '20s'
+    method = 'GET'
+    path = '/demo-status'
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1

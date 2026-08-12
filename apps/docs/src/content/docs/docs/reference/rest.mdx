@@ -1,0 +1,30 @@
+---
+title: REST & OpenAPI
+description: JSON API helpers and Scalar documentation UI.
+---
+
+Add `@shamar/rest` and register its provider **after** `@shamar/adonis/provider`.
+
+```ts
+// adonisrc providers
+() => import('@shamar/adonis/provider'),
+() => import('@shamar/rest/provider'),
+```
+
+Open (paths are configurable; playground uses):
+
+- `/api/docs` — Scalar UI
+- OpenAPI JSON beside that path (see `@shamar/rest` config)
+
+Annotate custom routes:
+
+```ts
+router.get('/api/users', handler).openapi({
+  tags: ['Users'],
+  summary: 'List users',
+  query: listValidator,
+  response: listDto,
+})
+```
+
+Resource CRUD under `/api/shamar` is included automatically when configured.

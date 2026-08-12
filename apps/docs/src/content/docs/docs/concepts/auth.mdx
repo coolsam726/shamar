@@ -1,0 +1,22 @@
+---
+title: Auth & RBAC
+description: Session login, Cherubim abilities, roles, and API keys.
+---
+
+Shamar expects you to own authentication, then plug **Cherubim** for authorization.
+
+## Session login
+
+`@shamar/adonis` can publish a branded login page. Wire `auth.loginMode` (`local` | `ldap` | `both`) and optional LDAP domains in `defineConfig`.
+
+## Abilities & policies
+
+Cherubim syncs a permission catalog from resources (`products:viewAny`, `products:create`, …). Assign permissions to roles; resolve the current user’s abilities in your auth bridge.
+
+## API keys
+
+With Cherubim + playground-style stores, issue PATs / machine keys. Protect `/api/shamar` when `auth.apiKeys.protectApi` is enabled.
+
+## Demo note
+
+The public sandbox seeds `admin@example.com` / `viewer@example.com` with role assignments on each reset — see [Live demo](/docs/guides/live-demo/).

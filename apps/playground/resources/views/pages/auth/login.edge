@@ -21,6 +21,50 @@
   </header>
 
   <div class="auth-panel">
+    @if(demoSandbox)
+      <aside class="auth-demo" role="note" data-demo-sandbox data-next-reset="{{ demoSandbox.nextResetAt }}">
+        <p class="auth-demo__title">Shared sandbox</p>
+        <p class="auth-demo__body">
+          Resets every {{ demoSandbox.intervalMinutes }} minutes.
+          Next wipe in
+          <strong data-demo-countdown>…</strong>
+          (<time datetime="{{ demoSandbox.nextResetAt }}">{{ demoSandbox.nextResetAt }}</time>).
+        </p>
+        <ul class="auth-demo__accounts">
+          @each(account in demoSandbox.accounts)
+            <li>
+              <strong>{{ account.role }}</strong>
+              — {{ account.email }} / <code>{{ account.password }}</code>
+            </li>
+          @endeach
+        </ul>
+      </aside>
+      <script>
+        (function () {
+          var root = document.querySelector('[data-demo-sandbox]')
+          if (!root) return
+          var el = root.querySelector('[data-demo-countdown]')
+          var raw = root.getAttribute('data-next-reset')
+          if (!el || !raw) return
+          var target = Date.parse(raw)
+          if (Number.isNaN(target)) return
+          function tick() {
+            var ms = target - Date.now()
+            if (ms <= 0) {
+              el.textContent = 'resetting…'
+              return
+            }
+            var total = Math.floor(ms / 1000)
+            var m = Math.floor(total / 60)
+            var s = total % 60
+            el.textContent = m + ':' + String(s).padStart(2, '0')
+          }
+          tick()
+          setInterval(tick, 1000)
+        })()
+      </script>
+    @endif
+
     @if(flashMessages.has('error'))
       <p class="auth-alert" role="alert">{{ flashMessages.get('error') }}</p>
     @end

@@ -1,0 +1,31 @@
+---
+title: Live demo
+description: Shared Shamar sandbox with credentials that reset every 20 minutes.
+---
+
+import DemoCredentials from '../../../../components/DemoCredentials.astro';
+
+The product site and admin panel share one server. Open **`/demo`** for the live panel (sign in at `/login`).
+
+<DemoCredentials />
+
+## What you can try
+
+- Admin panel at `/demo` — products, companies, media, settings pages
+- File manager + `FilePicker`
+- Rich editors (simple / notion / document)
+- Roles, permissions, and API keys
+
+## How resets work
+
+Every **20 minutes** the demo:
+
+1. Wipes the Mongo database
+2. Re-seeds users, catalog data, and roles
+3. Publishes a fresh `nextResetAt` on `GET /demo-status`
+
+Sessions bound to old user ids stop working after a wipe — sign in again with the credentials above.
+
+## Self-host
+
+This is [`apps/playground`](https://github.com/coolsam726/shamar/tree/main/apps/playground) serving the Astro site from `public/` with `SHAMAR_DEMO_MODE=1`. See [DEPLOY.md](https://github.com/coolsam726/shamar/blob/main/DEPLOY.md).

@@ -4,6 +4,8 @@
 
 Inspired by [Filament](https://filamentphp.com/) (PHP) and architecturally aligned with [Loom](https://github.com/coolsam726/nodeweaver) (NestJS), but built natively for the latest AdonisJS stack.
 
+**Documentation + demo:** one server — `pnpm site:build` then playground. Routes: `/` landing, `/docs`, `/demo` panel. Hosting: [`DEPLOY.md`](DEPLOY.md) (`shamar.savannabits.com`).
+
 ## Packages
 
 | Package | Description |
@@ -196,7 +198,7 @@ export default class LegacyProductResource extends Resource {
 
 ## Playground
 
-[`apps/playground`](apps/playground) is the living Mongoose demo (dual panels `/admin` + `/app`, session auth, API keys, RBAC). See its README for run instructions and seed credentials.
+[`apps/playground`](apps/playground) is the living Mongoose demo (dual panels `/admin` + `/app`, session auth, API keys, RBAC). See its README for run instructions and seed credentials. Enable `SHAMAR_DEMO_MODE` for the public 20-minute reset sandbox used by [`apps/docs`](apps/docs).
 
 ## CI
 

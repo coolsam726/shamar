@@ -1,0 +1,40 @@
+---
+title: Forms & fields
+description: Schema builders, live fields, and the field registry.
+---
+
+Forms use a Filament-style schema tree: sections, tabs, grids, and field builders.
+
+```ts
+import { form, Section, TextInput, Toggle, DatePicker } from '@shamar/core'
+
+static form() {
+  return form((f) => {
+    f.schema([
+      Section.make('Basics').schema([
+        TextInput.make('name').required(),
+        Toggle.make('active').inline().default(true),
+        DatePicker.make('launchDate'),
+      ]),
+    ])
+  })
+}
+```
+
+## Hydrate / dehydrate
+
+The core **field registry** maps request payloads and records per field type (dates, key-value, rating, rich HTML, repeaters, …). Prefer built-in types over custom parsing in controllers.
+
+## Live reactivity
+
+```ts
+TextInput.make('slug')
+  .live()
+  .afterStateUpdated(({ get, set }) => {
+    if (!get('slug')) set('slug', slugify(String(get('name') ?? '')))
+  })
+```
+
+## Catalog
+
+See the [field catalog](/docs/reference/fields/) for widgets (pickers, editors, relations, etc.).

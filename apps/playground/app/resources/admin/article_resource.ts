@@ -89,7 +89,7 @@ export default class ArticleResource extends Resource {
                 .afterStateUpdated(({ get, set }) => {
                   const id = String(get('coverMediaId') ?? '').trim()
                   if (id) {
-                    set('coverUrl', `/admin/media/files/${id}/raw`)
+                    set('coverUrl', `/demo/media/files/${id}/raw`)
                   }
                 }),
               TextInput.make('coverUrl')

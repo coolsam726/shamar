@@ -1,0 +1,45 @@
+---
+title: Pages
+description: FormPage, SettingsPage, ListPage, and composite Page layouts.
+---
+
+Besides resources, panels can register **pages** — custom screens discovered via `.discoverPages('app/pages/admin')`.
+
+## SettingsPage (recommended for app settings)
+
+```ts
+import { SettingsPage, form, Section, TextInput } from '@shamar/core'
+
+export default class BrandingSettingsPage extends SettingsPage {
+  static override slug = 'settings'
+  static override label = 'Settings'
+  static override navigationGroup = 'Settings'
+
+  static override form() {
+    return form((f) => {
+      f.schema([Section.make('Branding').schema([TextInput.make('name')])])
+    })
+  }
+
+  static override async fill() {
+    return { name: '' }
+  }
+
+  static override async save(data: Record<string, unknown>) {
+    // persist singleton
+    return { message: 'Settings saved' }
+  }
+}
+```
+
+Defaults: `contentMaxWidth: '7xl'` and the shared `shamar::page-form` view with **Save** in the sticky page actions.
+
+## FormPage / ListPage / composite Page
+
+| Class | Use |
+|-------|-----|
+| `FormPage` | One form without settings defaults |
+| `ListPage` | Standalone table (+ optional `infolist()` for row show) |
+| `Page` + `content()` | Mix forms, tables, infolists, Edge includes |
+
+See the playground: Settings, Product catalog, Ops dashboard.

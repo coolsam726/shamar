@@ -8,9 +8,9 @@ This is the reference integration for [`@shamar/adonis`](../../packages/adonis) 
 
 | Surface | Path | Notes |
 |---------|------|--------|
-| Admin panel | `/admin` | Full CRUD resources (companies, users, roles, permissions, products, API keys, …) |
-| Pages | `/admin/settings`, `/admin/product-catalog`, `/admin/ops-dashboard` | Form, list, and composite `Page` demos |
-| Files | `/admin/media` | Media library (folder tree, FilePicker) |
+| Admin panel | `/demo` | Full CRUD resources (companies, users, roles, permissions, products, API keys, …) |
+| Pages | `/demo/settings`, `/demo/product-catalog`, `/demo/ops-dashboard` | Form, list, and composite `Page` demos |
+| Files | `/demo/media` | Media library (folder tree, FilePicker) |
 | App panel | `/app` | Smaller end-user panel (e.g. profile) |
 | JSON API | `/api/shamar` | Protected when `auth.apiKeys.protectApi` is enabled |
 | Login | `/login` | Session guard (`web`) |
@@ -44,9 +44,20 @@ On boot the Mongo provider seeds an admin user (if missing):
 | Email | `admin@example.com` |
 | Password | `password` |
 
+### Public demo mode
+
+Set `SHAMAR_DEMO_MODE=true` to enable the docs sandbox:
+
+- `GET /demo-status` — credentials + `nextResetAt` (CORS for `DEMO_DOCS_ORIGIN`)
+- `POST /demo-reset` — wipe + reseed (requires `DEMO_RESET_TOKEN`)
+- Automatic wipe every **20 minutes**
+- Login banner with shared accounts
+
+See [`.env.example`](./.env.example) and [`fly.toml`](./fly.toml) for deployment.
+
 ## Try next
 
-- Browse `/admin` — list filters, grouping, bulk actions, relation fields
+- Browse `/demo` — list filters, grouping, bulk actions, relation fields
 - **Roles / permissions** — catalog + `PermissionsAssignment` on roles
 - **API Keys** — create a PAT or machine key; secret shown once; dual headers `X-Api-Key` + `Authorization: Bearer`
 - Soft-deleted / locked resources and policies under `app/policies`
@@ -62,6 +73,10 @@ apps/playground/
   config/shamar.ts       # panels + auth wiring
   providers/             # mongo connect + seed, RBAC boot
 ```
+
+## Deploy
+
+Single host (landing + docs + panel). See [`DEPLOY.md`](../../DEPLOY.md).
 
 ## Related
 
