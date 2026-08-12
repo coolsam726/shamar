@@ -1,0 +1,42 @@
+---
+title: Settings page recipe
+description: Singleton settings with SettingsPage and sticky Save.
+---
+
+```ts
+import { SettingsPage, form, Tabs, Tab, Section, TextInput } from '@shamar/core'
+
+export default class AppSettingsPage extends SettingsPage {
+  static override slug = 'settings'
+  static override label = 'Settings'
+  static override icon = 'cog'
+
+  static override form() {
+    return form((f) => {
+      f.schema([
+        Tabs.make()
+          .columnSpanFull()
+          .tabs([
+            Tab.make('Branding').schema([
+              Section.make('App branding').schema([
+                TextInput.make('name').label('Brand name'),
+              ]),
+            ]),
+          ]),
+      ])
+    })
+  }
+
+  static override async fill() {
+    /* load singleton */
+    return { name: '' }
+  }
+
+  static override async save(data: Record<string, unknown>) {
+    /* persist */
+    return { message: 'Settings saved' }
+  }
+}
+```
+
+Save lives in the sticky heading (page actions). Layout width defaults to `7xl`.

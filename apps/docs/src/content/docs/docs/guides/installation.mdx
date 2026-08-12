@@ -1,0 +1,56 @@
+---
+title: Installation
+description: Add Shamar to an AdonisJS app with Lucid or Mongoose.
+---
+
+Shamar plugs into AdonisJS as a service provider. Pick an ORM adapter, configure a panel, and open `/admin`.
+
+## Install packages
+
+```bash
+pnpm add @shamar/adonis
+# plus one of:
+pnpm add @adonisjs/lucid    # SQL
+# or
+pnpm add mongoose           # MongoDB
+```
+
+Optional companions:
+
+```bash
+pnpm add @shamar/cherubim   # RBAC + API credentials
+pnpm add @shamar/rest       # OpenAPI + Scalar UI
+```
+
+## Configure
+
+```bash
+node ace configure @shamar/adonis
+```
+
+The codemod registers the provider, stubs `config/shamar.ts`, and asks Lucid vs Mongoose.
+
+## Minimal panel
+
+```ts
+// config/shamar.ts
+import { defineConfig, panel } from '@shamar/adonis'
+import { UserResource } from '#resources/admin/user_resource'
+
+export default defineConfig({
+  panels: [
+    panel('admin')
+      .path('/admin')
+      .branding({ name: 'Admin', primaryColor: '#f1511b' })
+      .resources([UserResource]),
+  ],
+})
+```
+
+Boot the app and visit `/admin` (after your auth middleware allows it).
+
+## Next
+
+- [Your first resource](/docs/guides/first-resource/)
+- [Live demo](/docs/guides/live-demo/) — try a seeded sandbox without installing
+- [Packages](/docs/reference/packages/) — what each `@shamar/*` package owns

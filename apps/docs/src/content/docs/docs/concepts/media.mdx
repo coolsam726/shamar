@@ -1,0 +1,24 @@
+---
+title: Media library
+description: File Manager, folders, and FilePicker fields.
+---
+
+Enable media on a panel to get a File Manager UI and `FilePicker` form fields.
+
+```ts
+panel('admin').media({
+  label: 'Files',
+  // disk / visibility options per host docs
+})
+```
+
+```ts
+import { FilePicker } from '@shamar/core'
+
+FilePicker.make('logoMediaId')
+  .image()
+  .makePublic()
+  .label('Logo')
+```
+
+Adapters under `@shamar/mongoose` / `@shamar/lucid` persist folders and files; public URLs can power login branding overrides.

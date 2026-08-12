@@ -1,0 +1,19 @@
+---
+title: Branding
+description: Panel branding and runtime logo overrides.
+---
+
+```ts
+panel('admin').branding({
+  name: 'Shamar',
+  primaryColor: '#f1511b',
+  accentColor: '#286291',
+  brandDisplay: 'both', // logo | name | both
+  logo: '/branding/logo.svg',
+  logoDark: '/branding/logo-dark.svg',
+})
+```
+
+Use `resolveBrandingOverrides` in `defineConfig` to overlay logos from a Settings singleton (DB) at request time — prefer that over per-company logos for global admin chrome.
+
+Google Fonts helpers are available on branding config for shell typography.

@@ -38,6 +38,9 @@ jobs:
       - name: Test packages
         run: pnpm test
 
+      - name: Build docs site into playground public
+        run: PUBLIC_SITE_URL=https://shamar.savannabits.com PUBLIC_DEMO_URL= pnpm site:build
+
       - name: Prepare playground env
         run: cp apps/playground/.env.example apps/playground/.env
 

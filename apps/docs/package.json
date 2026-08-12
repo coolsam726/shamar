@@ -1,0 +1,22 @@
+{
+  "name": "@shamar/docs",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "description": "Shamar framework documentation (Astro + Starlight)",
+  "scripts": {
+    "dev": "astro dev --port 4321",
+    "start": "astro dev --port 4321",
+    "build": "astro build",
+    "preview": "astro preview --port 4321",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.41.7",
+    "astro": "^7.1.6",
+    "sharp": "^0.35.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

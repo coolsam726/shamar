@@ -13,6 +13,15 @@ tmp/*
 # Frontend assets compiled code
 public/assets
 
+# Synced Astro site (from `pnpm site:build`)
+public/index.html
+public/404.html
+public/docs/
+public/_astro/
+public/pagefind/
+public/sitemap-index.xml
+public/sitemap-0.xml
+
 # Media library blobs (local disk)
 storage/media
 

@@ -15,7 +15,7 @@ import Asset from '#models/asset'
 
 /**
  * Legacy FileUpload demo — hidden from nav; use the built-in Files media manager instead.
- * Slug remains `files` (not `assets`) — `/admin/assets/*` is reserved for panel static assets.
+ * Slug remains `files` (not `assets`) — `/demo/assets/*` is reserved for panel static assets.
  */
 export default class AssetResource extends Resource {
   static override model = Asset

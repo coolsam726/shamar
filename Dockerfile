@@ -12,6 +12,7 @@ RUN apt-get update \
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/playground/package.json ./apps/playground/
+COPY apps/docs/package.json ./apps/docs/
 COPY packages/core/package.json ./packages/core/
 COPY packages/cherubim/package.json ./packages/cherubim/
 COPY packages/adonis/package.json ./packages/adonis/
@@ -39,7 +40,13 @@ ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=3333
 
-RUN pnpm --filter @shamar/playground exec node ace build --ignore-ts-errors
+ARG PUBLIC_SITE_URL=https://shamar.savannabits.com
+ENV PUBLIC_SITE_URL=$PUBLIC_SITE_URL
+ENV PUBLIC_DEMO_URL=
+
+RUN pnpm docs:build \
+  && node scripts/sync-site-to-playground.mjs \
+  && pnpm --filter @shamar/playground exec node ace build --ignore-ts-errors
 
 WORKDIR /workspace/apps/playground/build
 EXPOSE 3333

@@ -102,7 +102,9 @@ export type ScannedRoutes = {
     'shamar.media.public': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'shamar.rest.openapi': { paramsTuple?: []; params?: {} }
     'shamar.rest.docs': { paramsTuple?: []; params?: {} }
-    'home': { paramsTuple?: []; params?: {} }
+    'demo_sandbox.status': { paramsTuple?: []; params?: {} }
+    'demo_sandbox.status_options': { paramsTuple?: []; params?: {} }
+    'demo_sandbox.reset': { paramsTuple?: []; params?: {} }
     'new_account.create': { paramsTuple?: []; params?: {} }
     'new_account.store': { paramsTuple?: []; params?: {} }
     'session.create': { paramsTuple?: []; params?: {} }
@@ -157,7 +159,7 @@ export type ScannedRoutes = {
     'shamar.media.public': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'shamar.rest.openapi': { paramsTuple?: []; params?: {} }
     'shamar.rest.docs': { paramsTuple?: []; params?: {} }
-    'home': { paramsTuple?: []; params?: {} }
+    'demo_sandbox.status': { paramsTuple?: []; params?: {} }
     'new_account.create': { paramsTuple?: []; params?: {} }
     'session.create': { paramsTuple?: []; params?: {} }
   }
@@ -209,7 +211,7 @@ export type ScannedRoutes = {
     'shamar.media.public': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'shamar.rest.openapi': { paramsTuple?: []; params?: {} }
     'shamar.rest.docs': { paramsTuple?: []; params?: {} }
-    'home': { paramsTuple?: []; params?: {} }
+    'demo_sandbox.status': { paramsTuple?: []; params?: {} }
     'new_account.create': { paramsTuple?: []; params?: {} }
     'session.create': { paramsTuple?: []; params?: {} }
   }
@@ -259,6 +261,7 @@ export type ScannedRoutes = {
     'shamar.app.resources.destroy': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
     'shamar.app.resources.update': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
     'shamar.api.store': { paramsTuple: [ParamValue]; params: {'slug': ParamValue} }
+    'demo_sandbox.reset': { paramsTuple?: []; params?: {} }
     'new_account.store': { paramsTuple?: []; params?: {} }
     'session.store': { paramsTuple?: []; params?: {} }
     'session.destroy': { paramsTuple?: []; params?: {} }
@@ -272,6 +275,9 @@ export type ScannedRoutes = {
     'shamar.admin.resources.destroy.delete': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
     'shamar.app.resources.destroy.delete': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
     'shamar.api.destroy': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
+  }
+  OPTIONS: {
+    'demo_sandbox.status_options': { paramsTuple?: []; params?: {} }
   }
 }
 declare module '@adonisjs/core/types/http' {
