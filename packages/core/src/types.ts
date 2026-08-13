@@ -681,4 +681,6 @@ export interface PanelConfig {
    * Default `false` — empty authorization is denied at the panel gate.
    */
   allowUsersWithoutRoles?: boolean;
+  /** Panel home dashboard class. Defaults to built-in {@link DashboardPage}. */
+  dashboardPage?: typeof import('./dashboard-page.js').DashboardPage;
 }

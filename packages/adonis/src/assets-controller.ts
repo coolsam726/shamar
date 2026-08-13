@@ -4,6 +4,8 @@ import { buildBrandingCss, resolveBranding } from './shamar/branding.js';
 import {
   shamarAdminCssPath,
   shamarAlpineJsPath,
+  shamarApexChartsPath,
+  shamarChartJsPath,
   shamarFlowbiteDatepickerCssPath,
   shamarFlowbiteDatepickerJsPath,
   shamarRichEditorAssetPath,
@@ -72,6 +74,18 @@ export class AssetsController {
     response.header('Content-Type', 'application/javascript; charset=utf-8');
     response.header('Cache-Control', 'public, max-age=3600');
     return response.send(readFileSync(shamarFlowbiteDatepickerJsPath(), 'utf8'));
+  }
+
+  apexCharts({ response }: HttpContext) {
+    response.header('Content-Type', 'application/javascript; charset=utf-8');
+    response.header('Cache-Control', 'public, max-age=3600');
+    return response.send(readFileSync(shamarApexChartsPath(), 'utf8'));
+  }
+
+  chartJs({ response }: HttpContext) {
+    response.header('Content-Type', 'application/javascript; charset=utf-8');
+    response.header('Cache-Control', 'public, max-age=3600');
+    return response.send(readFileSync(shamarChartJsPath(), 'utf8'));
   }
 
   richEditorAsset(ctx: HttpContext) {

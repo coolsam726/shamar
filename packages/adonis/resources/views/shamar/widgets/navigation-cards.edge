@@ -1,0 +1,27 @@
+<div class="shamar-card shamar-dashboard-widget__card rounded-xl p-5 h-full">
+  @if(widget.heading)
+    <h3 class="mb-4 text-base font-bold tracking-tight text-heading">{{ widget.heading }}</h3>
+  @endif
+
+  <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    @each(card in widget.payload.cards)
+      @let(root = { icon: card.icon ?? 'squares-2x2' })
+      <a
+        href="{{ card.href }}"
+        class="group shamar-dashboard-card rounded-xl border border-default/60 bg-neutral-secondary/30 p-5 transition hover:border-fg-brand/40"
+      >
+        <div class="mb-3 flex items-center gap-3">
+          <span class="shamar-dashboard-card__icon flex h-10 w-10 items-center justify-center rounded-lg text-fg-brand">
+            @include('shamar::partials/icon')
+          </span>
+          <h4 class="text-base font-bold tracking-tight text-heading group-hover:text-fg-brand">{{ card.label }}</h4>
+        </div>
+        <p class="text-sm text-body-subtle">Open {{ card.label }}</p>
+      </a>
+    @else
+      <div class="rounded-xl border border-default/60 bg-neutral-secondary/30 p-6 sm:col-span-2 xl:col-span-3">
+        <p class="text-sm text-body-subtle">{{ widget.payload.emptyMessage ?? 'No resources registered yet.' }}</p>
+      </div>
+    @endeach
+  </div>
+</div>

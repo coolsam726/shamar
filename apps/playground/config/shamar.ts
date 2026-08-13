@@ -4,6 +4,7 @@ import { toCherubimUser, sanitizeRoleIds, type AuthLoginMode } from '@shamar/che
 import { resolveDatabaseRolePermissions } from '#auth/role_resolver'
 import { resolvePlaygroundApiKeyUser } from '#auth/api_key_store'
 import { resolvePlaygroundBrandingOverrides } from '#branding/resolve_overrides'
+import AdminDashboard from '#pages/admin/dashboard_page'
 import MediaFolder from '#models/media_folder'
 import MediaFile from '#models/media_file'
 
@@ -157,9 +158,9 @@ export default defineConfig({
     disk: 'shamar',
     root: 'storage/media',
     publicPath: '/media',
-    label: 'Files',
-    navigationGroup: 'System',
-    navigationSort: 50,
+    label: 'Media Library',
+    // Omit / empty → top-level sidebar root (not nested under System).
+    navigationSort: 1000,
     navigationIcon: 'folder',
     adapter: () =>
       createMongooseMediaLibraryAdapter({
@@ -195,6 +196,7 @@ export default defineConfig({
       .brandDisplay('both')
       .contentMaxWidth('screen-2xl')
       .defaultPerPage(10)
+      .dashboardPage(AdminDashboard)
       .discoverResources('app/resources/admin')
       .discoverPages('app/pages/admin'),
     panel('app')

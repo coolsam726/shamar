@@ -133,7 +133,7 @@
               aria-label="Tiles view"
               :aria-pressed="viewMode === 'tiles'"
             >
-              <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" aria-hidden="true"><path d="M3 5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5zm10 0a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-6a2 2 0 0 1-2-2V5zM3 15a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6zm10 0a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-6a2 2 0 0 1-2-2v-6z"/></svg>
+              <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" aria-hidden="true"><path d="M4 5h6v6H4V5zm8 1h8v2h-8V6zm0 4h6v2h-6v-2zM4 13h6v6H4v-6zm8 1h8v2h-8v-2zm0 4h6v2h-6v-2z"/></svg>
             </button>
             <button
               type="button"
@@ -173,7 +173,8 @@
         </div>
       </div>
 
-      <div class="shamar-media__bulk" x-show="selection.length" x-cloak>
+      {{-- Bulk action strip: multi-select only (Ctrl/Cmd or Shift range). Single select → context menu. --}}
+      <div class="shamar-media__bulk" x-show="selection.length > 1" x-cloak>
         <span class="shamar-media__bulk-label" x-text="selectionLabel()"></span>
         <div class="shamar-media__bulk-actions">
           <button type="button" class="shamar-btn shamar-btn--ghost" @click="cutItem()">Cut</button>
@@ -271,12 +272,12 @@
           </template>
         </div>
 
-        {{-- Tiles view --}}
-        <div class="shamar-media__grid shamar-media__grid--tiles" x-show="viewMode === 'tiles' && (folders.length || files.length)">
+        {{-- Tiles view: horizontal icon + caption rows (not card grid) --}}
+        <div class="shamar-media__tiles" x-show="viewMode === 'tiles' && (folders.length || files.length)">
           <template x-for="row in sortedBrowseItems()" :key="'t-' + row.key">
             <button
               type="button"
-              class="shamar-media__tile"
+              class="shamar-media__tile-row"
               :class="{
                 'is-folder': row.kind === 'folder',
                 'is-selected': isItemSelected(row.kind, row.item.id),
@@ -293,10 +294,10 @@
               @dragleave.prevent="row.kind === 'folder' ? clearDropTarget() : null"
               @drop.prevent.stop="row.kind === 'folder' ? onDropOnTarget($event, row.item.id) : null"
             >
-              <span class="shamar-media__tile-preview">
+              <span class="shamar-media__tile-row-preview">
                 <template x-if="row.kind === 'folder'">
                   <span class="shamar-media__tile-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="40" height="40"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
                   </span>
                 </template>
                 <template x-if="row.kind === 'file' && row.item.isImage">
@@ -304,14 +305,19 @@
                 </template>
                 <template x-if="row.kind === 'file' && !row.item.isImage">
                   <span class="shamar-media__tile-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="40" height="40"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
                   </span>
                 </template>
               </span>
-              <span class="shamar-media__tile-name" x-text="row.item.name"></span>
-              <span class="shamar-media__tile-meta" x-show="row.kind === 'file'" x-text="humanSize(row.item.size)"></span>
-              <span class="shamar-media__tile-meta" x-show="row.kind === 'folder'">Folder</span>
-              <span class="shamar-media__badge" x-show="row.kind === 'file' && row.item.visibility === 'public'" x-cloak>Public</span>
+              <span class="shamar-media__tile-row-body">
+                <span class="shamar-media__tile-row-name" x-text="row.item.name"></span>
+                <span class="shamar-media__tile-row-meta">
+                  <span x-show="row.kind === 'folder'">Folder</span>
+                  <span x-show="row.kind === 'file'" x-text="humanSize(row.item.size)"></span>
+                  <span x-show="row.kind === 'file' && row.item.mime" x-text="row.item.mime"></span>
+                  <span class="shamar-media__badge" x-show="row.kind === 'file' && row.item.visibility === 'public'" x-cloak>Public</span>
+                </span>
+              </span>
             </button>
           </template>
         </div>
@@ -363,22 +369,62 @@
               <tr>
                 <th scope="col">
                   <button type="button" class="shamar-media__sort" :class="{ 'is-active': isSorted('name') }" @click="toggleSort('name')">
-                    Name <span class="shamar-media__sort-indicator" x-text="sortIndicator('name')"></span>
+                    Name
+                    <span
+                      class="shamar-sort-indicator"
+                      :class="isSorted('name') ? (sortDirection === 'desc' ? 'is-desc' : 'is-asc') : 'is-idle'"
+                      aria-hidden="true"
+                    >
+                      <svg viewBox="0 0 10 16" width="10" height="14" fill="currentColor" focusable="false">
+                        <path class="shamar-sort-indicator__up" d="M5 1.5L9.25 7H.75L5 1.5z"/>
+                        <path class="shamar-sort-indicator__down" d="M5 14.5L.75 9h8.5L5 14.5z"/>
+                      </svg>
+                    </span>
                   </button>
                 </th>
                 <th scope="col">
                   <button type="button" class="shamar-media__sort" :class="{ 'is-active': isSorted('type') }" @click="toggleSort('type')">
-                    Type <span class="shamar-media__sort-indicator" x-text="sortIndicator('type')"></span>
+                    Type
+                    <span
+                      class="shamar-sort-indicator"
+                      :class="isSorted('type') ? (sortDirection === 'desc' ? 'is-desc' : 'is-asc') : 'is-idle'"
+                      aria-hidden="true"
+                    >
+                      <svg viewBox="0 0 10 16" width="10" height="14" fill="currentColor" focusable="false">
+                        <path class="shamar-sort-indicator__up" d="M5 1.5L9.25 7H.75L5 1.5z"/>
+                        <path class="shamar-sort-indicator__down" d="M5 14.5L.75 9h8.5L5 14.5z"/>
+                      </svg>
+                    </span>
                   </button>
                 </th>
                 <th scope="col">
                   <button type="button" class="shamar-media__sort" :class="{ 'is-active': isSorted('size') }" @click="toggleSort('size')">
-                    Size <span class="shamar-media__sort-indicator" x-text="sortIndicator('size')"></span>
+                    Size
+                    <span
+                      class="shamar-sort-indicator"
+                      :class="isSorted('size') ? (sortDirection === 'desc' ? 'is-desc' : 'is-asc') : 'is-idle'"
+                      aria-hidden="true"
+                    >
+                      <svg viewBox="0 0 10 16" width="10" height="14" fill="currentColor" focusable="false">
+                        <path class="shamar-sort-indicator__up" d="M5 1.5L9.25 7H.75L5 1.5z"/>
+                        <path class="shamar-sort-indicator__down" d="M5 14.5L.75 9h8.5L5 14.5z"/>
+                      </svg>
+                    </span>
                   </button>
                 </th>
                 <th scope="col">
                   <button type="button" class="shamar-media__sort" :class="{ 'is-active': isSorted('visibility') }" @click="toggleSort('visibility')">
-                    Visibility <span class="shamar-media__sort-indicator" x-text="sortIndicator('visibility')"></span>
+                    Visibility
+                    <span
+                      class="shamar-sort-indicator"
+                      :class="isSorted('visibility') ? (sortDirection === 'desc' ? 'is-desc' : 'is-asc') : 'is-idle'"
+                      aria-hidden="true"
+                    >
+                      <svg viewBox="0 0 10 16" width="10" height="14" fill="currentColor" focusable="false">
+                        <path class="shamar-sort-indicator__up" d="M5 1.5L9.25 7H.75L5 1.5z"/>
+                        <path class="shamar-sort-indicator__down" d="M5 14.5L.75 9h8.5L5 14.5z"/>
+                      </svg>
+                    </span>
                   </button>
                 </th>
               </tr>

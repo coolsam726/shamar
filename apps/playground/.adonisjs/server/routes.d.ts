@@ -11,6 +11,8 @@ export type ScannedRoutes = {
     'shamar.admin.assets.alpineJs': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.flowbiteDatepickerCss': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.flowbiteDatepickerJs': { paramsTuple?: []; params?: {} }
+    'shamar.admin.assets.apexCharts': { paramsTuple?: []; params?: {} }
+    'shamar.admin.assets.chartJs': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.richEditor': { paramsTuple: [ParamValue]; params: {'file': ParamValue} }
     'shamar.admin.media.index': { paramsTuple?: []; params?: {} }
     'shamar.admin.media.browse': { paramsTuple?: []; params?: {} }
@@ -56,6 +58,8 @@ export type ScannedRoutes = {
     'shamar.app.assets.alpineJs': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.flowbiteDatepickerCss': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.flowbiteDatepickerJs': { paramsTuple?: []; params?: {} }
+    'shamar.app.assets.apexCharts': { paramsTuple?: []; params?: {} }
+    'shamar.app.assets.chartJs': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.richEditor': { paramsTuple: [ParamValue]; params: {'file': ParamValue} }
     'shamar.app.media.index': { paramsTuple?: []; params?: {} }
     'shamar.app.media.browse': { paramsTuple?: []; params?: {} }
@@ -119,6 +123,8 @@ export type ScannedRoutes = {
     'shamar.admin.assets.alpineJs': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.flowbiteDatepickerCss': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.flowbiteDatepickerJs': { paramsTuple?: []; params?: {} }
+    'shamar.admin.assets.apexCharts': { paramsTuple?: []; params?: {} }
+    'shamar.admin.assets.chartJs': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.richEditor': { paramsTuple: [ParamValue]; params: {'file': ParamValue} }
     'shamar.admin.media.index': { paramsTuple?: []; params?: {} }
     'shamar.admin.media.browse': { paramsTuple?: []; params?: {} }
@@ -140,6 +146,8 @@ export type ScannedRoutes = {
     'shamar.app.assets.alpineJs': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.flowbiteDatepickerCss': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.flowbiteDatepickerJs': { paramsTuple?: []; params?: {} }
+    'shamar.app.assets.apexCharts': { paramsTuple?: []; params?: {} }
+    'shamar.app.assets.chartJs': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.richEditor': { paramsTuple: [ParamValue]; params: {'file': ParamValue} }
     'shamar.app.media.index': { paramsTuple?: []; params?: {} }
     'shamar.app.media.browse': { paramsTuple?: []; params?: {} }
@@ -171,6 +179,8 @@ export type ScannedRoutes = {
     'shamar.admin.assets.alpineJs': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.flowbiteDatepickerCss': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.flowbiteDatepickerJs': { paramsTuple?: []; params?: {} }
+    'shamar.admin.assets.apexCharts': { paramsTuple?: []; params?: {} }
+    'shamar.admin.assets.chartJs': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.richEditor': { paramsTuple: [ParamValue]; params: {'file': ParamValue} }
     'shamar.admin.media.index': { paramsTuple?: []; params?: {} }
     'shamar.admin.media.browse': { paramsTuple?: []; params?: {} }
@@ -192,6 +202,8 @@ export type ScannedRoutes = {
     'shamar.app.assets.alpineJs': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.flowbiteDatepickerCss': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.flowbiteDatepickerJs': { paramsTuple?: []; params?: {} }
+    'shamar.app.assets.apexCharts': { paramsTuple?: []; params?: {} }
+    'shamar.app.assets.chartJs': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.richEditor': { paramsTuple: [ParamValue]; params: {'file': ParamValue} }
     'shamar.app.media.index': { paramsTuple?: []; params?: {} }
     'shamar.app.media.browse': { paramsTuple?: []; params?: {} }

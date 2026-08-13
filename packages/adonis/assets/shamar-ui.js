@@ -3790,11 +3790,6 @@
         }
       },
 
-      sortIndicator(column) {
-        if (this.sortColumn !== column) return '';
-        return this.sortDirection === 'asc' ? '↑' : '↓';
-      },
-
       isSorted(column) {
         return this.sortColumn === column;
       },
@@ -6765,4 +6760,241 @@
       { passive: false },
     );
   }
+
+  let apexChartsReady = null;
+  function loadApexCharts() {
+    if (typeof window.ApexCharts === 'function') return Promise.resolve();
+    if (!apexChartsReady) {
+      apexChartsReady = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = shamarAssetUrl('/assets/vendor/apexcharts.min.js');
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Failed to load ApexCharts'));
+        document.head.appendChild(script);
+      });
+    }
+    return apexChartsReady;
+  }
+
+  let chartJsReady = null;
+  function loadChartJs() {
+    if (typeof window.Chart === 'function') return Promise.resolve();
+    if (!chartJsReady) {
+      chartJsReady = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = shamarAssetUrl('/assets/vendor/chart.umd.min.js');
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Failed to load Chart.js'));
+        document.head.appendChild(script);
+      });
+    }
+    return chartJsReady;
+  }
+
+  function readBrandColor() {
+    const value = getComputedStyle(document.documentElement).getPropertyValue('--color-fg-brand');
+    return value?.trim() || '#f1511b';
+  }
+
+  function defaultSeriesColors(count) {
+    const brand = readBrandColor();
+    const palette = [brand, '#286291', '#64748b', '#16a34a', '#ca8a04', '#dc2626'];
+    return Array.from({ length: count }, (_, index) => palette[index % palette.length]);
+  }
+
+  function createApexChart(el, config) {
+    const labels = Array.isArray(config.data?.labels) ? config.data.labels : [];
+    const datasets = Array.isArray(config.data?.datasets) ? config.data.datasets : [];
+    const apexType =
+      config.type === 'pie'
+        ? 'pie'
+        : config.type === 'donut'
+          ? 'donut'
+          : config.type === 'area'
+            ? 'area'
+            : config.type || 'line';
+    const series = datasets.map((dataset, index) => ({
+      name: dataset.label || `Series ${index + 1}`,
+      data: Array.isArray(dataset.data) ? dataset.data : [],
+    }));
+    // Pie/donut: one color per slice. Other charts: one color per dataset.
+    const isRadial = apexType === 'donut' || apexType === 'pie';
+    const colorCount = isRadial ? Math.max(labels.length, 1) : Math.max(datasets.length, 1);
+    const palette = defaultSeriesColors(colorCount);
+    const chartColors = isRadial
+      ? labels.map((_, index) => palette[index])
+      : datasets.map((dataset, index) => dataset.color || palette[index]);
+
+    const options = {
+      chart: {
+        type: apexType,
+        height: 220,
+        fontFamily: 'inherit',
+        toolbar: { show: false },
+        animations: { enabled: true },
+      },
+      series: isRadial ? (series[0]?.data ?? []) : series,
+      colors: chartColors,
+      stroke: {
+        curve: 'smooth',
+        width: apexType === 'area' || apexType === 'line' ? 2 : 0,
+      },
+      fill: {
+        type: apexType === 'area' ? 'gradient' : 'solid',
+        opacity: apexType === 'area' ? 0.25 : 1,
+      },
+      dataLabels: { enabled: false },
+      legend: {
+        show: datasets.length > 1 || isRadial,
+        position: 'bottom',
+        fontSize: '12px',
+      },
+      grid: {
+        borderColor: 'rgba(148, 163, 184, 0.25)',
+        strokeDashArray: 4,
+      },
+      tooltip: { theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light' },
+    };
+
+    if (isRadial) {
+      options.labels = labels;
+    } else {
+      options.xaxis = {
+        categories: labels,
+        labels: { style: { colors: '#64748b', fontSize: '11px' } },
+      };
+      options.yaxis = {
+        labels: { style: { colors: '#64748b', fontSize: '11px' } },
+      };
+      if (apexType === 'bar') {
+        options.plotOptions = {
+          bar: { borderRadius: 4, columnWidth: '55%' },
+        };
+      }
+    }
+
+    return new window.ApexCharts(el, options);
+  }
+
+  function createChartJsChart(el, config) {
+    const labels = Array.isArray(config.data?.labels) ? config.data.labels : [];
+    const datasets = Array.isArray(config.data?.datasets) ? config.data.datasets : [];
+    const canvas = document.createElement('canvas');
+    el.replaceChildren(canvas);
+    const ctx = canvas.getContext('2d');
+    const chartType =
+      config.type === 'donut'
+        ? 'doughnut'
+        : config.type === 'area'
+          ? 'line'
+          : config.type || 'line';
+    const isRadial = chartType === 'doughnut' || chartType === 'pie';
+    const palette = defaultSeriesColors(
+      isRadial ? Math.max(labels.length, 1) : Math.max(datasets.length, 1),
+    );
+
+    return new window.Chart(ctx, {
+      type: chartType,
+      data: {
+        labels,
+        datasets: datasets.map((dataset, index) => {
+          const color = dataset.color || palette[index];
+          return {
+            label: dataset.label,
+            data: dataset.data,
+            borderColor: isRadial ? palette : color,
+            backgroundColor: isRadial
+              ? palette
+              : config.type === 'area' || config.type === 'line'
+                ? `${color}33`
+                : color,
+            fill: config.type === 'area',
+            tension: 0.35,
+          };
+        }),
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: datasets.length > 1 || isRadial,
+            position: 'bottom',
+          },
+        },
+        scales: isRadial
+          ? {}
+          : {
+              x: {
+                ticks: { color: '#64748b', font: { size: 11 } },
+                grid: { color: 'rgba(148, 163, 184, 0.2)' },
+              },
+              y: {
+                ticks: { color: '#64748b', font: { size: 11 } },
+                grid: { color: 'rgba(148, 163, 184, 0.2)' },
+              },
+            },
+      },
+    });
+  }
+
+  window.shamarDashboardChart = function shamarDashboardChart(config) {
+    return {
+      chart: null,
+      async init() {
+        const el = this.$refs.chart;
+        if (!el || !config?.data) return;
+        try {
+          if (config.library === 'chartjs') {
+            await loadChartJs();
+            this.chart = createChartJsChart(el, config);
+          } else {
+            await loadApexCharts();
+            this.chart = createApexChart(el, config);
+            await this.chart.render();
+          }
+        } catch (error) {
+          console.error('[shamar] dashboard chart failed', error);
+        }
+      },
+      destroy() {
+        if (this.chart?.destroy) this.chart.destroy();
+      },
+    };
+  };
+
+  window.shamarStatSparkline = function shamarStatSparkline(values) {
+    return {
+      chart: null,
+      async init() {
+        const el = this.$refs.sparkline;
+        if (!el || !Array.isArray(values) || !values.length) return;
+        try {
+          await loadApexCharts();
+          this.chart = new window.ApexCharts(el, {
+            chart: {
+              type: 'area',
+              height: 40,
+              sparkline: { enabled: true },
+              animations: { enabled: false },
+            },
+            series: [{ data: values }],
+            stroke: { curve: 'smooth', width: 2 },
+            fill: {
+              type: 'gradient',
+              gradient: { opacityFrom: 0.35, opacityTo: 0.05 },
+            },
+            colors: [readBrandColor()],
+            tooltip: { enabled: false },
+          });
+          await this.chart.render();
+        } catch (error) {
+          console.error('[shamar] stat sparkline failed', error);
+        }
+      },
+      destroy() {
+        if (this.chart?.destroy) this.chart.destroy();
+      },
+    };
+  };
 })();

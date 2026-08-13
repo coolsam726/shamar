@@ -1,0 +1,13 @@
+<div class="shamar-stats-overview">
+  @if(widget.heading)
+    <h3 class="mb-3 text-base font-bold tracking-tight text-heading">{{ widget.heading }}</h3>
+  @endif
+
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+    @each(stat in widget.payload.stats)
+      @include('shamar::widgets/stat')
+    @else
+      <p class="text-sm text-body-subtle">No stats configured.</p>
+    @endeach
+  </div>
+</div>

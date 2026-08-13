@@ -226,26 +226,28 @@ export function menuLayoutContext(
 
 /**
  * Merge resource + page nav items into groups (by `navigationGroup`).
+ * Preserves optional `icon` on resource/media groups (used for top-level roots).
  */
 export function mergeNavigationGroups(
-  resourceGroups: Array<{ name: string; items: NavItem[] }>,
+  resourceGroups: Array<{ name: string; icon?: string; items: NavItem[] }>,
   pageItems: NavItem[],
 ): NavigationGroup[] {
-  const groups = new Map<string, NavItem[]>();
+  const groups = new Map<string, { icon?: string; items: NavItem[] }>();
 
   for (const group of resourceGroups) {
-    groups.set(group.name, [...group.items]);
+    groups.set(group.name, { icon: group.icon, items: [...group.items] });
   }
 
   for (const page of pageItems) {
     const name = page.navigationGroup ?? 'General';
-    const items = groups.get(name) ?? [];
-    items.push(page);
-    groups.set(name, items);
+    const entry = groups.get(name) ?? { items: [] };
+    entry.items.push(page);
+    groups.set(name, entry);
   }
 
-  return [...groups.entries()].map(([name, items]) => ({
+  return [...groups.entries()].map(([name, entry]) => ({
     name,
-    items: items.sort(compareNavigationItems),
+    icon: entry.icon,
+    items: entry.items.sort(compareNavigationItems),
   }));
 }

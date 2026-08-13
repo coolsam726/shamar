@@ -27,6 +27,14 @@ export function shamarFlowbiteDatepickerJsPath(): string {
   return join(shamarAssetsDir(), 'vendor/flowbite-datepicker.min.js');
 }
 
+export function shamarApexChartsPath(): string {
+  return join(shamarAssetsDir(), 'vendor/apexcharts.min.js');
+}
+
+export function shamarChartJsPath(): string {
+  return join(shamarAssetsDir(), 'vendor/chart.umd.min.js');
+}
+
 export function shamarRichEditorAssetPath(file: string): string {
   return join(shamarAssetsDir(), 'rich-editor', file);
 }

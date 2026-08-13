@@ -260,9 +260,12 @@ Empty `content()` keeps the original custom-page behavior: `static view` + `moun
 ```ts
 panel('admin')
   .brandDisplay('both') // or 'logo' | 'name' — also `.brandLogoOnly()` / `.brandNameOnly()`
+  .dashboardPage(AdminDashboard) // optional — defaults to nav cards only
   .discoverResources('app/resources/admin')
   .discoverPages('app/pages/admin')
 ```
+
+**Dashboard home** — override the panel root with a {@link DashboardPage} from `@shamar/core` and widget classes (`StatsOverviewWidget`, `ListWidget`, `ChartWidget`, …). Charts lazy-load ApexCharts (default) or Chart.js from panel assets. Omit `.dashboardPage()` to keep the built-in navigation card grid.
 
 | Kind | Base class | Routes |
 |------|------------|--------|

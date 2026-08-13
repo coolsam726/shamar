@@ -1,0 +1,19 @@
+@let(chartConfig = {
+  id: widget.id,
+  type: widget.payload.chartType,
+  library: widget.payload.library,
+  data: widget.payload.data,
+})
+
+<div class="shamar-card shamar-dashboard-widget__card rounded-xl p-5 h-full">
+  @if(widget.heading)
+    <h3 class="mb-4 text-base font-bold tracking-tight text-heading">{{ widget.heading }}</h3>
+  @endif
+
+  <div
+    class="shamar-dashboard-chart min-h-[220px]"
+    x-data='shamarDashboardChart({{ jsonAttr(chartConfig) }})'
+  >
+    <div x-ref="chart" class="h-[220px] w-full"></div>
+  </div>
+</div>

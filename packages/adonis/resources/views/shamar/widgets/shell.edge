@@ -1,0 +1,25 @@
+@let(spanClass = widget.columnSpan === 'full'
+  ? 'sm:col-span-2 xl:col-span-full'
+  : widget.columnSpan === 2
+    ? 'sm:col-span-2'
+    : widget.columnSpan === 3
+      ? 'sm:col-span-2 xl:col-span-3'
+      : widget.columnSpan === 4
+        ? 'sm:col-span-2 xl:col-span-4'
+        : '')
+
+<div class="shamar-dashboard-widget {{ spanClass }}">
+  @if(widget.view)
+    @!component(widget.view, { widget })
+  @elseif(widget.kind === 'statsOverview')
+    @include('shamar::widgets/stats-overview')
+  @elseif(widget.kind === 'card')
+    @include('shamar::widgets/card')
+  @elseif(widget.kind === 'list')
+    @include('shamar::widgets/list')
+  @elseif(widget.kind === 'chart')
+    @include('shamar::widgets/chart')
+  @elseif(widget.kind === 'navigationCards')
+    @include('shamar::widgets/navigation-cards')
+  @endif
+</div>

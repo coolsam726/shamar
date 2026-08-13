@@ -82,6 +82,7 @@ import {
   buildRelationTableRows,
   relationTableListMeta,
 } from '../shamar/relation-table.js';
+import { resolveDashboardWidgets } from '../shamar/dashboard-widgets.js';
 
 export class AdminController {
   private readonly resources: ResourceController;
@@ -252,12 +253,24 @@ export class AdminController {
     if (!this.isAuthContext(authResult)) return authResult;
     const authCtx = authResult;
 
-    const shell = await this.shellOpts(ctx, authCtx, { pageTitle: 'Dashboard' });
-    const dashboardCards = shell.menuRoots.filter((root) => root.label !== 'Dashboard');
+    const DashboardClass = this.panel.dashboardPage;
+    const shell = await this.shellOpts(ctx, authCtx, {
+      pageTitle: DashboardClass.label ?? 'Dashboard',
+    });
+    const navigationCards = shell.menuRoots.filter((root) => root.label !== 'Dashboard');
+    const widgetCtx = {
+      user: authCtx.user ?? null,
+      panelId: this.panel.id,
+      basePath: this.basePath,
+    };
+    const { columns, widgets } = await resolveDashboardWidgets(DashboardClass, widgetCtx, {
+      navigationCards,
+    });
 
     return ctx.view.render('shamar::dashboard', {
       ...shell,
-      dashboardCards,
+      dashboardColumns: columns,
+      dashboardWidgets: widgets,
       pageSubtitle: 'Jump into a resource to manage your data.',
     });
   }

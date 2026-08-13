@@ -14,6 +14,8 @@ import LockedItem from '#models/locked_item'
 import Category from '#models/category'
 import MediaFolder from '#models/media_folder'
 import MediaFile from '#models/media_file'
+import DailyMetric from '#models/daily_metric'
+import TrafficSource from '#models/traffic_source'
 import { upsertAppSettings, getAppSettings } from '#models/app_settings'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -72,6 +74,8 @@ class PlaygroundDataSeeder {
     await this.seedMediaLibrary()
     await this.seedCampaigns()
     await this.seedLockedItems()
+    await this.seedDailyMetrics()
+    await this.seedTrafficSources()
   }
 
   private async seedCompanies() {
@@ -598,6 +602,54 @@ class PlaygroundDataSeeder {
         locked: true,
         notes: 'canEdit/canDelete return false while locked.',
       },
+    ])
+  }
+
+  /** 30 days of synthetic visits / orders / revenue for line & area charts. */
+  private async seedDailyMetrics() {
+    if ((await DailyMetric.countDocuments()) > 0) return
+
+    const days = 30
+    const rows: Array<{
+      date: Date
+      visits: number
+      orders: number
+      revenue: number
+      signups: number
+    }> = []
+    const today = new Date()
+    today.setUTCHours(0, 0, 0, 0)
+
+    for (let offset = days - 1; offset >= 0; offset--) {
+      const date = new Date(today)
+      date.setUTCDate(today.getUTCDate() - offset)
+      const weekday = date.getUTCDay() // 0 Sun … 6 Sat
+      const weekendDip = weekday === 0 || weekday === 6 ? 0.72 : 1
+      const wave = 1 + 0.18 * Math.sin((offset / days) * Math.PI * 2)
+      const trend = 1 + (days - 1 - offset) * 0.008
+      const noise = 0.92 + ((offset * 17) % 11) / 100
+
+      const visits = Math.round(420 * weekendDip * wave * trend * noise)
+      const orders = Math.max(4, Math.round(visits * (0.045 + ((offset * 3) % 7) / 1000)))
+      const avgOrder = 48 + ((offset * 5) % 19)
+      const revenue = Math.round(orders * avgOrder * 100) / 100
+      const signups = Math.max(1, Math.round(visits * 0.012 * weekendDip))
+
+      rows.push({ date, visits, orders, revenue, signups })
+    }
+
+    await DailyMetric.insertMany(rows)
+  }
+
+  private async seedTrafficSources() {
+    if ((await TrafficSource.countDocuments()) > 0) return
+    await TrafficSource.create([
+      { name: 'Organic search', sessions: 4820, sort: 10 },
+      { name: 'Direct', sessions: 2140, sort: 20 },
+      { name: 'Referral', sessions: 1560, sort: 30 },
+      { name: 'Social', sessions: 980, sort: 40 },
+      { name: 'Email', sessions: 720, sort: 50 },
+      { name: 'Paid ads', sessions: 540, sort: 60 },
     ])
   }
 
