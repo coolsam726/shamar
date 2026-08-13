@@ -1,0 +1,37 @@
+---
+title: RichEditor
+description: WYSIWYG — simple, notion, and document modes.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+<DocScreenshot
+  src="/screenshots/components/forms/rich-editor.png"
+  alt="RichEditor"
+  caption="Form components gallery at `/demo/form-components`."
+/>
+
+```ts
+RichEditor.make('description').simple()
+RichEditor.make('documentBody').document()
+```
+
+<DocApiTable
+  title="Methods"
+  rows={[
+    { method: '.simple() / .notion() / .document()', description: 'Editor modes.' },
+    { method: '.toolbar([...])', description: 'Custom toolbar.' },
+    { method: '.label(text)', description: 'Field label in the UI.' },
+    { method: '.required()', description: 'Mark required on create/edit.' },
+    { method: '.helperText(text)', description: 'Help text below the control.' },
+    { method: '.default(value)', description: 'Default state when creating a record.' },
+    { method: '.hiddenOnForm() / .hiddenOnDetail()', description: 'Hide on create/edit or show view.' },
+    { method: '.columnSpan(n) / .columnSpanFull()', description: 'Grid span inside Section/Grid layouts.' },
+    { method: '.live()', description: 'Re-render the form when this field changes.' },
+  ]}
+/>
+
+## Playground
+
+Form components gallery at `/demo/form-components`.

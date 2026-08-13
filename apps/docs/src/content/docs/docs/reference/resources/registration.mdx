@@ -1,0 +1,20 @@
+---
+title: Registering resources
+description: Panel registration and auto-discovery.
+---
+
+```ts
+// config/shamar.ts
+panel('admin')
+  .path('/demo')
+  .discoverResources('app/resources/admin')
+  .resources([UserResource])
+```
+
+Use `.discoverResources('app/resources/admin')` to auto-load classes ending in `Resource`, or pass explicit classes to `.resources([...])`.
+
+Generate a stub:
+
+```bash
+node ace shamar:make-resource Product --group Catalog
+```

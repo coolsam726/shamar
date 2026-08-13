@@ -10,15 +10,16 @@
   data-shamar-direction="{{ section.query.direction ?? '' }}"
 >
   <div class="shamar-card shamar-list-card rounded-xl">
-    @set('query', section.query)
-    @set('resource', section.resource)
-    @set('listHeaders', section.listHeaders)
-    @set('filtersLockedEmpty', section.filtersLockedEmpty)
-    @set('groupLockedEmpty', section.groupLockedEmpty)
-    @set('listAllPerPage', section.listAllPerPage)
-    @set('defaultPerPage', section.defaultPerPage)
-    @set('perPageOptions', section.perPageOptions)
-    @set('queryPrefix', section.queryPrefix)
+    {{-- Edge 6 uses @let (not legacy @set) so locals reach @include'd partials --}}
+    @let(query = section.query)
+    @let(resource = section.resource)
+    @let(listHeaders = section.listHeaders)
+    @let(filtersLockedEmpty = section.filtersLockedEmpty)
+    @let(groupLockedEmpty = section.groupLockedEmpty)
+    @let(listAllPerPage = section.listAllPerPage)
+    @let(defaultPerPage = section.defaultPerPage)
+    @let(perPageOptions = section.perPageOptions)
+    @let(queryPrefix = section.queryPrefix)
     @include('shamar::partials/list-toolbar')
 
     <div class="shamar-list-table-scroll">
@@ -29,16 +30,13 @@
             @each(column in section.resource.columns)
               <th class="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-body-subtle whitespace-nowrap {{ resolveAlignmentClass(column) }}">
                 @if(column.sortable !== false)
+                  @let(sortState = section.query.sort === column.name ? (section.query.direction === 'desc' ? 'desc' : 'asc') : 'idle')
                   <a
                     href="{{ pageSectionSortColumnUrl(basePath, page.slug, section.key, section.query, column.name, { preserveQuery: preserveQuery }) }}"
-                    class="inline-flex items-center gap-1 hover:text-heading transition-colors {{ column.alignment === 'end' || column.alignment === 'right' ? 'justify-end w-full' : (column.alignment === 'center' ? 'justify-center w-full' : '') }}"
+                    class="inline-flex items-center gap-1.5 hover:text-heading transition-colors {{ column.alignment === 'end' || column.alignment === 'right' ? 'justify-end w-full' : (column.alignment === 'center' ? 'justify-center w-full' : '') }}"
                   >
                     {{ column.label ?? humanizeLabel(column.name) }}
-                    @if(section.query.sort === column.name)
-                      <svg class="w-3 h-3 text-fg-brand {{ section.query.direction === 'desc' ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5"/>
-                      </svg>
-                    @endif
+                    @include('shamar::partials/sort-indicator')
                   </a>
                 @else
                   {{ column.label ?? humanizeLabel(column.name) }}
@@ -57,13 +55,13 @@
                 </td>
               </tr>
               @each(record in group.items)
-                @set('rowActions', [])
+                @let(rowActions = [])
                 @include('shamar::partials/list-row')
               @endeach
             @endeach
           @elseif(section.result.items && section.result.items.length)
             @each(record in section.result.items)
-              @set('rowActions', [])
+              @let(rowActions = [])
               @include('shamar::partials/list-row')
             @endeach
           @else
@@ -76,8 +74,7 @@
     </div>
 
     @if(section.pagination)
-      @set('pagination', section.pagination)
-      @set('queryPrefix', section.queryPrefix)
+      @let(pagination = section.pagination)
       <div class="shamar-list-pagination" data-shamar-list-pagination>
         @include('shamar::partials/page-section-pagination')
       </div>

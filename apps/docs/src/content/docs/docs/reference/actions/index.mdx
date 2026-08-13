@@ -1,0 +1,53 @@
+---
+title: Actions overview
+description: Header, row, and bulk actions on resources and pages.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+<DocScreenshot
+  src="/screenshots/components/actions/row-menu.png"
+  alt="Row action menu"
+  caption="Per-record actions in the ⋮ menu."
+/>
+
+```ts
+static resourceActions() {
+  return actions((a) => {
+    a.create('New product')
+    a.view()
+    a.edit()
+    a.delete().confirm('Delete this product?')
+    a.bulkDelete()
+    a.row('duplicate', 'Duplicate').icon('copy')
+    a.header('export', 'Export CSV').icon('download')
+  })
+}
+```
+
+## Placements
+
+| Placement | Where |
+|-----------|--------|
+| **header** | List/create toolbar (+ New, Export) |
+| **row** | Per-record ⋮ menu (or inline via `.ungrouped()`) |
+| **bulk** | Selection bar (Delete selected, …) |
+
+## Modifiers
+
+<DocApiTable
+  title="Action modifiers"
+  rows={[
+    { method: '.label(text)', description: 'Button label.' },
+    { method: '.color(token)', description: 'primary, danger, gray, accent, …' },
+    { method: '.icon(name)', description: 'Icon id.' },
+    { method: '.confirm(message)', description: 'Confirmation dialog.' },
+    { method: '.ability(name)', description: 'Permission gate.' },
+    { method: '.grouped() / .ungrouped()', description: 'Row action menu vs inline.' },
+  ]}
+/>
+
+
+
+See [Built-in actions](/docs/reference/actions/built-in/) and [Custom actions](/docs/reference/actions/custom/).

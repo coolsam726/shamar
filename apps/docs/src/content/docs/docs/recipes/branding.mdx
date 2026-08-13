@@ -3,6 +3,14 @@ title: Branding
 description: Panel branding and runtime logo overrides.
 ---
 
+import DocScreenshot from '../../../../components/DocScreenshot.astro';
+
+<DocScreenshot
+  src="/screenshots/login.png"
+  alt="Branded login screen with panel colors and logo lockup"
+  caption="Global branding on the login page — panels can override colors, logos, and `brandDisplay` independently."
+/>
+
 ```ts
 panel('admin').branding({
   name: 'Shamar',

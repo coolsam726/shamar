@@ -19,6 +19,7 @@ const SITE_ENTRIES = [
   'pagefind',
   'favicon.svg',
   'branding',
+  'screenshots',
   'sitemap-index.xml',
   'sitemap-0.xml',
 ]

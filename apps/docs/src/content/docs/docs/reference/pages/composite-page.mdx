@@ -1,0 +1,20 @@
+---
+title: Composite Page
+description: Mix forms, tables, infolists, and Edge sections.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+```ts
+export default class OpsDashboardPage extends Page {
+  static slug = 'ops-dashboard'
+  static content() {
+    return pageContent((p) => {
+      p.table(/* … */)
+      p.edge('pages/ops-extra')
+    })
+  }
+}
+```
+

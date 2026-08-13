@@ -1,0 +1,19 @@
+---
+title: ColorEntry
+description: Color swatch with hex value.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+<DocScreenshot
+  src="/screenshots/components/infolists/color-entry.png"
+  alt="ColorEntry"
+  caption="Cropped from a live resource show view."
+/>
+
+```ts
+ColorEntry.make('color')
+```
+
+Define `static infolist()` on a resource, or let Shamar derive show fields from `form()` automatically.

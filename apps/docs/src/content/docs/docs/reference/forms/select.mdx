@@ -1,0 +1,48 @@
+---
+title: Select
+description: Single or multi select — static or relationship-driven.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+<DocScreenshot
+  src="/screenshots/components/forms/select.png"
+  alt="Select"
+  caption="Form components gallery at `/demo/form-components`."
+/>
+
+<DocScreenshot
+  src="/screenshots/components/forms/select-open.png"
+  alt="Select combobox open"
+  caption="Static combobox with search and keyboard navigation."
+/>
+
+```ts
+Select.make('companyId')
+  .relationship('companies', 'name')
+  .createOption()
+  .createAndEditOption()
+```
+
+<DocApiTable
+  title="Methods"
+  rows={[
+    { method: '.options([{ label, value }])', description: 'Static choices.' },
+    { method: '.multiple()', description: 'Multi-select.' },
+    { method: '.relationship(name, titleAttribute)', description: 'BelongsTo picker.' },
+    { method: '.createOption() / .createAndEditOption()', description: 'Inline create modals.' },
+    { method: '.native()', description: 'Native select element.' },
+    { method: '.label(text)', description: 'Field label in the UI.' },
+    { method: '.required()', description: 'Mark required on create/edit.' },
+    { method: '.helperText(text)', description: 'Help text below the control.' },
+    { method: '.default(value)', description: 'Default state when creating a record.' },
+    { method: '.hiddenOnForm() / .hiddenOnDetail()', description: 'Hide on create/edit or show view.' },
+    { method: '.columnSpan(n) / .columnSpanFull()', description: 'Grid span inside Section/Grid layouts.' },
+    { method: '.live()', description: 'Re-render the form when this field changes.' },
+  ]}
+/>
+
+## Playground
+
+Form components gallery at `/demo/form-components`.

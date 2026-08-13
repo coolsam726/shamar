@@ -1,0 +1,52 @@
+---
+title: Date & time pickers
+description: DatePicker, DateTimePicker, TimePicker, WeekPicker, MonthPicker.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+<DocScreenshot
+  src="/screenshots/components/forms/date-pickers.png"
+  alt="Date & time pickers"
+  caption="Form components gallery at `/demo/form-components`."
+/>
+
+<DocScreenshot
+  src="/screenshots/components/forms/date-pickers-open.png"
+  alt="Date picker calendar"
+  caption="Flowbite calendar dropdown on focus."
+/>
+
+<DocScreenshot
+  src="/screenshots/components/forms/date-pickers-datetime-open.png"
+  alt="DateTime picker open"
+  caption="Calendar plus time controls on the same field row."
+/>
+
+```ts
+DatePicker.make('launchDate')
+DateTimePicker.make('launchAt').seconds()
+TimePicker.make('restockAt').hours12()
+```
+
+<DocApiTable
+  title="Methods"
+  rows={[
+    { method: '.native()', description: 'Browser native picker.' },
+    { method: '.minDate() / .maxDate()', description: 'Date bounds.' },
+    { method: '.seconds() / .hours12() / .hours24()', description: 'DateTime/time format.' },
+    { method: '.minuteStep(n)', description: 'Time step interval.' },
+    { method: '.label(text)', description: 'Field label in the UI.' },
+    { method: '.required()', description: 'Mark required on create/edit.' },
+    { method: '.helperText(text)', description: 'Help text below the control.' },
+    { method: '.default(value)', description: 'Default state when creating a record.' },
+    { method: '.hiddenOnForm() / .hiddenOnDetail()', description: 'Hide on create/edit or show view.' },
+    { method: '.columnSpan(n) / .columnSpanFull()', description: 'Grid span inside Section/Grid layouts.' },
+    { method: '.live()', description: 'Re-render the form when this field changes.' },
+  ]}
+/>
+
+## Playground
+
+Form components gallery at `/demo/form-components`.

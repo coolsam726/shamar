@@ -1,0 +1,23 @@
+---
+title: FormPage
+description: Single form without SettingsPage defaults.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+<DocScreenshot
+  src="/screenshots/components/pages/form-page.png"
+  alt="FormPage"
+  caption="Playground /demo — form."
+/>
+
+```ts
+export default class ProfilePage extends FormPage {
+  static slug = 'profile'
+  static form() { return form(/* … */) }
+  static async fill() { return {} }
+  static async save(data) { return { message: 'Saved' } }
+}
+```
+

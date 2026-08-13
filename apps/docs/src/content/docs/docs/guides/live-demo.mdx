@@ -4,10 +4,18 @@ description: Shared Shamar sandbox with credentials that reset every 20 minutes.
 ---
 
 import DemoCredentials from '../../../../components/DemoCredentials.astro';
+import DocScreenshot from '../../../../components/DocScreenshot.astro';
 
 The product site and admin panel share one server. Open **`/demo`** for the live panel (sign in at `/login`).
 
 <DemoCredentials />
+
+<DocScreenshot
+  src="/screenshots/dashboard.png"
+  alt="Live demo admin dashboard"
+  caption="Sign in with the credentials above, then explore `/demo` — products, media, settings, roles, and API keys are all seeded."
+  wide
+/>
 
 ## What you can try
 

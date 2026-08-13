@@ -1,30 +1,12 @@
 ---
 title: Resources
-description: How Shamar resources map models to admin CRUD.
+description: Redirect — see the Resources reference section.
 ---
 
-Resources are the core unit of a Shamar panel. Each resource class binds:
+Resource documentation moved to the dedicated **Resources** reference section:
 
-| Concern | Static API |
-|---------|------------|
-| Model | `static model` (+ optional `connection`) |
-| Routing / nav | `slug`, `label`, `navigationGroup`, `icon` |
-| Write UI | `form()` |
-| List UI | `table()` |
-| Detail UI | `infolist()` (or derived from form/table) |
-| Actions | `actions()`, row/bulk/header placements |
-| Auth | Cherubim abilities / policies |
+- [Resources overview](/docs/reference/resources/)
+- [Registration](/docs/reference/resources/registration/)
+- [Navigation](/docs/reference/resources/navigation/)
 
-Discover resources with `.discoverResources('app/resources/admin')` or register them explicitly on `panel(...).resources([...])`.
-
-## Soft deletes & titles
-
-```ts
-static softDelete = true
-static recordTitleField = 'name'
-```
-
-## Next
-
-- [Forms & fields](/docs/concepts/forms/)
-- [Tables & lists](/docs/concepts/tables/)
+For a hands-on walkthrough, see [Your first resource](/docs/guides/first-resource/).

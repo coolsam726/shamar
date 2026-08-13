@@ -1,0 +1,62 @@
+---
+title: TextColumn
+description: The column builder — text, badges, dates, currency, booleans, and more.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+<DocScreenshot
+  src="/screenshots/components/tables/text-column.png"
+  alt="Table header row"
+  caption="Chain format modifiers on TextColumn.make()."
+  wide
+/>
+
+<DocScreenshot
+  src="/screenshots/components/tables/column-currency.png"
+  alt="Currency column"
+  caption="`.currency()` formats with Intl and right-aligns by default."
+/>
+
+<DocScreenshot
+  src="/screenshots/components/tables/column-boolean-badge.png"
+  alt="Boolean badge column"
+  caption="`.boolean().badge()` for yes/no chips."
+/>
+
+<DocScreenshot
+  src="/screenshots/components/tables/column-date.png"
+  alt="Date column"
+  caption="`.date()` / `.dateTime()` format values."
+/>
+
+```ts
+TextColumn.make('sku').searchable().sortable()
+TextColumn.make('price').currency('KES').alignRight()
+TextColumn.make('featured').boolean().badge().filterable().groupable()
+TextColumn.make('launchDate').date().sortable()
+TextColumn.make('company.name').label('Company').filterable()
+```
+
+<DocApiTable
+  title="Methods"
+  rows={[
+    { method: '.label(text)', description: 'Column header label.' },
+    { method: '.searchable()', description: 'Global search column.' },
+    { method: '.sortable()', description: 'Sortable header.' },
+    { method: '.filterable()', description: 'Include in Filters menu.' },
+    { method: '.groupable()', description: 'Allow grouping by this column.' },
+    { method: '.boolean()', description: 'Yes/no icon display.' },
+    { method: '.toggle()', description: 'Inline toggle (when supported).' },
+    { method: '.badge()', description: 'Badge chips (great for booleans and enums).' },
+    { method: '.date() / .dateTime()', description: 'Formatted dates.' },
+    { method: '.currency(code)', description: 'Intl currency formatting.' },
+    { method: '.email()', description: 'mailto link.' },
+    { method: '.id()', description: 'Monospace ID styling.' },
+    { method: '.alignment() / .alignRight() / …', description: 'Horizontal alignment.' },
+    { method: '.verticalAlignment()', description: 'Vertical cell alignment.' },
+  ]}
+/>
+
+Dot notation (`company.name`) resolves relationship attributes. **Playground:** Products, Tickets (defaultFilters + badge), Users.

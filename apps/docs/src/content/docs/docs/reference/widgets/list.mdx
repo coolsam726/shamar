@@ -1,0 +1,35 @@
+---
+title: ListWidget
+description: Compact table widget with links.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+<DocScreenshot
+  src="/screenshots/components/widgets/list.png"
+  alt="ListWidget"
+  caption="From the /demo dashboard widget grid."
+/>
+
+```ts
+export class RecentProductsWidget extends ListWidget {
+  static override heading = 'Recent products'
+  static override columns() {
+    return [{ label: 'SKU', attribute: 'sku' }, { label: 'Name', attribute: 'name' }]
+  }
+  static override async records(ctx) {
+    return items.map((i) => ({ ...i, url: '/demo/products/' + i.id }))
+  }
+}
+```
+
+<DocApiTable
+  title="Methods"
+  rows={[
+    { method: 'static columns()', description: 'Column definitions.' },
+    { method: 'static records(ctx)', description: 'Row data with optional url per row.' },
+    { method: 'static limit', description: 'Max rows (default 5).' },
+  ]}
+/>
+

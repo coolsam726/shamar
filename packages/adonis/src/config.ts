@@ -46,9 +46,14 @@ export interface ShamarMediaConfig {
   publicPath?: string;
   /** Nav label (default `Files`). */
   label?: string;
-  /** Navigation group (default `System`). */
+  /**
+   * Navigation group. Omit or set `''` for a **top-level** sidebar root
+   * (named after {@link label}, using {@link navigationIcon}).
+   * Set explicitly (e.g. `System`) to nest under that cluster.
+   */
   navigationGroup?: string;
   navigationSort?: number;
+  /** Sidebar root / item icon slug (default `folder`). */
   navigationIcon?: string;
 }
 

@@ -1,27 +1,11 @@
 ---
 title: Tables & lists
-description: Columns, filters, grouping, and row actions.
+description: Redirect — see the Tables reference section.
 ---
 
-```ts
-import { table, TextColumn } from '@shamar/core'
+Table documentation:
 
-static table() {
-  return table((t) => {
-    t.defaultSort('createdAt', 'desc')
-    t.schema([
-      TextColumn.make('name').searchable().sortable(),
-      TextColumn.make('status').badge(),
-      TextColumn.make('createdAt').dateTime().sortable(),
-    ])
-  })
-}
-```
+- [Tables overview](/docs/reference/tables/)
+- [TextColumn](/docs/reference/tables/text-column/) — all column format modifiers
 
-## List chrome
-
-Shamar’s Adonis host provides search, filters, grouping, bulk actions, pagination, and sticky page headings. Row clicks can open show/edit depending on resource configuration.
-
-## List pages
-
-For read-heavy surfaces without full CRUD routes, use `ListPage` — same table builders, dedicated routes. See [Pages](/docs/concepts/pages/).
+For standalone read-only tables, see [ListPage](/docs/reference/pages/list-page/).

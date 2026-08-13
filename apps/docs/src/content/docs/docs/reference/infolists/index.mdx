@@ -1,0 +1,38 @@
+---
+title: Infolists overview
+description: Show/detail views for resources and pages.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+```ts
+static infolist() {
+  return infolist((i) => {
+    i.schema([
+      Section.make('Product').columns(3).schema([
+        TextEntry.make('name'),
+        IconEntry.make('featured').boolean(),
+        ColorEntry.make('color'),
+      ]),
+    ])
+  })
+}
+```
+
+Infolists power resource **show** pages and can be composed on [ListPage](/docs/reference/pages/list-page/) rows.
+
+## Entry types
+
+| Entry | Use |
+|-------|-----|
+| [TextEntry](/docs/reference/infolists/text-entry/) | Text, badges, dates, currency, markdown |
+| [IconEntry](/docs/reference/infolists/icon-entry/) | Icons and boolean icons |
+| [ColorEntry](/docs/reference/infolists/color-entry/) | Color swatches |
+| [ImageEntry](/docs/reference/infolists/image-entry/) | Thumbnails |
+
+## Auto-derivation
+
+If you omit `infolist()`, Shamar builds a show view from `form()` via `formSchemaToInfolistSchema()`.
+
+**Playground:** Products — explicit infolist with all entry types.

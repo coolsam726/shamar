@@ -1,0 +1,42 @@
+---
+title: Widgets overview
+description: Dashboard widgets — stats, charts, lists, and cards.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+<DocScreenshot
+  src="/screenshots/components/widgets/stats-overview.png"
+  alt="Dashboard widgets"
+  caption="Register widget classes on a DashboardPage."
+  wide
+/>
+
+```ts
+// config/shamar.ts
+panel('admin').dashboardPage(AdminDashboard)
+
+// dashboard_page.ts
+export default class AdminDashboard extends DashboardPage {
+  static override columns = 3
+  static widgets() {
+    return [ProductStatsWidget, RecentProductsWidget, ProductStockChartWidget]
+  }
+}
+```
+
+Widgets are classes extending `Widget` with `static sort`, `static columnSpan`, and `static heading`.
+
+| Widget | Doc |
+|--------|-----|
+| Stat | [Stat](/docs/reference/widgets/stat/) (building block) |
+| StatsOverviewWidget | [Stats overview](/docs/reference/widgets/stats-overview/) |
+| ChartWidget | [Chart](/docs/reference/widgets/chart/) |
+| ListWidget | [List](/docs/reference/widgets/list/) |
+| CardWidget | [Card](/docs/reference/widgets/card/) |
+| NavigationCardsWidget | [Navigation cards](/docs/reference/widgets/navigation-cards/) |
+
+```bash
+node ace shamar:make-widget ProductStats --type stats
+```

@@ -1,0 +1,43 @@
+---
+title: FilePicker
+description: Media library picker with folder and public URL support.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+<DocScreenshot
+  src="/screenshots/components/forms/file-picker.png"
+  alt="FilePicker"
+  caption="Form components gallery at `/demo/form-components`."
+/>
+
+<DocScreenshot
+  src="/screenshots/components/forms/file-picker-open.png"
+  alt="File picker modal"
+  caption="Browse folders and upload from the media library."
+/>
+
+```ts
+FilePicker.make('logoMediaId').image().makePublic()
+```
+
+<DocApiTable
+  title="Methods"
+  rows={[
+    { method: '.image()', description: 'Images only.' },
+    { method: '.accept() / .multiple()', description: 'Type filter and multi-select.' },
+    { method: '.folder() / .makePublic()', description: 'Media folder and public URL.' },
+    { method: '.label(text)', description: 'Field label in the UI.' },
+    { method: '.required()', description: 'Mark required on create/edit.' },
+    { method: '.helperText(text)', description: 'Help text below the control.' },
+    { method: '.default(value)', description: 'Default state when creating a record.' },
+    { method: '.hiddenOnForm() / .hiddenOnDetail()', description: 'Hide on create/edit or show view.' },
+    { method: '.columnSpan(n) / .columnSpanFull()', description: 'Grid span inside Section/Grid layouts.' },
+    { method: '.live()', description: 'Re-render the form when this field changes.' },
+  ]}
+/>
+
+## Playground
+
+Form components gallery at `/demo/form-components`.

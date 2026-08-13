@@ -200,13 +200,19 @@
                 ]"
                 @click="column.sortable && toggleListSort(column.name)"
               >
-                <span class="inline-flex items-center gap-1">
+                <span class="inline-flex items-center gap-1.5">
                   <span x-text="column.label"></span>
                   <span
-                    x-show="listSort === column.name"
-                    class="text-fg-brand"
-                    x-text="listDirection === 'asc' ? '↑' : '↓'"
-                  ></span>
+                    x-show="column.sortable"
+                    class="shamar-sort-indicator"
+                    :class="listSort === column.name ? (listDirection === 'desc' ? 'is-desc' : 'is-asc') : 'is-idle'"
+                    aria-hidden="true"
+                  >
+                    <svg viewBox="0 0 10 16" width="10" height="14" fill="currentColor" focusable="false">
+                      <path class="shamar-sort-indicator__up" d="M5 1.5L9.25 7H.75L5 1.5z"/>
+                      <path class="shamar-sort-indicator__down" d="M5 14.5L.75 9h8.5L5 14.5z"/>
+                    </svg>
+                  </span>
                 </span>
               </th>
             </template>

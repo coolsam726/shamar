@@ -1,0 +1,73 @@
+---
+title: Resources overview
+description: CRUD resources — form, table, infolist, actions, and navigation.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+<DocScreenshot
+  src="/screenshots/products-list.png"
+  alt="Products resource list"
+  caption="A resource is list + create + edit + show driven by builders."
+  wide
+/>
+
+```ts
+export default class ProductResource extends Resource {
+  static model = Product
+  static slug = 'products'
+  static label = 'Products'
+  static navigationGroup = 'Content'
+
+  static form() { /* … */ }
+  static table() { /* … */ }
+  static infolist() { /* … */ }
+}
+```
+
+A **resource** maps a model to admin CRUD routes. Shamar discovers `*_resource.ts` files under your panel path.
+
+## Static configuration
+
+| Property | Purpose |
+|----------|---------|
+| `model` | Lucid / Mongoose model class |
+| `slug` | URL segment (`/demo/products`) |
+| `label` / `singularLabel` | Navigation and headings |
+| `navigationGroup` / `navigationSubGroup` | Sidebar grouping |
+| `navigationSort` / `navigationHidden` | Order and visibility |
+| `recordTitleField` | Display title for breadcrumbs |
+| `icon` | Sidebar icon name |
+| `companyScoped` | Scope lists to current company |
+| `softDelete` | Soft-delete aware queries |
+| `contentMaxWidth` | Page width token |
+| `defaultPerPage` | Pagination default |
+
+## Builders
+
+| Method | Returns |
+|--------|---------|
+| `form()` | Create/edit schema |
+| `table()` | List columns and defaults |
+| `infolist()` / `detail()` | Show view (auto-derived if omitted) |
+| `resourceActions()` | Header, row, bulk actions |
+
+## Lifecycle hooks
+
+| Method | When |
+|--------|------|
+| `prepareCreate(data)` | Before insert — mutate payload, flash messages |
+| `handleAction(name, ctx)` | Custom row/bulk/header action handlers |
+| `configure()` | Register callbacks on the resource class |
+
+## Authorization
+
+Override `canViewAny`, `canCreate`, `canEdit`, `canDelete`, or attach a `policy` class. See [Auth & RBAC](/docs/concepts/auth/).
+
+## Related
+
+- [Forms](/docs/reference/forms/)
+- [Tables](/docs/reference/tables/)
+- [Infolists](/docs/reference/infolists/)
+- [Actions](/docs/reference/actions/)

@@ -1,0 +1,37 @@
+---
+title: Radio
+description: Radio group for one choice.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+<DocScreenshot
+  src="/screenshots/components/forms/radio.png"
+  alt="Radio"
+  caption="Form components gallery at `/demo/form-components`."
+/>
+
+```ts
+Radio.make('condition').options([{ label: 'New', value: 'new' }]).inline().buttons()
+```
+
+<DocApiTable
+  title="Methods"
+  rows={[
+    { method: '.options([])', description: 'Choices.' },
+    { method: '.inline() / .buttons()', description: 'Layout variants.' },
+    { method: '.relationship()', description: 'Options from relation.' },
+    { method: '.label(text)', description: 'Field label in the UI.' },
+    { method: '.required()', description: 'Mark required on create/edit.' },
+    { method: '.helperText(text)', description: 'Help text below the control.' },
+    { method: '.default(value)', description: 'Default state when creating a record.' },
+    { method: '.hiddenOnForm() / .hiddenOnDetail()', description: 'Hide on create/edit or show view.' },
+    { method: '.columnSpan(n) / .columnSpanFull()', description: 'Grid span inside Section/Grid layouts.' },
+    { method: '.live()', description: 'Re-render the form when this field changes.' },
+  ]}
+/>
+
+## Playground
+
+Form components gallery at `/demo/form-components`.

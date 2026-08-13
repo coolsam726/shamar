@@ -3,7 +3,16 @@ title: Your first resource
 description: Declare a Filament-style resource with form and table schemas.
 ---
 
+import DocScreenshot from '../../../../components/DocScreenshot.astro';
+
 A **resource** is a CRUD surface: list, create, edit, show — driven by builders on a model class.
+
+<DocScreenshot
+  src="/screenshots/products-list.png"
+  alt="Products resource list with search, filters, pagination, and row actions"
+  caption="A resource list — searchable columns, filters, grouping, bulk actions, and sticky headings are provided by the Adonis host."
+  wide
+/>
 
 ```ts
 import { Resource, form, table, TextInput, TextColumn } from '@shamar/core'
@@ -39,14 +48,21 @@ export default class ProductResource extends Resource {
 
 Register the resource on a panel in `config/shamar.ts`, then open `/admin/products`.
 
+<DocScreenshot
+  src="/screenshots/product-form.png"
+  alt="Create product form with sections, tabs, grids, and field widgets"
+  caption="The form schema drives create/edit — see the [Forms reference](/docs/reference/forms/) for every field type."
+  wide
+/>
+
 ## Tips
 
 - Use `Section`, `Tabs`, and `Grid` inside `form()` for layout (Filament-style schema nodes).
 - Mark columns `.searchable()` / `.sortable()` for list chrome.
-- Prefer [field catalog](/docs/reference/fields/) widgets over raw HTML.
+- Prefer the [Forms reference](/docs/reference/forms/) over raw HTML.
 
 ## Related
 
-- [Forms & fields](/docs/concepts/forms/)
-- [Tables & lists](/docs/concepts/tables/)
-- [Resources](/docs/concepts/resources/)
+- [Forms reference](/docs/reference/forms/)
+- [Tables reference](/docs/reference/tables/)
+- [Resources reference](/docs/reference/resources/)

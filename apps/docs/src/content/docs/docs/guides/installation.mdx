@@ -3,7 +3,15 @@ title: Installation
 description: Add Shamar to an AdonisJS app with Lucid or Mongoose.
 ---
 
+import DocScreenshot from '../../../../components/DocScreenshot.astro';
+
 Shamar plugs into AdonisJS as a service provider. Pick an ORM adapter, configure a panel, and open `/admin`.
+
+<DocScreenshot
+  src="/screenshots/login.png"
+  alt="Branded Shamar login page with shared sandbox credentials"
+  caption="Branded login — configure logos, colors, and Google Fonts in `config/shamar.ts`. Try it on the [live demo](/docs/guides/live-demo/)."
+/>
 
 ## Install packages
 
@@ -48,6 +56,13 @@ export default defineConfig({
 ```
 
 Boot the app and visit `/admin` (after your auth middleware allows it).
+
+<DocScreenshot
+  src="/screenshots/dashboard.png"
+  alt="Admin dashboard after signing in"
+  caption="After auth, your panel gets a dashboard, sidebar navigation, and resource routes — same shell as the playground demo."
+  wide
+/>
 
 ## Next
 

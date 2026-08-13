@@ -1,0 +1,44 @@
+---
+title: TextInput
+description: Single-line text, email, URL, password, and numeric inputs.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+<DocScreenshot
+  src="/screenshots/components/forms/text-input.png"
+  alt="TextInput"
+  caption="Form components gallery at `/demo/form-components`."
+/>
+
+```ts
+TextInput.make('name').required().searchable()
+TextInput.make('price').currency('KES').min(0)
+TextInput.make('sku').unique().maxLength(32)
+```
+
+<DocApiTable
+  title="Methods"
+  rows={[
+    { method: '.email()', description: 'Email input.' },
+    { method: '.password() / .revealable()', description: 'Password with optional reveal.' },
+    { method: '.url() / .tel()', description: 'URL or tel keyboard hints.' },
+    { method: '.numeric() / .integer()', description: 'Number input.' },
+    { method: '.currency(code)', description: 'Currency prefix and formatting.' },
+    { method: '.unique({ message })', description: 'Unique validation message.' },
+    { method: '.prefix() / .suffix()', description: 'Affix text or icons.' },
+    { method: '.maxLength(n) / .pattern(regex)', description: 'Length and pattern validation.' },
+    { method: '.label(text)', description: 'Field label in the UI.' },
+    { method: '.required()', description: 'Mark required on create/edit.' },
+    { method: '.helperText(text)', description: 'Help text below the control.' },
+    { method: '.default(value)', description: 'Default state when creating a record.' },
+    { method: '.hiddenOnForm() / .hiddenOnDetail()', description: 'Hide on create/edit or show view.' },
+    { method: '.columnSpan(n) / .columnSpanFull()', description: 'Grid span inside Section/Grid layouts.' },
+    { method: '.live()', description: 'Re-render the form when this field changes.' },
+  ]}
+/>
+
+## Playground
+
+Form components gallery at `/demo/form-components`.

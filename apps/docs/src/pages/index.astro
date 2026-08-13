@@ -1,6 +1,28 @@
 ---
 import SiteNav from '../components/SiteNav.astro';
 import DemoCredentials from '../components/DemoCredentials.astro';
+import Lightbox from '../components/Lightbox.astro';
+
+const gallery = [
+  {
+    src: '/screenshots/products-list.png',
+    alt: 'Product list with search, filters, and sortable columns',
+    label: 'Resources & tables',
+    caption: 'Search, filters, grouping, pagination, and row actions on every resource table.',
+  },
+  {
+    src: '/screenshots/product-form.png',
+    alt: 'Create product form with sections, tabs, and field widgets',
+    label: 'Forms & fields',
+    caption: 'Schema builders compose create/edit layouts from the field catalog.',
+  },
+  {
+    src: '/screenshots/media-library.png',
+    alt: 'Media library with folders and file grid',
+    label: 'Media library',
+    caption: 'Folders, uploads, visibility, and FilePicker integration.',
+  },
+];
 ---
 
 <!doctype html>
@@ -17,78 +39,126 @@ import DemoCredentials from '../components/DemoCredentials.astro';
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Sora:wght@500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Poppins:wght@700;800;900&display=swap"
       rel="stylesheet"
     />
     <title>Shamar — Admin panels for AdonisJS</title>
   </head>
   <body class="landing">
-    <div class="landing__atmosphere" aria-hidden="true"></div>
+    <div class="landing__atmosphere" aria-hidden="true">
+      <div class="landing__orb landing__orb--ember"></div>
+      <div class="landing__orb landing__orb--slate"></div>
+    </div>
     <SiteNav />
 
     <main>
       <section class="landing__hero">
         <div class="landing__copy">
-          <p class="landing__brand">
+          <p class="landing__eyebrow" data-reveal>AdonisJS · Filament-shaped</p>
+          <p class="landing__brand" data-reveal>
             <img
               src="/branding/shamar-banner.svg"
-              width="320"
-              height="85"
+              width="300"
+              height="77"
               alt="Shamar"
             />
           </p>
-          <h1>Admin panels that feel intentional.</h1>
-          <p class="landing__lede">
-            Filament-shaped resources, forms, and tables — native to AdonisJS, Lucid or Mongoose.
+          <h1 data-reveal>
+            Admin panels that feel <span class="landing__accent">intentional</span>.
+          </h1>
+          <p class="landing__lede" data-reveal>
+            Resources, forms, tables, and pages — native to AdonisJS with Lucid or Mongoose. Ship a panel your team actually wants to use.
           </p>
-          <div class="landing__ctas">
+          <div class="landing__ctas" data-reveal>
             <a class="btn btn--primary" href="/docs/guides/installation/">Read the docs</a>
             <a class="btn btn--ghost" href="/demo">Open live demo</a>
             <a class="btn btn--text" href="/docs/guides/first-resource/">See examples</a>
           </div>
+          <ul class="landing__pills" data-reveal aria-label="Highlights">
+            <li>Dashboard widgets</li>
+            <li>Media library</li>
+            <li>RBAC + API keys</li>
+          </ul>
         </div>
-        <div class="landing__visual" aria-hidden="true">
+        <div class="landing__visual" data-reveal="scale">
           <div class="landing__panel-frame">
-            <div class="landing__panel-chrome">
+            <div class="landing__panel-chrome" aria-hidden="true">
               <span></span><span></span><span></span>
-              <img class="landing__panel-mark" src="/branding/shamar-logo.svg" width="28" height="28" alt="" />
             </div>
-            <div class="landing__panel-body">
-              <div class="landing__sidebar-skel">
-                <img src="/branding/shamar-logo.svg" width="36" height="36" alt="" />
-                <i></i><i></i><i></i>
-              </div>
-              <div class="landing__main-skel">
-                <div class="landing__row"></div>
-                <div class="landing__row landing__row--wide"></div>
-                <div class="landing__row"></div>
-                <div class="landing__chips">
-                  <i></i><i></i><i></i>
-                </div>
-              </div>
-            </div>
+            <button
+              type="button"
+              class="landing__panel-trigger lightbox-trigger"
+              data-lightbox
+              data-lightbox-src="/screenshots/hero-panel.png"
+              data-lightbox-alt="Shamar admin dashboard with stats widgets, charts, and sidebar navigation"
+              data-lightbox-caption="Dashboard — stats, charts, and navigation groups out of the box."
+              aria-label="Enlarge dashboard screenshot"
+            >
+              <img
+                class="landing__panel-shot"
+                src="/screenshots/hero-panel.png"
+                width="1440"
+                height="820"
+                alt="Shamar admin dashboard with stats widgets, charts, and sidebar navigation"
+              />
+            </button>
           </div>
         </div>
       </section>
 
-      <section class="landing__sandbox" aria-label="Live sandbox credentials">
+      <section class="landing__gallery-section" aria-label="Panel previews">
+        <div class="landing__gallery-head" data-reveal>
+          <p class="landing__eyebrow">See it in action</p>
+          <h2>Built for real admin work.</h2>
+          <p>Click any preview to open it full size.</p>
+        </div>
+        <div class="landing__gallery">
+          {
+            gallery.map((item, index) => (
+              <figure data-reveal data-reveal-delay={String(index + 1)}>
+                <button
+                  type="button"
+                  class="landing__gallery-trigger lightbox-trigger"
+                  data-lightbox
+                  data-lightbox-src={item.src}
+                  data-lightbox-alt={item.alt}
+                  data-lightbox-caption={item.caption}
+                  aria-label={`Enlarge: ${item.label}`}
+                >
+                  <img src={item.src} width="720" height="450" alt={item.alt} loading="lazy" />
+                </button>
+                <figcaption>{item.label}</figcaption>
+              </figure>
+            ))
+          }
+        </div>
+      </section>
+
+      <section class="landing__sandbox" aria-label="Live sandbox credentials" data-reveal>
         <DemoCredentials />
       </section>
     </main>
+
+    <Lightbox />
 
     <style is:global>
       :root {
         --shamar-ember: #f1511b;
         --shamar-ember-deep: #c73d12;
+        --shamar-ember-glow: #ff6b35;
         --shamar-ink: #0f172a;
         --shamar-sand: #f6f0e9;
         --shamar-mist: #e7ddd2;
-        --font-display: 'Sora', ui-sans-serif, system-ui, sans-serif;
+        --font-display: 'Poppins', ui-sans-serif, system-ui, sans-serif;
         --font-body: 'Figtree', ui-sans-serif, system-ui, sans-serif;
       }
 
       * {
         box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
       }
 
       html,
@@ -110,9 +180,10 @@ import DemoCredentials from '../components/DemoCredentials.astro';
         inset: 0;
         z-index: 0;
         pointer-events: none;
+        overflow: hidden;
         background:
-          radial-gradient(ellipse 70% 55% at 12% 18%, color-mix(in srgb, var(--shamar-ember) 30%, transparent), transparent 70%),
-          radial-gradient(ellipse 55% 45% at 88% 8%, color-mix(in srgb, #286291 20%, transparent), transparent 68%),
+          radial-gradient(ellipse 70% 55% at 12% 18%, color-mix(in srgb, var(--shamar-ember) 34%, transparent), transparent 70%),
+          radial-gradient(ellipse 55% 45% at 88% 8%, color-mix(in srgb, #286291 24%, transparent), transparent 68%),
           linear-gradient(165deg, #fbf7f2 0%, var(--shamar-sand) 48%, #e9e0d5 100%);
       }
 
@@ -125,10 +196,57 @@ import DemoCredentials from '../components/DemoCredentials.astro';
         mix-blend-mode: multiply;
       }
 
-      body.landing > :not(.landing__atmosphere) {
+      .landing__orb {
+        position: absolute;
+        border-radius: 999px;
+        filter: blur(64px);
+        opacity: 0.55;
+        animation: orb-drift 18s ease-in-out infinite alternate;
+      }
+
+      .landing__orb--ember {
+        width: min(42vw, 28rem);
+        height: min(42vw, 28rem);
+        top: 8%;
+        left: -6%;
+        background: color-mix(in srgb, var(--shamar-ember-glow) 55%, transparent);
+      }
+
+      .landing__orb--slate {
+        width: min(36vw, 22rem);
+        height: min(36vw, 22rem);
+        top: 2%;
+        right: -4%;
+        background: color-mix(in srgb, #286291 45%, transparent);
+        animation-delay: -6s;
+        animation-duration: 22s;
+      }
+
+      body.landing > :not(.landing__atmosphere):not([data-shamar-lightbox]) {
         position: relative;
         z-index: 1;
       }
+
+      [data-reveal] {
+        opacity: 0;
+        transform: translateY(28px);
+        transition:
+          opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+          transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      [data-reveal='scale'] {
+        transform: translateY(32px) scale(0.96);
+      }
+
+      [data-reveal].is-visible {
+        opacity: 1;
+        transform: none;
+      }
+
+      [data-reveal-delay='1'] { transition-delay: 0.08s; }
+      [data-reveal-delay='2'] { transition-delay: 0.16s; }
+      [data-reveal-delay='3'] { transition-delay: 0.24s; }
 
       .landing__hero {
         display: grid;
@@ -138,6 +256,16 @@ import DemoCredentials from '../components/DemoCredentials.astro';
         max-width: 1200px;
         margin: 0 auto;
         padding: 1.5rem clamp(1.25rem, 4vw, 3rem) 2rem;
+      }
+
+      .landing__eyebrow {
+        margin: 0 0 0.85rem;
+        font-family: var(--font-display);
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--shamar-ember-deep);
       }
 
       .landing__sandbox {
@@ -175,7 +303,7 @@ import DemoCredentials from '../components/DemoCredentials.astro';
 
       .landing__sandbox .shamar-countdown {
         font-variant-numeric: tabular-nums;
-        font-weight: 700;
+        font-weight: 800;
         color: var(--shamar-ember-deep);
       }
 
@@ -211,97 +339,135 @@ import DemoCredentials from '../components/DemoCredentials.astro';
       }
 
       .landing__brand {
-        margin: 0 0 1.35rem;
-        animation: rise 0.8s ease both;
+        margin: 0 0 1.1rem;
       }
 
       .landing__brand img {
         display: block;
-        width: min(100%, 18rem);
+        width: min(100%, 19rem);
         height: auto;
-        filter: drop-shadow(0 14px 28px color-mix(in srgb, var(--shamar-ember) 28%, transparent));
+        filter: drop-shadow(0 16px 32px color-mix(in srgb, var(--shamar-ember) 32%, transparent));
       }
 
       .landing__copy h1 {
         margin: 0;
         font-family: var(--font-display);
-        font-weight: 700;
-        font-size: clamp(2.15rem, 4.6vw, 3.4rem);
-        line-height: 1.05;
-        letter-spacing: -0.045em;
-        max-width: 12ch;
-        animation: rise 0.85s ease 0.08s both;
+        font-weight: 900;
+        font-size: clamp(2.45rem, 5.4vw, 4.15rem);
+        line-height: 0.98;
+        letter-spacing: -0.05em;
+        max-width: 11ch;
+      }
+
+      .landing__accent {
+        background: linear-gradient(120deg, var(--shamar-ember) 0%, var(--shamar-ember-deep) 55%, #286291 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
       }
 
       .landing__lede {
-        margin: 1.15rem 0 0;
-        max-width: 34ch;
-        font-size: 1.18rem;
-        line-height: 1.5;
+        margin: 1.25rem 0 0;
+        max-width: 36ch;
+        font-size: 1.2rem;
+        line-height: 1.55;
         font-weight: 500;
-        opacity: 0.86;
-        animation: rise 0.85s ease 0.16s both;
+        opacity: 0.88;
       }
 
       .landing__ctas {
         display: flex;
         flex-wrap: wrap;
         gap: 0.75rem 1rem;
-        margin-top: 1.85rem;
-        animation: rise 0.9s ease 0.24s both;
+        margin-top: 1.95rem;
+      }
+
+      .landing__pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem;
+        margin: 1.35rem 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .landing__pills li {
+        padding: 0.38rem 0.72rem;
+        border-radius: 999px;
+        font-family: var(--font-display);
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--shamar-ember-deep);
+        background: color-mix(in srgb, var(--shamar-ember) 14%, #fff);
+        border: 1px solid color-mix(in srgb, var(--shamar-ember) 28%, transparent);
       }
 
       .btn {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        padding: 0.72rem 1.2rem;
-        border-radius: 0.6rem;
+        padding: 0.78rem 1.25rem;
+        border-radius: 0.65rem;
         font-family: var(--font-display);
-        font-weight: 650;
-        font-size: 0.92rem;
+        font-weight: 800;
+        font-size: 0.94rem;
         letter-spacing: -0.02em;
         text-decoration: none;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        transition:
+          transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+          box-shadow 0.22s ease,
+          background 0.22s ease;
       }
 
       .btn:hover {
-        transform: translateY(-1px);
+        transform: translateY(-2px);
       }
 
       .btn--primary {
-        background: var(--shamar-ember);
+        background: linear-gradient(135deg, var(--shamar-ember-glow), var(--shamar-ember-deep));
         color: #fff;
-        box-shadow: 0 14px 28px -16px color-mix(in srgb, var(--shamar-ember) 80%, transparent);
+        box-shadow:
+          0 16px 32px -18px color-mix(in srgb, var(--shamar-ember) 85%, transparent),
+          0 0 0 1px color-mix(in srgb, #fff 22%, transparent) inset;
+      }
+
+      .btn--primary:hover {
+        box-shadow:
+          0 22px 40px -16px color-mix(in srgb, var(--shamar-ember) 90%, transparent),
+          0 0 0 1px color-mix(in srgb, #fff 28%, transparent) inset;
       }
 
       .btn--ghost {
         color: var(--shamar-ink);
         border: 1px solid color-mix(in srgb, var(--shamar-ink) 18%, transparent);
-        background: color-mix(in srgb, #fff 62%, transparent);
+        background: color-mix(in srgb, #fff 72%, transparent);
       }
 
       .btn--text {
         font-family: var(--font-body);
         color: var(--shamar-ember-deep);
         padding-inline: 0.35rem;
-        font-weight: 650;
+        font-weight: 700;
       }
 
       .landing__visual {
-        animation: float-in 1.1s ease 0.2s both;
+        perspective: 1400px;
       }
 
       .landing__panel-frame {
-        border-radius: 1.1rem;
+        border-radius: 1.15rem;
         overflow: hidden;
         border: 1px solid color-mix(in srgb, var(--shamar-ink) 12%, transparent);
-        background: color-mix(in srgb, #fff 82%, var(--shamar-mist));
+        background: #fff;
         box-shadow:
-          0 30px 60px -36px rgba(15, 23, 42, 0.5),
-          0 0 0 1px color-mix(in srgb, #fff 40%, transparent) inset;
-        transform: perspective(1200px) rotateY(-6deg) rotateX(4deg);
+          0 40px 80px -40px rgba(15, 23, 42, 0.55),
+          0 0 0 1px color-mix(in srgb, #fff 40%, transparent) inset,
+          0 0 80px -20px color-mix(in srgb, var(--shamar-ember) 35%, transparent);
+        transform: perspective(1200px) rotateY(-7deg) rotateX(5deg);
         transform-origin: left center;
+        animation: panel-float 7s ease-in-out infinite;
       }
 
       .landing__panel-chrome {
@@ -324,123 +490,171 @@ import DemoCredentials from '../components/DemoCredentials.astro';
         background: var(--shamar-ember);
       }
 
-      .landing__panel-mark {
-        margin-left: auto;
-        height: 1.55rem;
-        width: auto;
+      .landing__panel-shot {
+        display: block;
+        width: 100%;
+        height: auto;
+        vertical-align: middle;
+        transition: transform 0.4s ease;
       }
 
-      .landing__panel-body {
+      .landing__panel-trigger:hover .landing__panel-shot {
+        transform: scale(1.015);
+      }
+
+      .landing__gallery-section {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1rem clamp(1.25rem, 4vw, 3rem) 3.5rem;
+      }
+
+      .landing__gallery-head {
+        margin-bottom: 1.75rem;
+      }
+
+      .landing__gallery-head h2 {
+        margin: 0;
+        font-family: var(--font-display);
+        font-weight: 900;
+        font-size: clamp(1.85rem, 3.8vw, 2.75rem);
+        letter-spacing: -0.04em;
+        line-height: 1.05;
+      }
+
+      .landing__gallery-head p {
+        margin: 0.65rem 0 0;
+        font-size: 1.05rem;
+        opacity: 0.78;
+      }
+
+      .landing__gallery {
         display: grid;
-        grid-template-columns: 0.32fr 0.68fr;
-        min-height: 280px;
+        gap: 1.25rem;
       }
 
-      .landing__sidebar-skel {
-        display: flex;
-        flex-direction: column;
-        gap: 0.65rem;
-        padding: 1rem 0.85rem;
-        background: linear-gradient(
-          180deg,
-          color-mix(in srgb, var(--shamar-ember) 12%, #fff),
-          color-mix(in srgb, var(--shamar-mist) 80%, #fff)
-        );
-        border-right: 1px solid color-mix(in srgb, var(--shamar-ink) 8%, transparent);
+      .landing__gallery figure {
+        margin: 0;
+        border-radius: 0.95rem;
+        overflow: hidden;
+        border: 1px solid color-mix(in srgb, var(--shamar-ink) 10%, transparent);
+        background: #fff;
+        box-shadow: 0 22px 48px -32px rgba(15, 23, 42, 0.4);
+        transition:
+          transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+          box-shadow 0.35s ease;
       }
 
-      .landing__sidebar-skel img {
-        width: 2rem;
-        height: 2rem;
-        margin-bottom: 0.35rem;
+      .landing__gallery figure:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 28px 56px -28px rgba(15, 23, 42, 0.48);
       }
 
-      .landing__sidebar-skel i {
+      .landing__gallery img {
         display: block;
-        height: 0.55rem;
-        border-radius: 999px;
-        background: color-mix(in srgb, var(--shamar-ink) 12%, transparent);
-        width: 78%;
+        width: 100%;
+        height: auto;
+        transition: transform 0.4s ease;
       }
 
-      .landing__sidebar-skel i:nth-child(3) {
-        width: 62%;
+      .landing__gallery figure:hover img {
+        transform: scale(1.02);
       }
 
-      .landing__sidebar-skel i:nth-child(4) {
-        width: 70%;
+      .landing__gallery figcaption {
+        padding: 0.7rem 1rem 0.9rem;
+        font-family: var(--font-display);
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: color-mix(in srgb, var(--shamar-ink) 58%, transparent);
       }
 
-      .landing__main-skel {
-        padding: 1.25rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
+      @media (min-width: 900px) {
+        .landing__gallery {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
       }
 
-      .landing__row {
-        height: 2.4rem;
-        border-radius: 0.45rem;
-        background: color-mix(in srgb, var(--shamar-ink) 7%, transparent);
-        width: 72%;
+      @keyframes panel-float {
+        0%,
+        100% {
+          transform: perspective(1200px) rotateY(-7deg) rotateX(5deg) translateY(0);
+        }
+        50% {
+          transform: perspective(1200px) rotateY(-5deg) rotateX(3deg) translateY(-10px);
+        }
       }
 
-      .landing__row--wide {
-        width: 92%;
-        height: 7rem;
-      }
-
-      .landing__chips {
-        display: flex;
-        gap: 0.45rem;
-        margin-top: auto;
-      }
-
-      .landing__chips i {
-        display: block;
-        width: 3.5rem;
-        height: 1.35rem;
-        border-radius: 999px;
-        background: color-mix(in srgb, var(--shamar-ember) 28%, transparent);
-      }
-
-      @keyframes rise {
+      @keyframes orb-drift {
         from {
-          opacity: 0;
-          transform: translateY(14px);
+          transform: translate(0, 0) scale(1);
         }
         to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      @keyframes float-in {
-        from {
-          opacity: 0;
-          transform: translateY(24px) scale(0.98);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0) scale(1);
+          transform: translate(24px, -18px) scale(1.08);
         }
       }
 
       @media (max-width: 959px) {
         .landing__panel-frame {
           transform: none;
+          animation: none;
         }
       }
 
+      body.landing.lightbox-active .landing__panel-frame {
+        animation-play-state: paused;
+      }
+
       @media (prefers-reduced-motion: reduce) {
-        .landing__brand,
-        .landing__copy h1,
-        .landing__lede,
-        .landing__ctas,
-        .landing__visual {
+        html {
+          scroll-behavior: auto;
+        }
+
+        [data-reveal] {
+          opacity: 1;
+          transform: none;
+          transition: none;
+        }
+
+        .landing__panel-frame,
+        .landing__orb {
           animation: none;
         }
       }
     </style>
+
+    <script>
+      function bindReveal(root) {
+        const items = root.querySelectorAll('[data-reveal]:not(.is-visible)')
+        if (!items.length) return
+
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          items.forEach((el) => el.classList.add('is-visible'))
+          return
+        }
+
+        const observer = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (!entry.isIntersecting) continue
+              entry.target.classList.add('is-visible')
+              observer.unobserve(entry.target)
+            }
+          },
+          { threshold: 0.14, rootMargin: '0px 0px -6% 0px' }
+        )
+
+        items.forEach((el) => observer.observe(el))
+
+        // Hero copy should animate immediately on load
+        root.querySelectorAll('.landing__hero [data-reveal]').forEach((el) => {
+          requestAnimationFrame(() => el.classList.add('is-visible'))
+        })
+      }
+
+      bindReveal(document)
+      document.addEventListener('astro:page-load', () => bindReveal(document))
+    </script>
   </body>
 </html>

@@ -1,0 +1,36 @@
+---
+title: CodeEditor
+description: Syntax-highlighted code editor.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+<DocScreenshot
+  src="/screenshots/components/forms/code-editor.png"
+  alt="CodeEditor"
+  caption="Form components gallery at `/demo/form-components`."
+/>
+
+```ts
+CodeEditor.make('themeJson').language('json').languages(['json', 'css'])
+```
+
+<DocApiTable
+  title="Methods"
+  rows={[
+    { method: '.language(id)', description: 'Primary syntax.' },
+    { method: '.languages([...])', description: 'Allowed modes.' },
+    { method: '.label(text)', description: 'Field label in the UI.' },
+    { method: '.required()', description: 'Mark required on create/edit.' },
+    { method: '.helperText(text)', description: 'Help text below the control.' },
+    { method: '.default(value)', description: 'Default state when creating a record.' },
+    { method: '.hiddenOnForm() / .hiddenOnDetail()', description: 'Hide on create/edit or show view.' },
+    { method: '.columnSpan(n) / .columnSpanFull()', description: 'Grid span inside Section/Grid layouts.' },
+    { method: '.live()', description: 'Re-render the form when this field changes.' },
+  ]}
+/>
+
+## Playground
+
+Form components gallery at `/demo/form-components`.

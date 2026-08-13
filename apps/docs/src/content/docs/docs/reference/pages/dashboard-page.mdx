@@ -1,0 +1,21 @@
+---
+title: DashboardPage
+description: Panel home with widget grid.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+<DocScreenshot
+  src="/screenshots/components/pages/dashboard-page.png"
+  alt="DashboardPage"
+  caption="Playground /demo — dashboard."
+/>
+
+```ts
+export default class AdminDashboard extends DashboardPage {
+  static columns = 3
+  static widgets() { return [ProductStatsWidget] }
+}
+```
+

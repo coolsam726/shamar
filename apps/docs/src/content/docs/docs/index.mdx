@@ -3,20 +3,45 @@ title: Documentation
 description: Guides, concepts, and reference for building admin panels with Shamar.
 ---
 
-Welcome — start with installation, or jump into resources and the field catalog.
+import DocScreenshot from '../../../components/DocScreenshot.astro';
 
-## Paths
+Welcome — Filament-style reference docs for every major building block.
 
-| Section | What you’ll find |
-|---------|------------------|
-| [Installation](/docs/guides/installation/) | Add Shamar to an AdonisJS app |
-| [Your first resource](/docs/guides/first-resource/) | Form + table CRUD in one class |
-| [Live demo](/demo) | Shared sandbox credentials & panel |
-| [Concepts](/docs/concepts/resources/) | Resources, forms, tables, pages, auth, media |
-| [Field catalog](/docs/reference/fields/) | Built-in field builders |
-| [Recipes](/docs/recipes/settings-page/) | Settings pages & branding |
+<DocScreenshot
+  src="/screenshots/dashboard.png"
+  alt="Shamar admin dashboard"
+  caption="Live playground at /demo — dashboard, resources, media, settings, and RBAC."
+  wide
+/>
+
+## Quick start
 
 ```bash
 pnpm add @shamar/adonis
 node ace configure @shamar/adonis
 ```
+
+| Step | Guide |
+|------|--------|
+| Install | [Installation](/docs/guides/installation/) |
+| First CRUD | [Your first resource](/docs/guides/first-resource/) |
+| Try it | [Live demo](/docs/guides/live-demo/) |
+
+## Component reference
+
+| Section | What you'll find |
+|---------|------------------|
+| [Resources](/docs/reference/resources/) | CRUD resources, registration, navigation, lifecycle |
+| [Forms](/docs/reference/forms/) | Every field type + schema layouts |
+| [Tables](/docs/reference/tables/) | TextColumn formats, filters, grouping |
+| [Infolists](/docs/reference/infolists/) | Show/detail entries |
+| [Widgets](/docs/reference/widgets/) | Dashboard stats, charts, lists |
+| [Actions](/docs/reference/actions/) | Header, row, and bulk actions |
+| [Pages](/docs/reference/pages/) | Settings, List, Dashboard, composite |
+
+## Concepts & recipes
+
+- [Auth & RBAC](/docs/concepts/auth/)
+- [Media library](/docs/concepts/media/)
+- [Settings page recipe](/docs/recipes/settings-page/)
+- [Branding](/docs/recipes/branding/)
