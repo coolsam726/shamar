@@ -3,12 +3,24 @@ title: Media library
 description: File Manager, folders, and FilePicker fields.
 ---
 
+import DocScreenshot from '../../../../components/DocScreenshot.astro';
+
 Enable media on a panel to get a File Manager UI and `FilePicker` form fields.
+
+<DocScreenshot
+  src="/screenshots/media-library.png"
+  alt="Media library with folder tree and file grid"
+  caption="File Manager — folders, uploads, visibility, and public URLs. Open `/demo/media` in the live sandbox."
+  wide
+/>
 
 ```ts
 panel('admin').media({
   label: 'Files',
-  // disk / visibility options per host docs
+  // Omit navigationGroup (or set '') for a top-level sidebar root.
+  // navigationGroup: 'System', // nest under an existing cluster
+  navigationIcon: 'folder', // also: files, media, photo, image, images
+  // disk / adapter / storage options per host docs
 })
 ```
 

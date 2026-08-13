@@ -9,12 +9,18 @@
     "start": "astro dev --port 4321",
     "build": "astro build",
     "preview": "astro preview --port 4321",
-    "astro": "astro"
+    "astro": "astro",
+    "screenshots": "node scripts/capture-screenshots.mjs && node scripts/capture-component-screenshots.mjs",
+    "screenshots:components": "node scripts/capture-component-screenshots.mjs",
+    "reference": "node scripts/generate-reference.mjs"
   },
   "dependencies": {
     "@astrojs/starlight": "^0.41.7",
     "astro": "^7.1.6",
     "sharp": "^0.35.3"
+  },
+  "devDependencies": {
+    "playwright": "^1.62.1"
   },
   "engines": {
     "node": ">=20"

@@ -2614,6 +2614,13 @@
     return `${base}${path}`;
   }
 
+  function shamarMediaApiBase(override) {
+    const explicit = String(override ?? '').trim().replace(/\/+$/, '');
+    if (explicit) return explicit;
+    const base = document.body?.dataset?.shamarBasePath?.replace(/\/+$/, '') || '/admin';
+    return `${base}/media`;
+  }
+
   let flowbiteDatepickerReady = null;
   function loadFlowbiteDatepicker() {
     if (typeof window.Datepicker === 'function') return Promise.resolve();
@@ -4663,7 +4670,7 @@
       multiple: !!cfg.multiple,
       accept: cfg.accept || '',
       rootFolderId: cfg.folderId ?? null,
-      apiBase: cfg.apiBase || '/admin/media',
+      apiBase: shamarMediaApiBase(cfg.apiBase),
       getValue: typeof cfg.getValue === 'function' ? cfg.getValue : () => null,
       setValue: typeof cfg.setValue === 'function' ? cfg.setValue : () => {},
       isDisabled: typeof cfg.isDisabled === 'function' ? cfg.isDisabled : () => false,
@@ -4885,10 +4892,13 @@
         }));
         this.browseFiles = this.accept ? files.filter((f) => this.matchesAccept(f)) : files;
         this.browseBreadcrumbs = data.breadcrumbs || [];
+        if (!this.folderId && data.folder?.id) {
+          this.folderId = data.folder.id;
+        }
       },
 
       goFolder(id) {
-        this.folderId = id;
+        this.folderId = id == null ? (this.rootFolderId ?? null) : id;
         this.loadBrowse();
       },
 

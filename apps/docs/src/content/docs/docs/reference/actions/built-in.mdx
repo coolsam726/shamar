@@ -1,0 +1,22 @@
+---
+title: Built-in actions
+description: Default CRUD action set.
+---
+
+```ts
+import { defaultActions } from '@shamar/core'
+
+static resourceActions() {
+  return defaultActions() // create, view, edit, delete, bulkDelete
+}
+```
+
+| Action | Placement | Default |
+|--------|-----------|---------|
+| `create()` | header | + New |
+| `view()` | row | View |
+| `edit()` | row | Edit |
+| `delete()` | row | Delete (danger) |
+| `bulkDelete()` | bulk | Delete selected |
+
+Customize labels: `a.create('New ticket')`, `a.delete().confirm('…')`.

@@ -1,0 +1,23 @@
+---
+title: CardWidget
+description: Custom Edge view or HTML card.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+```ts
+export class PromoCardWidget extends CardWidget {
+  static override content(ctx) {
+    return { view: 'widgets/promo', data: { title: 'Hello' } }
+  }
+}
+```
+
+<DocApiTable
+  title="Methods"
+  rows={[
+    { method: 'static content(ctx)', description: 'View name, HTML string, or data object.' },
+  ]}
+/>
+

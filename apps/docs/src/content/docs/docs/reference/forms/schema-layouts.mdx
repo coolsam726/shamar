@@ -1,0 +1,34 @@
+---
+title: Schema layouts
+description: Section, Tabs, Grid, Wizard, and other form layout nodes.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+<DocScreenshot
+  src="/screenshots/components/forms/schema-layouts.png"
+  alt="Tabs layout"
+  caption="Section, Tabs, Grid, Wizard, and related layout nodes."
+  wide
+/>
+
+```ts
+import { Section, Grid, Tabs, Tab, Wizard, Step, Fieldset, Callout } from '@shamar/core'
+
+Section.make('Catalog').columns(2).schema([
+  Grid.make(2).schema([/* fields */]),
+])
+```
+
+| Component | Purpose |
+|-----------|---------|
+| `Section` | Card with heading, icon, collapsible |
+| `Fieldset` | Lightweight section |
+| `Grid` | Column layout for fields |
+| `Tabs` / `Tab` | Tabbed sections |
+| `Wizard` / `Step` | Multi-step create UI |
+| `Callout` | info / success / warning / danger |
+| `Group` / `Flex` | Inline grouping |
+
+**Playground:** [Form components](/demo/form-components) gallery (all fields), Company (RelationTable), Settings (Tabs).

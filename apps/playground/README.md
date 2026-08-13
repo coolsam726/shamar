@@ -9,7 +9,7 @@ This is the reference integration for [`@shamar/adonis`](../../packages/adonis) 
 | Surface | Path | Notes |
 |---------|------|--------|
 | Admin panel | `/demo` | Full CRUD resources (companies, users, roles, permissions, products, API keys, …) |
-| Pages | `/demo/settings`, `/demo/product-catalog`, `/demo/ops-dashboard` | Form, list, and composite `Page` demos |
+| Pages | `/demo/settings`, `/demo/form-components`, `/demo/product-catalog`, `/demo/ops-dashboard` | Form gallery, settings, list, and composite `Page` demos |
 | Files | `/demo/media` | Media library (folder tree, FilePicker) |
 | App panel | `/app` | Smaller end-user panel (e.g. profile) |
 | JSON API | `/api/shamar` | Protected when `auth.apiKeys.protectApi` is enabled |

@@ -1,0 +1,7 @@
+{{-- Expects `sortState`: 'idle' | 'asc' | 'desc' --}}
+<span class="shamar-sort-indicator is-{{ sortState ?? 'idle' }}" aria-hidden="true">
+  <svg viewBox="0 0 10 16" width="10" height="14" fill="currentColor" focusable="false">
+    <path class="shamar-sort-indicator__up" d="M5 1.5L9.25 7H.75L5 1.5z"/>
+    <path class="shamar-sort-indicator__down" d="M5 14.5L.75 9h8.5L5 14.5z"/>
+  </svg>
+</span>

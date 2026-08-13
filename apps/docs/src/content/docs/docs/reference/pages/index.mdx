@@ -1,0 +1,25 @@
+---
+title: Pages overview
+description: Custom admin pages beyond resources.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+```ts
+panel('admin').discoverPages('app/pages/admin')
+```
+
+| Page type | Class | Use |
+|-----------|-------|-----|
+| [FormPage](/docs/reference/pages/form-page/) | `FormPage` | One-off form |
+| [SettingsPage](/docs/reference/pages/settings-page/) | `SettingsPage` | App settings singleton |
+| [ListPage](/docs/reference/pages/list-page/) | `ListPage` | Standalone table |
+| [DashboardPage](/docs/reference/pages/dashboard-page/) | `DashboardPage` | Widget grid home |
+| [Composite Page](/docs/reference/pages/composite-page/) | `Page` + `pageContent()` | Mixed sections |
+
+Shared static props: `slug`, `label`, `navigationGroup`, `icon`, `canAccess()`.
+
+```bash
+node ace shamar:make-page Settings --type settings
+```

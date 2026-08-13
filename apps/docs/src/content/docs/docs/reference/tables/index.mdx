@@ -1,0 +1,39 @@
+---
+title: Tables overview
+description: List tables, search, filters, grouping, and pagination.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+<DocScreenshot
+  src="/screenshots/products-list.png"
+  alt="Product list table"
+  caption="Table chrome is provided by the Adonis host."
+  wide
+/>
+
+```ts
+static table() {
+  return table((t) => {
+    t.defaultSort('name', 'asc')
+    t.defaultFilters([{ field: 'resolved', value: false, label: 'Resolved: No' }])
+    t.schema([
+      TextColumn.make('name').searchable().sortable(),
+    ])
+  })
+}
+```
+
+List routes render searchable, filterable, groupable tables with pagination, bulk actions, and sticky headings.
+
+## TableBuilder
+
+| Method | Purpose |
+|--------|---------|
+| `.schema([columns])` | Column list |
+| `.defaultSort(field, direction)` | Initial sort |
+| `.defaultFilters([...])` | Pre-applied filters |
+| `.defaultGroupBy(field)` | Initial grouping |
+
+See [TextColumn](/docs/reference/tables/text-column/) for all column format modifiers.

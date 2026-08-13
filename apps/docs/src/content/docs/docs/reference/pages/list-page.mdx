@@ -1,0 +1,16 @@
+---
+title: ListPage
+description: Read-heavy table without full CRUD.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+```ts
+export default class ProductCatalogPage extends ListPage {
+  static slug = 'product-catalog'
+  static model = Product
+  static table() { return table(/* … */) }
+}
+```
+

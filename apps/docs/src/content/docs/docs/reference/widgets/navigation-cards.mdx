@@ -1,0 +1,27 @@
+---
+title: NavigationCardsWidget
+description: Quick links to sidebar roots.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+<DocScreenshot
+  src="/screenshots/components/widgets/navigation-cards.png"
+  alt="NavigationCardsWidget"
+  caption="From the /demo dashboard widget grid."
+/>
+
+```ts
+export class QuickLinksWidget extends NavigationCardsWidget {
+  static override sort = 50
+}
+```
+
+<DocApiTable
+  title="Methods"
+  rows={[
+    { method: '(auto)', description: 'Injects panel navigation groups as cards.' },
+  ]}
+/>
+

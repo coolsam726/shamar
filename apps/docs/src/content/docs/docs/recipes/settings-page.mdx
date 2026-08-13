@@ -3,6 +3,15 @@ title: Settings page recipe
 description: Singleton settings with SettingsPage and sticky Save.
 ---
 
+import DocScreenshot from '../../../../components/DocScreenshot.astro';
+
+<DocScreenshot
+  src="/screenshots/settings.png"
+  alt="Settings page with Branding and Preferences tabs"
+  caption="SettingsPage — tabs, sticky Save in the page heading, and `fill()` / `save()` hooks for a singleton record."
+  wide
+/>
+
 ```ts
 import { SettingsPage, form, Tabs, Tab, Section, TextInput } from '@shamar/core'
 
@@ -39,4 +48,4 @@ export default class AppSettingsPage extends SettingsPage {
 }
 ```
 
-Save lives in the sticky heading (page actions). Layout width defaults to `7xl`.
+See the [SettingsPage reference](/docs/reference/pages/settings-page/) for the full API.

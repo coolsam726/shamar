@@ -1,0 +1,36 @@
+---
+title: StatsOverviewWidget
+description: Row of stat cards on the dashboard.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+<DocScreenshot
+  src="/screenshots/components/widgets/stats-overview.png"
+  alt="StatsOverviewWidget"
+  caption="From the /demo dashboard widget grid."
+/>
+
+```ts
+export class ProductStatsWidget extends StatsOverviewWidget {
+  static override sort = 10
+  static override columnSpan = 'full'
+
+  static override async stats(ctx) {
+    return [
+      Stat.make('Total products', count).description('In catalog').color('primary'),
+    ]
+  }
+}
+```
+
+<DocApiTable
+  title="Methods"
+  rows={[
+    { method: 'static sort', description: 'Grid order.' },
+    { method: 'static columnSpan', description: '1–4 or full width.' },
+    { method: 'static stats(ctx)', description: 'Returns Stat[] (async).' },
+  ]}
+/>
+

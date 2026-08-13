@@ -1,0 +1,19 @@
+---
+title: ImageEntry
+description: Thumbnail from URL or media id.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+<DocScreenshot
+  src="/screenshots/components/infolists/image-entry.png"
+  alt="ImageEntry"
+  caption="Cropped from a live resource show view."
+/>
+
+```ts
+ImageEntry.make('coverMediaId')
+```
+
+Define `static infolist()` on a resource, or let Shamar derive show fields from `form()` automatically.

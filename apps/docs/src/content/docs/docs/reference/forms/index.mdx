@@ -1,0 +1,47 @@
+---
+title: Forms overview
+description: Form schemas, shared field API, and layout components.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+<DocScreenshot
+  src="/screenshots/components/forms/select.png"
+  alt="Form fields gallery"
+  caption="All field types on one page — `/demo/form-components`."
+  wide
+/>
+
+```ts
+static form() {
+  return form((f) => {
+    f.schema([
+      Section.make('Basics').schema([
+        TextInput.make('name').required(),
+      ]),
+    ])
+  })
+}
+```
+
+Resources declare a `form()` builder. The Adonis host renders create/edit, hydrates payloads via the **field registry**, and validates required fields.
+
+## Shared field API
+
+All field builders extend `FormComponent`:
+
+<DocApiTable
+  title="Common methods"
+  rows={[
+    { method: '.label(text)', description: 'Field label in the UI.' },
+    { method: '.required()', description: 'Mark required on create/edit.' },
+    { method: '.helperText(text)', description: 'Help text below the control.' },
+    { method: '.default(value)', description: 'Default state when creating a record.' },
+    { method: '.hiddenOnForm() / .hiddenOnDetail()', description: 'Hide on create/edit or show view.' },
+    { method: '.columnSpan(n) / .columnSpanFull()', description: 'Grid span inside Section/Grid layouts.' },
+    { method: '.live()', description: 'Re-render the form when this field changes.' },
+  ]}
+/>
+
+Browse each field type in the sidebar, or see [Schema layouts](/docs/reference/forms/schema-layouts/).

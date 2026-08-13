@@ -1,0 +1,36 @@
+---
+title: TextEntry
+description: Default show entry — text, badges, dates, markdown, copyable.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+<DocScreenshot
+  src="/screenshots/components/infolists/text-entry.png"
+  alt="TextEntry"
+  caption="Cropped from a live resource show view."
+/>
+
+```ts
+TextEntry.make('name')
+TextEntry.make('price').currency('KES')
+TextEntry.make('tags').badge().columnSpanFull()
+TextEntry.make('sku').copyable()
+```
+
+<DocApiTable
+  title="Methods"
+  rows={[
+    { method: '.boolean()', description: 'Yes/no display.' },
+    { method: '.badge()', description: 'Badge list (arrays/enums).' },
+    { method: '.date() / .dateTime()', description: 'Formatted dates.' },
+    { method: '.currency(code)', description: 'Money formatting.' },
+    { method: '.email() / .url()', description: 'Linked values.' },
+    { method: '.markdown() / .textarea()', description: 'Rich text display modes.' },
+    { method: '.copyable()', description: 'Copy-to-clipboard button.' },
+    { method: '.label() / .columnSpanFull()', description: 'Layout options.' },
+  ]}
+/>
+
+Define `static infolist()` on a resource, or let Shamar derive show fields from `form()` automatically.

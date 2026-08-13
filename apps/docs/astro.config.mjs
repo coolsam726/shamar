@@ -1,8 +1,10 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import { buildSidebar } from './sidebar.mjs';
 
 const demoUrl = process.env.PUBLIC_DEMO_URL ?? '';
+const sidebar = await buildSidebar();
 
 // https://astro.build/config
 export default defineConfig({
@@ -27,6 +29,9 @@ export default defineConfig({
         },
       ],
       customCss: ['./src/styles/custom.css'],
+      components: {
+        PageFrame: './src/components/PageFrame.astro',
+      },
       editLink: {
         baseUrl: 'https://github.com/coolsam726/shamar/edit/main/apps/docs/',
       },
@@ -39,44 +44,7 @@ export default defineConfig({
           },
         },
       ],
-      sidebar: [
-        {
-          label: 'Getting started',
-          items: [
-            { label: 'Installation', slug: 'docs/guides/installation' },
-            { label: 'Your first resource', slug: 'docs/guides/first-resource' },
-            { label: 'Live demo', slug: 'docs/guides/live-demo' },
-            { label: 'Changelog', slug: 'docs/guides/changelog' },
-          ],
-        },
-        {
-          label: 'Concepts',
-          items: [
-            { label: 'Resources', slug: 'docs/concepts/resources' },
-            { label: 'Forms & fields', slug: 'docs/concepts/forms' },
-            { label: 'Tables & lists', slug: 'docs/concepts/tables' },
-            { label: 'Pages', slug: 'docs/concepts/pages' },
-            { label: 'Auth & RBAC', slug: 'docs/concepts/auth' },
-            { label: 'Media library', slug: 'docs/concepts/media' },
-          ],
-        },
-        {
-          label: 'Reference',
-          items: [
-            { label: 'Field catalog', slug: 'docs/reference/fields' },
-            { label: 'Rich editor', slug: 'docs/reference/rich-editor' },
-            { label: 'REST & OpenAPI', slug: 'docs/reference/rest' },
-            { label: 'Packages', slug: 'docs/reference/packages' },
-          ],
-        },
-        {
-          label: 'Recipes',
-          items: [
-            { label: 'Settings page', slug: 'docs/recipes/settings-page' },
-            { label: 'Branding', slug: 'docs/recipes/branding' },
-          ],
-        },
-      ],
+      sidebar,
     }),
   ],
   vite: {

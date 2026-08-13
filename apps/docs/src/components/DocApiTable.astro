@@ -1,0 +1,61 @@
+---
+interface Row {
+  method: string
+  description: string
+}
+
+interface Props {
+  rows: Row[]
+  title?: string
+}
+
+const { rows, title = 'Methods' } = Astro.props
+---
+
+{title ? <h3>{title}</h3> : null}
+<table class="doc-api">
+  <thead>
+    <tr>
+      <th>Method</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    {
+      rows.map((row) => (
+        <tr>
+          <td><code>{row.method}</code></td>
+          <td>{row.description}</td>
+        </tr>
+      ))
+    }
+  </tbody>
+</table>
+
+<style>
+  .doc-api {
+    width: 100%;
+    margin: 1rem 0 1.5rem;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+    line-height: 1.45;
+  }
+
+  .doc-api th,
+  .doc-api td {
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid var(--sl-color-hairline, rgba(0, 0, 0, 0.1));
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .doc-api th {
+    font-weight: 650;
+    color: var(--sl-color-gray-2, inherit);
+  }
+
+  .doc-api code {
+    font-size: 0.88em;
+    white-space: nowrap;
+  }
+</style>

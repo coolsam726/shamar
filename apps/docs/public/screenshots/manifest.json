@@ -1,0 +1,14 @@
+{
+  "capturedAt": "2026-08-13T12:15:53.493Z",
+  "baseUrl": "http://localhost:3333",
+  "files": [
+    "login.png",
+    "dashboard.png",
+    "products-list.png",
+    "product-form.png",
+    "media-library.png",
+    "settings.png",
+    "product-catalog.png",
+    "hero-panel.png"
+  ]
+}

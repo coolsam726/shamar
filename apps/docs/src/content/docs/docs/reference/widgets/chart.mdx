@@ -1,0 +1,36 @@
+---
+title: ChartWidget
+description: ApexCharts or Chart.js line, bar, area, pie, donut.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+<DocScreenshot
+  src="/screenshots/components/widgets/chart.png"
+  alt="ChartWidget"
+  caption="From the /demo dashboard widget grid."
+/>
+
+```ts
+export class VisitsChartWidget extends ChartWidget {
+  static override heading = 'Daily visits (30 days)'
+  static override type = 'line'
+  static override library = 'apex'
+
+  static override async data(ctx) {
+    return { labels: ['Mon', 'Tue'], series: [{ name: 'Visits', data: [12, 19] }] }
+  }
+}
+```
+
+<DocApiTable
+  title="Methods"
+  rows={[
+    { method: 'static type', description: 'line | bar | area | pie | donut.' },
+    { method: 'static library', description: 'apex (default) or chartjs.' },
+    { method: 'static data(ctx)', description: 'Chart payload (async).' },
+    { method: 'static columnSpan / heading', description: 'Layout.' },
+  ]}
+/>
+

@@ -1,0 +1,248 @@
+---
+/** Singleton lightbox — include once per page. Clicks on `[data-lightbox]` open the image. */
+---
+
+<div
+  class="shamar-lightbox"
+  data-shamar-lightbox
+  hidden
+  role="dialog"
+  aria-modal="true"
+  aria-label="Screenshot preview"
+>
+  <button type="button" class="shamar-lightbox__backdrop" data-lightbox-close aria-label="Close preview"></button>
+  <figure class="shamar-lightbox__frame">
+    <button type="button" class="shamar-lightbox__close" data-lightbox-close aria-label="Close">
+      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+        <path
+          d="M5 5l10 10M15 5L5 15"
+          stroke="currentColor"
+          stroke-width="1.75"
+          stroke-linecap="round"></path>
+      </svg>
+    </button>
+    <img class="shamar-lightbox__img" data-lightbox-image alt="" />
+    <figcaption class="shamar-lightbox__caption" data-lightbox-caption hidden></figcaption>
+  </figure>
+</div>
+
+<style is:global>
+  .lightbox-trigger {
+    cursor: zoom-in;
+    border: none;
+    padding: 0;
+    background: none;
+    font: inherit;
+    color: inherit;
+    text-align: inherit;
+    display: block;
+    max-width: 100%;
+  }
+
+  .lightbox-trigger:focus-visible {
+    outline: 2px solid var(--shamar-ember, #f1511b);
+    outline-offset: 3px;
+  }
+
+  .lightbox-trigger img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+  }
+
+  .shamar-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: grid;
+    place-items: center;
+    padding: clamp(1rem, 3vw, 2.5rem);
+    pointer-events: none;
+  }
+
+  .shamar-lightbox:not([hidden]) {
+    pointer-events: auto;
+  }
+
+  .shamar-lightbox[hidden] {
+    display: none;
+  }
+
+  .shamar-lightbox__backdrop {
+    position: absolute;
+    inset: 0;
+    border: none;
+    background: color-mix(in srgb, #0f172a 72%, transparent);
+    backdrop-filter: blur(10px);
+    cursor: zoom-out;
+    animation: lightbox-backdrop-in 0.28s ease both;
+  }
+
+  .shamar-lightbox__frame {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    max-width: min(96vw, 1440px);
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    animation: lightbox-frame-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .shamar-lightbox__img {
+    display: block;
+    max-width: 100%;
+    max-height: calc(92vh - 3rem);
+    width: auto;
+    height: auto;
+    margin: 0 auto;
+    border-radius: 0.75rem;
+    box-shadow:
+      0 24px 64px -24px rgba(0, 0, 0, 0.55),
+      0 0 0 1px color-mix(in srgb, #fff 18%, transparent);
+  }
+
+  .shamar-lightbox__caption {
+    margin: 0.85rem 0 0;
+    text-align: center;
+    font-size: 0.92rem;
+    line-height: 1.45;
+    color: #f8fafc;
+    max-width: 52ch;
+    margin-inline: auto;
+  }
+
+  .shamar-lightbox__caption[hidden] {
+    display: none;
+  }
+
+  .shamar-lightbox__close {
+    position: absolute;
+    top: -0.35rem;
+    right: -0.35rem;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 2.35rem;
+    height: 2.35rem;
+    border: none;
+    border-radius: 999px;
+    background: #fff;
+    color: #0f172a;
+    cursor: pointer;
+    box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.45);
+    transition: transform 0.18s ease;
+  }
+
+  .shamar-lightbox__close:hover {
+    transform: scale(1.06);
+  }
+
+  @keyframes lightbox-backdrop-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes lightbox-frame-in {
+    from {
+      opacity: 0;
+      transform: scale(0.94) translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .shamar-lightbox__backdrop,
+    .shamar-lightbox__frame {
+      animation: none;
+    }
+  }
+</style>
+
+<script>
+  function initLightbox() {
+    const dialog = document.querySelector('[data-shamar-lightbox]')
+    if (!dialog || dialog.dataset.bound) return
+    dialog.dataset.bound = '1'
+
+    // Scope to the dialog — page triggers also use data-lightbox-caption / -src / -alt.
+    const img = dialog.querySelector('[data-lightbox-image]')
+    const caption = dialog.querySelector('[data-lightbox-caption]')
+    if (!img || !caption) return
+
+    let lastFocus = null
+
+    const blockBackgroundScroll = (event) => {
+      if (dialog.hidden) return
+      if (event.target instanceof Element && event.target.closest('[data-shamar-lightbox]')) return
+      event.preventDefault()
+    }
+
+    const lockScroll = () => {
+      document.body.classList.add('lightbox-active')
+      document.addEventListener('wheel', blockBackgroundScroll, { passive: false, capture: true })
+      document.addEventListener('touchmove', blockBackgroundScroll, { passive: false, capture: true })
+    }
+
+    const unlockScroll = () => {
+      document.body.classList.remove('lightbox-active')
+      document.removeEventListener('wheel', blockBackgroundScroll, { capture: true })
+      document.removeEventListener('touchmove', blockBackgroundScroll, { capture: true })
+    }
+
+    const close = () => {
+      dialog.hidden = true
+      unlockScroll()
+      if (lastFocus instanceof HTMLElement) lastFocus.focus()
+    }
+
+    const open = (trigger) => {
+      const src = trigger.getAttribute('data-lightbox-src') || trigger.getAttribute('src')
+      const alt = trigger.getAttribute('data-lightbox-alt') || trigger.getAttribute('alt') || 'Screenshot'
+      const text = trigger.getAttribute('data-lightbox-caption') || ''
+
+      if (!src) return
+
+      lastFocus = document.activeElement
+      img.src = src
+      img.alt = alt
+
+      if (text) {
+        caption.textContent = text
+        caption.hidden = false
+      } else {
+        caption.textContent = ''
+        caption.hidden = true
+      }
+
+      dialog.hidden = false
+      lockScroll()
+      dialog.querySelector('.shamar-lightbox__close')?.focus()
+    }
+
+    document.addEventListener('click', (event) => {
+      const trigger = event.target.closest('[data-lightbox]')
+      if (trigger) {
+        event.preventDefault()
+        open(trigger)
+        return
+      }
+      if (event.target.closest('[data-lightbox-close]')) close()
+    })
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !dialog.hidden) close()
+    })
+  }
+
+  initLightbox()
+  document.addEventListener('astro:page-load', initLightbox)
+</script>

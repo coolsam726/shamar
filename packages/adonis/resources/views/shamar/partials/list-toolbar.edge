@@ -1,15 +1,15 @@
 <div
   class="shamar-list-toolbar px-4 py-3 space-y-3"
   x-data='shamarListToolbar({
-    search: {{ jsonAttr(query.search) }},
-    filters: {{ jsonAttr(query.filters) }},
+    search: {{ jsonAttr(query?.search) }},
+    filters: {{ jsonAttr(query?.filters) }},
     filtersLockedEmpty: {{ jsonAttr(filtersLockedEmpty) }},
-    groupBy: {{ jsonAttr(query.groupBy) }},
+    groupBy: {{ jsonAttr(query?.groupBy) }},
     groupLockedEmpty: {{ jsonAttr(groupLockedEmpty) }},
-    sort: {{ jsonAttr(query.sort) }},
-    direction: {{ jsonAttr(query.direction) }},
-    perPage: {{ jsonAttr(query.perPage) }},
-    trashed: {{ jsonAttr(query.trashed) }},
+    sort: {{ jsonAttr(query?.sort) }},
+    direction: {{ jsonAttr(query?.direction) }},
+    perPage: {{ jsonAttr(query?.perPage) }},
+    trashed: {{ jsonAttr(query?.trashed) }},
     headers: {{ jsonAttr(listHeaders) }},
     basePath: {{ jsonAttr(basePath) }},
     slug: {{ jsonAttr(queryPrefix ? (page && page.slug ? page.slug : resource.slug) : resource.slug) }},

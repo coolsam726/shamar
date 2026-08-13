@@ -1,0 +1,24 @@
+---
+title: Custom actions
+description: handleAction and page-level actions.
+---
+
+```ts
+static resourceActions() {
+  return actions((a) => {
+    a.row('escalate', 'Escalate').color('accent').icon('arrow-up')
+    a.header('export', 'Export CSV')
+  })
+}
+
+static override async handleAction(name, ctx) {
+  if (name === 'escalate') {
+    // mutate record, flash message
+    return { redirect: ctx.backUrl }
+  }
+}
+```
+
+**Playground:** Tickets — escalate row action + export header; API keys — revoke/reactivate.
+
+Pages use `headerActions()` and `handleAction()` with the same action builder API.

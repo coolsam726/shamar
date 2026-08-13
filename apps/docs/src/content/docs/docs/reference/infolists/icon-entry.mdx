@@ -1,0 +1,27 @@
+---
+title: IconEntry
+description: Icon or boolean icon display.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+<DocScreenshot
+  src="/screenshots/components/infolists/icon-entry.png"
+  alt="IconEntry"
+  caption="Cropped from a live resource show view."
+/>
+
+```ts
+IconEntry.make('featured').boolean().icon('★').falseIcon('☆')
+```
+
+<DocApiTable
+  title="Methods"
+  rows={[
+    { method: '.boolean()', description: 'Map true/false to icons.' },
+    { method: '.icon(name) / .falseIcon(name)', description: 'Icon names when true/false.' },
+  ]}
+/>
+
+Define `static infolist()` on a resource, or let Shamar derive show fields from `form()` automatically.

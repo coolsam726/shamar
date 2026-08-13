@@ -1,0 +1,17 @@
+---
+title: SettingsPage
+description: Singleton settings with tabs and sticky Save.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+```ts
+export default class AppSettingsPage extends SettingsPage {
+  static slug = 'settings'
+  static form() { /* Tabs + sections */ }
+  static async fill() { /* load singleton */ }
+  static async save(data) { /* persist */ }
+}
+```
+

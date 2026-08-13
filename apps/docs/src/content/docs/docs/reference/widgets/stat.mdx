@@ -1,0 +1,33 @@
+---
+title: Stat
+description: Single stat descriptor used inside StatsOverviewWidget.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+<DocScreenshot
+  src="/screenshots/components/widgets/stat.png"
+  alt="Stat"
+  caption="From the /demo dashboard widget grid."
+/>
+
+```ts
+Stat.make('Total products', total)
+  .description('In catalog')
+  .color('primary')
+  .url('/demo/products')
+  .chart([12, 9, 11, 8, 10])
+```
+
+<DocApiTable
+  title="Methods"
+  rows={[
+    { method: '.description(text)', description: 'Subtitle under the value.' },
+    { method: '.descriptionIcon(name)', description: 'Icon beside description.' },
+    { method: '.color(token)', description: 'primary / success / warning / danger / info / gray.' },
+    { method: '.url(href)', description: 'Make the stat clickable.' },
+    { method: '.chart([numbers])', description: 'Sparkline data.' },
+  ]}
+/>
+
