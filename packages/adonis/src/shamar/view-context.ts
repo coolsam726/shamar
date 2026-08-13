@@ -11,6 +11,7 @@ import {
 import {
   menuLayoutContext,
   mergeNavigationGroups,
+  type NavItem,
   type NavigationGroup,
   type RecordBreadcrumbOptions,
 } from './menu.js';
@@ -100,17 +101,18 @@ export function navigationGroups(
 
   // No group → own top-level root (label + icon), not buried under System/General.
   if (mediaItem && !mediaGroupName && mediaNav) {
-    return mergeNavigationGroups(
-      [
-        ...resourceGroups,
-        {
-          name: mediaNav.label,
-          icon: mediaNav.navigationIcon,
-          items: [mediaItem],
-        },
-      ],
-      pageItems,
-    );
+    const groups: Array<{ name: string; icon?: string; items: NavItem[] }> = [
+      ...resourceGroups.map((group) => ({
+        name: group.name,
+        items: group.items as NavItem[],
+      })),
+      {
+        name: mediaNav.label,
+        icon: mediaNav.navigationIcon,
+        items: [mediaItem],
+      },
+    ];
+    return mergeNavigationGroups(groups, pageItems);
   }
 
   const extras = mediaItem
