@@ -60,7 +60,8 @@ export function navigationGroups(
     /** When set, inject the built-in File Manager into nav. */
     mediaNav?: {
       label: string;
-      navigationGroup: string;
+      /** Empty / omitted → top-level root under `label`. */
+      navigationGroup?: string;
       navigationSort: number;
       navigationIcon: string;
     };
@@ -85,19 +86,38 @@ export function navigationGroups(
     return PageClass.canAccess(options.authCtx.user);
   });
 
-  const mediaItems = options?.mediaNav
-    ? [
-        {
-          slug: 'media',
-          label: options.mediaNav.label,
-          icon: options.mediaNav.navigationIcon,
-          navigationGroup: options.mediaNav.navigationGroup,
-          navigationSort: options.mediaNav.navigationSort,
-        },
-      ]
-    : [];
+  const mediaNav = options?.mediaNav;
+  const mediaGroupName = mediaNav?.navigationGroup?.trim();
+  const mediaItem = mediaNav
+    ? {
+        slug: 'media',
+        label: mediaNav.label,
+        icon: mediaNav.navigationIcon,
+        navigationGroup: mediaGroupName || undefined,
+        navigationSort: mediaNav.navigationSort,
+      }
+    : null;
 
-  return mergeNavigationGroups(resourceGroups, [...pageItems, ...mediaItems]);
+  // No group → own top-level root (label + icon), not buried under System/General.
+  if (mediaItem && !mediaGroupName && mediaNav) {
+    return mergeNavigationGroups(
+      [
+        ...resourceGroups,
+        {
+          name: mediaNav.label,
+          icon: mediaNav.navigationIcon,
+          items: [mediaItem],
+        },
+      ],
+      pageItems,
+    );
+  }
+
+  const extras = mediaItem
+    ? [...pageItems, { ...mediaItem, navigationGroup: mediaGroupName }]
+    : pageItems;
+
+  return mergeNavigationGroups(resourceGroups, extras);
 }
 
 export async function buildShellContext(options: {
@@ -126,7 +146,7 @@ export async function buildShellContext(options: {
   masquerade?: { active: true };
   mediaNav?: {
     label: string;
-    navigationGroup: string;
+    navigationGroup?: string;
     navigationSort: number;
     navigationIcon: string;
   };
