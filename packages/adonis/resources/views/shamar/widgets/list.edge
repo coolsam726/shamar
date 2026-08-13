@@ -1,0 +1,36 @@
+<div class="shamar-card shamar-dashboard-widget__card rounded-xl p-5 h-full">
+  @if(widget.heading)
+    <h3 class="mb-4 text-base font-bold tracking-tight text-heading">{{ widget.heading }}</h3>
+  @endif
+
+  @if(widget.payload.records.length)
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead>
+          <tr class="border-b border-default text-left text-xs uppercase tracking-wide text-body-subtle">
+            @each(column in widget.payload.columns)
+              <th class="px-2 py-2 font-semibold">{{ column.label }}</th>
+            @endeach
+          </tr>
+        </thead>
+        <tbody>
+          @each(record in widget.payload.records)
+            <tr class="border-b border-default/60 last:border-0">
+              @each(column in widget.payload.columns)
+                <td class="px-2 py-2.5 text-body">
+                  @if(record.url && column.attribute === widget.payload.columns[0].attribute)
+                    <a href="{{ record.url }}" class="font-medium text-heading hover:text-fg-brand">{{ record._cells[column.attribute] }}</a>
+                  @else
+                    {{ record._cells[column.attribute] }}
+                  @endif
+                </td>
+              @endeach
+            </tr>
+          @endeach
+        </tbody>
+      </table>
+    </div>
+  @else
+    <p class="text-sm text-body-subtle">No records to display.</p>
+  @endif
+</div>

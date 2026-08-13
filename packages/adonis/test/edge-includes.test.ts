@@ -117,7 +117,8 @@ describe('shamar edge templates', () => {
     assert.match(html, /shamar-media__bulk|bulkDelete/);
     assert.match(html, /shamar-media__list|shamar-media__table/);
     assert.match(html, /toggleSort|sortedBrowseItems/);
-    assert.match(html, /shamar-media__grid--tiles|setViewMode\('tiles'\)/);
+    assert.match(html, /shamar-sort-indicator/);
+    assert.match(html, /shamar-media__tiles|setViewMode\('tiles'\)/);
     assert.match(html, /x-teleport="body"|teleport/);
     assert.match(html, /@contextmenu|contextmenu/);
     assert.match(html, /draggable="true"/);
@@ -144,5 +145,77 @@ describe('shamar edge templates', () => {
     assert.match(html, /Welcome,\s*Ada/);
     assert.match(html, />3</);
     assert.match(html, /shamar-card/);
+  });
+
+  it('smoke-renders the dashboard widget grid', async () => {
+    edge.mount('shamar', viewsRoot);
+
+    const html = await edge.render('shamar::dashboard', {
+      pageTitle: 'Dashboard',
+      panelTitle: 'Admin',
+      dashboardColumns: 3,
+      dashboardWidgets: [
+        {
+          id: 'stats',
+          kind: 'statsOverview',
+          heading: 'Overview',
+          columnSpan: 'full',
+          sort: 0,
+          payload: {
+            stats: [{ label: 'Orders', value: 12, description: 'Today', color: 'success' }],
+          },
+        },
+        {
+          id: 'chart',
+          kind: 'chart',
+          heading: 'Trend',
+          columnSpan: 1,
+          sort: 0,
+          payload: {
+            chartType: 'bar',
+            library: 'apex',
+            data: {
+              labels: ['A', 'B'],
+              datasets: [{ label: 'Stock', data: [3, 7] }],
+            },
+          },
+        },
+        {
+          id: 'nav',
+          kind: 'navigationCards',
+          columnSpan: 'full',
+          sort: 1,
+          payload: {
+            cards: [{ label: 'Products', href: '/demo/products', icon: 'squares-2x2' }],
+          },
+        },
+      ],
+      branding: {
+        name: 'Shamar',
+        logoUrl: null,
+        logoDarkUrl: null,
+        logoHeight: '2rem',
+        showLogo: false,
+        showName: true,
+        fontPreconnect: false,
+        fontUrl: null,
+        cssVars: '',
+      },
+      basePath: '/demo',
+      menuRoots: [],
+      menuActiveRoot: null,
+      menuSecondary: [],
+      breadcrumbs: [{ label: 'Home', href: '/demo' }],
+      user: { name: 'Ada', email: 'ada@example.com' },
+      csrfToken: 'test',
+    });
+
+    assert.match(html, /Overview/);
+    assert.match(html, /Orders/);
+    assert.match(html, /Trend/);
+    assert.match(html, /shamarDashboardChart\(\{/);
+    assert.doesNotMatch(html, /@json\(/);
+    assert.match(html, /Products/);
+    assert.match(html, /shamar-dashboard-grid/);
   });
 });

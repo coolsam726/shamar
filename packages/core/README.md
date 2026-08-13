@@ -144,6 +144,38 @@ export default class OpsDashboardPage extends Page {
 
 `SettingsPage` / `FormPage` / `ListPage` remain shortcuts for a settings form, generic form, or table. List row clicks open `GET /:slug/:id` using `static infolist()` or columns.
 
+## Dashboard
+
+Panel home (`GET /`) is a {@link DashboardPage} with Filament-style **widget classes**:
+
+```ts
+import {
+  DashboardPage,
+  StatsOverviewWidget,
+  ListWidget,
+  ChartWidget,
+  NavigationCardsWidget,
+  Stat,
+} from '@shamar/core'
+
+class ProductStats extends StatsOverviewWidget {
+  static override stats() {
+    return [Stat.make('Products', 42).description('In catalog').chart([4, 8, 6, 10])]
+  }
+}
+
+class AdminDashboard extends DashboardPage {
+  static override widgets() {
+    return [ProductStats, ...super.widgets()] // super.widgets() = nav cards
+  }
+}
+
+// config/shamar.ts
+panel('admin').dashboardPage(AdminDashboard)
+```
+
+Widget kinds: `StatsOverviewWidget`, `CardWidget`, `ListWidget`, `ChartWidget` (Apex default; `.library('chartjs')`), and built-in `NavigationCardsWidget`.
+
 ## Layout width
 
 Default for form and detail pages: `screen-xl` (1280px) — fills the column up to that cap.

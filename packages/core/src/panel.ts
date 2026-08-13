@@ -1,5 +1,6 @@
 import type { BrandDisplay, PanelBranding, PanelConfig, PanelOrm } from './types.js';
 import type { Page } from './page.js';
+import type { DashboardPage } from './dashboard-page.js';
 import type { Resource } from './resource.js';
 
 /**
@@ -128,6 +129,16 @@ export class PanelBuilder {
    */
   allowUsersWithoutRoles(value = true): this {
     this.config.allowUsersWithoutRoles = value;
+    return this;
+  }
+
+  /**
+   * Replace the panel home dashboard (`GET /`).
+   *
+   * @example panel('admin').dashboardPage(AdminDashboard)
+   */
+  dashboardPage(pageClass: typeof DashboardPage): this {
+    this.config.dashboardPage = pageClass;
     return this;
   }
 

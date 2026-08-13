@@ -1,0 +1,45 @@
+@let(colorClass = stat.color === 'success'
+  ? 'text-success'
+  : stat.color === 'warning'
+    ? 'text-warning'
+    : stat.color === 'danger'
+      ? 'text-danger'
+      : stat.color === 'info'
+        ? 'text-info'
+        : stat.color === 'gray'
+          ? 'text-body-subtle'
+          : 'text-fg-brand')
+
+@if(stat.url)
+  <a href="{{ stat.url }}" class="group shamar-card shamar-stat-card block rounded-xl p-5 h-full transition hover:border-fg-brand/40">
+@else
+  <div class="shamar-card shamar-stat-card rounded-xl p-5 h-full">
+@endif
+  <p class="text-xs font-medium uppercase tracking-wide text-body-subtle">{{ stat.label }}</p>
+  <p class="mt-1 text-2xl font-bold tracking-tight text-heading group-hover:text-fg-brand">{{ stat.value }}</p>
+  @if(stat.description)
+    <p class="mt-2 flex items-center gap-1 text-xs {{ colorClass }}">
+      @if(stat.descriptionIcon && stat.descriptionIconPosition === 'before')
+        @let(root = { icon: stat.descriptionIcon })
+        <span class="inline-flex shrink-0">@include('shamar::partials/icon')</span>
+      @endif
+      <span>{{ stat.description }}</span>
+      @if(stat.descriptionIcon && stat.descriptionIconPosition !== 'before')
+        @let(root = { icon: stat.descriptionIcon })
+        <span class="inline-flex shrink-0">@include('shamar::partials/icon')</span>
+      @endif
+    </p>
+  @endif
+  @if(stat.chart && stat.chart.length)
+    <div
+      class="mt-3 h-10"
+      x-data='shamarStatSparkline({{ jsonAttr(stat.chart) }})'
+    >
+      <div x-ref="sparkline" class="h-full w-full"></div>
+    </div>
+  @endif
+@if(stat.url)
+  </a>
+@else
+  </div>
+@endif

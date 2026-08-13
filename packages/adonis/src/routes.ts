@@ -148,6 +148,12 @@ function registerPanelRoutes(
       .get('/assets/vendor/flowbite-datepicker.min.js', assetHandler('flowbiteDatepickerJs'))
       .as(`${routePrefix}.assets.flowbiteDatepickerJs`);
     router
+      .get('/assets/vendor/apexcharts.min.js', assetHandler('apexCharts'))
+      .as(`${routePrefix}.assets.apexCharts`);
+    router
+      .get('/assets/vendor/chart.umd.min.js', assetHandler('chartJs'))
+      .as(`${routePrefix}.assets.chartJs`);
+    router
       .get('/assets/rich-editor/:file', assetHandler('richEditorAsset'))
       .as(`${routePrefix}.assets.richEditor`);
 

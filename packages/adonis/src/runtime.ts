@@ -1,6 +1,9 @@
 import {
   PageRegistry,
   ResourceRegistry,
+  DashboardPage,
+  DASHBOARD_PAGE_SLUG,
+  type DashboardPageClass,
   type DataAdapter,
   type MediaLibraryAdapter,
   type PageClass,
@@ -25,7 +28,11 @@ export interface PanelMediaRuntime {
   /** Ungated public media URL prefix (default `/media`). */
   publicPath: string;
   label: string;
-  navigationGroup: string;
+  /**
+   * Nav cluster. Empty/omitted → top-level sidebar root named {@link label}.
+   * Default when omitted at config time remains unset (not forced to System).
+   */
+  navigationGroup?: string;
   navigationSort: number;
   navigationIcon: string;
 }
@@ -38,6 +45,7 @@ export interface PanelRuntime {
   pages: PageRegistry;
   adapter: DataAdapter;
   media?: PanelMediaRuntime;
+  dashboardPage: DashboardPageClass;
 }
 
 export interface ShamarRuntime {
@@ -77,12 +85,17 @@ export async function createShamarRuntime(
       pages = mergeBySlug(pages, discovered, (p) => p.slug);
     }
 
+    pages = pages.filter((page) => page.slug !== DASHBOARD_PAGE_SLUG);
+
     assertNoSlugCollisions(resources, pages, panelConfig.id);
+
+    const dashboardPage = panelConfig.dashboardPage ?? DashboardPage;
 
     const panelResolved: PanelConfig = {
       ...panelConfig,
       resources,
       pages,
+      dashboardPage,
     };
     policyRegistry.registerResources(resources);
     panels.push({
@@ -93,6 +106,7 @@ export async function createShamarRuntime(
       pages: new PageRegistry(pages),
       adapter: resolveAdapter(resolved, panelResolved),
       media: resolveMedia(resolved, options.appRoot),
+      dashboardPage,
     });
   }
 
@@ -140,7 +154,7 @@ function assertNoSlugCollisions(
   pages: PageClass[],
   panelId: string,
 ): void {
-  const reserved = new Set(['assets', 'profile', 'media']);
+  const reserved = new Set(['assets', 'profile', 'media', DASHBOARD_PAGE_SLUG]);
   const resourceSlugs = new Set(resources.map((r) => r.slug));
   for (const page of pages) {
     if (reserved.has(page.slug)) {
@@ -199,7 +213,8 @@ function resolveMedia(
     storage,
     publicPath: media.publicPath?.trim() || '/media',
     label: media.label?.trim() || 'Files',
-    navigationGroup: media.navigationGroup?.trim() || 'System',
+    // Empty / whitespace → top-level root (do not coerce to System).
+    navigationGroup: media.navigationGroup?.trim() || undefined,
     navigationSort: media.navigationSort ?? 50,
     navigationIcon: media.navigationIcon?.trim() || 'folder',
   };
