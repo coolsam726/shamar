@@ -125,12 +125,23 @@ const BEFORE_HOOKS = {
   },
 
   async openFirstRowMenu(page) {
-    await page.locator('.shamar-row-actions__trigger').first().click()
-    await page.waitForTimeout(200)
+    const trigger = page.locator('.shamar-row-actions__trigger').first()
+    await trigger.waitFor({ state: 'visible', timeout: 10_000 })
+    await trigger.scrollIntoViewIfNeeded()
+    await trigger.click()
+    await page.locator('.shamar-row-actions__panel:visible').first().waitFor({
+      state: 'visible',
+      timeout: 8000,
+    })
+    await page.waitForTimeout(150)
   },
 
   async selectFirstBulkRow(page) {
     await page.locator('tbody input[type="checkbox"]').first().check()
+    await page.locator('.shamar-bulk-bar:visible').first().waitFor({
+      state: 'visible',
+      timeout: 8000,
+    })
     await page.waitForTimeout(250)
   },
 
@@ -189,22 +200,29 @@ async function resolveLocator(page, shot) {
         .filter({ has: page.getByRole('heading', { name: shot.heading, exact: true }) })
         .first()
     case 'column': {
+      // Exact header match (case-insensitive) so "Name" ≠ "Company".
+      const labelRe = new RegExp(`^\\s*${escapeRegExp(shot.label)}\\s*$`, 'i')
       const headers = page.locator('table thead th')
+      await headers.first().waitFor({ state: 'visible', timeout: 10_000 })
       const count = await headers.count()
       let index = -1
       for (let i = 0; i < count; i++) {
-        const text = (await headers.nth(i).innerText()).trim()
-        if (text.toLowerCase().includes(shot.label.toLowerCase())) {
+        const text = (await headers.nth(i).innerText()).trim().replace(/\s+/g, ' ')
+        if (labelRe.test(text)) {
           index = i
           break
         }
       }
       if (index < 0) throw new Error(`Column not found: ${shot.label}`)
-      const cell = page.locator('tbody tr').first().locator('td').nth(index)
       const header = headers.nth(index)
-      const headerBox = await header.boundingBox()
-      const cellBox = await cell.boundingBox()
-      if (!headerBox || !cellBox) throw new Error(`Column box missing: ${shot.label}`)
+      // Skip group header rows when tables are grouped.
+      const cell = page
+        .locator('tbody tr')
+        .filter({ hasNot: page.locator('.shamar-list-group__cell') })
+        .first()
+        .locator('td')
+        .nth(index)
+      await cell.waitFor({ state: 'visible', timeout: 10_000 })
       return { composite: true, header, cell }
     }
     case 'detail':
@@ -213,10 +231,19 @@ async function resolveLocator(page, shot) {
         .filter({ has: page.locator('.shamar-detail__label', { hasText: shot.label }) })
         .first()
     case 'action':
-      return page.locator('.shamar-row-actions__panel, .shamar-bulk-bar').first()
+      // Prefer the open row menu. A hidden `.shamar-bulk-bar` often precedes
+      // panels in the DOM and must not win `.first()`.
+      if (await page.locator('.shamar-row-actions__panel:visible').count()) {
+        return page.locator('.shamar-row-actions__panel:visible').first()
+      }
+      return page.locator('.shamar-bulk-bar:visible').first()
     default:
       throw new Error(`Unknown kind: ${shot.kind}`)
   }
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 async function captureShot(page, shot) {
@@ -293,7 +320,20 @@ async function main() {
   const captured = []
   const failed = []
 
-  for (const shot of ALL_COMPONENT_SHOTS) {
+  const filter = (process.env.SHOT_FILTER || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  const shots = filter.length
+    ? ALL_COMPONENT_SHOTS.filter((shot) => {
+        const key = `${shot.category}/${shot.slug}${shot.variant ? `-${shot.variant}` : ''}`
+        return filter.some((f) => key === f || shot.slug === f)
+      })
+    : ALL_COMPONENT_SHOTS
+
+  if (!shots.length) throw new Error(`No shots matched SHOT_FILTER=${process.env.SHOT_FILTER}`)
+
+  for (const shot of shots) {
     try {
       captured.push(await captureShot(page, shot))
       process.stdout.write('.')
@@ -316,7 +356,7 @@ async function main() {
   }
   await writeFile(join(OUT_ROOT, 'manifest.json'), JSON.stringify(manifest, null, 2))
 
-  console.log(`Captured ${captured.length}/${ALL_COMPONENT_SHOTS.length} component screenshots → ${OUT_ROOT}`)
+  console.log(`Captured ${captured.length}/${shots.length} component screenshots → ${OUT_ROOT}`)
   if (failed.length) {
     console.warn('Failed:')
     for (const f of failed) console.warn(`  ${f.shot}: ${f.error}`)

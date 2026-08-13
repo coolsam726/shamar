@@ -100,7 +100,7 @@ export const TABLE_SHOTS = [
   { category: 'tables', slug: 'column-text', path: '/demo/products', kind: 'column', label: 'Name' },
   { category: 'tables', slug: 'column-currency', path: '/demo/products', kind: 'column', label: 'Price' },
   { category: 'tables', slug: 'column-boolean-badge', path: '/demo/products', kind: 'column', label: 'Featured' },
-  { category: 'tables', slug: 'column-date', path: '/demo/products', kind: 'column', label: 'Launch date' },
+  { category: 'tables', slug: 'column-date', path: '/demo/products', kind: 'column', label: 'Launch Date' },
 ]
 
 /** @type {ComponentShot[]} */
