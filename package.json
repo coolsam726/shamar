@@ -21,5 +21,10 @@
     "docker:dev": "docker compose --profile dev up -d --build",
     "docker:prod": "docker compose --profile prod up -d --build"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "pnpm": {
+    "overrides": {
+      "@adonisjs/ace": "14.1.1"
+    }
+  }
 }
