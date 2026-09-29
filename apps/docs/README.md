@@ -73,4 +73,6 @@ PUBLIC_SITE_URL=https://shamar.savannabits.com
 
 ## Deploy
 
-See [DEPLOY.md](../../DEPLOY.md) — single Debian host behind nginx.
+The product site (landing + `/docs` + `/demo`) is the single-host deploy in [DEPLOY.md](../../DEPLOY.md).
+
+Documentation is also published to GitHub Pages from `.github/workflows/pages.yml` on pushes to `main` that touch `apps/docs`. The site is built with `PUBLIC_BASE_PATH=/shamar` and served at `https://coolsam726.github.io/shamar/`. In the repo settings, set Pages → Source to **GitHub Actions**.

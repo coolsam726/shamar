@@ -15,14 +15,15 @@
     "reference": "node scripts/generate-reference.mjs"
   },
   "dependencies": {
-    "@astrojs/starlight": "^0.41.7",
-    "astro": "^7.1.6",
+    "@almasix/starlight-theme": "^0.1.1",
+    "@astrojs/starlight": "^0.42.4",
+    "astro": "^7.3.5",
     "sharp": "^0.35.3"
   },
   "devDependencies": {
     "playwright": "^1.62.1"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   }
 }
