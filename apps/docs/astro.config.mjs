@@ -1,14 +1,20 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import almasixTheme from '@almasix/starlight-theme';
 import { buildSidebar } from './sidebar.mjs';
 
 const demoUrl = process.env.PUBLIC_DEMO_URL ?? '';
 const sidebar = await buildSidebar();
 
+// Playground and savannabits.com serve the site at the domain root.
+// GitHub Pages serves this repo at /shamar — set PUBLIC_BASE_PATH=/shamar there.
+const base = process.env.PUBLIC_BASE_PATH || '/';
+
 // https://astro.build/config
 export default defineConfig({
   site: process.env.PUBLIC_SITE_URL || 'https://shamar.savannabits.com',
+  base,
   integrations: [
     starlight({
       title: 'Shamar',
@@ -28,9 +34,18 @@ export default defineConfig({
           href: 'https://github.com/coolsam726/shamar',
         },
       ],
+      plugins: [
+        almasixTheme({
+          github: 'coolsam726/shamar',
+          // Theme lightbox only matches /examples/ screenshots.
+          lightbox: false,
+          pageBanner: './src/components/Lightbox.astro',
+        }),
+      ],
       customCss: ['./src/styles/custom.css'],
       components: {
-        PageFrame: './src/components/PageFrame.astro',
+        // Theme SiteTitle is hard-wired to the Almasix wordmark.
+        SiteTitle: './src/components/SiteTitle.astro',
       },
       editLink: {
         baseUrl: 'https://github.com/coolsam726/shamar/edit/main/apps/docs/',
