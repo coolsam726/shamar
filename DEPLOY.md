@@ -116,19 +116,28 @@ Media uploads persist in the `shamar_media` Docker volume. A demo reset reseeds 
 
 ## Cloudflare Workers (static site)
 
-Create a Worker named **`shamar`** from this repo (Workers & Pages → Create → Connect to Git). Project name must match [`apps/docs/wrangler.toml`](apps/docs/wrangler.toml).
+Create a Worker named **`shamar`** from this repo (Workers & Pages → Create → Connect to Git). Project name must match [`wrangler.jsonc`](wrangler.jsonc) at the **monorepo root**.
 
-Workers Builds uses `wrangler deploy` with static assets (`[assets] directory = "./dist"`), not the older Pages `pages_build_output_dir` flow.
+Workers Builds uses `wrangler deploy` with static assets (`assets.directory = "./apps/docs/dist"`), not the older Pages `pages_build_output_dir` flow.
 
-Because this is a pnpm monorepo, set **Root directory** to `apps/docs` and run the install/build from the repo root:
+Use the **repository root** as the Workers Builds root (leave Root directory empty). Do **not** set Root to `apps/docs` with a `cd ../..` build — that leaves `npx wrangler preview` at the monorepo root; without a root Wrangler config it reports a missing `previews` block even when `apps/docs/wrangler.jsonc` is correct.
 
 | Setting | Value |
 |---------|--------|
-| Root directory | `apps/docs` |
-| Build command | `cd ../.. && pnpm install --frozen-lockfile && pnpm pages:build` |
-| Deploy command | `npx wrangler deploy` |
+| Root directory | *(empty — repository root)* |
+| Build command | `pnpm install --frozen-lockfile && pnpm pages:build` |
+| Deploy command (production) | `npx wrangler deploy` |
+| Deploy command (non-production / PR previews) | `npx wrangler preview` |
 | Production branch | `main` |
 | `NODE_VERSION` | `22` |
+
+Root [`wrangler.jsonc`](wrangler.jsonc) must include `"preview_urls": true` and `"previews": {}` (Wrangler ≥ 4.135). An empty `previews` object is required for `wrangler preview` even when the site has no bindings. [`apps/docs/wrangler.jsonc`](apps/docs/wrangler.jsonc) mirrors the same settings for local docs-only deploys (`assets.directory` is `./dist` there).
+
+If an existing Workers Builds project still uses the old Pages-style preview model, complete Cloudflare’s one-time switch to Worker Previews and set the preview deploy command to `npx wrangler preview`.
+
+**Update the Cloudflare dashboard build settings to match the table above** — repo changes alone do not rewrite dashboard commands.
+
+PR builds use the Wrangler config **on that PR’s branch**. Merging to `main` is not required for the fix branch itself; other open PRs must rebase onto the fix (or onto `main` after merge) to pick it up.
 
 Custom domains: `shamar.dev` and `www.shamar.dev`. The Worker is the origin for the apex; DNS for `@` and `www` stay on that Worker. The demo hostname is a separate record pointed at the VPS.
 
