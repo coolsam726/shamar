@@ -7,8 +7,10 @@ compatibility_date = "2026-08-01"
 # Requires Wrangler ≥ 4.135. In Cloudflare: Preview deploy command =
 # `npx wrangler preview` (not `wrangler deploy`).
 preview_urls = true
-previews = {}
+
+[previews]
 
 # Production deploy: `npx wrangler deploy`
+
 [assets]
 directory = "./dist"
