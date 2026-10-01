@@ -77,6 +77,7 @@ export function normalizeListQuery(raw: ListViewQuery, defaults?: { perPage?: nu
   const page = Math.max(1, Number(raw.page) || 1);
 
   const filters = parseListFilters(raw.filters);
+  const trashed = raw.trashed === 'only' || raw.trashed === 'with' ? raw.trashed : undefined;
 
   return {
     page,
@@ -86,6 +87,7 @@ export function normalizeListQuery(raw: ListViewQuery, defaults?: { perPage?: nu
     direction: sort ? direction : undefined,
     filters: filters.length ? filters : undefined,
     groupBy,
+    trashed,
   };
 }
 
@@ -136,6 +138,10 @@ export function buildListQueryString(
 
   const groupBy = merged.groupBy != null ? String(merged.groupBy).trim() : '';
   if (groupBy) params.set('groupBy', groupBy);
+
+  if (merged.trashed === 'with' || merged.trashed === 'only') {
+    params.set('trashed', merged.trashed);
+  }
 
   const value = params.toString();
   return value ? `?${value}` : '';
@@ -829,6 +835,10 @@ export function buildPrefixedListQueryString(
     params.set(`${prefix}groupBy`, merged.groupBy);
   } else if (overrides.groupBy === '') {
     params.set(`${prefix}groupBy`, '');
+  }
+
+  if (merged.trashed === 'with' || merged.trashed === 'only') {
+    params.set(`${prefix}trashed`, merged.trashed);
   }
 
   const value = params.toString();

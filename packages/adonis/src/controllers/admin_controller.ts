@@ -83,6 +83,8 @@ import {
   relationTableListMeta,
 } from '../shamar/relation-table.js';
 import { resolveDashboardWidgets } from '../shamar/dashboard-widgets.js';
+import { updateGlobalSearch } from '../wire/global-search.js';
+import type { WireRequest } from '@shamar/wire';
 
 export class AdminController {
   private readonly resources: ResourceController;
@@ -275,6 +277,14 @@ export class AdminController {
     });
   }
 
+  async wire(ctx: ShamarHttpContext) {
+    const authResult = await this.ensureAuthenticated(ctx, true);
+    if (!this.isAuthContext(authResult)) return authResult;
+    const body = ctx.request.body() as WireRequest;
+    const updated = await updateGlobalSearch(this.panel, this.authorizer, authResult, body);
+    return ctx.response.json(updated);
+  }
+
   async index(ctx: ShamarHttpContext, options?: { asJson?: boolean }) {
     const pageMeta = this.pages.get(ctx.params.slug);
     if (pageMeta) {
@@ -373,6 +383,7 @@ export class AdminController {
       groupLockedEmpty: hasGroupByParam && !displayGroupBy,
       bulkActions: resourceActionsFor(meta, 'bulk', policy),
       rowActions: resourceActionsFor(meta, 'row', policy),
+      softDeleteField: this.softDeleteField(meta),
     });
   }
 
@@ -991,7 +1002,66 @@ export class AdminController {
     }
 
     ctx.session.flash('success', `${meta.singularLabel} deleted`);
-    return ctx.response.redirect(`${this.basePath}/${meta.slug}`);
+    return ctx.response.redirect(this.listRedirect(meta, ctx));
+  }
+
+  async restore(ctx: ShamarHttpContext, options?: { asJson?: boolean }) {
+    if (this.redirectPageSlugAwayFromResourceRoutes(ctx, options?.asJson)) return;
+    const meta = this.requireResource(ctx);
+    const { id } = ctx.params;
+    const record = await this.resources.show(meta, id);
+    const authResult = await this.ensureResourceAction(
+      ctx,
+      meta,
+      'delete',
+      record,
+      options?.asJson,
+    );
+    if (!this.isAuthContext(authResult)) return authResult;
+
+    await this.resources.restore(meta, id);
+
+    if (this.wantsJson(ctx, options?.asJson)) {
+      return ctx.response.ok({ restored: true });
+    }
+
+    ctx.session.flash('success', `${meta.singularLabel} restored`);
+    return ctx.response.redirect(this.listRedirect(meta, ctx));
+  }
+
+  async forceDelete(ctx: ShamarHttpContext, options?: { asJson?: boolean }) {
+    if (this.redirectPageSlugAwayFromResourceRoutes(ctx, options?.asJson)) return;
+    const meta = this.requireResource(ctx);
+    const { id } = ctx.params;
+    const record = await this.resources.show(meta, id);
+    const authResult = await this.ensureResourceAction(
+      ctx,
+      meta,
+      'delete',
+      record,
+      options?.asJson,
+    );
+    if (!this.isAuthContext(authResult)) return authResult;
+
+    await this.resources.forceDelete(meta, id);
+
+    if (this.wantsJson(ctx, options?.asJson)) {
+      return ctx.response.noContent();
+    }
+
+    ctx.session.flash('success', `${meta.singularLabel} deleted permanently`);
+    return ctx.response.redirect(this.listRedirect(meta, ctx));
+  }
+
+  private softDeleteField(meta: ResourceMeta): string | null {
+    if (!meta.softDelete) return null;
+    return typeof meta.softDelete === 'object' ? (meta.softDelete.field ?? 'deletedAt') : 'deletedAt';
+  }
+
+  private listRedirect(meta: ResourceMeta, ctx: ShamarHttpContext): string {
+    const trashed = ctx.request.input('trashed');
+    const base = `${this.basePath}/${meta.slug}`;
+    return trashed === 'with' || trashed === 'only' ? `${base}?trashed=${trashed}` : base;
   }
 
   /** POST /:slug/bulk — bulk delete or custom bulk actions. */

@@ -6,6 +6,7 @@ import type {
   RelationSearchResult,
   ResourceMeta,
 } from '@shamar/core';
+import { escapeRegex } from './escape_regex.js';
 
 /**
  * Minimal Mongoose model / connection contracts.
@@ -95,19 +96,25 @@ function softDeleteStamp(meta: ResourceMeta): Record<string, unknown> | null {
   return { [field]: new Date() };
 }
 
-function softDeleteWhere(meta: ResourceMeta): Record<string, unknown> {
+function softDeleteWhere(
+  meta: ResourceMeta,
+  trashed?: 'with' | 'only',
+): Record<string, unknown> {
   const field = softDeleteField(meta);
-  if (!field) return {};
+  if (!field || trashed === 'with') return {};
+  if (trashed === 'only') return { [field]: { $exists: true, $ne: null } };
   return {
     $or: [{ [field]: null }, { [field]: { $exists: false } }],
   };
 }
 
 function buildMongoSearch(meta: ResourceMeta, search?: string): Record<string, unknown> {
-  if (!search?.trim() || meta.searchableFields.length === 0) return {};
+  const term = search?.trim();
+  if (!term || meta.searchableFields.length === 0) return {};
+  const pattern = escapeRegex(term);
   return {
     $or: meta.searchableFields.map((field) => ({
-      [field]: { $regex: search.trim(), $options: 'i' },
+      [field]: { $regex: pattern, $options: 'i' },
     })),
   };
 }
@@ -122,7 +129,7 @@ function buildMongoListFilters(query: ListQuery): Record<string, unknown> {
     const op = filter.op ?? '=';
     if (op === 'ilike') {
       parts.push({
-        [field]: { $regex: String(filter.value ?? ''), $options: 'i' },
+        [field]: { $regex: escapeRegex(String(filter.value ?? '')), $options: 'i' },
       });
       continue;
     }
@@ -213,6 +220,12 @@ export function createMongooseAdapter(
     async delete(meta, id) {
       return deleteMongoose(meta, id, connection);
     },
+    async restore(meta, id) {
+      return restoreMongoose(meta, id, connection);
+    },
+    async forceDelete(meta, id) {
+      return forceDeleteMongoose(meta, id, connection);
+    },
     async exists(meta, column, value, options) {
       return existsMongoose(meta, column, value, options, connection);
     },
@@ -232,7 +245,7 @@ async function listMongoose(
     buildMongoSearch(meta, query.search),
     buildMongoListFilters(query),
     query.scope ? { ...query.scope } : {},
-    softDeleteWhere(meta),
+    softDeleteWhere(meta, query.trashed),
   ]);
 
   const sortField = query.groupBy
@@ -334,6 +347,26 @@ async function deleteMongoose(
   await Model.findByIdAndDelete(id);
 }
 
+async function restoreMongoose(
+  meta: ResourceMeta,
+  id: string,
+  connection?: MongooseConnectionLike,
+): Promise<void> {
+  const field = softDeleteField(meta);
+  if (!field) return;
+  await updateMongoose(meta, id, { [field]: null }, connection);
+}
+
+async function forceDeleteMongoose(
+  meta: ResourceMeta,
+  id: string,
+  connection?: MongooseConnectionLike,
+): Promise<void> {
+  assertMongoId(id);
+  const Model = resolveModel(meta, connection);
+  await Model.findByIdAndDelete(id);
+}
+
 async function searchMongoose(
   meta: ResourceMeta,
   query: RelationSearchQuery,
@@ -350,7 +383,7 @@ async function searchMongoose(
     parts.push({ _id: { $in: validIds } });
   } else if (query.q?.trim()) {
     parts.push({
-      [titleAttribute]: { $regex: query.q.trim(), $options: 'i' },
+      [titleAttribute]: { $regex: escapeRegex(query.q.trim()), $options: 'i' },
     });
   }
 

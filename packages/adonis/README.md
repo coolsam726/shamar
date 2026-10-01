@@ -22,7 +22,9 @@ pnpm add mongoose          # MongoDB
 | `edge.js` `>=6` | Rendering Edge views (usually already present) |
 | `ldapts` `>=7` | LDAP login (`auth.loginMode` `ldap` / `both`) |
 
-Workspace packages pulled in automatically: `@shamar/core`, `@shamar/cherubim`, `@shamar/lucid`, `@shamar/mongoose`.
+Workspace packages pulled in automatically: `@shamar/core`, `@shamar/wire`, `@shamar/cherubim`, `@shamar/lucid`, `@shamar/mongoose`.
+
+`@shamar/wire` is the panel’s reactive runtime (signed HTML islands, `wire:*`, `$wire`). The provider mounts it, serves `assets/wire.js`, and handles `POST {panel}/wire`. Full reference: [`packages/wire/README.md`](../wire/README.md). Concept guide: `apps/docs` → [Wire](../../apps/docs/src/content/docs/docs/concepts/wire.mdx).
 
 ## Configure
 

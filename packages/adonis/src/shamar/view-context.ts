@@ -8,6 +8,7 @@ import {
   resolveEffectiveBranding,
   type ShamarBranding,
 } from './branding.js';
+import { mountGlobalSearch } from '../wire/global-search.js';
 import {
   menuLayoutContext,
   mergeNavigationGroups,
@@ -50,6 +51,8 @@ export interface AdminShellContext {
   contentMaxWidthClass: string;
   /** Optional inline max-width when a CSS length was configured. */
   contentMaxWidthStyle?: string;
+  /** Signed global-search island from `@shamar/wire`. */
+  globalSearchHtml: string;
 }
 
 export function navigationGroups(
@@ -214,6 +217,7 @@ export async function buildShellContext(options: {
     masquerade: options.masquerade,
     contentMaxWidthClass: contentMaxWidth.className,
     contentMaxWidthStyle: contentMaxWidth.style,
+    globalSearchHtml: mountGlobalSearch(basePath),
   };
 }
 

@@ -12,6 +12,7 @@ Inspired by [Filament](https://filamentphp.com/) (PHP) and architecturally align
 |---------|-------------|
 | [`@shamar/core`](packages/core) | Resource DSL: forms, tables, actions, navigation, auth contracts |
 | [`@shamar/cherubim`](packages/cherubim) | Auth & access control: abilities, policies, API credentials |
+| [`@shamar/wire`](packages/wire) | Server-driven components (`wire:model`, `wire:click`, `$wire`). Additive; existing Alpine UI stays until a piece is moved over |
 | [`@shamar/lucid`](packages/lucid) | Lucid ORM adapter (SQL — list, CRUD, soft-delete, connections) |
 | [`@shamar/mongoose`](packages/mongoose) | Mongoose adapter (MongoDB — list, CRUD, soft-delete) |
 | [`@shamar/adonis`](packages/adonis) | Service provider, routes, controllers, middleware, Edge views |
@@ -165,7 +166,7 @@ static table() {
 }
 ```
 
-`live()` fields POST to `{panel}/{slug}/form-state`; the server runs `afterStateUpdated` and returns patched field meta (Alpine `shamarForm`).
+`live()` fields still POST to `{panel}/{slug}/form-state` and patch Alpine `shamarForm`. That path stays. Components that move to `@shamar/wire` use `wire:*` and `$wire` instead: the browser posts a signed snapshot and the server morphs the island. Migration is one component at a time; it does not require a 1.x break.
 
 ## Filament concepts mapped to Shamar
 
@@ -182,6 +183,7 @@ static table() {
 | `RelationManager` | `Relation.field()` + relation widgets (phase 2) |
 | `Policy` | `Resource.policy` class + Cherubim `Policy` (Loom / Laravel) |
 | Panel navigation | `navigationGroup`, `navigationSubGroup` (top-bar dropdown), `navigationSort` |
+| Livewire | [`@shamar/wire`](packages/wire) — signed islands, `wire:*`, `$wire`. Hosted by `@shamar/adonis` at `POST {panel}/wire` |
 | Live form fields | `.live()` + `.afterStateUpdated()` → `POST …/form-state` |
 | Multi-tenancy | `companyScoped` + session company switcher (phase 2) |
 

@@ -6,7 +6,8 @@ description: Map of @shamar/* packages in the monorepo.
 | Package | Role |
 |---------|------|
 | `@shamar/core` | DSL: resources, forms, tables, pages, validation |
-| `@shamar/adonis` | Provider, routes, Edge admin UI, auth login publish |
+| `@shamar/wire` | Server-driven panel runtime: signed islands, `wire:*`, `$wire`. See [Wire](/docs/concepts/wire/) |
+| `@shamar/adonis` | Provider, routes, Edge admin UI, auth login publish. Depends on `@shamar/wire` |
 | `@shamar/lucid` | SQL adapter |
 | `@shamar/mongoose` | MongoDB adapter |
 | `@shamar/cherubim` | Abilities, policies, API credentials |

@@ -73,6 +73,7 @@ export async function buildSidebar() {
     {
       label: 'Concepts',
       items: [
+        { label: 'Wire', slug: 'docs/concepts/wire' },
         { label: 'Auth & RBAC', slug: 'docs/concepts/auth' },
         { label: 'Media library', slug: 'docs/concepts/media' },
       ],

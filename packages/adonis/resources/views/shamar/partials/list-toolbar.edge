@@ -71,6 +71,21 @@
     </div>
 
     <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+      @if(softDeleteField)
+        <label class="shamar-toolbar-btn" style="gap: 0.4rem;">
+          <span class="sr-only">Trashed records</span>
+          <select
+            x-model="trashed"
+            @change="applyFilters()"
+            aria-label="Trashed records"
+            class="bg-transparent border-0 text-sm text-body focus:outline-none"
+          >
+            <option value="">Without trashed</option>
+            <option value="with">With trashed</option>
+            <option value="only">Only trashed</option>
+          </select>
+        </label>
+      @endif
       <div
         class="shamar-toolbar-menu"
         x-show="filterableHeaders().length"

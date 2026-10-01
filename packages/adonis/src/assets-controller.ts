@@ -10,6 +10,7 @@ import {
   shamarFlowbiteDatepickerJsPath,
   shamarRichEditorAssetPath,
   shamarUiJsPath,
+  shamarWireJsPath,
 } from './shamar/paths.js';
 import type { ShamarConfig } from './config.js';
 import { basename, extname } from 'node:path';
@@ -42,6 +43,12 @@ export class AssetsController {
     response.header('Content-Type', 'text/css; charset=utf-8');
     response.header('Cache-Control', 'public, max-age=3600');
     return response.send(readFileSync(shamarAdminCssPath(), 'utf8'));
+  }
+
+  wireJs({ response }: HttpContext) {
+    response.header('Content-Type', 'application/javascript; charset=utf-8');
+    response.header('Cache-Control', 'no-cache');
+    return response.send(readFileSync(shamarWireJsPath(), 'utf8'));
   }
 
   shamarUi({ response }: HttpContext) {

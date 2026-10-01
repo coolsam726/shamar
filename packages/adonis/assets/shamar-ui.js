@@ -5046,7 +5046,7 @@
         cfg.perPage === 'all' || Number(cfg.perPage) === Number(cfg.allPerPage)
           ? 'all'
           : String(cfg.perPage || cfg.defaultPerPage || 15),
-      trashed: cfg.trashed || false,
+      trashed: cfg.trashed === 'with' || cfg.trashed === 'only' ? cfg.trashed : '',
       headers: Array.isArray(cfg.headers) ? cfg.headers : [],
       basePath: cfg.basePath || '',
       slug: cfg.slug || '',

@@ -9,6 +9,7 @@ import type {
   MediaMoveInput,
   MediaRenameInput,
 } from '@shamar/core';
+import { escapeLike, whereContains } from './like.js';
 
 /**
  * Duck-typed Lucid model statics for media folders/files.
@@ -162,23 +163,15 @@ export function createLucidMediaLibraryAdapter(
         : applyFolderId(File.query(), folderId).orderBy('name', 'asc');
 
       if (query.search?.trim()) {
-        const term = `%${query.search.trim()}%`;
+        const term = query.search.trim();
         if (!searching) {
-          if (typeof folderQuery.whereILike === 'function') {
-            folderQuery = folderQuery.whereILike('name', term);
-          } else {
-            folderQuery = folderQuery.where('name', 'like', term);
-          }
+          whereContains(folderQuery, 'name', term);
         }
-        if (typeof fileQuery.whereILike === 'function') {
-          fileQuery = fileQuery.whereILike('name', term);
-        } else {
-          fileQuery = fileQuery.where('name', 'like', term);
-        }
+        whereContains(fileQuery, 'name', term);
       }
 
       if (query.mimePrefix?.trim()) {
-        fileQuery = fileQuery.where('mime', 'like', `${query.mimePrefix.trim()}%`);
+        fileQuery = fileQuery.where('mime', 'like', `${escapeLike(query.mimePrefix.trim())}%`);
       }
 
       const [folderRows, fileRows, crumbs] = await Promise.all([

@@ -19,6 +19,10 @@ export function shamarUiJsPath(): string {
   return join(shamarAssetsDir(), 'shamar-ui.js');
 }
 
+export function shamarWireJsPath(): string {
+  return join(shamarAssetsDir(), 'wire.js');
+}
+
 export function shamarFlowbiteDatepickerCssPath(): string {
   return join(shamarAssetsDir(), 'vendor/flowbite-datepicker.min.css');
 }

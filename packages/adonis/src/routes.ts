@@ -137,6 +137,8 @@ function registerPanelRoutes(
       .get('/assets/branding.css', assetHandler('brandingCss'))
       .as(`${routePrefix}.assets.brandingCss`);
     router.get('/assets/shamar-ui.js', assetHandler('shamarUi')).as(`${routePrefix}.assets.shamarUi`);
+    router.get('/assets/wire.js', assetHandler('wireJs')).as(`${routePrefix}.assets.wireJs`);
+    router.post('/wire', handler('wire')).as(`${routePrefix}.wire`);
     router.get('/assets/loom-ui.js', assetHandler('shamarUi')).as(`${routePrefix}.assets.legacyUi`);
     router
       .get('/assets/alpine.min.js', assetHandler('alpineJs'))
@@ -200,6 +202,10 @@ function registerPanelRoutes(
     router
       .post('/:slug/:id/action/:action', handler('recordAction'))
       .as(`${routePrefix}.resources.recordAction`);
+    router.post('/:slug/:id/restore', handler('restore')).as(`${routePrefix}.resources.restore`);
+    router
+      .post('/:slug/:id/force-delete', handler('forceDelete'))
+      .as(`${routePrefix}.resources.forceDelete`);
     router.post('/:slug/:id/delete', handler('destroy')).as(`${routePrefix}.resources.destroy`);
     router.post('/:slug/:id', handler('update')).as(`${routePrefix}.resources.update`);
     router.put('/:slug/:id', handler('update')).as(`${routePrefix}.resources.update.put`);

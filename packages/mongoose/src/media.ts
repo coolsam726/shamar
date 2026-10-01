@@ -9,6 +9,7 @@ import type {
   MediaMoveInput,
   MediaRenameInput,
 } from '@shamar/core';
+import { escapeRegex } from './escape_regex.js';
 
 /**
  * Minimal Mongoose model surface for media folders/files.
@@ -140,17 +141,17 @@ export function createMongooseMediaLibraryAdapter(
       const folder = folderDoc ? toFolder(folderDoc) : null;
 
       const folderFilter: Record<string, unknown> = searching
-        ? { name: { $regex: query.search!.trim(), $options: 'i' } }
+        ? { name: { $regex: escapeRegex(query.search!.trim()), $options: 'i' } }
         : { ...parentFilter(folderId) };
       if (!searching && query.search?.trim()) {
-        folderFilter.name = { $regex: query.search.trim(), $options: 'i' };
+        folderFilter.name = { $regex: escapeRegex(query.search.trim()), $options: 'i' };
       }
 
       const fileFilter: Record<string, unknown> = searching
         ? {}
         : { ...folderIdFilter(folderId) };
       if (query.search?.trim()) {
-        fileFilter.name = { $regex: query.search.trim(), $options: 'i' };
+        fileFilter.name = { $regex: escapeRegex(query.search.trim()), $options: 'i' };
       }
       if (query.mimePrefix?.trim()) {
         fileFilter.mime = { $regex: `^${escapeRegex(query.mimePrefix.trim())}`, $options: 'i' };
@@ -302,7 +303,7 @@ export function createMongooseMediaLibraryAdapter(
 
     async search({ q, mimePrefix, limit = 40 }) {
       const filter: Record<string, unknown> = {};
-      if (q.trim()) filter.name = { $regex: q.trim(), $options: 'i' };
+      if (q.trim()) filter.name = { $regex: escapeRegex(q.trim()), $options: 'i' };
       if (mimePrefix?.trim()) {
         filter.mime = { $regex: `^${escapeRegex(mimePrefix.trim())}`, $options: 'i' };
       }
@@ -316,6 +317,3 @@ export function createMongooseMediaLibraryAdapter(
   };
 }
 
-function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}

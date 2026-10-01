@@ -22,6 +22,7 @@ export class ResourceController {
     scope?: Record<string, unknown>;
     filters?: ListFilter[];
     groupBy?: string;
+    trashed?: 'with' | 'only';
   }) {
     return this.adapter.list(meta, {
       page: query.page ?? 1,
@@ -32,6 +33,7 @@ export class ResourceController {
       scope: query.scope,
       filters: query.filters,
       groupBy: query.groupBy,
+      trashed: query.trashed,
     });
   }
 
@@ -54,6 +56,18 @@ export class ResourceController {
 
   /** DELETE /admin/:slug/:id — delete. */
   async destroy(meta: ResourceMeta, id: string) {
+    return this.adapter.delete(meta, id);
+  }
+
+  async restore(meta: ResourceMeta, id: string) {
+    if (!this.adapter.restore) {
+      throw new Error(`Adapter cannot restore records for "${meta.slug}"`);
+    }
+    return this.adapter.restore(meta, id);
+  }
+
+  async forceDelete(meta: ResourceMeta, id: string) {
+    if (this.adapter.forceDelete) return this.adapter.forceDelete(meta, id);
     return this.adapter.delete(meta, id);
   }
 }
