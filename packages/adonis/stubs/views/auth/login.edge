@@ -7,8 +7,13 @@
   <header class="auth-brand">
     @if(branding.showLogo && branding.logoUrl)
       <img
-        class="auth-brand__logo"
+        class="auth-brand__logo auth-brand__logo--light"
         src="{{ branding.logoUrl }}"
+        alt="{{ branding.brandName || brandName || 'Admin' }}"
+      />
+      <img
+        class="auth-brand__logo auth-brand__logo--dark"
+        src="{{ branding.logoDarkUrl || branding.logoUrl }}"
         alt="{{ branding.brandName || brandName || 'Admin' }}"
       />
     @endif

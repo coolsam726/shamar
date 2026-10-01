@@ -4,6 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{{ title || branding.brandName || brandName || 'Sign in' }}</title>
+  <script>
+    (function () {
+      var stored = localStorage.getItem('shamar-theme');
+      if (stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
   @if(branding.fontPreconnect)
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -20,12 +28,24 @@
       --auth-heading: var(--color-heading, #0f172a);
       --auth-body: var(--color-body, #475569);
       --auth-muted: var(--color-body-subtle, #64748b);
+      --auth-ink: var(--color-heading, #0f172a);
       --auth-line: color-mix(in srgb, var(--color-default, #cbd5e1) 55%, transparent);
       --auth-primary: var(--color-fg-brand, var(--color-primary-500, #f1511b));
       --auth-primary-strong: var(--color-fg-brand-strong, var(--color-primary-700, #c94115));
       --auth-primary-soft: var(--color-brand-soft, var(--color-primary-100, #fee9e2));
       --auth-accent: var(--color-shamar-accent, #286291);
       --auth-font: var(--shamar-font-family, ui-sans-serif, system-ui, sans-serif);
+    }
+
+    html.dark {
+      --auth-bg: var(--color-shamar-shell, #0f1419);
+      --auth-surface: var(--color-neutral-primary, #1a222c);
+      --auth-heading: var(--color-heading, #f1f5f9);
+      --auth-body: var(--color-body, #cbd5e1);
+      --auth-muted: var(--color-body-subtle, #94a3b8);
+      --auth-ink: var(--color-heading, #f1f5f9);
+      --auth-line: color-mix(in srgb, var(--color-default, #64748b) 50%, transparent);
+      --auth-primary-soft: color-mix(in srgb, var(--auth-primary) 22%, transparent);
     }
 
     * { box-sizing: border-box; }
@@ -86,6 +106,66 @@
       width: auto;
       margin-inline: auto;
       object-fit: contain;
+    }
+
+    .auth-brand__logo--dark {
+      display: none;
+    }
+
+    html.dark .auth-brand__logo--light {
+      display: none;
+    }
+
+    html.dark .auth-brand__logo--dark {
+      display: block;
+    }
+
+    .auth-theme-toggle {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      z-index: 2;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.35rem;
+      height: 2.35rem;
+      padding: 0;
+      border: 1px solid var(--auth-line);
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--auth-surface) 88%, transparent);
+      color: var(--auth-heading);
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+    }
+
+    .auth-theme-toggle:hover {
+      border-color: color-mix(in srgb, var(--auth-primary) 45%, var(--auth-line));
+      background: var(--auth-surface);
+      transform: translateY(-1px);
+    }
+
+    .auth-theme-toggle:focus-visible {
+      outline: 2px solid var(--auth-primary);
+      outline-offset: 2px;
+    }
+
+    .auth-theme-toggle svg {
+      width: 1.05rem;
+      height: 1.05rem;
+    }
+
+    .auth-theme-icon--dark {
+      display: none;
+    }
+
+    html.dark .auth-theme-icon--light {
+      display: none;
+    }
+
+    html.dark .auth-theme-icon--dark {
+      display: block;
     }
 
     .auth-brand__name {
@@ -211,6 +291,12 @@
       text-align: center;
     }
 
+    html.dark .auth-masquerade {
+      border-color: color-mix(in srgb, #fbbf24 35%, transparent);
+      background: color-mix(in srgb, #d97706 18%, transparent);
+      color: #fde68a;
+    }
+
     .auth-footer {
       margin: 0;
       text-align: center;
@@ -237,6 +323,19 @@
 </head>
 <body>
   <div class="auth-shell">
+    <button
+      type="button"
+      class="auth-theme-toggle"
+      data-auth-theme-toggle
+      aria-label="Toggle dark mode"
+    >
+      <svg class="auth-theme-icon auth-theme-icon--light" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+      </svg>
+      <svg class="auth-theme-icon auth-theme-icon--dark" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>
+      </svg>
+    </button>
     <div class="auth-atmosphere" aria-hidden="true"></div>
     <div class="auth-frame">
       {{{ await $slots.main() }}}
@@ -245,5 +344,15 @@
       @endif
     </div>
   </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-auth-theme-toggle]');
+      if (!btn) return;
+      btn.addEventListener('click', function () {
+        var next = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('shamar-theme', next ? 'dark' : 'light');
+      });
+    })();
+  </script>
 </body>
 </html>

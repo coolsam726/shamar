@@ -1,6 +1,8 @@
 ---
 /**
  * Shared top nav for marketing pages.
+ * Theme toggle uses Starlight’s `starlight-theme` + `data-theme` so preference
+ * carries into `/docs/*`.
  */
 const pathname = Astro.url.pathname;
 const links = [
@@ -13,11 +15,19 @@ const links = [
 <header class="site-nav">
   <a class="site-nav__brand" href="/" aria-label="Shamar home">
     <img
-      class="site-nav__lockup"
+      class="site-nav__lockup site-nav__lockup--light"
       src="/branding/shamar-banner.svg"
       width="180"
       height="48"
       alt="Shamar"
+    />
+    <img
+      class="site-nav__lockup site-nav__lockup--dark"
+      src="/branding/shamar-banner-dark.svg"
+      width="180"
+      height="48"
+      alt=""
+      aria-hidden="true"
     />
   </a>
   <nav class="site-nav__links" aria-label="Primary">
@@ -32,8 +42,49 @@ const links = [
       ))
     }
   </nav>
-  <a class="site-nav__cta" href="/demo">Try demo</a>
+  <div class="site-nav__actions">
+    <button
+      type="button"
+      class="site-nav__theme"
+      data-landing-theme-toggle
+      aria-label="Toggle light and dark mode"
+    >
+      <svg class="site-nav__theme-icon site-nav__theme-icon--light" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+      </svg>
+      <svg class="site-nav__theme-icon site-nav__theme-icon--dark" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"></path>
+      </svg>
+    </button>
+    <a class="site-nav__cta" href="/demo">Try demo</a>
+  </div>
 </header>
+
+<script is:inline>
+  (function () {
+    var storageKey = 'starlight-theme';
+    function preferred() {
+      return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    }
+    function resolveStored() {
+      var stored = typeof localStorage !== 'undefined' && localStorage.getItem(storageKey);
+      return stored === 'light' || stored === 'dark' ? stored : preferred();
+    }
+    function apply(theme) {
+      document.documentElement.dataset.theme = theme;
+    }
+    apply(resolveStored());
+    document.addEventListener('DOMContentLoaded', function () {
+      var btn = document.querySelector('[data-landing-theme-toggle]');
+      if (!btn) return;
+      btn.addEventListener('click', function () {
+        var next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        apply(next);
+        localStorage.setItem(storageKey, next);
+      });
+    });
+  })();
+</script>
 
 <style>
   .site-nav {
@@ -60,6 +111,18 @@ const links = [
     display: block;
   }
 
+  .site-nav__lockup--dark {
+    display: none;
+  }
+
+  :global(:root[data-theme='dark']) .site-nav__lockup--light {
+    display: none;
+  }
+
+  :global(:root[data-theme='dark']) .site-nav__lockup--dark {
+    display: block;
+  }
+
   .site-nav__links {
     display: none;
     gap: 1.35rem;
@@ -81,8 +144,61 @@ const links = [
     opacity: 1;
   }
 
-  .site-nav__cta {
+  .site-nav__actions {
     margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .site-nav__theme {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.35rem;
+    height: 2.35rem;
+    padding: 0;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--shamar-ink, #0f172a) 14%, transparent);
+    background: color-mix(in srgb, #fff 70%, transparent);
+    color: var(--shamar-ink, #0f172a);
+    cursor: pointer;
+    transition:
+      border-color 0.2s ease,
+      background 0.2s ease,
+      color 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .site-nav__theme:hover {
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, var(--shamar-ember, #f1511b) 40%, transparent);
+  }
+
+  .site-nav__theme:focus-visible {
+    outline: 2px solid var(--shamar-ember, #f1511b);
+    outline-offset: 2px;
+  }
+
+  .site-nav__theme-icon--dark {
+    display: none;
+  }
+
+  :global(:root[data-theme='dark']) .site-nav__theme {
+    background: color-mix(in srgb, #1e293b 80%, transparent);
+    border-color: color-mix(in srgb, #94a3b8 28%, transparent);
+    color: #e2e8f0;
+  }
+
+  :global(:root[data-theme='dark']) .site-nav__theme-icon--light {
+    display: none;
+  }
+
+  :global(:root[data-theme='dark']) .site-nav__theme-icon--dark {
+    display: block;
+  }
+
+  .site-nav__cta {
     text-decoration: none;
     font-family: var(--font-display, 'Poppins', sans-serif);
     font-weight: 650;
@@ -98,7 +214,7 @@ const links = [
     .site-nav__links {
       display: flex;
     }
-    .site-nav__cta {
+    .site-nav__actions {
       margin-left: 0;
     }
   }
