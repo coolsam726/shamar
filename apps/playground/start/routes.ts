@@ -14,6 +14,16 @@ import router from '@adonisjs/core/services/router'
 /** Render and other hosts probe this. It does not depend on demo mode. */
 router.get('/health', async ({ response }) => response.ok({ ok: true }))
 
+/**
+ * Compat: the admin panel used to live under `/demo`. It now mounts at `/`
+ * (same host as production demo.shamar.dev). Keep old bookmarks working.
+ */
+router.get('/demo', async ({ response }) => response.redirect('/'))
+router.get('/demo/*', async ({ request, response }) => {
+  const stripped = request.url().replace(/^\/demo(?=\/|$)/, '') || '/'
+  return response.redirect(stripped.startsWith('/') ? stripped : `/${stripped}`)
+})
+
 router
   .group(() => {
     router.get('demo-status', [controllers.DemoSandbox, 'status'])
