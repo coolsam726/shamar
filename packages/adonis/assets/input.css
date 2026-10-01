@@ -1260,12 +1260,13 @@ button:hover > .shamar-sort-indicator.is-idle {
 .shamar-list-toolbar,
 .shamar-bulk-bar {
   position: relative;
-  z-index: 10;
+  z-index: 20;
 }
 
 .shamar-list-table-scroll {
   position: relative;
-  z-index: 0;
+  /* Do not set z-index here — it traps position:fixed row-action menus in a
+     stacking context under the bulk bar / toolbar. */
   overflow-x: auto;
 }
 

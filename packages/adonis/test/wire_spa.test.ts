@@ -115,6 +115,30 @@ describe('wire:navigate', () => {
     assert.equal(window.document.querySelector('[data-wire-sync="sidebar-roots"] a')?.getAttribute('href'), '/two');
   });
 
+  it('destroys Alpine on the scroll region before morphing so UI state does not leak', async () => {
+    const window = boot(
+      documentOf(
+        'One',
+        '<main data-shamar-scroll-root><div id="page" x-data="{ open: true }">one</div></main><a id="go" href="/two" wire:navigate.no-prefetch>Two</a>',
+      ),
+    );
+    const destroyed = [];
+    window.Alpine = {
+      destroyTree(el) {
+        destroyed.push(el);
+      },
+      initTree() {},
+    };
+    window.fetch = async () =>
+      htmlResponse(documentOf('Two', '<main data-shamar-scroll-root><div id="page">two</div></main>'));
+    const done = navigated(window);
+    click(window, window.document.getElementById('go'));
+    await done;
+    assert.equal(destroyed.length, 1);
+    assert.equal(destroyed[0]?.getAttribute?.('data-shamar-scroll-root') != null, true);
+    assert.equal(window.document.querySelector('#page')?.textContent, 'two');
+  });
+
   it('shows the progress bar when the request is slow', async () => {
     const window = boot(documentOf('One', '<a id="go" href="/slow" wire:navigate.no-prefetch>Slow</a>'));
     let release: (response: Response) => void = () => {};

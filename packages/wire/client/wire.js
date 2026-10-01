@@ -713,10 +713,18 @@
       const from = region ? region.current : document.body;
       const to = region ? region.next : doc.body;
       const kept = liftPersisted(from);
+      // Drop Alpine on the outgoing region before morph. Morph reuses matching
+      // nodes (same tag), so without destroyTree, list selection / open menus
+      // from the previous page leak into the next (bulk bar, dropdowns, etc.).
+      if (window.Alpine?.destroyTree) {
+        try {
+          window.Alpine.destroyTree(from);
+        } catch {
+          /* ignore */
+        }
+      }
       morph(from, to, from, false);
       const restored = restorePersisted(from, kept);
-      // New morph content + synced chrome need Alpine. Restored persist nodes
-      // already have live Alpine state; only init unmatched persist placeholders.
       const alpineRoots = [...synced, from];
       for (const el of from.querySelectorAll('[wire\\:persist]')) {
         if (!restored.includes(el)) alpineRoots.push(el);
