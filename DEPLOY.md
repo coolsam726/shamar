@@ -126,11 +126,16 @@ Because this is a pnpm monorepo, set **Root directory** to `apps/docs` and run t
 |---------|--------|
 | Root directory | `apps/docs` |
 | Build command | `cd ../.. && pnpm install --frozen-lockfile && pnpm pages:build` |
-| Deploy command | `npx wrangler deploy` |
+| Deploy command (production) | `npx wrangler deploy` |
+| Deploy command (non-production / PR previews) | `npx wrangler preview` |
 | Production branch | `main` |
 | `NODE_VERSION` | `22` |
 
-`apps/docs/wrangler.toml` must include a root-level `previews = {}` **before** the `[assets]` table. PR/preview builds run `wrangler preview` and fail without it. Do not use a bare `[previews]` section, and do not put `previews = {}` after `[assets]` (TOML would nest it as `assets.previews`).
+`apps/docs/wrangler.toml` must include root-level `preview_urls = true` and `previews = {}` **before** the `[assets]` table (Wrangler ≥ 4.135). A bare `[previews]` section, or `previews = {}` after `[assets]`, will not satisfy `wrangler preview`.
+
+If an existing Workers Builds project still uses the old Pages-style preview model, complete Cloudflare’s one-time switch to Worker Previews and set the preview deploy command to `npx wrangler preview`.
+
+PR builds use the `wrangler.toml` **on that PR’s branch**. Merging to `main` is not required for the fix branch itself; other open PRs must rebase onto the fix (or onto `main` after merge) to pick it up.
 
 Custom domains: `shamar.dev` and `www.shamar.dev`. The Worker is the origin for the apex; DNS for `@` and `www` stay on that Worker. The demo hostname is a separate record pointed at the VPS.
 

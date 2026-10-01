@@ -2,13 +2,13 @@
 name = "shamar"
 compatibility_date = "2026-08-01"
 
-# Required for Worker Previews (`wrangler preview` / PR builds).
-# Inline empty table at root (before [assets]). A bare `[previews]` section
-# or `previews = {}` after `[assets]` does not work — TOML attaches the key
-# to the preceding table.
+# Worker Previews (PR / non-production builds via `npx wrangler preview`).
+# Must be root-level keys BEFORE any [table] header (TOML scoping).
+# Requires Wrangler ≥ 4.135. In Cloudflare: Preview deploy command =
+# `npx wrangler preview` (not `wrangler deploy`).
+preview_urls = true
 previews = {}
 
-# Workers Builds runs `wrangler deploy` (not `pages deploy`).
-# Keep assets / compatibility at top level — do not nest under previews.
+# Production deploy: `npx wrangler deploy`
 [assets]
 directory = "./dist"
