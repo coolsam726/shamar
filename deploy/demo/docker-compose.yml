@@ -1,0 +1,58 @@
+# Demo panel production stack for a private VPS.
+# Docs / landing stay on Cloudflare Pages (see DEPLOY.md).
+#
+# On the VPS:
+#   cp deploy/demo/.env.example .env   # fill secrets
+#   docker compose -f docker-compose.yml pull
+#   docker compose -f docker-compose.yml up -d
+#
+# Override the image tag with IMAGE_TAG=v0.4.0 (default: latest).
+
+name: shamar-demo
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - shamar_mongo_data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  app:
+    image: ghcr.io/coolsam726/shamar-demo:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - '127.0.0.1:3333:3333'
+    env_file:
+      - .env
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3333
+      NODE_ENV: production
+      MONGO_URI: ${MONGO_URI:-mongodb://mongo:27017/shamar}
+    volumes:
+      - shamar_media:/workspace/apps/playground/tmp
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3333/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+volumes:
+  shamar_mongo_data:
+  shamar_media:
