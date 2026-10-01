@@ -6,12 +6,9 @@ description: Dashboard widgets — stats, charts, lists, and cards.
 import DocScreenshot from '../../../../../components/DocScreenshot.astro';
 import DocApiTable from '../../../../../components/DocApiTable.astro';
 
-A widget is a block on a dashboard: a number, a chart, a short list, a card of links. The dashboard is a [page](/docs/reference/pages/dashboard-page/). Widgets are what you put on it. They are classes, each responsible for loading its own numbers and rendering one region of the grid. The page decides how many columns the grid has and the order of the widgets.
-
-Widgets are not resources. They do not get create and edit screens. They read data — through the adapter, a query you write, or a value you compute — and display it. Use them when the home screen should answer "what is going on" rather than "here is a table of records."
-
 <DocScreenshot
   src="/screenshots/components/widgets/stats-overview.png"
+  darkSrc="/screenshots/components/widgets/stats-overview-dark.png"
   alt="Dashboard widgets"
   caption="Register widget classes on a DashboardPage."
   wide

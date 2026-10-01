@@ -4,10 +4,10 @@
  * Variants append `-{variant}` to the filename (e.g. select-open.png).
  *
  * Form fields are captured from the playground gallery:
- *   GET /demo/form-components
+ *   GET /form-components
  */
 
-const FORM_GALLERY = '/demo/form-components'
+const FORM_GALLERY = '/form-components'
 
 /** @typedef {'field' | 'selector' | 'column' | 'detail' | 'widget' | 'action' | 'section' | 'field-open'} ShotKind */
 
@@ -90,50 +90,50 @@ export const FORM_SHOTS = [
   { category: 'forms', slug: 'slider', path: FORM_GALLERY, kind: 'field', field: 'slider' },
   { category: 'forms', slug: 'rating', path: FORM_GALLERY, kind: 'field', field: 'rating' },
   { category: 'forms', slug: 'toggle-buttons', path: FORM_GALLERY, kind: 'field', field: 'toggleButtons' },
-  { category: 'forms', slug: 'relation-table', path: '/demo/companies', kind: 'field', field: 'products', before: 'openFirstCompanyEdit' },
+  { category: 'forms', slug: 'relation-table', path: '/companies', kind: 'field', field: 'products', before: 'openFirstCompanyEdit' },
   { category: 'forms', slug: 'schema-layouts', path: FORM_GALLERY, kind: 'selector', selector: '.shamar-tabs', before: 'openFormLayoutsTab' },
 ]
 
 /** @type {ComponentShot[]} */
 export const TABLE_SHOTS = [
-  { category: 'tables', slug: 'text-column', path: '/demo/products', kind: 'selector', selector: 'table thead tr' },
-  { category: 'tables', slug: 'column-text', path: '/demo/products', kind: 'column', label: 'Name' },
-  { category: 'tables', slug: 'column-currency', path: '/demo/products', kind: 'column', label: 'Price' },
-  { category: 'tables', slug: 'column-boolean-badge', path: '/demo/products', kind: 'column', label: 'Featured' },
-  { category: 'tables', slug: 'column-date', path: '/demo/products', kind: 'column', label: 'Launch Date' },
+  { category: 'tables', slug: 'text-column', path: '/products', kind: 'selector', selector: 'table thead tr' },
+  { category: 'tables', slug: 'column-text', path: '/products', kind: 'column', label: 'Name' },
+  { category: 'tables', slug: 'column-currency', path: '/products', kind: 'column', label: 'Price' },
+  { category: 'tables', slug: 'column-boolean-badge', path: '/products', kind: 'column', label: 'Featured' },
+  { category: 'tables', slug: 'column-date', path: '/products', kind: 'column', label: 'Launch Date' },
 ]
 
 /** @type {ComponentShot[]} */
 export const INFOLIST_SHOTS = [
-  { category: 'infolists', slug: 'text-entry', path: '/demo/products', kind: 'detail', label: 'Name', before: 'openFirstProductShow' },
-  { category: 'infolists', slug: 'icon-entry', path: '/demo/products', kind: 'detail', label: 'Featured', before: 'openFirstProductShow' },
-  { category: 'infolists', slug: 'color-entry', path: '/demo/products', kind: 'detail', label: 'Color', before: 'openFirstProductShow' },
-  { category: 'infolists', slug: 'image-entry', path: '/demo/articles', kind: 'detail', label: 'Cover', before: 'openFirstArticleShow' },
+  { category: 'infolists', slug: 'text-entry', path: '/products', kind: 'detail', label: 'Name', before: 'openFirstProductShow' },
+  { category: 'infolists', slug: 'icon-entry', path: '/products', kind: 'detail', label: 'Featured', before: 'openFirstProductShow' },
+  { category: 'infolists', slug: 'color-entry', path: '/products', kind: 'detail', label: 'Color', before: 'openFirstProductShow' },
+  { category: 'infolists', slug: 'image-entry', path: '/articles', kind: 'detail', label: 'Cover', before: 'openFirstArticleShow' },
 ]
 
 /** @type {ComponentShot[]} */
 export const WIDGET_SHOTS = [
-  { category: 'widgets', slug: 'stats-overview', path: '/demo', kind: 'selector', selector: '.shamar-stats-overview' },
-  { category: 'widgets', slug: 'stat', path: '/demo', kind: 'selector', selector: '.shamar-stat-card' },
-  { category: 'widgets', slug: 'chart', path: '/demo', kind: 'heading', heading: 'Stock by product', before: 'waitForChart' },
-  { category: 'widgets', slug: 'list', path: '/demo', kind: 'heading', heading: 'Recent products' },
-  { category: 'widgets', slug: 'navigation-cards', path: '/demo', kind: 'selector', selector: '.shamar-dashboard-widget:last-child .shamar-dashboard-card' },
+  { category: 'widgets', slug: 'stats-overview', path: '/', kind: 'selector', selector: '.shamar-stats-overview' },
+  { category: 'widgets', slug: 'stat', path: '/', kind: 'selector', selector: '.shamar-stat-card' },
+  { category: 'widgets', slug: 'chart', path: '/', kind: 'heading', heading: 'Stock by product', before: 'waitForChart' },
+  { category: 'widgets', slug: 'list', path: '/', kind: 'heading', heading: 'Recent products' },
+  { category: 'widgets', slug: 'navigation-cards', path: '/', kind: 'selector', selector: '.shamar-dashboard-widget:last-child .shamar-dashboard-card' },
 ]
 
 /** @type {ComponentShot[]} */
 export const ACTION_SHOTS = [
-  { category: 'actions', slug: 'header-create', path: '/demo/products', kind: 'selector', selector: '.shamar-page-heading' },
-  { category: 'actions', slug: 'row-menu', path: '/demo/tickets', kind: 'action', before: 'openFirstRowMenu' },
-  { category: 'actions', slug: 'bulk-bar', path: '/demo/products', kind: 'action', before: 'selectFirstBulkRow' },
+  { category: 'actions', slug: 'header-create', path: '/products', kind: 'selector', selector: '.shamar-page-heading' },
+  { category: 'actions', slug: 'row-menu', path: '/tickets', kind: 'action', before: 'openFirstRowMenu' },
+  { category: 'actions', slug: 'bulk-bar', path: '/products', kind: 'action', before: 'selectFirstBulkRow' },
 ]
 
 /** @type {ComponentShot[]} */
 export const PAGE_SHOTS = [
-  { category: 'pages', slug: 'settings-page', path: '/demo/settings', kind: 'selector', selector: '#shamar-form' },
-  { category: 'pages', slug: 'list-page', path: '/demo/product-catalog', kind: 'selector', selector: 'table' },
-  { category: 'pages', slug: 'dashboard-page', path: '/demo', kind: 'selector', selector: '.shamar-dashboard-grid' },
+  { category: 'pages', slug: 'settings-page', path: '/settings', kind: 'selector', selector: '#shamar-form' },
+  { category: 'pages', slug: 'list-page', path: '/product-catalog', kind: 'selector', selector: 'table' },
+  { category: 'pages', slug: 'dashboard-page', path: '/', kind: 'selector', selector: '.shamar-dashboard-grid' },
   { category: 'pages', slug: 'form-page', path: FORM_GALLERY, kind: 'selector', selector: '.shamar-tabs' },
-  { category: 'pages', slug: 'composite-page', path: '/demo/ops-dashboard', kind: 'selector', selector: 'main .space-y-8' },
+  { category: 'pages', slug: 'composite-page', path: '/ops-dashboard', kind: 'selector', selector: 'main .space-y-8' },
 ]
 
 export const ALL_COMPONENT_SHOTS = [
@@ -173,4 +173,20 @@ export function componentShotPath(category, slug, variant) {
   const rel = `screenshots/components/${category}/${name}.png`
   if (!existsSync(join(PUBLIC_ROOT, rel))) return null
   return `/${rel}`
+}
+
+/** Dark-theme sibling of a light screenshot URL, or null when missing. */
+export function componentShotDarkPath(category, slug, variant) {
+  const name = variant ? `${slug}-${variant}` : slug
+  const rel = `screenshots/components/${category}/${name}-dark.png`
+  if (!existsSync(join(PUBLIC_ROOT, rel))) return null
+  return `/${rel}`
+}
+
+/** Dark sibling for any `/screenshots/….png` public URL. */
+export function screenshotDarkSibling(src) {
+  if (!src || !src.endsWith('.png') || src.endsWith('-dark.png')) return null
+  const dark = `${src.slice(0, -4)}-dark.png`
+  if (!existsSync(join(PUBLIC_ROOT, dark.replace(/^\//, '')))) return null
+  return dark
 }

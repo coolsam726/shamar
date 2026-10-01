@@ -19,6 +19,8 @@ export default class CategoryResource extends Resource {
   static override recordTitleField = 'name'
   static override navigationGroup = 'Content'
   static override navigationSort = 12
+  /** Simple form — create / edit / view open in a modal over the list. */
+  static override quickActions = true
 
   static override form(form: FormBuilder) {
     form.schema([

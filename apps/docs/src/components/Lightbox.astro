@@ -205,7 +205,12 @@
     }
 
     const open = (trigger) => {
-      const src = trigger.getAttribute('data-lightbox-src') || trigger.getAttribute('src')
+      const lightSrc = trigger.getAttribute('data-lightbox-src') || trigger.getAttribute('src')
+      const darkSrc = trigger.getAttribute('data-lightbox-src-dark')
+      const isDark =
+        document.documentElement.classList.contains('dark') ||
+        document.documentElement.dataset.theme === 'dark'
+      const src = isDark && darkSrc ? darkSrc : lightSrc
       const alt = trigger.getAttribute('data-lightbox-alt') || trigger.getAttribute('alt') || 'Screenshot'
       const text = trigger.getAttribute('data-lightbox-caption') || ''
 

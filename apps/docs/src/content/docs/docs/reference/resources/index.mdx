@@ -6,12 +6,9 @@ description: CRUD resources — form, table, infolist, actions, and navigation.
 import DocScreenshot from '../../../../../components/DocScreenshot.astro';
 import DocApiTable from '../../../../../components/DocApiTable.astro';
 
-A resource is how one model becomes part of the admin panel. Staff need to list records, open one, create one, and edit one. Writing those four screens by hand, for every model, is the work Shamar exists to remove. You write a class that points at the model and describes the form, the table, and the read-only view. The host turns that class into routes and HTML.
-
-The class does not know whether the model is SQL or MongoDB. It stores the model and the schema. The [adapter](/docs/packages/) you chose at installation performs the query. If this is your first resource, the short path is [Your first resource](/docs/guides/first-resource/). This page is the full picture: the configuration a class can carry, and how it is discovered.
-
 <DocScreenshot
   src="/screenshots/products-list.png"
+  darkSrc="/screenshots/products-list-dark.png"
   alt="Products resource list"
   caption="A resource is list + create + edit + show driven by builders."
   wide
@@ -47,6 +44,31 @@ A **resource** maps a model to admin CRUD routes. Shamar discovers `*_resource.t
 | `softDelete` | Soft-delete aware queries |
 | `contentMaxWidth` | Page width token |
 | `defaultPerPage` | Pagination default |
+| `quickActions` | When `true`, create/edit/view open in a modal over the list |
+| `createMode` / `editMode` / `viewMode` | `'page'` (default) or `'modal'` per operation |
+
+## Quick actions (modal CRUD)
+
+For simple resources (categories, tags, types), open create / edit / view in a dialog instead of a full page. The same routes and forms are used; only the presentation changes.
+
+```ts
+export default class CategoryResource extends Resource {
+  static model = Category
+  static slug = 'categories'
+  /** Shorthand: create, edit, and view all open in a modal. */
+  static quickActions = true
+}
+```
+
+Or set modes individually:
+
+```ts
+static createMode = 'modal'
+static editMode = 'modal'
+static viewMode = 'page' // row click still navigates to the show page
+```
+
+**Playground:** Categories uses `quickActions` — New, View, Edit, and row click open a modal over the list.
 
 ## Builders
 

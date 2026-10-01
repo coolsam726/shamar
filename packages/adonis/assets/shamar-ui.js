@@ -6248,6 +6248,18 @@
       ) {
         return;
       }
+      const dialogRow = target.closest('tr[data-shamar-row-dialog-url]');
+      if (dialogRow) {
+        const url = dialogRow.getAttribute('data-shamar-row-dialog-url');
+        if (!url) return;
+        event.preventDefault();
+        window.ShamarUI.openDialog({
+          url,
+          title: dialogRow.getAttribute('data-shamar-row-dialog-title') || '',
+          slug: dialogRow.getAttribute('data-shamar-row-dialog-slug') || '',
+        });
+        return;
+      }
       const row = target.closest('tr[data-shamar-row-href]');
       if (!row) return;
       const href = row.getAttribute('data-shamar-row-href');

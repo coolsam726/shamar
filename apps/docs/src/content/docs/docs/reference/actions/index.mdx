@@ -6,12 +6,17 @@ description: Header, row, and bulk actions on resources and pages.
 import DocScreenshot from '../../../../../components/DocScreenshot.astro';
 import DocApiTable from '../../../../../components/DocApiTable.astro';
 
-An action is a button that does something to a record, or to a set of records, besides the ordinary save of a form. Create, edit, and delete are built in. An export, a duplicate, or a custom confirmation are actions you add. They are not extra routes you design from scratch: you declare them on the resource, and the panel places them on the page and runs the handler when the button is used.
-
-Placement is the idea that takes a minute. A header action sits above the list ("New", "Export"). A row action sits on one record, usually in the ⋮ menu. A bulk action runs on the checkbox selection ("Delete selected"). The same action builder can register all three, which is why they share one section of the docs instead of three unrelated APIs.
+<DocScreenshot
+  src="/screenshots/components/actions/header-create.png"
+  darkSrc="/screenshots/components/actions/header-create-dark.png"
+  alt="Header actions"
+  caption="Create, export, and custom header buttons."
+  wide
+/>
 
 <DocScreenshot
   src="/screenshots/components/actions/row-menu.png"
+  darkSrc="/screenshots/components/actions/row-menu-dark.png"
   alt="Row action menu"
   caption="Per-record actions in the ⋮ menu."
 />

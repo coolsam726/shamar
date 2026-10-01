@@ -6,18 +6,21 @@ import Lightbox from '../components/Lightbox.astro';
 const gallery = [
   {
     src: '/screenshots/products-list.png',
+    darkSrc: '/screenshots/products-list-dark.png',
     alt: 'Product list with search, filters, and sortable columns',
     label: 'Resources & tables',
     caption: 'Search, filters, grouping, pagination, and row actions on every resource table.',
   },
   {
     src: '/screenshots/product-form.png',
+    darkSrc: '/screenshots/product-form-dark.png',
     alt: 'Create product form with sections, tabs, and field widgets',
     label: 'Forms & fields',
     caption: 'Schema builders compose create/edit layouts from the field catalog.',
   },
   {
     src: '/screenshots/media-library.png',
+    darkSrc: '/screenshots/media-library-dark.png',
     alt: 'Media library with folders and file grid',
     label: 'Media library',
     caption: 'Folders, uploads, visibility, and FilePicker integration.',
@@ -90,6 +93,7 @@ const gallery = [
               class="landing__panel-trigger lightbox-trigger"
               data-lightbox
               data-lightbox-src="/screenshots/hero-panel.png"
+              data-lightbox-src-dark="/screenshots/hero-panel-dark.png"
               data-lightbox-alt="Shamar admin dashboard with stats widgets, charts, and sidebar navigation"
               data-lightbox-caption="Dashboard — stats, charts, and navigation groups out of the box."
               aria-label="Enlarge dashboard screenshot"
@@ -121,6 +125,7 @@ const gallery = [
                   class="landing__gallery-trigger lightbox-trigger"
                   data-lightbox
                   data-lightbox-src={item.src}
+                  data-lightbox-src-dark={item.darkSrc}
                   data-lightbox-alt={item.alt}
                   data-lightbox-caption={item.caption}
                   aria-label={`Enlarge: ${item.label}`}

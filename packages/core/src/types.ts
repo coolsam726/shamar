@@ -73,6 +73,13 @@ export type LiveMode = boolean | LiveOptions;
 
 export type FormOperation = 'create' | 'edit' | 'view';
 
+/**
+ * How create / edit / view open from the resource list.
+ * - `page` — navigate to a full create/edit/show route (default)
+ * - `modal` — open the same route in a dialog over the list (quick actions)
+ */
+export type ResourcePageMode = 'page' | 'modal';
+
 export interface FieldOption {
   label: string;
   value: string | number;
@@ -493,6 +500,13 @@ export interface ResourceMeta {
    * Overrides panel `defaultPerPage` when set. Built-in default: `15`.
    */
   defaultPerPage?: number;
+  /**
+   * How create / edit / view open from the list.
+   * Defaults to `'page'`. Set to `'modal'` for quick actions on simple resources.
+   */
+  createMode?: ResourcePageMode;
+  editMode?: ResourcePageMode;
+  viewMode?: ResourcePageMode;
 }
 
 /** Lucid/Mongoose model class or table/model name string. */

@@ -1,12 +1,16 @@
 ---
 interface Props {
-  src: string
-  alt: string
-  caption?: string
+  src: string;
+  /** Dark-theme variant. When omitted, `src` is used for both themes. */
+  darkSrc?: string;
+  alt: string;
+  caption?: string;
   wide?: boolean;
 }
 
 const { src, alt, caption, wide = false } = Astro.props;
+const darkSrc = Astro.props.darkSrc ?? src;
+const hasThemePair = darkSrc !== src;
 ---
 
 <figure class:list={['doc-shot', { 'doc-shot--wide': wide }]}>
@@ -15,11 +19,30 @@ const { src, alt, caption, wide = false } = Astro.props;
     class="doc-shot__trigger lightbox-trigger"
     data-lightbox
     data-lightbox-src={src}
+    data-lightbox-src-dark={hasThemePair ? darkSrc : undefined}
     data-lightbox-alt={alt}
     data-lightbox-caption={caption ?? ''}
     aria-label={`Enlarge: ${alt}`}
   >
-    <img src={src} alt={alt} loading="lazy" decoding="async" />
+    <img
+      class:list={[{ 'dark:sl-hidden': hasThemePair }]}
+      src={src}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+    />
+    {
+      hasThemePair ? (
+        <img
+          class="light:sl-hidden print:hidden"
+          src={darkSrc}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          aria-hidden="true"
+        />
+      ) : null
+    }
     <span class="doc-shot__hint" aria-hidden="true">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
         <path

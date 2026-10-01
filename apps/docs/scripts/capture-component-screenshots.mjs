@@ -45,9 +45,19 @@ async function dismissOverlays(page) {
 }
 
 async function firstRowHref(page) {
-  const row = page.locator('[data-shamar-row-href]').first()
-  await row.waitFor({ timeout: 15_000 })
-  return row.getAttribute('data-shamar-row-href')
+  const hrefRow = page.locator('[data-shamar-row-href]').first()
+  if (await hrefRow.count()) {
+    await hrefRow.waitFor({ timeout: 15_000 })
+    return hrefRow.getAttribute('data-shamar-row-href')
+  }
+  const dialogRow = page.locator('[data-shamar-row-dialog-url]').first()
+  await dialogRow.waitFor({ timeout: 15_000 })
+  return dialogRow.getAttribute('data-shamar-row-dialog-url')
+}
+
+function shotFileName(shot, theme) {
+  const base = shot.variant ? `${shot.slug}-${shot.variant}` : shot.slug
+  return theme === 'dark' ? `${base}-dark.png` : `${base}.png`
 }
 
 function unionBoxes(...boxes) {
@@ -246,11 +256,10 @@ function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-async function captureShot(page, shot) {
+async function captureShot(page, shot, theme = 'light') {
   const outDir = join(OUT_ROOT, shot.category)
   await mkdir(outDir, { recursive: true })
-  const fileName = shot.variant ? `${shot.slug}-${shot.variant}` : shot.slug
-  const outFile = join(outDir, `${fileName}.png`)
+  const outFile = join(outDir, shotFileName(shot, theme))
 
   await dismissOverlays(page)
   await ensureLoggedIn(page)
@@ -300,6 +309,22 @@ async function captureShot(page, shot) {
   return outFile
 }
 
+async function themedContext(browser, theme) {
+  const context = await browser.newContext({
+    viewport: { width: 1440, height: 1200 },
+    deviceScaleFactor: 2,
+    colorScheme: theme,
+  })
+  await context.addInitScript((t) => {
+    try {
+      localStorage.setItem('shamar-theme', t)
+    } catch {
+      /* ignore */
+    }
+  }, theme)
+  return context
+}
+
 async function main() {
   try {
     const statusRes = await fetch(`${BASE_URL}/demo-status`)
@@ -308,15 +333,10 @@ async function main() {
     throw new Error(`Cannot reach demo at ${BASE_URL}: ${error.message}`)
   }
 
-  const browser = await chromium.launch()
-  const context = await browser.newContext({
-    viewport: { width: 1440, height: 1200 },
-    deviceScaleFactor: 2,
-    colorScheme: 'light',
-  })
-  const page = await context.newPage()
-  await login(page)
+  const THEME_MODE = (process.env.SHOT_THEME ?? 'both').toLowerCase()
+  const THEMES = THEME_MODE === 'both' ? ['light', 'dark'] : [THEME_MODE === 'dark' ? 'dark' : 'light']
 
+  const browser = await chromium.launch()
   const captured = []
   const failed = []
 
@@ -333,14 +353,25 @@ async function main() {
 
   if (!shots.length) throw new Error(`No shots matched SHOT_FILTER=${process.env.SHOT_FILTER}`)
 
-  for (const shot of shots) {
-    try {
-      captured.push(await captureShot(page, shot))
-      process.stdout.write('.')
-    } catch (error) {
-      failed.push({ shot: `${shot.category}/${shot.slug}${shot.variant ? `-${shot.variant}` : ''}`, error: error.message })
-      process.stdout.write('x')
+  for (const theme of THEMES) {
+    const context = await themedContext(browser, theme)
+    const page = await context.newPage()
+    await login(page)
+
+    for (const shot of shots) {
+      try {
+        captured.push(await captureShot(page, shot, theme))
+        process.stdout.write(theme === 'dark' ? 'D' : '.')
+      } catch (error) {
+        failed.push({
+          shot: `${shot.category}/${shot.slug}${shot.variant ? `-${shot.variant}` : ''}:${theme}`,
+          error: error.message,
+        })
+        process.stdout.write('x')
+      }
     }
+
+    await context.close()
   }
 
   await browser.close()
@@ -349,6 +380,7 @@ async function main() {
   const manifest = {
     capturedAt: new Date().toISOString(),
     baseUrl: BASE_URL,
+    themes: THEMES,
     padding: SHOT_PADDING,
     count: captured.length,
     failed,
@@ -356,7 +388,7 @@ async function main() {
   }
   await writeFile(join(OUT_ROOT, 'manifest.json'), JSON.stringify(manifest, null, 2))
 
-  console.log(`Captured ${captured.length}/${shots.length} component screenshots → ${OUT_ROOT}`)
+  console.log(`Captured ${captured.length}/${shots.length * THEMES.length} component screenshots → ${OUT_ROOT}`)
   if (failed.length) {
     console.warn('Failed:')
     for (const f of failed) console.warn(`  ${f.shot}: ${f.error}`)
