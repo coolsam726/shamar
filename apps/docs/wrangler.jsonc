@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  // Cloudflare Workers (static assets) — shamar.dev (landing + docs)
+  "name": "shamar",
+  "compatibility_date": "2026-08-01",
+  // Worker Previews (PR / non-production builds via `pnpm exec wrangler preview`).
+  // Requires Wrangler ≥ 4.135. In Cloudflare: Preview deploy command =
+  // `pnpm exec wrangler preview` (not `wrangler deploy`).
+  "preview_urls": true,
+  "previews": {},
+  // Production deploy: `pnpm exec wrangler deploy`
+  "assets": {
+    "directory": "./dist"
+  }
+}

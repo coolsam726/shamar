@@ -9,6 +9,8 @@
     "start": "astro dev --port 4321",
     "build": "astro build",
     "preview": "astro preview --port 4321",
+    "cf:deploy": "wrangler deploy",
+    "cf:preview": "wrangler preview",
     "astro": "astro",
     "screenshots": "node scripts/capture-screenshots.mjs && node scripts/capture-component-screenshots.mjs",
     "screenshots:components": "node scripts/capture-component-screenshots.mjs",
