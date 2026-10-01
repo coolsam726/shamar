@@ -295,6 +295,67 @@
     '[wire\\:loading]{display:none !important}.wire-loading [wire\\:loading]{display:revert !important}.wire-loading [wire\\:loading\\.remove]{display:none !important}';
   document.head.appendChild(style);
 
+  document.addEventListener('change', (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement) || target.type !== 'file') return;
+    const binding = attrNamed(target, 'wire:model');
+    if (!binding || !target.files?.[0]) return;
+    const root = rootOf(target);
+    if (!root) return;
+    const endpoint = root.getAttribute('wire:endpoint');
+    if (!endpoint) return;
+    const body = new FormData();
+    body.append('file', target.files[0]);
+    fetch(`${endpoint.replace(/\/$/, '')}/upload`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { Accept: 'application/json', 'X-CSRF-Token': csrfToken() },
+      body,
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((saved) => {
+        if (!saved) return;
+        return commit(root, { updates: { [binding.value]: saved } });
+      })
+      .catch(() => {});
+  });
+
+  document.addEventListener('click', (event) => {
+    const link = event.target instanceof Element ? event.target.closest('a[wire\\:navigate]') : null;
+    if (!(link instanceof HTMLAnchorElement)) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    const url = new URL(link.href, window.location.href);
+    if (url.origin !== window.location.origin) return;
+    event.preventDefault();
+    navigate(url).catch(() => window.location.assign(url));
+  });
+
+  window.addEventListener('popstate', () => {
+    navigate(new URL(window.location.href), false).catch(() => window.location.reload());
+  });
+
+  async function navigate(url, push = true) {
+    const res = await fetch(url, {
+      credentials: 'same-origin',
+      headers: { Accept: 'text/html', 'X-Requested-With': 'XMLHttpRequest' },
+    });
+    const type = res.headers.get('content-type') || '';
+    if (!res.ok || !type.includes('text/html')) {
+      window.location.assign(url);
+      return;
+    }
+    const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+    const next = doc.querySelector('[data-shamar-scroll-root]');
+    const current = document.querySelector('[data-shamar-scroll-root]');
+    if (!(next instanceof HTMLElement) || !(current instanceof HTMLElement)) {
+      window.location.assign(url);
+      return;
+    }
+    morph(current, next, current);
+    document.title = doc.title;
+    if (push) history.pushState({}, '', url);
+  }
+
   document.addEventListener('alpine:init', () => {
     if (!window.Alpine?.magic) return;
     window.Alpine.magic('wire', (el) => {

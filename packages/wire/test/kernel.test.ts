@@ -85,4 +85,30 @@ describe('@shamar/wire', () => {
     assert.equal(next.effects?.redirect, '/done');
     assert.equal(next.snapshot.data.effects, undefined);
   });
+
+  it('embeds a child island and keeps its snapshot signed with the parent', async () => {
+    const nested = new WireKernel('test-secret', {
+      child: {
+        create: () => ({ data: { label: 'inner' } }),
+        render: (component) => `<em>${component.data.label}</em>`,
+      },
+      parent: {
+        create: () => ({ data: { title: 'outer' } }),
+        render: (_component, slots) => `<section>${slots?.panel ?? ''}</section>`,
+      },
+    });
+
+    const mounted = nested.mount('parent', '/wire', { panel: 'child' });
+    assert.match(mounted.html, /<section><div wire:id=/);
+    assert.match(mounted.html, /<em>inner<\/em>/);
+    const child = mounted.snapshot.children?.panel;
+    assert.ok(child);
+    assert.equal(child.name, 'child');
+
+    child.data.label = 'tampered';
+    await assert.rejects(
+      () => nested.update({ snapshot: mounted.snapshot }, '/wire'),
+      /Invalid wire snapshot/,
+    );
+  });
 });

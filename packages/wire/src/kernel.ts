@@ -4,7 +4,14 @@ import { newComponentId, signSnapshot, verifySnapshot, type WireSnapshot } from 
 
 export interface WireDefinition {
   create(): WireComponent;
-  render(component: WireComponent): string;
+  /**
+   * Reload server-owned state after the snapshot is restored and before
+   * the request's updates and calls run. Use this for lists that live in a
+   * store, and keep client flags (such as `open`) yourself.
+   */
+  refresh?(component: WireComponent): Promise<void> | void;
+  /** `slots` holds already-rendered child islands, keyed by slot name. */
+  render(component: WireComponent, slots?: Record<string, string>): string;
 }
 
 export interface WireRequest {
@@ -25,15 +32,25 @@ export class WireKernel {
     private readonly components: Record<string, WireDefinition>,
   ) {}
 
-  mount(name: string, endpoint: string): WireEnvelope {
+  /**
+   * `slots` maps a slot name to a child component name. Children are separate
+   * islands: they keep their own snapshot and the browser does not morph them
+   * when the parent re-renders.
+   */
+  mount(name: string, endpoint: string, slots?: Record<string, string>): WireEnvelope {
     const definition = this.require(name);
     const component = definition.create();
+    const nested = this.mountChildren(slots, endpoint);
     const snapshot = signSnapshot(this.secret, {
       id: newComponentId(),
       name,
       data: { ...component.data },
+      children: nested.snapshots,
     });
-    return { snapshot, html: this.island(endpoint, snapshot, definition.render(component)) };
+    return {
+      snapshot,
+      html: this.island(endpoint, snapshot, definition.render(component, nested.html)),
+    };
   }
 
   async update(request: WireRequest, endpoint: string): Promise<WireEnvelope> {
@@ -46,6 +63,7 @@ export class WireKernel {
     for (const key of Object.keys(component.data)) {
       if (key in (incoming.data ?? {})) component.data[key] = incoming.data[key];
     }
+    await definition.refresh?.(component);
 
     for (const [key, value] of Object.entries(request.updates ?? {})) {
       if (!(key in component.data)) continue;
@@ -60,17 +78,53 @@ export class WireKernel {
       await invokeMethod(component, call.method, call.params ?? []);
     }
 
+    const nested = this.renderChildren(incoming.children, endpoint);
     const snapshot = signSnapshot(this.secret, {
       id: incoming.id,
       name: incoming.name,
       data: { ...component.data },
+      children: incoming.children,
     });
     const effects = component.effects?.redirect ? { redirect: component.effects.redirect } : undefined;
     return {
       snapshot,
-      html: this.island(endpoint, snapshot, definition.render(component)),
+      html: this.island(endpoint, snapshot, definition.render(component, nested)),
       effects,
     };
+  }
+
+  private mountChildren(
+    slots: Record<string, string> | undefined,
+    endpoint: string,
+  ): { snapshots?: Record<string, WireSnapshot>; html: Record<string, string> } {
+    if (!slots || Object.keys(slots).length === 0) return { html: {} };
+    const snapshots: Record<string, WireSnapshot> = {};
+    const html: Record<string, string> = {};
+    for (const [slot, childName] of Object.entries(slots)) {
+      const child = this.mount(childName, endpoint);
+      snapshots[slot] = child.snapshot;
+      html[slot] = child.html;
+    }
+    return { snapshots, html };
+  }
+
+  private renderChildren(
+    children: Record<string, WireSnapshot> | undefined,
+    endpoint: string,
+  ): Record<string, string> {
+    const html: Record<string, string> = {};
+    for (const [slot, child] of Object.entries(children ?? {})) {
+      if (!verifySnapshot(this.secret, child)) {
+        throw new Error('Invalid wire snapshot');
+      }
+      const definition = this.require(child.name);
+      const component = definition.create();
+      for (const key of Object.keys(component.data)) {
+        if (key in (child.data ?? {})) component.data[key] = child.data[key];
+      }
+      html[slot] = this.island(endpoint, child, definition.render(component));
+    }
+    return html;
   }
 
   private require(name: string): WireDefinition {

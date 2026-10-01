@@ -9,6 +9,7 @@ import {
   type ShamarBranding,
 } from './branding.js';
 import { mountGlobalSearch } from '../wire/global-search.js';
+import { mountNotifications, type PanelNotification } from '../wire/notifications.js';
 import {
   menuLayoutContext,
   mergeNavigationGroups,
@@ -53,6 +54,8 @@ export interface AdminShellContext {
   contentMaxWidthStyle?: string;
   /** Signed global-search island from `@shamar/wire`. */
   globalSearchHtml: string;
+  /** Signed notification bell from `@shamar/wire`. */
+  notificationsHtml: string;
 }
 
 export function navigationGroups(
@@ -149,6 +152,7 @@ export async function buildShellContext(options: {
   recordBreadcrumb?: RecordBreadcrumbOptions;
   /** Dev masquerade session (shared password login). */
   masquerade?: { active: true };
+  notifications?: PanelNotification[];
   mediaNav?: {
     label: string;
     navigationGroup?: string;
@@ -218,6 +222,7 @@ export async function buildShellContext(options: {
     contentMaxWidthClass: contentMaxWidth.className,
     contentMaxWidthStyle: contentMaxWidth.style,
     globalSearchHtml: mountGlobalSearch(basePath),
+    notificationsHtml: mountNotifications(basePath, options.notifications ?? []),
   };
 }
 

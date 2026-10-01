@@ -516,6 +516,9 @@
   .max-h-72 {
     max-height: calc(var(--spacing) * 72);
   }
+  .max-h-80 {
+    max-height: calc(var(--spacing) * 80);
+  }
   .min-h-0 {
     min-height: 0;
   }
@@ -629,6 +632,9 @@
   .max-w-\[12rem\] {
     max-width: 12rem;
   }
+  .max-w-\[40vw\] {
+    max-width: 40vw;
+  }
   .max-w-\[120px\] {
     max-width: 120px;
   }
@@ -691,6 +697,9 @@
   }
   .min-w-\[10rem\] {
     min-width: 10rem;
+  }
+  .min-w-\[16rem\] {
+    min-width: 16rem;
   }
   .min-w-\[120px\] {
     min-width: 120px;
@@ -1561,6 +1570,11 @@
   .focus\:ring-blue-300 {
     &:focus {
       --tw-ring-color: var(--color-blue-300);
+    }
+  }
+  .focus\:ring-fg-brand {
+    &:focus {
+      --tw-ring-color: var(--color-fg-brand);
     }
   }
   .focus\:ring-gray-200 {
