@@ -70,8 +70,9 @@
 
   <div class="shamar-topbar__tools flex items-center gap-2 min-w-0">
     {{{ globalSearchHtml }}}
-    {{{ notificationsHtml }}}
-    <div class="relative" @click.outside="themeOpen = false">
+    <div data-wire-sync="topbar-notifications" class="contents">
+      {{{ notificationsHtml }}}
+    </div>    <div class="relative" @click.outside="themeOpen = false">
       <button
         type="button"
         @click="themeOpen = !themeOpen"
