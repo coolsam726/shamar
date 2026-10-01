@@ -1,0 +1,53 @@
+---
+title: Wizard
+description: Multi-step form UI — horizontal or vertical step indicators.
+---
+
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+`Wizard` + `Step` present a stepped create/edit flow with Previous / Next controls. Layout matches Filament’s wizard: **horizontal** step rail by default, or **vertical** beside the panels.
+
+```ts
+import { Wizard, Step, TextInput } from '@shamar/core'
+
+Wizard.make([
+  Step.make('Identity').icon('user').schema([
+    TextInput.make('name').required(),
+  ]),
+  Step.make('Details').description('Optional extras').schema([
+    TextInput.make('notes'),
+  ]),
+])
+
+// Vertical step list
+Wizard.make()
+  .vertical()
+  .steps([
+    Step.make('Account').schema([/* … */]),
+    Step.make('Confirm').schema([/* … */]),
+  ])
+```
+
+<DocApiTable
+  title="Wizard"
+  rows={[
+    { method: 'Wizard.make(steps?)', description: 'Optional initial Step list.' },
+    { method: '.steps([...Step])', description: 'Replace step children.' },
+    { method: '.vertical(bool?)', description: 'Step indicators beside panels (default false = horizontal).' },
+    { method: '.card(bool)', description: 'Card chrome (default true).' },
+  ]}
+/>
+
+<DocApiTable
+  title="Step"
+  rows={[
+    { method: 'Step.make(title)', description: 'Step label in the indicator list.' },
+    { method: '.icon(name)', description: 'Optional step icon (when rendered by the host).' },
+    { method: '.description(text)', description: 'Shown above the step body.' },
+    { method: '.columns(n) / .schema([...])', description: 'Step body layout.' },
+  ]}
+/>
+
+:::note
+Wizard navigation is **UI-only** today: the host does not yet gate “Next” on per-step validation. Required fields still validate on final submit.
+:::

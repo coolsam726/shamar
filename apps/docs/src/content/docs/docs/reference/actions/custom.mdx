@@ -1,25 +1,79 @@
 ---
 title: Custom actions
-description: handleAction and page-level actions.
+description: Named header, row, and bulk actions with handleAction and notifications.
 ---
+
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+Register custom actions with `header()`, `row()`, or `bulk()`, then implement `static handleAction(name, records, ctx)` on the resource.
 
 ```ts
 static resourceActions(actions: ActionBuilder) {
-  actions.row('escalate', 'Escalate').color('accent').icon('arrow-up')
-  actions.header('export', 'Export CSV')
+  actions.header('notify_self', 'Test notification').icon('bell')
+  actions.header('export', 'Export CSV').icon('download')
+  actions.row('escalate', 'Escalate').icon('arrow-up').color('accent').ungrouped()
+  actions.row('resolve', 'Mark resolved').icon('check').confirm('Resolve this ticket?')
+  actions.bulk('assign_me', 'Assign to me')
   return actions
 }
 
-static override async handleAction(name, ctx) {
+static override async handleAction(
+  name: string,
+  records: Record<string, unknown>[],
+  _ctx: HandleActionContext,
+) {
   if (name === 'escalate') {
-    // mutate record, flash message
-    return { redirect: ctx.backUrl }
+    // mutate records[0]…
+    return {
+      message: 'Escalated',
+      notification: { title: 'Escalated', body: 'Priority raised.' },
+    }
   }
+  if (name === 'notify_self') {
+    return { notification: { title: 'Hello', body: 'From a header action.' } }
+  }
+  if (name === 'assign_me') {
+    return { message: `Assigned ${records.length} ticket(s)`, notification: true }
+  }
+  return null // unknown → host responds 400
 }
 ```
 
-**Playground:** Tickets (Ops) — header **Test notification** (bell icon) and **Export CSV**, plus row **Escalate** / **Mark resolved**. Each returns `{ notification }` and appears in the topbar bell. Settings → Notifications is unrelated email/SMS prefs.
+## Handler contract
 
-Return `{ notification: true }` (or `{ notification: { title, body } }`) from `handleAction` to push to the signed-in user's topbar bell.
+```ts
+interface HandleActionResult {
+  message?: string
+  /** true → use message as title; or { title, body } for the topbar bell */
+  notification?: boolean | { title?: string; body?: string }
+}
+```
 
-Pages use `headerActions()` and `handleAction()` with the same action builder API.
+- Return `null` / `undefined` when the action name is unknown so the controller can 400.
+- `message` flashes in the panel UI.
+- `notification` pushes to the signed-in user’s **topbar bell** (session-scoped).
+- Resource `handleAction` does **not** support `redirect` — use [Page actions](/docs/reference/actions/page-actions/) (`redirectTo`) for page-level redirects.
+
+## Routes (Adonis host)
+
+| Placement | Typical path |
+|-----------|----------------|
+| Row | `POST …/:id/action/:action` |
+| Bulk | `POST …/bulk` (action + selected ids) |
+| Header (non-create) | `POST …/action/:action` |
+
+## Visibility patterns
+
+Most visibility is ability-based ([Authorization](/docs/reference/actions/authorization/)). Some resources add record-state rules in the host (e.g. API key **revoke** vs **reactivate**). Prefer abilities + `handleAction` guards for app-specific rules.
+
+**Playground:** Tickets (Ops) — header **Test notification** / **Export CSV**, row **Escalate** / **Mark resolved**.
+
+<DocApiTable
+  title="Custom action API"
+  rows={[
+    { method: 'actions.header(name, label)', description: 'Toolbar action.' },
+    { method: 'actions.row(name, label)', description: 'Per-record action.' },
+    { method: 'actions.bulk(name, label)', description: 'Selection-bar action.' },
+    { method: 'handleAction(name, records, ctx)', description: 'Run custom logic; return message / notification.' },
+  ]}
+/>

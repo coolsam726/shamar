@@ -1,0 +1,72 @@
+---
+title: Appearance
+description: Labels, colors, icons, and grouped vs inline row actions.
+---
+
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+Every action accepts the same appearance modifiers. Chain them after `create()`, `row()`, `header()`, or `bulk()`.
+
+```ts
+actions
+  .row('escalate', 'Escalate')
+  .color('accent')
+  .icon('arrow-up')
+  .ungrouped()
+
+actions
+  .header('export', 'Export CSV')
+  .icon('download')
+  .color('gray')
+```
+
+## Colors
+
+| Token | Typical use |
+|-------|-------------|
+| `primary` | Default affirmative actions |
+| `accent` | Secondary highlight (escalate, promote) |
+| `danger` | Destructive (delete comes with this by default) |
+| `gray` | Neutral / quiet toolbar actions |
+
+## Icons
+
+The host maps known icon ids to Heroicons-style SVG paths. Known names:
+
+| Id | Aliases | Glyph |
+|----|---------|--------|
+| `eye` | `view` | View |
+| `pencil` | `edit`, `pencil-square` | Edit |
+| `trash` | `delete`, `trash-2` | Delete |
+| `plus` | `create` | Create |
+| `arrow-up` | — | Escalate / promote |
+| `download` | — | Export |
+| `check` | — | Resolve / confirm |
+| `bell` | — | Notification |
+
+Unknown ids fall back to an ellipsis glyph — pick a known id for a distinct icon.
+
+## Grouping (row actions)
+
+Row actions default to the **⋮ menu**. Call `.ungrouped()` (or `.grouped(false)`) to show an inline toolbar button beside the menu — Filament’s “not in group” idea without nested `ActionGroup` trees.
+
+```ts
+actions.view()                          // inside ⋮
+actions.edit()                          // inside ⋮
+actions.row('escalate', 'Escalate')
+  .icon('arrow-up')
+  .ungrouped()                          // visible button
+```
+
+Header and bulk actions ignore grouping; they always render in their respective bars.
+
+<DocApiTable
+  title="Appearance API"
+  rows={[
+    { method: '.label(text)', description: 'Override the button label.' },
+    { method: '.color(token)', description: 'primary | accent | danger | gray' },
+    { method: '.icon(name)', description: 'Icon id from the table above.' },
+    { method: '.grouped(bool?)', description: 'Row only: true = ⋮ menu (default).' },
+    { method: '.ungrouped()', description: 'Row only: show inline outside the menu.' },
+  ]}
+/>

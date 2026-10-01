@@ -417,6 +417,7 @@ export type SchemaNodeKind =
   | 'callout'
   | 'empty_state'
   | 'placeholder'
+  | 'text'
   | 'plain'
   | 'field'
   | 'entry';

@@ -1,0 +1,28 @@
+---
+title: Placeholder
+description: Labeled static content slot in a schema.
+---
+
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+`Placeholder` is a labeled, field-like static slot (Filament Placeholder). For untitled prose, use [Text](/docs/reference/schemas/text/).
+
+```ts
+import { Placeholder, Section } from '@shamar/core'
+
+Section.make('Computed').schema([
+  Placeholder.make('full_name')
+    .label('Full name')
+    .content('Built from first + last on save.'),
+])
+```
+
+<DocApiTable
+  title="Placeholder"
+  rows={[
+    { method: 'Placeholder.make(name)', description: 'Stable name key for the node.' },
+    { method: '.label(text)', description: 'Uppercase-style label above the content.' },
+    { method: '.content(text)', description: 'Static body.' },
+    { method: '.columnSpan(n) / .columnSpanFull()', description: 'Grid span.' },
+  ]}
+/>

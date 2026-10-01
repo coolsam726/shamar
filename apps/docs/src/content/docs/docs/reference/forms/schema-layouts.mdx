@@ -1,35 +1,36 @@
 ---
 title: Schema layouts
-description: Section, Tabs, Grid, Wizard, and other form layout nodes.
+description: Pointer to the Schemas reference — Section, Tabs, Wizard, and related layout nodes.
 ---
 
 import DocScreenshot from '../../../../../components/DocScreenshot.astro';
-import DocApiTable from '../../../../../components/DocApiTable.astro';
 
 <DocScreenshot
   src="/screenshots/components/forms/schema-layouts.png"
   darkSrc="/screenshots/components/forms/schema-layouts-dark.png"
   alt="Tabs layout"
-  caption="Section, Tabs, Grid, Wizard, and related layout nodes."
+  caption="Shared schema layouts — see the Schemas reference for full docs."
   wide
 />
 
+Form and infolist **layout chrome** lives under **[Schemas](/docs/reference/schemas/)**:
+
+| Component | Docs |
+|-----------|------|
+| Section | [Section](/docs/reference/schemas/section/) |
+| Fieldset | [Fieldset](/docs/reference/schemas/fieldset/) |
+| Grid / Group / Flex | [Grid](/docs/reference/schemas/grid/), [Group](/docs/reference/schemas/group/), [Flex](/docs/reference/schemas/flex/) |
+| Tabs (H / V) | [Tabs](/docs/reference/schemas/tabs/) |
+| Wizard (H / V) | [Wizard](/docs/reference/schemas/wizard/) |
+| Callout / Text / Placeholder / EmptyState | [Callout](/docs/reference/schemas/callout/), [Text](/docs/reference/schemas/text/), [Placeholder](/docs/reference/schemas/placeholder/), [EmptyState](/docs/reference/schemas/empty-state/) |
+
 ```ts
-import { Section, Grid, Tabs, Tab, Wizard, Step, Fieldset, Callout } from '@shamar/core'
+import { Section, Grid, Tabs, Tab, Wizard, Step, Fieldset, Callout, Text } from '@shamar/core'
 
 Section.make('Catalog').columns(2).schema([
   Grid.make(2).schema([/* fields */]),
+  Text.make('Static guidance in the same tree.'),
 ])
 ```
 
-| Component | Purpose |
-|-----------|---------|
-| `Section` | Card with heading, icon, collapsible |
-| `Fieldset` | Lightweight section |
-| `Grid` | Column layout for fields |
-| `Tabs` / `Tab` | Tabbed sections |
-| `Wizard` / `Step` | Multi-step create UI |
-| `Callout` | info / success / warning / danger |
-| `Group` / `Flex` | Inline grouping |
-
-**Playground:** [Form components](https://demo.shamar.dev/form-components) gallery (all fields), Company (RelationTable), Settings (Tabs).
+Field controls remain under [Forms](/docs/reference/forms/).

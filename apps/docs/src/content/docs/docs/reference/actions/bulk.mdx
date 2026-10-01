@@ -1,0 +1,38 @@
+---
+title: Bulk actions
+description: Selection-bar actions over many records.
+---
+
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+Bulk actions appear in the list selection bar when one or more rows are checked.
+
+```ts
+static resourceActions(actions: ActionBuilder) {
+  actions.bulkDelete().confirm('Delete selected tickets?')
+  actions.bulk('assign_me', 'Assign to me').icon('check')
+  return actions
+}
+
+static override async handleAction(name, records) {
+  if (name === 'assign_me') {
+    // records = all selected rows
+    return { message: `Assigned ${records.length}`, notification: true }
+  }
+  return null
+}
+```
+
+## Notes
+
+- `bulkDelete()` is handled by the host (same as row delete) — it does not call `handleAction`.
+- Custom `bulk(name, label)` always receives the selected records array in `handleAction`.
+- Combine with [Confirmations](/docs/reference/actions/confirmations/) and [Authorization](/docs/reference/actions/authorization/) like any other action.
+
+<DocApiTable
+  title="Bulk API"
+  rows={[
+    { method: 'actions.bulkDelete(label?)', description: 'Built-in multi-delete (danger + default confirm).' },
+    { method: 'actions.bulk(name, label)', description: 'Custom bulk action → handleAction.' },
+  ]}
+/>

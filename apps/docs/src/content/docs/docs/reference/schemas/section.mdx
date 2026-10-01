@@ -1,0 +1,39 @@
+---
+title: Section
+description: Card layout with heading, icon, columns, and collapsible body.
+---
+
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+`Section` is the primary Filament-style card for grouping fields or infolist entries.
+
+```ts
+import { Section, TextInput } from '@shamar/core'
+
+Section.make('Catalog')
+  .icon('cube')
+  .description('Product identity and pricing.')
+  .columns(2)
+  .collapsible()
+  .schema([
+    TextInput.make('name').required(),
+    TextInput.make('sku').maxLength(32),
+  ])
+```
+
+<DocApiTable
+  title="Section"
+  rows={[
+    { method: 'Section.make(title?)', description: 'Create a section; title becomes the heading.' },
+    { method: '.icon(name)', description: 'Optional heading icon slug.' },
+    { method: '.heading(text)', description: 'Set / replace the heading.' },
+    { method: '.description(text)', description: 'Subtitle under the heading.' },
+    { method: '.columns(1|2|3|4)', description: 'Child grid columns (default 2).' },
+    { method: '.card(bool) / .contained(bool)', description: 'Card chrome (default true for Section).' },
+    { method: '.collapsible() / .collapsed()', description: 'User can collapse; start collapsed.' },
+    { method: '.dense() / .gap(bool)', description: 'Spacing controls.' },
+    { method: '.schema([...])', description: 'Nested layouts and leaves.' },
+  ]}
+/>
+
+Use [Fieldset](/docs/reference/schemas/fieldset/) when you want a lighter legend without a full card. Use [Grid](/docs/reference/schemas/grid/) when you only need columns.

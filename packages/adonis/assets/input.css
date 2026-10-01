@@ -2835,7 +2835,18 @@ select.shamar-input option {
 .shamar-tabs__panels { padding: 1rem; flex: 1; }
 
 .shamar-wizard { padding: 1rem; }
+.shamar-wizard--vertical { display: flex; flex-direction: row; align-items: stretch; gap: 1rem; }
 .shamar-wizard__steps { display: flex; gap: 0.75rem; list-style: none; margin: 0 0 1rem; padding: 0; flex-wrap: wrap; }
+.shamar-wizard--vertical .shamar-wizard__steps {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  margin: 0;
+  min-width: 10rem;
+  padding-right: 1rem;
+  border-right: 1px solid var(--color-card-border);
+}
+.shamar-wizard--vertical .shamar-wizard__panels { flex: 1; min-width: 0; }
+.shamar-wizard--vertical .shamar-wizard__nav { margin-top: 1rem; }
 .shamar-wizard__step { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8125rem; color: var(--color-body-subtle); }
 .shamar-wizard__step.is-active { color: var(--color-heading); font-weight: 600; }
 .shamar-wizard__step.is-done { color: var(--color-fg-brand); }
@@ -2845,6 +2856,10 @@ select.shamar-input option {
 .shamar-wizard__nav { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
 .shamar-wizard__btn { padding: 0.4rem 0.85rem; border-radius: 0.5rem; border: 1px solid var(--color-card-border); background: var(--color-neutral-primary); font-size: 0.8125rem; cursor: pointer; }
 .shamar-wizard__btn--primary { background: var(--color-fg-brand); border-color: transparent; color: #fff; }
+
+.shamar-schema-text { font-size: 0.875rem; color: var(--color-body); line-height: 1.55; }
+.shamar-schema-text__heading { font-size: 0.9375rem; font-weight: 600; color: var(--color-heading); margin-bottom: 0.35rem; }
+.shamar-schema-text__body { white-space: pre-wrap; }
 
 .shamar-flex { display: flex; flex-direction: column; gap: 1rem; }
 @media (min-width: 768px) {

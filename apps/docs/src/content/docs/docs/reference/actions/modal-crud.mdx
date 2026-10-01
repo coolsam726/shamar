@@ -1,0 +1,51 @@
+---
+title: Modal CRUD
+description: quickActions and per-operation page vs modal modes.
+---
+
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+Shamar does not yet ship Filament-style **action modal forms** (schema attached to an arbitrary action). For resource CRUD, use **quick actions**: open create / edit / view in a dialog over the list.
+
+```ts
+export default class TicketResource extends Resource {
+  /** All of create, edit, and view open in a modal. */
+  static quickActions = true
+
+  // Or per operation:
+  // static createMode: 'modal' | 'page' = 'modal'
+  // static editMode = 'modal'
+  // static viewMode = 'page'
+}
+```
+
+## Modes
+
+| Flag | Effect |
+|------|--------|
+| `quickActions = true` | Sets default mode to `modal` for create, edit, and view |
+| `createMode` | Override create only (`'modal'` \| `'page'`) |
+| `editMode` | Override edit only |
+| `viewMode` | Override view / row-click only |
+
+Built-in `create` / `view` / `edit` actions honor these modes. Custom actions still POST to `handleAction` — they are not modal form shells.
+
+## Relation to Filament
+
+| Filament | Shamar today |
+|----------|--------------|
+| `Action::make()->form([...])->modal()` | Not yet — use a custom page or resource form |
+| Resource create/edit in slide-over / modal | `quickActions` / `*Mode` |
+| Confirm-only action modals | `.confirm()` dialogs |
+
+**Playground:** [Tickets](https://demo.shamar.dev/tickets) enables `quickActions` so New / Edit / View open as dialogs.
+
+More resource options: [Resources overview](/docs/reference/resources/).
+
+<DocApiTable
+  title="Modal CRUD flags"
+  rows={[
+    { method: 'static quickActions', description: 'Default create/edit/view to modal.' },
+    { method: 'static createMode / editMode / viewMode', description: "'modal' | 'page' per operation." },
+  ]}
+/>
