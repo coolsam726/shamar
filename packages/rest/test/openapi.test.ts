@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import vine from '@vinejs/vine';
 import {
+  FormBuilder,
+  TableBuilder,
   Resource,
   ResourceRegistry,
-  form,
-  table,
   TextInput,
   TextColumn,
   Checkbox,
@@ -30,21 +30,19 @@ class DemoResource extends Resource {
   static override singularLabel = 'Post';
   static override model = 'Post';
 
-  static override form() {
-    return form((f) => {
-      f.schema([
-        TextInput.make('title').required(),
-        TextInput.make('body').required(),
-        Checkbox.make('published'),
-        TextInput.make('secret').password(),
-      ]);
-    });
+  static override form(form: FormBuilder) {
+    form.schema([
+      TextInput.make('title').required(),
+      TextInput.make('body').required(),
+      Checkbox.make('published'),
+      TextInput.make('secret').password(),
+    ]);
+    return form
   }
 
-  static override table() {
-    return table((t) => {
-      t.schema([TextColumn.make('title')]);
-    });
+  static override table(table: TableBuilder) {
+    table.schema([TextColumn.make('title')]);
+    return table
   }
 }
 

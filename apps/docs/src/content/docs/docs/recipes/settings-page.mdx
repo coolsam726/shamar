@@ -17,27 +17,26 @@ This recipe is that screen. The general idea of pages that are not resources is 
 />
 
 ```ts
-import { SettingsPage, form, Tabs, Tab, Section, TextInput } from '@shamar/core'
+import { SettingsPage, Tabs, Tab, Section, TextInput, type FormBuilder } from '@shamar/core'
 
 export default class AppSettingsPage extends SettingsPage {
   static override slug = 'settings'
   static override label = 'Settings'
   static override icon = 'cog'
 
-  static override form() {
-    return form((f) => {
-      f.schema([
-        Tabs.make()
-          .columnSpanFull()
-          .tabs([
-            Tab.make('Branding').schema([
-              Section.make('App branding').schema([
-                TextInput.make('name').label('Brand name'),
-              ]),
+  static override form(form: FormBuilder) {
+    form.schema([
+      Tabs.make()
+        .columnSpanFull()
+        .tabs([
+          Tab.make('Branding').schema([
+            Section.make('App branding').schema([
+              TextInput.make('name').label('Brand name'),
             ]),
           ]),
-      ])
-    })
+        ]),
+    ])
+    return form
   }
 
   static override async fill() {

@@ -2,10 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   Resource,
-  form,
-  table,
   panel,
-  infolist,
   resolveGridItemStyle,
   evaluateAfterStateUpdated,
   TextInput,
@@ -41,6 +38,9 @@ import {
   Callout,
   TextEntry,
   TextColumn,
+  type FormBuilder,
+  type TableBuilder,
+  type InfolistBuilder,
 } from '../src/index.js';
 
 class DemoResource extends Resource {
@@ -49,45 +49,42 @@ class DemoResource extends Resource {
   static override singularLabel = 'Demo';
   static override model = 'Demo';
 
-  static override form() {
-    return form((f) => {
-      f.schema([
-        Section.make('Main')
-          .description('Primary fields')
-          .icon('cube')
-          .columns(2)
-          .schema([
-            TextInput.make('name')
-              .required()
-              .columnSpan(1)
-              .live({ debounce: '750ms' })
-              .afterStateUpdated(({ get, set }) => {
-                set('code', String(get('name') ?? '').toUpperCase());
-              }),
-            TextInput.make('code').columnSpanFull().unique(),
-          ]),
-        Fieldset.make('Meta').card().schema([TextInput.make('notes')]),
-      ]);
-    });
+  static override form(form: FormBuilder) {
+    form.schema([
+      Section.make('Main')
+        .description('Primary fields')
+        .icon('cube')
+        .columns(2)
+        .schema([
+          TextInput.make('name')
+            .required()
+            .columnSpan(1)
+            .live({ debounce: '750ms' })
+            .afterStateUpdated(({ get, set }) => {
+              set('code', String(get('name') ?? '').toUpperCase());
+            }),
+          TextInput.make('code').columnSpanFull().unique(),
+        ]),
+      Fieldset.make('Meta').card().schema([TextInput.make('notes')]),
+    ]);
+    return form
   }
 
-  static override table() {
-    return table((t) => {
-      t.schema([
-        TextColumn.make('id').id().label('ID'),
-        TextColumn.make('email').email(),
-        TextColumn.make('createdAt').date(),
-      ]);
-    });
+  static override table(table: TableBuilder) {
+    table.schema([
+      TextColumn.make('id').id().label('ID'),
+      TextColumn.make('email').email(),
+      TextColumn.make('createdAt').date(),
+    ]);
+    return table
   }
 
-  static override infolist() {
-    return infolist((i) => {
-      i.columns(2).schema([
-        TextEntry.make('name'),
-        TextEntry.make('code').columnSpanFull(),
-      ]);
-    });
+  static override infolist(infolist: InfolistBuilder) {
+    infolist.columns(2).schema([
+      TextEntry.make('name'),
+      TextEntry.make('code').columnSpanFull(),
+    ]);
+    return infolist
   }
 }
 
@@ -97,16 +94,14 @@ class FallbackResource extends Resource {
   static override singularLabel = 'Fallback';
   static override model = 'Fallback';
 
-  static override form() {
-    return form((f) => {
-      f.schema([TextInput.make('title')]);
-    });
+  static override form(form: FormBuilder) {
+    form.schema([TextInput.make('title')]);
+    return form
   }
 
-  static override table() {
-    return table((t) => {
-      t.schema([TextColumn.make('title')]);
-    });
+  static override table(table: TableBuilder) {
+    table.schema([TextColumn.make('title')]);
+    return table
   }
 }
 
@@ -116,30 +111,27 @@ class NestedInfolistResource extends Resource {
   static override singularLabel = 'Nested';
   static override model = 'Nested';
 
-  static override form() {
-    return form((f) => {
-      f.schema([TextInput.make('x')]);
-    });
+  static override form(form: FormBuilder) {
+    form.schema([TextInput.make('x')]);
+    return form
   }
 
-  static override table() {
-    return table((t) => {
-      t.schema([TextColumn.make('x')]);
-    });
+  static override table(table: TableBuilder) {
+    table.schema([TextColumn.make('x')]);
+    return table
   }
 
-  static override infolist() {
-    return infolist((i) => {
-      i.schema([
-        Section.make('Company')
-          .columns(3)
-          .schema([
-            TextEntry.make('name').columnSpanFull(),
-            TextEntry.make('email').label('Email Address'),
-            TextEntry.make('active').boolean().columnSpan(2),
-          ]),
-      ]);
-    });
+  static override infolist(infolist: InfolistBuilder) {
+    infolist.schema([
+      Section.make('Company')
+        .columns(3)
+        .schema([
+          TextEntry.make('name').columnSpanFull(),
+          TextEntry.make('email').label('Email Address'),
+          TextEntry.make('active').boolean().columnSpan(2),
+        ]),
+    ]);
+    return infolist
   }
 }
 
@@ -199,26 +191,23 @@ describe('@shamar/core Filament-style builders', () => {
       static override singularLabel = 'Shared';
       static override model = 'Shared';
 
-      static override form() {
-        return form((f) => {
-          f.schema([
-            Fieldset.make('Flags').card().schema([TextInput.make('active')]),
-          ]);
-        });
+      static override form(form: FormBuilder) {
+        form.schema([
+          Fieldset.make('Flags').card().schema([TextInput.make('active')]),
+        ]);
+        return form
       }
 
-      static override table() {
-        return table((t) => {
-          t.schema([TextColumn.make('active')]);
-        });
+      static override table(table: TableBuilder) {
+        table.schema([TextColumn.make('active')]);
+        return table
       }
 
-      static override infolist() {
-        return infolist((i) => {
-          i.schema([
-            Fieldset.make('Flags').card().schema([TextEntry.make('active').boolean()]),
-          ]);
-        });
+      static override infolist(infolist: InfolistBuilder) {
+        infolist.schema([
+          Fieldset.make('Flags').card().schema([TextEntry.make('active').boolean()]),
+        ]);
+        return infolist
       }
     }
 
@@ -237,26 +226,23 @@ describe('@shamar/core Filament-style builders', () => {
       static override singularLabel = 'Headerless';
       static override model = 'Headerless';
 
-      static override form() {
-        return form((f) => {
-          f.schema([
-            Section.make().columns(2).schema([TextInput.make('name')]),
-          ]);
-        });
+      static override form(form: FormBuilder) {
+        form.schema([
+          Section.make().columns(2).schema([TextInput.make('name')]),
+        ]);
+        return form
       }
 
-      static override table() {
-        return table((t) => {
-          t.schema([TextColumn.make('name')]);
-        });
+      static override table(table: TableBuilder) {
+        table.schema([TextColumn.make('name')]);
+        return table
       }
 
-      static override infolist() {
-        return infolist((i) => {
-          i.schema([
-            Section.make().schema([TextEntry.make('name')]),
-          ]);
-        });
+      static override infolist(infolist: InfolistBuilder) {
+        infolist.schema([
+          Section.make().schema([TextEntry.make('name')]),
+        ]);
+        return infolist
       }
     }
 
@@ -275,31 +261,29 @@ describe('@shamar/core Filament-style builders', () => {
       static override singularLabel = 'Nested';
       static override model = 'Nested';
 
-      static override form() {
-        return form((f) => {
-          f.schema([
-            Section.make('Outer')
-              .collapsible()
-              .schema([
-                Grid.make(2).schema([
-                  TextInput.make('a'),
-                  TextInput.make('b'),
-                ]),
-                Tabs.make()
-                  .tabs([
-                    Tab.make('One').schema([TextInput.make('c')]),
-                    Tab.make('Two').badge(2).schema([TextInput.make('d')]),
-                  ]),
-                Callout.make('Note').info().description('Hello'),
+      static override form(form: FormBuilder) {
+        form.schema([
+          Section.make('Outer')
+            .collapsible()
+            .schema([
+              Grid.make(2).schema([
+                TextInput.make('a'),
+                TextInput.make('b'),
               ]),
-          ]);
-        });
+              Tabs.make()
+                .tabs([
+                  Tab.make('One').schema([TextInput.make('c')]),
+                  Tab.make('Two').badge(2).schema([TextInput.make('d')]),
+                ]),
+              Callout.make('Note').info().description('Hello'),
+            ]),
+        ]);
+        return form
       }
 
-      static override table() {
-        return table((t) => {
-          t.schema([TextColumn.make('a')]);
-        });
+      static override table(table: TableBuilder) {
+        table.schema([TextColumn.make('a')]);
+        return table
       }
     }
 
@@ -337,25 +321,23 @@ describe('@shamar/core Filament-style builders', () => {
       static override singularLabel = 'Layout Derive';
       static override model = 'LayoutDerive';
 
-      static override form() {
-        return form((f) => {
-          f.schema([
-            Section.make('Details')
-              .columnSpanFull()
-              .columns(3)
-              .schema([
-                TextInput.make('name').columnSpan(2),
-                TextInput.make('code'),
-                Textarea.make('notes').columnSpanFull(),
-              ]),
-          ]);
-        });
+      static override form(form: FormBuilder) {
+        form.schema([
+          Section.make('Details')
+            .columnSpanFull()
+            .columns(3)
+            .schema([
+              TextInput.make('name').columnSpan(2),
+              TextInput.make('code'),
+              Textarea.make('notes').columnSpanFull(),
+            ]),
+        ]);
+        return form
       }
 
-      static override table() {
-        return table((t) => {
-          t.schema([TextColumn.make('name')]);
-        });
+      static override table(table: TableBuilder) {
+        table.schema([TextColumn.make('name')]);
+        return table
       }
     }
 
@@ -381,40 +363,38 @@ describe('@shamar/core Filament-style builders', () => {
       static override singularLabel = 'Extra';
       static override model = 'Extra';
 
-      static override form() {
-        return form((f) => {
-          f.schema([
-            Hidden.make('token'),
-            Checkbox.make('agree'),
-            Radio.make('plan').options([
-              { label: 'A', value: 'a' },
-              { label: 'B', value: 'b' },
-            ]),
-            ColorPicker.make('color'),
-            TagsInput.make('tags'),
-            Textarea.make('bio').rows(6).maxLength(200),
-            TextInput.make('slug').prefix('https://').suffix('.test'),
-            TextInput.make('phone').tel().prefixIcon('phone').autocomplete('tel'),
-            TextInput.make('site').url().maxLength(80).datalist(['https://a.test']),
-            TextInput.make('secret').password().revealable(),
-            TextInput.make('ref').copyable(),
-            TextInput.make('qty').integer().min(1).max(10).step(1),
-            Select.make('roles')
-              .multiple()
-              .selectablePlaceholder(false)
-              .options([{ label: 'Admin', value: 'admin' }]),
-            Select.make('status').native().options([{ label: 'Open', value: 'open' }]),
-            FileUpload.make('avatar').image().accept('image/png'),
-            FilePicker.make('coverId').image().folder(null).makePublic(),
-            FilePicker.make('attachments').multiple().accept('application/pdf'),
-          ]);
-        });
+      static override form(form: FormBuilder) {
+        form.schema([
+          Hidden.make('token'),
+          Checkbox.make('agree'),
+          Radio.make('plan').options([
+            { label: 'A', value: 'a' },
+            { label: 'B', value: 'b' },
+          ]),
+          ColorPicker.make('color'),
+          TagsInput.make('tags'),
+          Textarea.make('bio').rows(6).maxLength(200),
+          TextInput.make('slug').prefix('https://').suffix('.test'),
+          TextInput.make('phone').tel().prefixIcon('phone').autocomplete('tel'),
+          TextInput.make('site').url().maxLength(80).datalist(['https://a.test']),
+          TextInput.make('secret').password().revealable(),
+          TextInput.make('ref').copyable(),
+          TextInput.make('qty').integer().min(1).max(10).step(1),
+          Select.make('roles')
+            .multiple()
+            .selectablePlaceholder(false)
+            .options([{ label: 'Admin', value: 'admin' }]),
+          Select.make('status').native().options([{ label: 'Open', value: 'open' }]),
+          FileUpload.make('avatar').image().accept('image/png'),
+          FilePicker.make('coverId').image().folder(null).makePublic(),
+          FilePicker.make('attachments').multiple().accept('application/pdf'),
+        ]);
+        return form
       }
 
-      static override table() {
-        return table((t) => {
-          t.schema([TextColumn.make('slug')]);
-        });
+      static override table(table: TableBuilder) {
+        table.schema([TextColumn.make('slug')]);
+        return table
       }
     }
 
@@ -457,51 +437,49 @@ describe('@shamar/core Filament-style builders', () => {
       static override singularLabel = 'Widget';
       static override model = 'Widget';
 
-      static override form() {
-        return form((f) => {
-          f.schema([
-            DatePicker.make('day'),
-            DateTimePicker.make('startsAt').seconds(),
-            TimePicker.make('opensAt').seconds().native(),
-            RichEditor.make('html').toolbar(['bold', 'italic']),
-            RichEditor.make('spec').document().label('Spec'),
-            RichEditor.make('notes').notion(),
-            RichEditor.make('blurb').simple(),
-            MarkdownEditor.make('md'),
-            CodeEditor.make('source').language('json').languages(['json', 'css']),
-            Repeater.make('items')
-              .schema([TextInput.make('sku').required(), TextInput.make('qty')])
-              .minItems(1)
-              .maxItems(5)
-              .itemLabel('Line')
-              .defaultItems(1),
-            KeyValue.make('meta').keyLabel('Name').valueLabel('Value'),
-            Slider.make('volume').min(0).max(10).showValue(),
-            Rating.make('stars').allowZero(false),
-            Radio.make('plan')
-              .options([
-                { label: 'A', value: 'a' },
-                { label: 'B', value: 'b' },
-              ])
-              .buttons(),
-            ToggleButtons.make('size')
-              .options([
-                { label: 'S', value: 's' },
-                { label: 'M', value: 'm' },
-              ])
-              .grouped(),
-            ToggleButtons.make('channels')
-              .options([{ label: 'Web', value: 'web' }])
-              .multiple(),
-            CheckboxList.make('flags').options([{ label: 'On', value: 'on' }]),
-          ]);
-        });
+      static override form(form: FormBuilder) {
+        form.schema([
+          DatePicker.make('day'),
+          DateTimePicker.make('startsAt').seconds(),
+          TimePicker.make('opensAt').seconds().native(),
+          RichEditor.make('html').toolbar(['bold', 'italic']),
+          RichEditor.make('spec').document().label('Spec'),
+          RichEditor.make('notes').notion(),
+          RichEditor.make('blurb').simple(),
+          MarkdownEditor.make('md'),
+          CodeEditor.make('source').language('json').languages(['json', 'css']),
+          Repeater.make('items')
+            .schema([TextInput.make('sku').required(), TextInput.make('qty')])
+            .minItems(1)
+            .maxItems(5)
+            .itemLabel('Line')
+            .defaultItems(1),
+          KeyValue.make('meta').keyLabel('Name').valueLabel('Value'),
+          Slider.make('volume').min(0).max(10).showValue(),
+          Rating.make('stars').allowZero(false),
+          Radio.make('plan')
+            .options([
+              { label: 'A', value: 'a' },
+              { label: 'B', value: 'b' },
+            ])
+            .buttons(),
+          ToggleButtons.make('size')
+            .options([
+              { label: 'S', value: 's' },
+              { label: 'M', value: 'm' },
+            ])
+            .grouped(),
+          ToggleButtons.make('channels')
+            .options([{ label: 'Web', value: 'web' }])
+            .multiple(),
+          CheckboxList.make('flags').options([{ label: 'On', value: 'on' }]),
+        ]);
+        return form
       }
 
-      static override table() {
-        return table((t) => {
-          t.schema([TextColumn.make('sku')]);
-        });
+      static override table(table: TableBuilder) {
+        table.schema([TextColumn.make('sku')]);
+        return table
       }
     }
 

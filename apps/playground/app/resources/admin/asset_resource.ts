@@ -1,8 +1,8 @@
 import {
+  FormBuilder,
+  TableBuilder,
+  InfolistBuilder,
   Resource,
-  form,
-  table,
-  infolist,
   Section,
   TextInput,
   FileUpload,
@@ -27,63 +27,60 @@ export default class AssetResource extends Resource {
   static override navigationSort = 99
   static override navigationHidden = true
 
-  static override form() {
-    return form((f) => {
-      f.schema([
-        Section.make('Asset')
-          .columns(2)
-          .schema([
-            TextInput.make('name').required().searchable().columnSpanFull(),
-            FileUpload.make('upload')
-              .accept('image/*,.pdf,.zip')
-              .dehydrated(false)
-              .helperText('Native file input demo — pick a file to see the filename in state.')
-              .columnSpanFull()
-              .live()
-              .afterStateUpdated(({ get, set }) => {
-                const name = String(get('upload') ?? '')
-                if (!name) return
-                set('path', `/uploads/${name}`)
-                set('isImage', /\.(png|jpe?g|gif|webp|svg)$/i.test(name))
-                set('mime', name.endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream')
-                set('checksum', `demo-${name.length}-${name.slice(0, 8)}`)
-              }),
-            TextInput.make('path').readonly(),
-            TextInput.make('mime').readonly(),
-            TextInput.make('size').numeric().min(0).disabled().helperText('Size is not filled by the demo uploader.'),
-            TextInput.make('checksum').copyable().readonly(),
-            Toggle.make('isImage').inline().label('Treat as image'),
-          ]),
-      ])
-    })
+  static override form(form: FormBuilder) {
+    form.schema([
+      Section.make('Asset')
+        .columns(2)
+        .schema([
+          TextInput.make('name').required().searchable().columnSpanFull(),
+          FileUpload.make('upload')
+            .accept('image/*,.pdf,.zip')
+            .dehydrated(false)
+            .helperText('Native file input demo — pick a file to see the filename in state.')
+            .columnSpanFull()
+            .live()
+            .afterStateUpdated(({ get, set }) => {
+              const name = String(get('upload') ?? '')
+              if (!name) return
+              set('path', `/uploads/${name}`)
+              set('isImage', /\.(png|jpe?g|gif|webp|svg)$/i.test(name))
+              set('mime', name.endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream')
+              set('checksum', `demo-${name.length}-${name.slice(0, 8)}`)
+            }),
+          TextInput.make('path').readonly(),
+          TextInput.make('mime').readonly(),
+          TextInput.make('size').numeric().min(0).disabled().helperText('Size is not filled by the demo uploader.'),
+          TextInput.make('checksum').copyable().readonly(),
+          Toggle.make('isImage').inline().label('Treat as image'),
+        ]),
+    ])
+    return form
   }
 
-  static override table() {
-    return table((t) => {
-      t.schema([
-        TextColumn.make('name').searchable().sortable(),
-        TextColumn.make('mime').searchable(),
-        TextColumn.make('size').sortable(),
-        TextColumn.make('isImage').boolean().badge(),
-      ])
-    })
+  static override table(table: TableBuilder) {
+    table.schema([
+      TextColumn.make('name').searchable().sortable(),
+      TextColumn.make('mime').searchable(),
+      TextColumn.make('size').sortable(),
+      TextColumn.make('isImage').boolean().badge(),
+    ])
+    return table
   }
 
-  static override infolist() {
-    return infolist((i) => {
-      i.schema([
-        Section.make('Asset')
-          .columns(2)
-          .schema([
-            TextEntry.make('name').columnSpanFull(),
-            TextEntry.make('path').copyable(),
-            TextEntry.make('mime'),
-            TextEntry.make('size'),
-            TextEntry.make('checksum').copyable(),
-            TextEntry.make('isImage').boolean().badge(),
-            ImageEntry.make('path').label('Preview'),
-          ]),
-      ])
-    })
+  static override infolist(infolist: InfolistBuilder) {
+    infolist.schema([
+      Section.make('Asset')
+        .columns(2)
+        .schema([
+          TextEntry.make('name').columnSpanFull(),
+          TextEntry.make('path').copyable(),
+          TextEntry.make('mime'),
+          TextEntry.make('size'),
+          TextEntry.make('checksum').copyable(),
+          TextEntry.make('isImage').boolean().badge(),
+          ImageEntry.make('path').label('Preview'),
+        ]),
+    ])
+    return infolist
   }
 }

@@ -6,10 +6,9 @@ import {
   ListPage,
   Page,
   PageRegistry,
-  form,
-  table,
   pageContent,
-  infolist,
+  type FormBuilder,
+  type TableBuilder,
   Section,
   TextInput,
   TextColumn,
@@ -33,10 +32,9 @@ class BrandingPage extends FormPage {
   static override navigationGroup = 'Settings';
   static override navigationSort = 1;
 
-  static override form() {
-    return form((f) => {
-      f.schema([TextInput.make('logo')]);
-    });
+  static override form(form: FormBuilder) {
+    form.schema([TextInput.make('logo')]);
+    return form
   }
 }
 
@@ -44,10 +42,9 @@ class AppSettingsPage extends SettingsPage {
   static override slug = 'settings';
   static override label = 'Settings';
 
-  static override form() {
-    return form((f) => {
-      f.schema([TextInput.make('theme')]);
-    });
+  static override form(form: FormBuilder) {
+    form.schema([TextInput.make('theme')]);
+    return form
   }
 }
 
@@ -57,10 +54,9 @@ class CatalogPage extends ListPage {
   static override navigationGroup = 'Content';
   static override model = 'Product';
 
-  static override table() {
-    return table((t) => {
-      t.schema([TextColumn.make('name').searchable()]);
-    });
+  static override table(table: TableBuilder) {
+    table.schema([TextColumn.make('name').searchable()]);
+    return table
   }
 }
 
@@ -72,19 +68,17 @@ class DashboardPage extends Page {
     return pageContent((p) => {
       p.edge('banner', { view: 'pages/banner', data: { title: 'Hi' } });
       p.form('prefs', {
-        form: () => form((f) => f.schema([TextInput.make('theme')])),
+        form: (form) => form.schema([TextInput.make('theme')]),
         save: async () => ({ message: 'Saved' }),
       });
       p.table('items', {
         model: 'Product',
-        table: () => table((t) => t.schema([TextColumn.make('name')])),
+        table: (table) => table.schema([TextColumn.make('name')]),
       });
       p.infolist('meta', {
         record: { env: 'test' },
-        infolist: () =>
-          infolist((i) => {
-            i.schema([Section.make('Runtime').schema([TextEntry.make('env')])]);
-          }),
+        infolist: (infolist) =>
+          infolist.schema([Section.make('Runtime').schema([TextEntry.make('env')])]),
       });
     });
   }

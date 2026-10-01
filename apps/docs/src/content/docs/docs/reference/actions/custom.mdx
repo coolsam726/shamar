@@ -4,11 +4,10 @@ description: handleAction and page-level actions.
 ---
 
 ```ts
-static resourceActions() {
-  return actions((a) => {
-    a.row('escalate', 'Escalate').color('accent').icon('arrow-up')
-    a.header('export', 'Export CSV')
-  })
+static resourceActions(actions: ActionBuilder) {
+  actions.row('escalate', 'Escalate').color('accent').icon('arrow-up')
+  actions.header('export', 'Export CSV')
+  return actions
 }
 
 static override async handleAction(name, ctx) {

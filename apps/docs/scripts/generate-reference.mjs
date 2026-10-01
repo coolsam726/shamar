@@ -219,14 +219,12 @@ RichEditor.make('documentBody').document()`,
     frontmatter('Forms overview', 'Form schemas, shared field API, and layout components.') +
       IMPORT +
       shot(cs('forms', 'select'), 'Form fields gallery', 'All field types on one page — `/demo/form-components`.', true) +
-      code(`static form() {
-  return form((f) => {
-    f.schema([
-      Section.make('Basics').schema([
-        TextInput.make('name').required(),
-      ]),
-    ])
-  })
+      code(`static form(form: FormBuilder) {
+  return form.schema([
+    Section.make('Basics').schema([
+      TextInput.make('name').required(),
+    ]),
+  ])
 }`) +
       `Resources declare a \`form()\` builder. The Adonis host renders create/edit, hydrates payloads via the **field registry**, and validates required fields.
 
@@ -366,14 +364,13 @@ async function writeTables() {
     frontmatter('Tables overview', 'List tables, search, filters, grouping, and pagination.') +
       IMPORT +
       shot('/screenshots/products-list.png', 'Product list table', 'Table chrome is provided by the Adonis host.', true) +
-      code(`static table() {
-  return table((t) => {
-    t.defaultSort('name', 'asc')
-    t.defaultFilters([{ field: 'resolved', value: false, label: 'Resolved: No' }])
-    t.schema([
+      code(`static table(table: TableBuilder) {
+  return table
+    .defaultSort('name', 'asc')
+    .defaultFilters([{ field: 'resolved', value: false, label: 'Resolved: No' }])
+    .schema([
       TextColumn.make('name').searchable().sortable(),
     ])
-  })
 }`) +
       `List routes render searchable, filterable, groupable tables with pagination, bulk actions, and sticky headings.
 
@@ -464,16 +461,14 @@ TextEntry.make('sku').copyable()`,
     'infolists/index.mdx',
     frontmatter('Infolists overview', 'Show/detail views for resources and pages.') +
       IMPORT +
-      code(`static infolist() {
-  return infolist((i) => {
-    i.schema([
-      Section.make('Product').columns(3).schema([
-        TextEntry.make('name'),
-        IconEntry.make('featured').boolean(),
-        ColorEntry.make('color'),
-      ]),
-    ])
-  })
+      code(`static infolist(infolist: InfolistBuilder) {
+  return infolist.schema([
+    Section.make('Product').columns(3).schema([
+      TextEntry.make('name'),
+      IconEntry.make('featured').boolean(),
+      ColorEntry.make('color'),
+    ]),
+  ])
 }`) +
       `Infolists power resource **show** pages and can be composed on [ListPage](/docs/reference/pages/list-page/) rows.
 
@@ -621,16 +616,15 @@ async function writeActions() {
       IMPORT +
       shot(cs('actions', 'header-create'), 'Header actions', 'Create, export, and custom header buttons.', true) +
       shot(cs('actions', 'row-menu'), 'Row action menu', 'Per-record actions in the ⋮ menu.') +
-      code(`static resourceActions() {
-  return actions((a) => {
-    a.create('New product')
-    a.view()
-    a.edit()
-    a.delete().confirm('Delete this product?')
-    a.bulkDelete()
-    a.row('duplicate', 'Duplicate').icon('copy')
-    a.header('export', 'Export CSV').icon('download')
-  })
+      code(`static resourceActions(actions: ActionBuilder) {
+  actions.create('New product')
+  actions.view()
+  actions.edit()
+  actions.delete().confirm('Delete this product?')
+  actions.bulkDelete()
+  actions.row('duplicate', 'Duplicate').icon('copy')
+  actions.header('export', 'Export CSV').icon('download')
+  return actions
 }`) +
       `## Placements
 
@@ -660,7 +654,7 @@ See [Built-in actions](/docs/reference/actions/built-in/) and [Custom actions](/
     frontmatter('Built-in actions', 'Default CRUD action set.') +
       code(`import { defaultActions } from '@shamar/core'
 
-static resourceActions() {
+static resourceActions(_actions) {
   return defaultActions() // create, view, edit, delete, bulkDelete
 }`) +
       `| Action | Placement | Default |
@@ -671,18 +665,17 @@ static resourceActions() {
 | \`delete()\` | row | Delete (danger) |
 | \`bulkDelete()\` | bulk | Delete selected |
 
-Customize labels: \`a.create('New ticket')\`, \`a.delete().confirm('…')\`.
+Customize labels: \`actions.create('New ticket')\`, \`actions.delete().confirm('…')\`.
 `
   )
 
   await write(
     'actions/custom.mdx',
     frontmatter('Custom actions', 'handleAction and page-level actions.') +
-      code(`static resourceActions() {
-  return actions((a) => {
-    a.row('escalate', 'Escalate').color('accent').icon('arrow-up')
-    a.header('export', 'Export CSV')
-  })
+      code(`static resourceActions(actions: ActionBuilder) {
+  actions.row('escalate', 'Escalate').color('accent').icon('arrow-up')
+  actions.header('export', 'Export CSV')
+  return actions
 }
 
 static override async handleAction(name, ctx) {

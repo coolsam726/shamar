@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { Resource, form, table, TextInput, TextColumn } from '@shamar/core';
+import { FormBuilder, TableBuilder, Resource, TextInput, TextColumn } from '@shamar/core';
 import { createLucidAdapter } from '../src/index.js';
 import { escapeLike } from '../src/like.js';
 
@@ -81,15 +81,13 @@ describe('@shamar/lucid adapter search enrichment', () => {
     class PermissionResource extends Resource {
       static override slug = 'permissions';
       static override model = Model;
-      static override form() {
-        return form((f) => {
-          f.schema([TextInput.make('label').searchable()]);
-        });
+      static override form(form: FormBuilder) {
+        form.schema([TextInput.make('label').searchable()]);
+        return form
       }
-      static override table() {
-        return table((t) => {
-          t.schema([TextColumn.make('label').searchable()]);
-        });
+      static override table(table: TableBuilder) {
+        table.schema([TextColumn.make('label').searchable()]);
+        return table
       }
     }
 
@@ -148,18 +146,16 @@ describe('@shamar/lucid adapter search enrichment', () => {
     class Catalog extends Resource {
       static override slug = 'catalog';
       static override model = CatalogModel;
-      static override form() {
-        return form((f) => {
-          f.schema([TextInput.make('sku').searchable()]);
-        });
+      static override form(form: FormBuilder) {
+        form.schema([TextInput.make('sku').searchable()]);
+        return form
       }
-      static override table() {
-        return table((t) => {
-          t.schema([
-            TextColumn.make('sku').searchable(),
-            TextColumn.make('name').searchable(),
-          ]);
-        });
+      static override table(table: TableBuilder) {
+        table.schema([
+          TextColumn.make('sku').searchable(),
+          TextColumn.make('name').searchable(),
+        ]);
+        return table
       }
     }
 
@@ -204,15 +200,13 @@ describe('@shamar/lucid adapter search enrichment', () => {
       static override slug = 'catalog';
       static override model = CatalogModel;
       static override softDelete = true;
-      static override form() {
-        return form((f) => {
-          f.schema([TextInput.make('name')]);
-        });
+      static override form(form: FormBuilder) {
+        form.schema([TextInput.make('name')]);
+        return form
       }
-      static override table() {
-        return table((t) => {
-          t.schema([TextColumn.make('name')]);
-        });
+      static override table(table: TableBuilder) {
+        table.schema([TextColumn.make('name')]);
+        return table
       }
     }
 

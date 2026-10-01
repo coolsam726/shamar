@@ -1,8 +1,8 @@
 import {
+  FormBuilder,
+  TableBuilder,
+  InfolistBuilder,
   Resource,
-  form,
-  table,
-  infolist,
   Section,
   TextInput,
   Textarea,
@@ -25,50 +25,47 @@ export default class RoleResource extends Resource {
   /** Demo: resource override of panel defaultPerPage (25). */
   static override defaultPerPage = 10
 
-  static override form() {
-    return form((f) => {
-      f.schema([
-        Section.make('Role')
-          .columns(2)
-          .schema([
-            TextInput.make('name').required().searchable(),
-            TextInput.make('slug')
-              .required()
-              .searchable()
-              .helperText('Stable key, e.g. editor'),
-            Textarea.make('description').columnSpanFull(),
-            PermissionsAssignment.make('permissionIds'),
-            Toggle.make('active').label('Active').default(true),
-          ]),
-      ])
-    })
+  static override form(form: FormBuilder) {
+    form.schema([
+      Section.make('Role')
+        .columns(2)
+        .schema([
+          TextInput.make('name').required().searchable(),
+          TextInput.make('slug')
+            .required()
+            .searchable()
+            .helperText('Stable key, e.g. editor'),
+          Textarea.make('description').columnSpanFull(),
+          PermissionsAssignment.make('permissionIds'),
+          Toggle.make('active').label('Active').default(true),
+        ]),
+    ])
+    return form
   }
 
-  static override table() {
-    return table((t) => {
-      t.defaultSort('name', 'asc').schema([
-        TextColumn.make('name').searchable().sortable(),
-        TextColumn.make('slug').searchable().sortable(),
-        TextColumn.make('active').boolean().sortable(),
-      ])
-    })
+  static override table(table: TableBuilder) {
+    table.defaultSort('name', 'asc').schema([
+      TextColumn.make('name').searchable().sortable(),
+      TextColumn.make('slug').searchable().sortable(),
+      TextColumn.make('active').boolean().sortable(),
+    ])
+    return table
   }
 
-  static override infolist() {
-    return infolist((i) => {
-      i.schema([
-        Section.make('Role')
-          .columns(2)
-          .schema([
-            TextEntry.make('name'),
-            TextEntry.make('slug'),
-            TextEntry.make('description').columnSpanFull(),
-            // Same field name as form PermissionsAssignment — show page renders
-            // the readonly checkbox matrix (labels/names), not raw ids.
-            TextEntry.make('permissionIds').label('Permissions').columnSpanFull(),
-            TextEntry.make('active').boolean(),
-          ]),
-      ])
-    })
+  static override infolist(infolist: InfolistBuilder) {
+    infolist.schema([
+      Section.make('Role')
+        .columns(2)
+        .schema([
+          TextEntry.make('name'),
+          TextEntry.make('slug'),
+          TextEntry.make('description').columnSpanFull(),
+          // Same field name as form PermissionsAssignment — show page renders
+          // the readonly checkbox matrix (labels/names), not raw ids.
+          TextEntry.make('permissionIds').label('Permissions').columnSpanFull(),
+          TextEntry.make('active').boolean(),
+        ]),
+    ])
+    return infolist
   }
 }

@@ -1,8 +1,8 @@
 import {
+  FormBuilder,
+  TableBuilder,
+  InfolistBuilder,
   Resource,
-  form,
-  table,
-  infolist,
   Section,
   TextInput,
   TextColumn,
@@ -22,38 +22,35 @@ export default class ProfileResource extends Resource {
   static override navigationSort = 1
   static override navigationGroup = 'Account'
 
-  static override form() {
-    return form((f) => {
-      f.schema([
-        Section.make('Profile')
-          .columns(2)
-          .schema([
-            TextInput.make('fullName').label('Full name').columnSpanFull(),
-            TextInput.make('email').email().required().searchable(),
-          ]),
-      ])
-    })
+  static override form(form: FormBuilder) {
+    form.schema([
+      Section.make('Profile')
+        .columns(2)
+        .schema([
+          TextInput.make('fullName').label('Full name').columnSpanFull(),
+          TextInput.make('email').email().required().searchable(),
+        ]),
+    ])
+    return form
   }
 
-  static override table() {
-    return table((t) => {
-      t.schema([
-        TextColumn.make('fullName').label('Name').sortable().searchable(),
-        TextColumn.make('email').email().sortable().searchable(),
-      ])
-    })
+  static override table(table: TableBuilder) {
+    table.schema([
+      TextColumn.make('fullName').label('Name').sortable().searchable(),
+      TextColumn.make('email').email().sortable().searchable(),
+    ])
+    return table
   }
 
-  static override infolist() {
-    return infolist((i) => {
-      i.schema([
-        Section.make('Profile')
-          .columns(2)
-          .schema([
-            TextEntry.make('fullName').label('Full name').columnSpanFull(),
-            TextEntry.make('email').label('Email'),
-          ]),
-      ])
-    })
+  static override infolist(infolist: InfolistBuilder) {
+    infolist.schema([
+      Section.make('Profile')
+        .columns(2)
+        .schema([
+          TextEntry.make('fullName').label('Full name').columnSpanFull(),
+          TextEntry.make('email').label('Email'),
+        ]),
+    ])
+    return infolist
   }
 }

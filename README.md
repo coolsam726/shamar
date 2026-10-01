@@ -39,11 +39,11 @@ For OpenAPI docs over the JSON API **and** your custom `/api/*` routes, add [`@s
 // app/resources/admin/user_resource.ts
 import {
   Resource,
-  form,
-  table,
   TextInput,
   TextColumn,
   Toggle,
+  type FormBuilder,
+  type TableBuilder,
 } from '@shamar/core'
 import User from '#models/user'
 
@@ -52,25 +52,21 @@ export default class UserResource extends Resource {
   static slug = 'users'
   static label = 'Users'
 
-  static form() {
-    return form((f) => {
-      f.schema([
-        TextInput.make('name').required(),
-        TextInput.make('email').email().required().searchable(),
-        TextInput.make('password').password().createOnly(),
-        Toggle.make('active'),
-      ])
-    })
+  static form(form: FormBuilder) {
+    return form.schema([
+      TextInput.make('name').required(),
+      TextInput.make('email').email().required().searchable(),
+      TextInput.make('password').password().createOnly(),
+      Toggle.make('active'),
+    ])
   }
 
-  static table() {
-    return table((t) => {
-      t.schema([
-        TextColumn.make('name').sortable(),
-        TextColumn.make('email').sortable().searchable(),
-        TextColumn.make('active').toggle(),
-      ])
-    })
+  static table(table: TableBuilder) {
+    return table.schema([
+      TextColumn.make('name').sortable(),
+      TextColumn.make('email').sortable().searchable(),
+      TextColumn.make('active').toggle(),
+    ])
   }
 }
 ```
@@ -104,8 +100,8 @@ Containers use `.schema([...])` for children (forms, infolists, and tables). Lay
 **Section** (card + header) vs **Fieldset** (`<fieldset>` + legend):
 
 ```ts
-form((f) => {
-  f.schema([
+static form(form: FormBuilder) {
+  return form.schema([
     Section.make('Identity')
       .description('Core details')
       .icon('building')
@@ -113,56 +109,50 @@ form((f) => {
       .schema([TextInput.make('name')]),
     Fieldset.make('Flags').schema([Toggle.make('active')]),
   ])
-})
+}
 ```
 
 ```ts
 import {
-  form, table, infolist,
   Section, Fieldset, TextInput, Toggle,
   TextEntry, TextColumn,
+  type FormBuilder, type TableBuilder, type InfolistBuilder,
 } from '@shamar/core'
 
-static form() {
-  return form((f) => {
-    f.schema([
-      Section.make('Identity')
-        .columns(2)
-        .schema([
-          TextInput.make('name').required().live().afterStateUpdated(({ get, set }) => {
-            set('code', slugify(get('name')))
-          }),
-          TextInput.make('code').columnSpanFull(),
-          TextInput.make('email').email().required(),
-        ]),
-      Fieldset.make('Status').schema([Toggle.make('active')]),
-    ])
-  })
+static form(form: FormBuilder) {
+  return form.schema([
+    Section.make('Identity')
+      .columns(2)
+      .schema([
+        TextInput.make('name').required().live().afterStateUpdated(({ get, set }) => {
+          set('code', slugify(get('name')))
+        }),
+        TextInput.make('code').columnSpanFull(),
+        TextInput.make('email').email().required(),
+      ]),
+    Fieldset.make('Status').schema([Toggle.make('active')]),
+  ])
 }
 
-static infolist() {
-  return infolist((i) => {
-    // Same Section / Fieldset layout components as forms (Filament 5 schemas).
-    i.schema([
-      Section.make('Company')
-        .columns(3)
-        .schema([
-          TextEntry.make('name').columnSpanFull(),
-          TextEntry.make('email').label('Email Address'),
-          TextEntry.make('active').boolean().columnSpan(2),
-        ]),
-    ])
-  })
+static infolist(infolist: InfolistBuilder) {
+  // Same Section / Fieldset layout components as forms (Filament 5 schemas).
+  return infolist.schema([
+    Section.make('Company')
+      .columns(3)
+      .schema([
+        TextEntry.make('name').columnSpanFull(),
+        TextEntry.make('email').label('Email Address'),
+        TextEntry.make('active').boolean().columnSpan(2),
+      ]),
+  ])
 }
 
-static table() {
-  return table((t) => {
-    t.schema([
-      TextColumn.make('name').sortable().searchable(),
-      TextColumn.make('email').email(),
-      TextColumn.make('active').boolean(),
-    ])
-  })
+static table(table: TableBuilder) {
+  return table.schema([
+    TextColumn.make('name').sortable().searchable(),
+    TextColumn.make('email').email(),
+    TextColumn.make('active').boolean(),
+  ])
 }
 ```
 
@@ -175,11 +165,11 @@ static table() {
 | `Schemas\Components\Section` / `Fieldset` | Shared `Section` / `Fieldset` (forms + infolists) |
 | `Resource` | `Resource` class (`@shamar/core`) |
 | `TextInput::make()` / `Section::make()->schema()` | `TextInput.make()` / `Section.make().schema([...])` |
-| `TextEntry::make()` / infolist `schema()` | `TextEntry.make()` / `infolist((i) => i.schema([...]))` |
-| `TextColumn::make()` / `$table->columns()` | `TextColumn.make()` / `table((t) => t.schema([...]))` |
+| `TextEntry::make()` / infolist `schema()` | `TextEntry.make()` / `infolist.schema([...])` |
+| `TextColumn::make()` / `$table->columns()` | `TextColumn.make()` / `table.schema([...])` |
 | Multi-panel | `panel(id).path().discoverResources()` |
 | `ListRecords` / `CreateRecord` | Adonis controllers + Edge pages |
-| `Action` / `BulkAction` | `actions((a) => a.header(…) / a.bulkDelete(…) / a.row(…))` |
+| `Action` / `BulkAction` | `actions.header(…)` / `actions.bulkDelete()` / `actions.row(…)` |
 | `RelationManager` | `Relation.field()` + relation widgets (phase 2) |
 | `Policy` | `Resource.policy` class + Cherubim `Policy` (Loom / Laravel) |
 | Panel navigation | `navigationGroup`, `navigationSubGroup` (top-bar dropdown), `navigationSort` |

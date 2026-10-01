@@ -1,6 +1,6 @@
-import { form } from './form.js';
-import { infolist } from './infolist.js';
-import { table } from './table.js';
+import { acceptForm, FormBuilder } from './form.js';
+import { acceptInfolist, InfolistBuilder } from './infolist.js';
+import { acceptTable, TableBuilder } from './table.js';
 import type {
   FieldConfig,
   FormSchema,
@@ -84,7 +84,8 @@ export interface PageEdgeSectionOptions {
 
 export interface PageFormSectionOptions {
   title?: string;
-  form: FormSchema | (() => FormSchema);
+  /** Built schema, or `(form) => form.schema([...])`. */
+  form: FormSchema | ((form: FormBuilder) => FormBuilder | FormSchema | void);
   fill?: (
     ctx: PageRequestContext,
   ) => Record<string, unknown> | Promise<Record<string, unknown>>;
@@ -103,26 +104,40 @@ export interface PageTableSectionOptions {
   defaultPerPage?: number;
   /** Resource slug used for row links (defaults to section key). */
   linkResourceSlug?: string;
-  table: TableSchema | (() => TableSchema);
+  /** Built schema, or `(table) => table.schema([...])`. */
+  table: TableSchema | ((table: TableBuilder) => TableBuilder | TableSchema | void);
   query?: PageTableSectionHandlers['query'];
 }
 
 export interface PageInfolistSectionOptions {
   title?: string;
-  infolist: InfolistSchema | (() => InfolistSchema);
+  /** Built schema, or `(infolist) => infolist.schema([...])`. */
+  infolist: InfolistSchema | ((infolist: InfolistBuilder) => InfolistBuilder | InfolistSchema | void);
   record: PageSectionRecord;
 }
 
-function resolveFormSchema(value: FormSchema | (() => FormSchema)): FormSchema {
-  return typeof value === 'function' ? value() : value;
+function resolveFormSchema(
+  value: PageFormSectionOptions['form'],
+): FormSchema {
+  if (typeof value !== 'function') return value;
+  const builder = new FormBuilder();
+  return acceptForm(value(builder), builder);
 }
 
-function resolveTableSchema(value: TableSchema | (() => TableSchema)): TableSchema {
-  return typeof value === 'function' ? value() : value;
+function resolveTableSchema(
+  value: PageTableSectionOptions['table'],
+): TableSchema {
+  if (typeof value !== 'function') return value;
+  const builder = new TableBuilder();
+  return acceptTable(value(builder), builder);
 }
 
-function resolveInfolistSchema(value: InfolistSchema | (() => InfolistSchema)): InfolistSchema {
-  return typeof value === 'function' ? value() : value;
+function resolveInfolistSchema(
+  value: PageInfolistSectionOptions['infolist'],
+): InfolistSchema {
+  if (typeof value !== 'function') return value;
+  const builder = new InfolistBuilder();
+  return acceptInfolist(value(builder)) ?? { entries: [], sections: [], schema: [] };
 }
 
 function buildTableListResource(
@@ -267,6 +282,3 @@ export function pageContent(fn: (builder: PageContentBuilder) => void): PageSect
   fn(builder);
   return builder.build();
 }
-
-/** Convenience re-exports for section builders. */
-export { form, table, infolist };

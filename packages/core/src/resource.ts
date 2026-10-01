@@ -1,10 +1,19 @@
-import { defaultActions } from './actions.js';
-import { form, FormBuilder } from './form.js';
-import { infolist, formSchemaToInfolistSchema, InfolistBuilder } from './infolist.js';
+import { acceptActions, ActionBuilder, defaultActions } from './actions.js';
+import { acceptForm, FormBuilder } from './form.js';
+import { acceptInfolist, formSchemaToInfolistSchema, InfolistBuilder } from './infolist.js';
 import { userHasPermission, normalizeCustomPermissions } from './permissions.js';
 import type { PolicyClass } from './policy-types.js';
-import { table, TableBuilder } from './table.js';
-import type { DataAdapter, ResourceMeta, ResourceModel, ShamarUser } from './types.js';
+import { acceptTable, TableBuilder } from './table.js';
+import type {
+  ActionConfig,
+  DataAdapter,
+  FormSchema,
+  InfolistSchema,
+  ResourceMeta,
+  ResourceModel,
+  ShamarUser,
+  TableSchema,
+} from './types.js';
 
 /** Result of {@link Resource.prepareCreate} before adapter.create. */
 export interface PrepareCreateResult {
@@ -71,28 +80,40 @@ export abstract class Resource {
   /** Optional record-level policy (Loom / Laravel style). */
   static policy?: PolicyClass;
 
-  static form(): ReturnType<typeof form> {
-    return form(() => undefined);
+  /**
+   * Create/edit fields. Chain on the builder Filament passes in:
+   * `return form.schema([...])`.
+   */
+  static form(form: FormBuilder): FormBuilder | FormSchema {
+    return form;
   }
 
-  static table(): ReturnType<typeof table> {
-    return table(() => undefined);
+  /** List columns. `return table.schema([...]).defaultSort('name')`. */
+  static table(table: TableBuilder): TableBuilder | TableSchema {
+    return table;
   }
 
   /**
    * Detail/infolist schema. When not overridden, derived from form fields.
    * Alias: `detail()`.
    */
-  static infolist(): ReturnType<typeof infolist> | undefined {
+  static infolist(
+    _infolist: InfolistBuilder,
+  ): InfolistBuilder | InfolistSchema | undefined {
     return undefined;
   }
 
   /** Alias for `infolist()` (Filament naming). */
-  static detail(): ReturnType<typeof infolist> | undefined {
-    return this.infolist();
+  static detail(
+    infolist: InfolistBuilder,
+  ): InfolistBuilder | InfolistSchema | undefined {
+    return this.infolist(infolist);
   }
 
-  static resourceActions(): ReturnType<typeof defaultActions> {
+  /** Header, row, and bulk actions. Call methods on `actions`, then return it. */
+  static resourceActions(
+    _actions: ActionBuilder,
+  ): ActionBuilder | ActionConfig[] {
     return defaultActions();
   }
 
@@ -162,10 +183,18 @@ export abstract class Resource {
   }
 
   static configure(): ResourceMeta {
-    const formSchema = this.form();
-    const tableSchema = this.table();
-    const actionList = this.resourceActions();
-    const explicitInfolist = this.infolist() ?? this.detail();
+    const formBuilder = new FormBuilder();
+    const formSchema = acceptForm(this.form(formBuilder), formBuilder);
+    const tableBuilder = new TableBuilder();
+    const tableSchema = acceptTable(this.table(tableBuilder), tableBuilder);
+    const actionBuilder = new ActionBuilder();
+    const actionList = acceptActions(this.resourceActions(actionBuilder), actionBuilder);
+    const infolistBuilder = new InfolistBuilder();
+    let explicitInfolist = acceptInfolist(this.infolist(infolistBuilder));
+    if (!explicitInfolist) {
+      const detailBuilder = new InfolistBuilder();
+      explicitInfolist = acceptInfolist(this.detail(detailBuilder));
+    }
     const hasExplicitInfolist = explicitInfolist !== undefined;
     const infolistSchema = explicitInfolist ?? formSchemaToInfolistSchema(formSchema);
 
@@ -236,19 +265,22 @@ export function extendResource<Base extends typeof Resource>(
     static override navigationGroup =
       overrides.navigationGroup ?? Base.navigationGroup;
 
-    static override form() {
-      if (!overrides.form) return Base.form();
-      return form(overrides.form);
+    static override form(form: FormBuilder) {
+      if (!overrides.form) return Base.form(form);
+      overrides.form(form);
+      return form;
     }
 
-    static override table() {
-      if (!overrides.table) return Base.table();
-      return table(overrides.table);
+    static override table(table: TableBuilder) {
+      if (!overrides.table) return Base.table(table);
+      overrides.table(table);
+      return table;
     }
 
-    static override infolist() {
-      if (!overrides.infolist) return Base.infolist();
-      return infolist(overrides.infolist);
+    static override infolist(infolist: InfolistBuilder) {
+      if (!overrides.infolist) return Base.infolist(infolist);
+      overrides.infolist(infolist);
+      return infolist;
     }
   };
 }

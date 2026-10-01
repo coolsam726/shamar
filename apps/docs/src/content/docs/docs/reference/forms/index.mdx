@@ -20,14 +20,12 @@ Every field type has its own page in this section. Those pages assume you alread
 />
 
 ```ts
-static form() {
-  return form((f) => {
-    f.schema([
-      Section.make('Basics').schema([
-        TextInput.make('name').required(),
-      ]),
-    ])
-  })
+static form(form: FormBuilder) {
+  return form.schema([
+    Section.make('Basics').schema([
+      TextInput.make('name').required(),
+    ]),
+  ])
 }
 ```
 

@@ -17,16 +17,15 @@ Placement is the idea that takes a minute. A header action sits above the list (
 />
 
 ```ts
-static resourceActions() {
-  return actions((a) => {
-    a.create('New product')
-    a.view()
-    a.edit()
-    a.delete().confirm('Delete this product?')
-    a.bulkDelete()
-    a.row('duplicate', 'Duplicate').icon('copy')
-    a.header('export', 'Export CSV').icon('download')
-  })
+static resourceActions(actions: ActionBuilder) {
+  actions.create('New product')
+  actions.view()
+  actions.edit()
+  actions.delete().confirm('Delete this product?')
+  actions.bulkDelete()
+  actions.row('duplicate', 'Duplicate').icon('copy')
+  actions.header('export', 'Export CSV').icon('download')
+  return actions
 }
 ```
 

@@ -17,11 +17,11 @@ No peer dependencies.
 ```ts
 import {
   Resource,
-  form,
-  table,
-  infolist,
-  actions,
   Section,
+  type FormBuilder,
+  type TableBuilder,
+  type InfolistBuilder,
+  type ActionBuilder,
   TextInput,
   Toggle,
   TextColumn,
@@ -38,53 +38,46 @@ export default class UserResource extends Resource {
   static navigationGroup = 'System'
   static navigationSort = 5
 
-  static form() {
-    return form((f) => {
-      f.schema([
-        Section.make('Identity')
-          .columns(2)
-          .schema([
-            TextInput.make('fullName').required(),
-            TextInput.make('email').email().required().unique(),
-            TextInput.make('password').password().createOnly().required(),
-            Toggle.make('active'),
-          ]),
-      ])
-    })
-  }
-
-  static table() {
-    return table((t) => {
-      t.schema([
-        TextColumn.make('fullName').sortable().searchable(),
-        TextColumn.make('email').sortable().searchable().filterable(),
-        TextColumn.make('active').boolean().filterable(),
-      ])
-    })
-  }
-
-  static infolist() {
-    return infolist((i) => {
-      i.schema([
-        Section.make('User').schema([
-          TextEntry.make('fullName'),
-          TextEntry.make('email'),
-          TextEntry.make('active').boolean(),
+  static form(form: FormBuilder) {
+    return form.schema([
+      Section.make('Identity')
+        .columns(2)
+        .schema([
+          TextInput.make('fullName').required(),
+          TextInput.make('email').email().required().unique(),
+          TextInput.make('password').password().createOnly().required(),
+          Toggle.make('active'),
         ]),
-      ])
-    })
+    ])
   }
 
-  static resourceActions() {
-    return actions((a) => {
-      a.create()
-      a.view()
-      a.edit()
-      a.delete()
-      a.bulkDelete()
-      a.header('export', 'Export').ability('viewAny')
-      a.row('archive', 'Archive').confirm('Archive this user?')
-    })
+  static table(table: TableBuilder) {
+    return table.schema([
+      TextColumn.make('fullName').sortable().searchable(),
+      TextColumn.make('email').sortable().searchable().filterable(),
+      TextColumn.make('active').boolean().filterable(),
+    ])
+  }
+
+  static infolist(infolist: InfolistBuilder) {
+    return infolist.schema([
+      Section.make('User').schema([
+        TextEntry.make('fullName'),
+        TextEntry.make('email'),
+        TextEntry.make('active').boolean(),
+      ]),
+    ])
+  }
+
+  static resourceActions(actions: ActionBuilder) {
+    actions.create()
+    actions.view()
+    actions.edit()
+    actions.delete()
+    actions.bulkDelete()
+    actions.header('export', 'Export').ability('viewAny')
+    actions.row('archive', 'Archive').confirm('Archive this user?')
+    return actions
   }
 }
 ```
@@ -93,11 +86,11 @@ export default class UserResource extends Resource {
 
 | Builder | Purpose |
 |---------|---------|
-| `form((f) => …)` | Create / edit schemas |
-| `table((t) => …)` | List columns, filters, group-by defaults |
-| `infolist((i) => …)` | Show / view schemas |
+| `form(form)` | Create / edit schemas — `return form.schema([...])` |
+| `table(table)` | List columns, filters, group-by defaults |
+| `infolist(infolist)` | Show / view schemas |
 | `pageContent((p) => …)` | Composite `Page` sections (edge, form, table, infolist) |
-| `actions((a) => …)` | Create, view, edit, delete, bulk, header, and row actions |
+| `actions` | Create, view, edit, delete, bulk, header, and row actions |
 | `panel(id)` | Multi-panel registration (also re-exported from `@shamar/adonis`) |
 
 Containers use `.schema([...])` for children. Layout width uses `.columns(n)` on sections and fieldsets.
@@ -125,7 +118,7 @@ Custom types: `registerFieldType({ type, valueKind, hydrate, dehydrate, empty })
 `Page`, `FormPage`, `SettingsPage`, and `ListPage` are panel screens discovered next to resources (see [`@shamar/adonis`](../adonis#pages-filament-style)).
 
 ```ts
-import { Page, pageContent, form, table, infolist } from '@shamar/core'
+import { Page, pageContent } from '@shamar/core'
 
 export default class OpsDashboardPage extends Page {
   static override slug = 'ops-dashboard'
@@ -134,9 +127,9 @@ export default class OpsDashboardPage extends Page {
   static override content() {
     return pageContent((p) => {
       p.edge('banner', { view: 'pages/admin/ops_banner', data: { title: 'Hi' } })
-      p.form('settings', { form: () => form((f) => { /* … */ }), save: async () => ({}) })
-      p.table('items', { model: Product, table: () => table((t) => { /* … */ }) })
-      p.infolist('meta', { record: { env: 'test' }, infolist: () => infolist((i) => { /* … */ }) })
+      p.form('settings', { form: (form) => form.schema([/* … */]), save: async () => ({}) })
+      p.table('items', { model: Product, table: (table) => table.schema([/* … */]) })
+      p.infolist('meta', { record: { env: 'test' }, infolist: (infolist) => infolist.schema([/* … */]) })
     })
   }
 }
@@ -200,11 +193,12 @@ Default for form and detail pages: `screen-xl` (1280px) — fills the column up 
 List defaults:
 
 ```ts
-table((t) => {
-  t.defaultFilters([{ field: 'active', value: true, label: 'Active' }])
-  t.defaultGroupBy('status')
-  t.schema([/* columns */])
-})
+  static table(table: TableBuilder) {
+  return table
+    .defaultFilters([{ field: 'active', value: true, label: 'Active' }])
+    .defaultGroupBy('status')
+    .schema([/* columns */])
+}
 ```
 
 ## Soft delete & tenancy hooks

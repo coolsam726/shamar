@@ -9,13 +9,13 @@ import {
 import {
   Select,
   CheckboxList,
-  form,
-  table,
-  infolist,
   TextColumn,
   TextEntry,
   Section,
   Resource,
+  type FormBuilder,
+  type TableBuilder,
+  type InfolistBuilder,
 } from '../src/index.js';
 
 describe('record value paths', () => {
@@ -41,28 +41,25 @@ describe('record value paths', () => {
 describe('relation display bindings', () => {
   class DemoResource extends Resource {
     static override slug = 'products';
-    static override form() {
-      return form((f) => {
-        f.schema([
-          Select.make('companyId').relationship('companies', 'name'),
-          CheckboxList.make('categoryIds').relationship('categories', 'name'),
-        ]);
-      });
+    static override form(form: FormBuilder) {
+      form.schema([
+        Select.make('companyId').relationship('companies', 'name'),
+        CheckboxList.make('categoryIds').relationship('categories', 'name'),
+      ]);
+      return form
     }
-    static override table() {
-      return table((t) => {
-        t.schema([TextColumn.make('company.name'), TextColumn.make('categories.name')]);
-      });
+    static override table(table: TableBuilder) {
+      table.schema([TextColumn.make('company.name'), TextColumn.make('categories.name')]);
+      return table
     }
-    static override infolist() {
-      return infolist((i) => {
-        i.schema([
-          Section.make('Main').schema([
-            TextEntry.make('company.name'),
-            TextEntry.make('categories.name').badge(),
-          ]),
-        ]);
-      });
+    static override infolist(infolist: InfolistBuilder) {
+      infolist.schema([
+        Section.make('Main').schema([
+          TextEntry.make('company.name'),
+          TextEntry.make('categories.name').badge(),
+        ]),
+      ]);
+      return infolist
     }
   }
 

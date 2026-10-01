@@ -1,8 +1,8 @@
 import {
+  FormBuilder,
+  TableBuilder,
+  InfolistBuilder,
   Resource,
-  form,
-  table,
-  infolist,
   Section,
   TextInput,
   Textarea,
@@ -20,39 +20,36 @@ export default class CategoryResource extends Resource {
   static override navigationGroup = 'Content'
   static override navigationSort = 12
 
-  static override form() {
-    return form((f) => {
-      f.schema([
-        Section.make('Category')
-          .schema([
-            TextInput.make('name').required().unique().searchable().live(),
-            TextInput.make('slug').helperText('Optional URL slug.'),
-            Textarea.make('description').rows(3).columnSpanFull(),
-          ]),
-      ])
-    })
+  static override form(form: FormBuilder) {
+    form.schema([
+      Section.make('Category')
+        .schema([
+          TextInput.make('name').required().unique().searchable().live(),
+          TextInput.make('slug').helperText('Optional URL slug.'),
+          Textarea.make('description').rows(3).columnSpanFull(),
+        ]),
+    ])
+    return form
   }
 
-  static override table() {
-    return table((t) => {
-      t.defaultSort('name', 'asc').schema([
-        TextColumn.make('name').searchable().sortable(),
-        TextColumn.make('slug').searchable(),
-      ])
-    })
+  static override table(table: TableBuilder) {
+    table.defaultSort('name', 'asc').schema([
+      TextColumn.make('name').searchable().sortable(),
+      TextColumn.make('slug').searchable(),
+    ])
+    return table
   }
 
-  static override infolist() {
-    return infolist((i) => {
-      i.schema([
-        Section.make('Category')
-          .columns(2)
-          .schema([
-            TextEntry.make('name'),
-            TextEntry.make('slug'),
-            TextEntry.make('description').columnSpanFull(),
-          ]),
-      ])
-    })
+  static override infolist(infolist: InfolistBuilder) {
+    infolist.schema([
+      Section.make('Category')
+        .columns(2)
+        .schema([
+          TextEntry.make('name'),
+          TextEntry.make('slug'),
+          TextEntry.make('description').columnSpanFull(),
+        ]),
+    ])
+    return infolist
   }
 }

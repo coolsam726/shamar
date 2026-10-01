@@ -1,8 +1,8 @@
 import {
+  FormBuilder,
+  TableBuilder,
+  InfolistBuilder,
   Resource,
-  form,
-  table,
-  infolist,
   Section,
   Callout,
   TextInput,
@@ -28,46 +28,43 @@ export default class LockedItemResource extends Resource {
   static override navigationSort = 20
   static override policy = LockedItemPolicy
 
-  static override form() {
-    return form((f) => {
-      f.schema([
-        Callout.make('Policy demo')
-          .danger()
-          .description('When Locked is on, edit and delete are denied by LockedItemPolicy.'),
-        Section.make('Item')
-          .columns(2)
-          .schema([
-            TextInput.make('title').required().searchable().columnSpanFull(),
-            TextInput.make('ownerEmail').email().autocomplete('email'),
-            Toggle.make('locked').inline().helperText('Locks the record against edit/delete.'),
-            Textarea.make('notes').rows(3).columnSpanFull().maxLength(1000),
-          ]),
-      ])
-    })
+  static override form(form: FormBuilder) {
+    form.schema([
+      Callout.make('Policy demo')
+        .danger()
+        .description('When Locked is on, edit and delete are denied by LockedItemPolicy.'),
+      Section.make('Item')
+        .columns(2)
+        .schema([
+          TextInput.make('title').required().searchable().columnSpanFull(),
+          TextInput.make('ownerEmail').email().autocomplete('email'),
+          Toggle.make('locked').inline().helperText('Locks the record against edit/delete.'),
+          Textarea.make('notes').rows(3).columnSpanFull().maxLength(1000),
+        ]),
+    ])
+    return form
   }
 
-  static override table() {
-    return table((t) => {
-      t.schema([
-        TextColumn.make('title').searchable().sortable(),
-        TextColumn.make('ownerEmail').email().searchable(),
-        TextColumn.make('locked').toggle(),
-      ])
-    })
+  static override table(table: TableBuilder) {
+    table.schema([
+      TextColumn.make('title').searchable().sortable(),
+      TextColumn.make('ownerEmail').email().searchable(),
+      TextColumn.make('locked').toggle(),
+    ])
+    return table
   }
 
-  static override infolist() {
-    return infolist((i) => {
-      i.schema([
-        Section.make('Item')
-          .columns(2)
-          .schema([
-            TextEntry.make('title').columnSpanFull(),
-            TextEntry.make('ownerEmail').email(),
-            IconEntry.make('locked').boolean().icon('🔒').falseIcon('🔓'),
-            TextEntry.make('notes').columnSpanFull(),
-          ]),
-      ])
-    })
+  static override infolist(infolist: InfolistBuilder) {
+    infolist.schema([
+      Section.make('Item')
+        .columns(2)
+        .schema([
+          TextEntry.make('title').columnSpanFull(),
+          TextEntry.make('ownerEmail').email(),
+          IconEntry.make('locked').boolean().icon('🔒').falseIcon('🔓'),
+          TextEntry.make('notes').columnSpanFull(),
+        ]),
+    ])
+    return infolist
   }
 }

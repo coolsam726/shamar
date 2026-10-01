@@ -1,8 +1,8 @@
 import {
+  FormBuilder,
+  TableBuilder,
+  InfolistBuilder,
   Resource,
-  form,
-  table,
-  infolist,
   Section,
   Wizard,
   Step,
@@ -27,81 +27,78 @@ export default class EventResource extends Resource {
   static override navigationGroup = 'Content'
   static override navigationSort = 20
 
-  static override form() {
-    return form((f) => {
-      f.schema([
-        Callout.make('Scheduling')
-          .warning()
-          .description('Use the wizard steps to capture timing, capacity, and status.'),
-        Wizard.make([
-          Step.make('Basics').schema([
-            TextInput.make('title').required().searchable().maxLength(120),
-            TextInput.make('venue').placeholder('Venue or URL').datalist([
-              'Main Hall',
-              'Conference Room A',
-              'Virtual — Zoom',
-            ]),
-          ]),
-          Step.make('Schedule').schema([
-            DateTimePicker.make('startsAt').required(),
-            DateTimePicker.make('endsAt'),
-          ]),
-          Step.make('Capacity').schema([
-            TextInput.make('capacity')
-              .integer()
-              .min(1)
-              .max(5000)
-              .live({ debounce: '400ms' })
-              .afterStateUpdated(({ get, set }) => {
-                const cap = Number(get('capacity') ?? 0)
-                set(
-                  'waitlistHint',
-                  cap > 0 && cap < 50 ? 'Small room — enable waitlist.' : 'Standard capacity.',
-                )
-              })
-              .helperText('Changing capacity updates the waitlist hint.'),
-            TextInput.make('waitlistHint').readonly().dehydrated(false).label('Hint'),
-            Radio.make('status')
-              .options([
-                { label: 'Draft', value: 'draft' },
-                { label: 'Published', value: 'published' },
-                { label: 'Cancelled', value: 'cancelled' },
-              ])
-              .inline()
-              .default('draft'),
+  static override form(form: FormBuilder) {
+    form.schema([
+      Callout.make('Scheduling')
+        .warning()
+        .description('Use the wizard steps to capture timing, capacity, and status.'),
+      Wizard.make([
+        Step.make('Basics').schema([
+          TextInput.make('title').required().searchable().maxLength(120),
+          TextInput.make('venue').placeholder('Venue or URL').datalist([
+            'Main Hall',
+            'Conference Room A',
+            'Virtual — Zoom',
           ]),
         ]),
-      ])
-    })
+        Step.make('Schedule').schema([
+          DateTimePicker.make('startsAt').required(),
+          DateTimePicker.make('endsAt'),
+        ]),
+        Step.make('Capacity').schema([
+          TextInput.make('capacity')
+            .integer()
+            .min(1)
+            .max(5000)
+            .live({ debounce: '400ms' })
+            .afterStateUpdated(({ get, set }) => {
+              const cap = Number(get('capacity') ?? 0)
+              set(
+                'waitlistHint',
+                cap > 0 && cap < 50 ? 'Small room — enable waitlist.' : 'Standard capacity.',
+              )
+            })
+            .helperText('Changing capacity updates the waitlist hint.'),
+          TextInput.make('waitlistHint').readonly().dehydrated(false).label('Hint'),
+          Radio.make('status')
+            .options([
+              { label: 'Draft', value: 'draft' },
+              { label: 'Published', value: 'published' },
+              { label: 'Cancelled', value: 'cancelled' },
+            ])
+            .inline()
+            .default('draft'),
+        ]),
+      ]),
+    ])
+    return form
   }
 
-  static override table() {
-    return table((t) => {
-      t.defaultSort('startsAt', 'desc').schema([
-        TextColumn.make('title').searchable().sortable(),
-        TextColumn.make('startsAt').dateTime().sortable(),
-        TextColumn.make('endsAt').dateTime(),
-        TextColumn.make('capacity').sortable(),
-        TextColumn.make('status').badge(),
-        TextColumn.make('venue').searchable(),
-      ])
-    })
+  static override table(table: TableBuilder) {
+    table.defaultSort('startsAt', 'desc').schema([
+      TextColumn.make('title').searchable().sortable(),
+      TextColumn.make('startsAt').dateTime().sortable(),
+      TextColumn.make('endsAt').dateTime(),
+      TextColumn.make('capacity').sortable(),
+      TextColumn.make('status').badge(),
+      TextColumn.make('venue').searchable(),
+    ])
+    return table
   }
 
-  static override infolist() {
-    return infolist((i) => {
-      i.schema([
-        Section.make('Event')
-          .columns(2)
-          .schema([
-            TextEntry.make('title').columnSpanFull(),
-            TextEntry.make('startsAt').dateTime(),
-            TextEntry.make('endsAt').dateTime(),
-            TextEntry.make('capacity'),
-            TextEntry.make('status').badge(),
-            TextEntry.make('venue').columnSpanFull(),
-          ]),
-      ])
-    })
+  static override infolist(infolist: InfolistBuilder) {
+    infolist.schema([
+      Section.make('Event')
+        .columns(2)
+        .schema([
+          TextEntry.make('title').columnSpanFull(),
+          TextEntry.make('startsAt').dateTime(),
+          TextEntry.make('endsAt').dateTime(),
+          TextEntry.make('capacity'),
+          TextEntry.make('status').badge(),
+          TextEntry.make('venue').columnSpanFull(),
+        ]),
+    ])
+    return infolist
   }
 }

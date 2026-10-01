@@ -20,14 +20,13 @@ This page is the table itself. Column types and modifiers are the child pages, s
 />
 
 ```ts
-static table() {
-  return table((t) => {
-    t.defaultSort('name', 'asc')
-    t.defaultFilters([{ field: 'resolved', value: false, label: 'Resolved: No' }])
-    t.schema([
+static table(table: TableBuilder) {
+  return table
+    .defaultSort('name', 'asc')
+    .defaultFilters([{ field: 'resolved', value: false, label: 'Resolved: No' }])
+    .schema([
       TextColumn.make('name').searchable().sortable(),
     ])
-  })
 }
 ```
 

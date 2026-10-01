@@ -1,6 +1,6 @@
 import {
+  TableBuilder,
   ListPage,
-  table,
   TextColumn,
 } from '@shamar/core'
 import Product from '#models/product'
@@ -18,16 +18,15 @@ export default class ProductCatalogPage extends ListPage {
   static override recordTitleField = 'name'
   static override defaultPerPage = 20
 
-  static override table() {
-    return table((t) => {
-      t.defaultSort('name', 'asc')
-      t.schema([
-        TextColumn.make('sku').label('SKU').searchable().sortable(),
-        TextColumn.make('name').searchable().sortable(),
-        TextColumn.make('price').currency('USD').sortable(),
-        TextColumn.make('stock').sortable(),
-        TextColumn.make('featured').boolean().label('Featured'),
-      ])
-    })
+  static override table(table: TableBuilder) {
+    table.defaultSort('name', 'asc')
+    table.schema([
+      TextColumn.make('sku').label('SKU').searchable().sortable(),
+      TextColumn.make('name').searchable().sortable(),
+      TextColumn.make('price').currency('USD').sortable(),
+      TextColumn.make('stock').sortable(),
+      TextColumn.make('featured').boolean().label('Featured'),
+    ])
+    return table
   }
 }

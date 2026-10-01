@@ -93,7 +93,7 @@ export default defineConfig({
 
 ```ts
 // app/resources/admin/product_resource.ts
-import { Resource, form, table, TextInput, TextColumn } from '@shamar/core'
+import { Resource, TextInput, TextColumn } from '@shamar/core'
 import Product from '#models/product'
 
 export default class ProductResource extends Resource {
@@ -101,22 +101,18 @@ export default class ProductResource extends Resource {
   static slug = 'products'
   static label = 'Products'
 
-  static form() {
-    return form((f) => {
-      f.schema([
-        TextInput.make('name').required(),
-        TextInput.make('sku').required().unique(),
-      ])
-    })
+  static form(form) {
+    return form.schema([
+      TextInput.make('name').required(),
+      TextInput.make('sku').required().unique(),
+    ])
   }
 
-  static table() {
-    return table((t) => {
-      t.schema([
-        TextColumn.make('name').sortable().searchable(),
-        TextColumn.make('sku').sortable().searchable(),
-      ])
-    })
+  static table(table) {
+    return table.schema([
+      TextColumn.make('name').sortable().searchable(),
+      TextColumn.make('sku').sortable().searchable(),
+    ])
   }
 }
 ```
@@ -184,17 +180,15 @@ Custom panel pages live beside resources. Discover them with `.discoverPages('ap
 **Single-purpose shortcuts** — `SettingsPage` (singleton settings layout), `FormPage` (generic form), and `ListPage` (one table):
 
 ```ts
-import { SettingsPage, form, Section, TextInput } from '@shamar/core'
+import { SettingsPage, Section, TextInput, type FormBuilder } from '@shamar/core'
 
 export default class BrandingSettingsPage extends SettingsPage {
   static override slug = 'settings'
   static override label = 'Settings'
   static override navigationGroup = 'Settings'
 
-  static override form() {
-    return form((f) => {
-      f.schema([Section.make('Branding').schema([TextInput.make('logo').url()])])
-    })
+  static override form(form: FormBuilder) {
+    return form.schema([Section.make('Branding').schema([TextInput.make('logo').url()])])
   }
 
   static override async fill() { /* load singleton */ return {} }
@@ -210,9 +204,6 @@ export default class BrandingSettingsPage extends SettingsPage {
 import {
   Page,
   pageContent,
-  form,
-  table,
-  infolist,
   Section,
   TextColumn,
   TextEntry,
@@ -232,7 +223,7 @@ export default class OpsDashboardPage extends Page {
 
       p.form('quick-settings', {
         title: 'Quick settings',
-        form: () => form((f) => f.schema([Select.make('theme').options([/* … */])])),
+        form: (form) => form.schema([Select.make('theme').options([/* … */])]),
         fill: async () => ({ theme: 'system' }),
         save: async (data) => ({ message: 'Saved' }),
       })
@@ -241,16 +232,14 @@ export default class OpsDashboardPage extends Page {
         title: 'Recent products',
         model: Product,
         linkResourceSlug: 'products', // row links to the resource show page
-        table: () => table((t) => t.schema([TextColumn.make('name').searchable()])),
+        table: (table) => table.schema([TextColumn.make('name').searchable()]),
       })
 
       p.infolist('environment', {
         title: 'Environment',
         record: () => ({ nodeEnv: process.env.NODE_ENV }),
-        infolist: () =>
-          infolist((i) => {
-            i.schema([Section.make('Runtime').schema([TextEntry.make('nodeEnv')])])
-          }),
+        infolist: (infolist) =>
+          infolist.schema([Section.make('Runtime').schema([TextEntry.make('nodeEnv')])]),
       })
     })
   }
