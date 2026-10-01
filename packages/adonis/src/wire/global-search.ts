@@ -1,4 +1,3 @@
-import { randomBytes } from 'node:crypto';
 import {
   WireKernel,
   escapeHtml,
@@ -11,6 +10,8 @@ import type { PanelRuntime } from '../runtime.js';
 import type { Authorizer } from '@shamar/cherubim';
 import { canViewResource } from '../shamar/auth.js';
 import { recordTitle } from '../shamar/list-query.js';
+import { panelWireSecret } from './secret.js';
+import { panelPathPrefix } from '../shamar/paths.js';
 
 export interface GlobalSearchHit {
   label: string;
@@ -18,7 +19,14 @@ export interface GlobalSearchHit {
   group: string;
 }
 
-const secret = randomBytes(32).toString('hex');
+/**
+ * Adonis bodyparser turns `""` into `null`. Keep empty query as `null` in the
+ * signed snapshot so mount → POST round-trips verify cleanly.
+ */
+function normalizeQuery(value: unknown): string | null {
+  const text = String(value ?? '').trim();
+  return text.length > 0 ? text : null;
+}
 
 function renderSearch(component: WireComponent): string {
   const query = String(component.data.query ?? '');
@@ -44,33 +52,44 @@ function renderSearch(component: WireComponent): string {
   </div>`;
 }
 
+function emptySearchData() {
+  return { query: null as string | null, results: [] as GlobalSearchHit[] };
+}
+
 export function globalSearchKernel(
   panel: PanelRuntime,
   authorizer: Authorizer,
   authCtx: AuthorizationContext,
 ): WireKernel {
-  const endpoint = `${panel.path.replace(/\/+$/, '')}/wire`;
   const definition = {
     create(): WireComponent {
-      const component: WireComponent & { data: { query: string; results: GlobalSearchHit[] } } = {
-        data: { query: '', results: [] },
+      const component: WireComponent & {
+        data: { query: string | null; results: GlobalSearchHit[] };
+      } = {
+        data: emptySearchData(),
         async updated(key) {
           if (key !== 'query') return;
-          component.data.results = await searchPanel(panel, authorizer, authCtx, component.data.query);
+          component.data.query = normalizeQuery(component.data.query);
+          component.data.results = await searchPanel(
+            panel,
+            authorizer,
+            authCtx,
+            component.data.query ?? '',
+          );
         },
       };
       return component;
     },
     render: renderSearch,
   };
-  return new WireKernel(secret, { 'global-search': definition });
+  return new WireKernel(panelWireSecret(), { 'global-search': definition });
 }
 
 export function mountGlobalSearch(basePath: string): string {
   const endpoint = `${basePath.replace(/\/+$/, '')}/wire`;
-  const kernel = new WireKernel(secret, {
+  const kernel = new WireKernel(panelWireSecret(), {
     'global-search': {
-      create: () => ({ data: { query: '', results: [] } }),
+      create: () => ({ data: emptySearchData() }),
       render: renderSearch,
     },
   });
@@ -83,7 +102,7 @@ export async function updateGlobalSearch(
   authCtx: AuthorizationContext,
   request: WireRequest,
 ) {
-  const endpoint = `${panel.path.replace(/\/+$/, '')}/wire`;
+  const endpoint = `${panelPathPrefix(panel.path)}/wire`;
   const kernel = globalSearchKernel(panel, authorizer, authCtx);
   return kernel.update(request, endpoint);
 }
@@ -96,7 +115,7 @@ async function searchPanel(
 ): Promise<GlobalSearchHit[]> {
   const q = rawQuery.trim();
   if (q.length < 1) return [];
-  const basePath = panel.path.replace(/\/+$/, '');
+  const basePath = panelPathPrefix(panel.path);
   const hits: GlobalSearchHit[] = [];
   for (const meta of searchableResources(panel)) {
     if (!canViewResource(authorizer, authCtx, panel.registry, meta.slug)) continue;

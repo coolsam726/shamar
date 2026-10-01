@@ -57,6 +57,12 @@ export default class TicketResource extends Resource {
       .ability('viewAny')
       .confirm('Download a CSV export of all tickets? (Demo — no file is generated.)')
     actions
+      .header('notifyMe', 'Test notification')
+      .color('accent')
+      .icon('bell')
+      .ability('viewAny')
+      .confirm('Push a sample notification to your bell?')
+    actions
       .bulk('resolve', 'Resolve selected')
       .color('primary')
       .icon('check')
@@ -135,9 +141,23 @@ export default class TicketResource extends Resource {
     records: Record<string, unknown>[],
     ctx: HandleActionContext,
   ): Promise<HandleActionResult | null> {
+    if (action === 'notifyMe') {
+      return {
+        message: 'Test notification sent.',
+        notification: {
+          title: 'Tickets · test notification',
+          body: 'Custom actions can push to the topbar bell for the signed-in user.',
+        },
+      }
+    }
+
     if (action === 'export') {
       return {
         message: `CSV export queued for ${await Ticket.countDocuments()} ticket(s) (demo).`,
+        notification: {
+          title: 'Export queued',
+          body: 'Your ticket CSV export is ready (demo — no file is generated).',
+        },
       }
     }
 
@@ -162,17 +182,24 @@ export default class TicketResource extends Resource {
     }
 
     if (action === 'escalate') {
+      const message =
+        changed === 1
+          ? 'Ticket escalated to urgent.'
+          : `${changed} ticket(s) escalated to urgent.`
       return {
-        message:
-          changed === 1
-            ? 'Ticket escalated to urgent.'
-            : `${changed} ticket(s) escalated to urgent.`,
+        message,
+        notification: {
+          title: message,
+          body: changed === 1 ? String(records[0]?.subject ?? '') : undefined,
+        },
       }
     }
 
+    const message =
+      changed === 1 ? 'Ticket marked resolved.' : `${changed} ticket(s) marked resolved.`
     return {
-      message:
-        changed === 1 ? 'Ticket marked resolved.' : `${changed} ticket(s) marked resolved.`,
+      message,
+      notification: true,
     }
   }
 }
