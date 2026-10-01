@@ -10,7 +10,7 @@
     </svg>
   </button>
 
-  <div class="shamar-topbar__menu flex-1 min-w-0 overflow-hidden">
+  <div class="shamar-topbar__menu flex-1 min-w-0 overflow-hidden" data-wire-sync="topbar-menu">
     <nav
       class="shamar-app-menu flex-1 min-w-0"
       aria-label="{{ menuActiveRoot ? `${menuActiveRoot.label} menu` : 'App menu' }}"
@@ -49,22 +49,24 @@
               class="min-w-[10rem] shamar-card rounded-xl shadow-lg py-1"
             >
               @each(child in item.children)
-                <a href="{{ child.href }}" class="shamar-topbar-menu-item block px-3 py-1.5 text-sm whitespace-nowrap {{ child.active ? 'is-active' : '' }}">{{ child.label }}</a>
+                <a href="{{ child.href }}" wire:navigate class="shamar-topbar-menu-item block px-3 py-1.5 text-sm whitespace-nowrap {{ child.active ? 'is-active' : '' }}">{{ child.label }}</a>
               @endeach
             </div>
           </div>
         @else
-          <a href="{{ item.href }}" class="shamar-topbar-link shrink-0 px-2.5 py-1.5 rounded-md text-sm whitespace-nowrap {{ item.active ? 'is-active' : '' }}">{{ item.label }}</a>
+          <a href="{{ item.href }}" wire:navigate class="shamar-topbar-link shrink-0 px-2.5 py-1.5 rounded-md text-sm whitespace-nowrap {{ item.active ? 'is-active' : '' }}">{{ item.label }}</a>
         @endif
       @endeach
     </nav>
   </div>
 
-  @if(menuActiveRoot && menuActiveRoot.label !== 'Dashboard')
-    <p class="md:hidden flex-1 min-w-0 text-sm font-semibold text-heading truncate px-0.5">{{ menuActiveRoot.label }}</p>
-  @else
-    <div class="md:hidden flex-1 min-w-0" aria-hidden="true"></div>
-  @endif
+  <div data-wire-sync="topbar-mobile-title" class="md:contents">
+    @if(menuActiveRoot && menuActiveRoot.label !== 'Dashboard')
+      <p class="md:hidden flex-1 min-w-0 text-sm font-semibold text-heading truncate px-0.5">{{ menuActiveRoot.label }}</p>
+    @else
+      <div class="md:hidden flex-1 min-w-0" aria-hidden="true"></div>
+    @endif
+  </div>
 
   <div class="shamar-topbar__tools flex items-center gap-2 min-w-0">
     {{{ globalSearchHtml }}}

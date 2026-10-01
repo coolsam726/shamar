@@ -34,7 +34,11 @@
     </button>
   </div>
 
-  <nav class="shamar-sidebar__roots flex-1 px-2 py-3 space-y-0.5 overflow-y-auto" aria-label="Applications">
+  <nav
+    class="shamar-sidebar__roots flex-1 px-2 py-3 space-y-0.5 overflow-y-auto"
+    aria-label="Applications"
+    data-wire-sync="sidebar-roots"
+  >
     @each(root in menuRoots)
       <a
         href="{{ root.href }}"
