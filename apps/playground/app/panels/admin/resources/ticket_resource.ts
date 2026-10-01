@@ -13,11 +13,13 @@ import {
   TextColumn,
   TextEntry,
   IconEntry,
+  type HandleActionContext,
+  type HandleActionResult,
 } from '@shamar/core'
 import Ticket from '#models/ticket'
 
 /**
- * Demos: custom unique message, table dateTime + badge, custom resourceActions.
+ * Demos: custom unique message, table dateTime + badge, modal (confirm) quick actions.
  */
 export default class TicketResource extends Resource {
   static override model = Ticket
@@ -34,8 +36,32 @@ export default class TicketResource extends Resource {
     actions.edit()
     actions.delete().confirm('Delete this ticket permanently?')
     actions.bulkDelete('Delete selected tickets').confirm('Delete all selected tickets?')
-    actions.row('escalate', 'Escalate').color('accent').icon('arrow-up')
-    actions.header('export', 'Export CSV').color('gray').icon('download')
+    actions
+      .row('escalate', 'Escalate')
+      .color('accent')
+      .icon('arrow-up')
+      .ability('edit')
+      .ungrouped()
+      .confirm('Escalate this ticket to urgent priority?')
+    actions
+      .row('resolve', 'Mark resolved')
+      .color('primary')
+      .icon('check')
+      .ability('edit')
+      .ungrouped()
+      .confirm('Mark this ticket as resolved?')
+    actions
+      .header('export', 'Export CSV')
+      .color('gray')
+      .icon('download')
+      .ability('viewAny')
+      .confirm('Download a CSV export of all tickets? (Demo — no file is generated.)')
+    actions
+      .bulk('resolve', 'Resolve selected')
+      .color('primary')
+      .icon('check')
+      .ability('edit')
+      .confirm('Mark all selected tickets as resolved?')
     return actions
   }
 
@@ -102,5 +128,51 @@ export default class TicketResource extends Resource {
         ]),
     ])
     return infolist
+  }
+
+  static override async handleAction(
+    action: string,
+    records: Record<string, unknown>[],
+    ctx: HandleActionContext,
+  ): Promise<HandleActionResult | null> {
+    if (action === 'export') {
+      return {
+        message: `CSV export queued for ${await Ticket.countDocuments()} ticket(s) (demo).`,
+      }
+    }
+
+    if (action !== 'escalate' && action !== 'resolve') {
+      return null
+    }
+
+    let changed = 0
+    for (const record of records) {
+      const id = String(record.id ?? record._id ?? '')
+      if (!id) continue
+
+      if (action === 'escalate') {
+        if (String(record.priority ?? '') === 'urgent') continue
+        await ctx.adapter.update(ctx.meta, id, { priority: 'urgent' })
+        changed += 1
+      } else {
+        if (record.resolved === true || record.resolved === 'true') continue
+        await ctx.adapter.update(ctx.meta, id, { resolved: true })
+        changed += 1
+      }
+    }
+
+    if (action === 'escalate') {
+      return {
+        message:
+          changed === 1
+            ? 'Ticket escalated to urgent.'
+            : `${changed} ticket(s) escalated to urgent.`,
+      }
+    }
+
+    return {
+      message:
+        changed === 1 ? 'Ticket marked resolved.' : `${changed} ticket(s) marked resolved.`,
+    }
   }
 }

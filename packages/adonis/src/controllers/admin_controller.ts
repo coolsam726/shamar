@@ -430,6 +430,9 @@ export class AdminController {
       groupLockedEmpty: hasGroupByParam && !displayGroupBy,
       bulkActions: resourceActionsFor(meta, 'bulk', policy),
       rowActions: resourceActionsFor(meta, 'row', policy),
+      headerActions: resourceActionsFor(meta, 'header', policy).filter(
+        (action) => action.name !== 'create',
+      ),
       softDeleteField: this.softDeleteField(meta),
     });
   }
@@ -2618,6 +2621,10 @@ export class AdminController {
   }
 
   async pageAction(ctx: ShamarHttpContext) {
+    if (this.registry.get(ctx.params.slug)) {
+      return this.collectionAction(ctx);
+    }
+
     const page = this.pages.require(ctx.params.slug);
     const authResult = await this.ensurePageAccess(ctx, page);
     if (!this.isAuthContext(authResult)) return authResult;
@@ -2641,5 +2648,20 @@ export class AdminController {
       ctx.session.flash('success', result.message);
     }
     return ctx.response.redirect(result.redirectTo ?? `${this.basePath}/${page.slug}`);
+  }
+
+  /** POST /:slug/action/:action — collection-level resource header action (no record id). */
+  private async collectionAction(ctx: ShamarHttpContext) {
+    const meta = this.requireResource(ctx);
+    const action = String(ctx.params.action ?? '').trim();
+    if (!action) {
+      return ctx.response.badRequest({ message: 'Missing action.' });
+    }
+
+    const authGate = this.actionAuthGate(meta, action);
+    const authResult = await this.ensureResourceAction(ctx, meta, authGate, undefined);
+    if (!this.isAuthContext(authResult)) return authResult;
+
+    return this.runCustomAction(ctx, meta, authResult, action, [], authGate);
   }
 }

@@ -54,6 +54,16 @@
         @endeach
       @endif
 
+      @if(headerActions && headerActions.length)
+        @each(action in headerActions)
+          <button
+            type="button"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md border border-default text-body hover:bg-surface-hover transition {{ action.color === 'danger' ? 'text-fg-danger' : '' }}"
+            @click="$dispatch('shamar-open-confirm', { variant: {{ jsonAttr(action.color === 'danger' ? 'danger' : 'primary') }}, mode: 'confirm', title: {{ jsonAttr(action.label) }}, message: {{ jsonAttr(action.confirm || 'Are you sure?') }}, confirmLabel: {{ jsonAttr(action.label) }}, action: '{{ basePath }}/{{ resource.slug }}/action/{{ action.name }}' })"
+          >{{ action.label }}</button>
+        @endeach
+      @endif
+
       @if(showCreateButton)
         <a href="{{ basePath }}/{{ resource.slug }}/create" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-md bg-fg-brand hover:opacity-90 transition-opacity">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">

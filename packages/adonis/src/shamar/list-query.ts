@@ -3,6 +3,7 @@ import {
   DEFAULT_LIST_PER_PAGE,
   formatCurrencyValue,
   getRecordValue,
+  humanizeLabel,
   hydrateField,
   parseDateValue,
   parseCurrencyInput,
@@ -737,7 +738,7 @@ function entryToDetailField(entry: {
   return {
     name: entry.name,
     type: entry.type,
-    label: entry.label ?? entry.name,
+    label: entry.label ?? humanizeLabel(entry.name),
     help: entry.help,
     hint: entry.hint,
     columnSpan: entry.columnSpan,

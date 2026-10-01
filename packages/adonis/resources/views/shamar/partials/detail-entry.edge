@@ -3,7 +3,7 @@
   style="{{ resolveGridItemStyle(field, 2) }}"
 >
   <div class="shamar-detail__label-row">
-    <div class="shamar-detail__label">{{ field.label ?? field.name }}</div>
+    <div class="shamar-detail__label">{{ field.label ?? humanizeLabel(field.name) }}</div>
     @if(field.hint)
       <span class="shamar-field__hint">{{ field.hint }}</span>
     @endif
@@ -21,7 +21,7 @@
       </span>
     @elseif(field.type === 'image')
       @if(record[field.name])
-        <img src="{{ record[field.name] }}" alt="{{ field.label ?? field.name }}" class="shamar-image-entry" />
+        <img src="{{ record[field.name] }}" alt="{{ field.label ?? humanizeLabel(field.name) }}" class="shamar-image-entry" />
       @else
         —
       @endif

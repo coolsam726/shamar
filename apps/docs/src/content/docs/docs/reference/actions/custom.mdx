@@ -5,19 +5,26 @@ description: handleAction and page-level actions.
 
 ```ts
 static resourceActions(actions: ActionBuilder) {
-  actions.row('escalate', 'Escalate').color('accent').icon('arrow-up')
-  actions.header('export', 'Export CSV')
+  actions
+    .row('escalate', 'Escalate')
+    .color('accent')
+    .ability('edit')
+    .ungrouped()
+    .confirm('Escalate this ticket to urgent priority?')
+  actions.header('export', 'Export CSV').confirm('Download a CSV export?')
   return actions
 }
 
-static override async handleAction(name, ctx) {
+static override async handleAction(name, records, ctx) {
   if (name === 'escalate') {
-    // mutate record, flash message
-    return { redirect: ctx.backUrl }
+    for (const record of records) {
+      await ctx.adapter.update(ctx.meta, String(record.id), { priority: 'urgent' })
+    }
+    return { message: 'Ticket escalated to urgent.' }
   }
 }
 ```
 
-**Playground:** Tickets — escalate row action + export header; API keys — revoke/reactivate.
+**Playground:** Tickets — Escalate / Mark resolved (confirm modals) + Export CSV header + Resolve selected bulk; API keys — revoke/reactivate.
 
 Pages use `headerActions()` and `handleAction()` with the same action builder API.
