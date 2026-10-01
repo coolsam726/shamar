@@ -2,3 +2,7 @@
 name = "shamar"
 compatibility_date = "2026-08-01"
 pages_build_output_dir = "dist"
+
+# Required by Workers Builds / Worker Previews (branch deploys).
+# Empty is fine: this site is static and has no bindings or secrets.
+[previews]
