@@ -89,18 +89,18 @@ describe('wire:navigate', () => {
     assert.equal(window.__once, 1);
   });
 
-  it('morphs only the shared scroll region', async () => {
+  it('morphs only the shared scroll region and syncs data-wire-sync chrome', async () => {
     const window = boot(
       documentOf(
         'One',
-        '<aside id="stay">sidebar</aside><main data-shamar-scroll-root><p id="page">one</p></main><a id="go" href="/two" wire:navigate.no-prefetch>Two</a>',
+        '<aside><nav data-wire-sync="sidebar-roots"><a class="nav-item nav-active" href="/one">One</a></nav></aside><main data-shamar-scroll-root><p id="page">one</p></main><a id="go" href="/two" wire:navigate.no-prefetch>Two</a>',
       ),
     );
     window.fetch = async () =>
       htmlResponse(
         documentOf(
           'Two',
-          '<aside id="stay">replaced</aside><main data-shamar-scroll-root><p id="page">two</p></main>',
+          '<aside><nav data-wire-sync="sidebar-roots"><a class="nav-item nav-active" href="/two">Two</a></nav></aside><main data-shamar-scroll-root><p id="page">two</p></main>',
         ),
       );
     const link = window.document.getElementById('go');
@@ -110,8 +110,9 @@ describe('wire:navigate', () => {
     const done = navigated(window);
     click(window, link);
     await done;
-    assert.equal(window.document.querySelector('#stay')?.textContent, 'sidebar');
     assert.equal(window.document.querySelector('#page')?.textContent, 'two');
+    assert.equal(window.document.querySelector('[data-wire-sync="sidebar-roots"] a')?.textContent, 'Two');
+    assert.equal(window.document.querySelector('[data-wire-sync="sidebar-roots"] a')?.getAttribute('href'), '/two');
   });
 
   it('shows the progress bar when the request is slow', async () => {
@@ -122,7 +123,7 @@ describe('wire:navigate', () => {
         release = resolve;
       });
     const pending = window.Wire.navigate('/slow');
-    await new Promise((resolve) => setTimeout(resolve, 180));
+    await new Promise((resolve) => setTimeout(resolve, 120));
     assert.ok(window.document.querySelector('.wire-progress.is-active'));
     release(htmlResponse(documentOf('Slow', '<p id="page">slow</p>')));
     await pending;

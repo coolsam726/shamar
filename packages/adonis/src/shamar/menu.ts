@@ -184,7 +184,7 @@ export function menuLayoutContext(
     ? buildMenuSecondary(activeGroup.items, basePath, currentSlug)
     : [];
 
-  const breadcrumbs: Breadcrumb[] = [{ label: 'Home', href: basePath }];
+  const breadcrumbs: Breadcrumb[] = [{ label: 'Home', href: basePath || '/' }];
 
   if (menuActiveRoot && menuActiveRoot.label !== 'Dashboard') {
     breadcrumbs.push({ label: menuActiveRoot.label, href: menuActiveRoot.href });

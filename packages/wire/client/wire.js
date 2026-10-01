@@ -481,7 +481,7 @@
     const show = setTimeout(() => {
       bar.classList.add('is-active');
       bar.style.width = '35%';
-    }, 150);
+    }, 80);
     const tick = setInterval(() => {
       const width = Number.parseFloat(bar.style.width) || 0;
       if (width < 90) bar.style.width = `${width + 8}%`;
@@ -609,6 +609,43 @@
     return null;
   }
 
+  /**
+   * Swap chrome that sits outside the scroll morph root (sidebar roots, topbar
+   * menu, etc.) so active nav and Alpine menus match the destination page.
+   */
+  function syncNavigateRegions(nextDoc) {
+    const updated = [];
+    for (const current of [...document.querySelectorAll('[data-wire-sync]')]) {
+      const key = current.getAttribute('data-wire-sync');
+      if (!key) continue;
+      const next = nextDoc.querySelector(`[data-wire-sync="${CSS.escape(key)}"]`);
+      if (!(next instanceof HTMLElement)) continue;
+      if (window.Alpine?.destroyTree) {
+        try {
+          window.Alpine.destroyTree(current);
+        } catch {
+          /* ignore */
+        }
+      }
+      const clone = next.cloneNode(true);
+      current.replaceWith(clone);
+      updated.push(clone);
+    }
+    return updated;
+  }
+
+  function reviveAlpine(roots) {
+    if (!window.Alpine?.initTree) return;
+    for (const root of roots) {
+      if (!(root instanceof HTMLElement)) continue;
+      try {
+        window.Alpine.initTree(root);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
   function applyScroll(mode, scrollY, url) {
     if (mode === 'preserve') return;
     if (mode === 'restore') {
@@ -671,17 +708,20 @@
         history.pushState({ wireScroll: 0 }, '', finalUrl);
       }
       mergeHead(doc);
+      const synced = syncNavigateRegions(doc);
       const region = sharedRoot(doc);
       const from = region ? region.current : document.body;
       const to = region ? region.next : doc.body;
       const kept = liftPersisted(from);
       morph(from, to, from, false);
       const restored = restorePersisted(from, kept);
-      if (window.Alpine?.initTree) {
-        for (const el of from.querySelectorAll('[wire\\:persist]')) {
-          if (!restored.includes(el)) window.Alpine.initTree(el);
-        }
+      // New morph content + synced chrome need Alpine. Restored persist nodes
+      // already have live Alpine state; only init unmatched persist placeholders.
+      const alpineRoots = [...synced, from];
+      for (const el of from.querySelectorAll('[wire\\:persist]')) {
+        if (!restored.includes(el)) alpineRoots.push(el);
       }
+      reviveAlpine(alpineRoots);
       reviveScripts(from, restored);
       applyScroll(options.scroll, options.scrollY, new URL(finalUrl, window.location.href));
       document.dispatchEvent(new CustomEvent('wire:navigated', { detail: { url: window.location.href } }));

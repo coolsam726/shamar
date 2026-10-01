@@ -401,10 +401,10 @@
     if (!root) return;
 
     const slug = root.dataset.shamarListRoot;
-    const basePath = root.dataset.shamarBasePath;
+    const basePath = root.dataset.shamarBasePath ?? '';
     const currentView = root.dataset.shamarCurrentView;
     const hasKanban = root.dataset.shamarHasKanban === 'true';
-    if (!slug || !basePath || !hasKanban) return;
+    if (!slug || !hasKanban) return;
 
     const preferred = getStoredListView(slug);
     if (preferred === currentView) return;
@@ -414,8 +414,7 @@
   }
 
   function applyListHrefs() {
-    const basePath = document.body.dataset.shamarBasePath;
-    if (!basePath) return;
+    const basePath = document.body.dataset.shamarBasePath ?? '';
 
     document.querySelectorAll('[data-shamar-list-href]').forEach((el) => {
       const slug = el.getAttribute('data-shamar-list-href');
@@ -6200,6 +6199,11 @@
     bindFormSaveShortcut();
     bindFormAutosave();
     bindRecordPagerNav();
+    bindStickyPageHeading();
+  });
+
+  document.addEventListener('wire:navigated', () => {
+    applyListHrefs();
     bindStickyPageHeading();
   });
 
