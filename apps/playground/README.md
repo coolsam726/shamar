@@ -53,7 +53,7 @@ Set `SHAMAR_DEMO_MODE=true` to enable the docs sandbox:
 - Automatic wipe every **20 minutes**
 - Login banner with shared accounts
 
-See [`.env.example`](./.env.example) and [`fly.toml`](./fly.toml) for deployment.
+See [`.env.example`](./.env.example), [`fly.toml`](./fly.toml), and the Render section in [`DEPLOY.md`](../../DEPLOY.md).
 
 ## Try next
 
@@ -64,15 +64,23 @@ See [`.env.example`](./.env.example) and [`fly.toml`](./fly.toml) for deployment
 
 ## Layout
 
+Panels are classes. The provider discovers `app/panels/*/panel.ts`. `config/shamar.ts` keeps the database, sign-in, branding, media, and REST. A class with the same id replaces a config panel.
+
 ```
 apps/playground/
-  app/resources/admin/   # Admin panel resources
-  app/resources/app/     # App panel resources
-  app/models/            # Mongoose models
-  app/auth/              # Session provider, API key store, role resolver
-  config/shamar.ts       # panels + auth wiring
-  providers/             # mongo connect + seed, RBAC boot
+  app/panels/admin/panel.ts          # path /demo, branding, discovery
+  app/panels/admin/resources/        # admin resources
+  app/panels/admin/pages/            # settings, dashboard, galleries
+  app/panels/admin/widgets/          # dashboard widgets
+  app/panels/app/panel.ts            # path /app
+  app/panels/app/resources/          # end-user resources
+  app/models/                        # Mongoose models
+  app/auth/                          # Session provider, API key store, role resolver
+  config/shamar.ts                   # orm, auth, shared branding, media, rest
+  providers/                         # mongo connect + seed, RBAC boot
 ```
+
+`node ace make:panel billing` creates `app/panels/billing/panel.ts` and discovers `app/panels/billing/resources` and `app/panels/billing/pages`.
 
 ## Deploy
 

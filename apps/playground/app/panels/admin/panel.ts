@@ -21,7 +21,7 @@ export default class AdminPanel extends PanelProvider {
       .contentMaxWidth('screen-2xl')
       .defaultPerPage(10)
       .dashboardPage(AdminDashboard)
-      .discoverResources('app/resources/admin')
-      .discoverPages('app/pages/admin')
+      .discoverResources('app/panels/admin/resources')
+      .discoverPages('app/panels/admin/pages')
   }
 }

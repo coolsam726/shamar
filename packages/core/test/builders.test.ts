@@ -141,7 +141,7 @@ describe('@shamar/core Filament-style builders', () => {
       .path('/admin')
       .branding({ name: 'Admin' })
       .contentMaxWidth('7xl')
-      .discoverResources('app/resources/admin')
+      .discoverResources('app/panels/admin/resources')
       .resources([DemoResource])
       .build();
 

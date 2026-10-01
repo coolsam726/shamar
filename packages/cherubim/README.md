@@ -51,7 +51,7 @@ export class OrderPolicy extends Policy {
   }
 }
 
-// app/resources/admin/order_resource.ts
+// app/panels/admin/resources/order_resource.ts
 export default class OrderResource extends Resource {
   static override slug = 'orders'
   static override policy = OrderPolicy

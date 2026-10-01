@@ -19,6 +19,7 @@ COPY packages/adonis/package.json ./packages/adonis/
 COPY packages/lucid/package.json ./packages/lucid/
 COPY packages/mongoose/package.json ./packages/mongoose/
 COPY packages/rest/package.json ./packages/rest/
+COPY packages/wire/package.json ./packages/wire/
 
 RUN pnpm install --frozen-lockfile
 
@@ -38,9 +39,9 @@ CMD ["pnpm", "--filter", "@shamar/playground", "dev"]
 FROM base AS production
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
-ENV PORT=3333
+# PORT comes from the host (Render, Fly, docker compose). Adonis refuses to boot without it.
 
-ARG PUBLIC_SITE_URL=https://shamar.savannabits.com
+ARG PUBLIC_SITE_URL=https://demo.shamar.dev
 ENV PUBLIC_SITE_URL=$PUBLIC_SITE_URL
 ENV PUBLIC_DEMO_URL=
 

@@ -25,7 +25,7 @@ pnpm add @shamar/adonis @adonisjs/lucid
 export default defineConfig({
   orm: 'lucid',
   panels: [
-    panel('admin').path('/admin').discoverResources('app/resources/admin'),
+    panel('admin').path('/admin').discoverResources('app/panels/admin/resources'),
   ],
 })
 ```
