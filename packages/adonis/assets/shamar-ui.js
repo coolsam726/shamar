@@ -2616,7 +2616,8 @@
   function shamarMediaApiBase(override) {
     const explicit = String(override ?? '').trim().replace(/\/+$/, '');
     if (explicit) return explicit;
-    const base = document.body?.dataset?.shamarBasePath?.replace(/\/+$/, '') || '/admin';
+    // Empty panel base path means the panel mounts at `/` → `/media`.
+    const base = String(document.body?.dataset?.shamarBasePath ?? '').replace(/\/+$/, '');
     return `${base}/media`;
   }
 
@@ -3741,7 +3742,7 @@
 
   function createShamarMediaManager(cfg = {}) {
     return {
-      apiBase: cfg.apiBase || '/admin/media',
+      apiBase: shamarMediaApiBase(cfg.apiBase),
       folderId: cfg.folderId ?? null,
       folders: Array.isArray(cfg.folders) ? cfg.folders : [],
       folderTree: Array.isArray(cfg.folderTree) ? cfg.folderTree : [],

@@ -12,7 +12,7 @@ export function resolveMediaFileUrl(
   file: Pick<MediaFile, 'id' | 'visibility'>,
   options: { panelBasePath: string; publicPath?: string },
 ): string {
-  const panelBase = options.panelBasePath.replace(/\/+$/, '') || '/admin';
+  const panelBase = options.panelBasePath.replace(/\/+$/, '');
   const publicBase = (options.publicPath ?? '/media').replace(/\/+$/, '') || '/media';
   if (normalizeMediaVisibility(file.visibility) === 'public') {
     return `${publicBase}/${file.id}`;
