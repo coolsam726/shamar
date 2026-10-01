@@ -2,6 +2,9 @@
 import SiteNav from '../components/SiteNav.astro';
 import DemoCredentials from '../components/DemoCredentials.astro';
 import Lightbox from '../components/Lightbox.astro';
+import { demoHref } from '../lib/demo-url';
+
+const demoHome = demoHref('/');
 
 const gallery = [
   {
@@ -95,7 +98,7 @@ const gallery = [
           </p>
           <div class="landing__ctas" data-reveal>
             <a class="btn btn--primary" href="/docs/guides/introduction/">Read the docs</a>
-            <a class="btn btn--ghost" href="/demo">Open live demo</a>
+            <a class="btn btn--ghost" href={demoHome} target="_blank" rel="noopener noreferrer">Open live demo</a>
             <a class="btn btn--text" href="/docs/guides/first-resource/">See examples</a>
           </div>
           <ul class="landing__pills" data-reveal aria-label="Highlights">

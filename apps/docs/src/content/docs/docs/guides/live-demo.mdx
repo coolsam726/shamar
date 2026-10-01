@@ -10,7 +10,7 @@ The live demo is a Shamar panel that is already running, with data that is alrea
 
 It is the same software as an installed panel. The playground happens to store those records in MongoDB. Your app can use MongoDB or SQL. The screens you see here are not a mockup of a different product.
 
-The product site and admin panel share one server. Open **`/demo`** for the live panel (sign in at `/login`).
+The live panel is on a separate host: **[demo.shamar.dev](https://demo.shamar.dev/)** (sign in at [demo.shamar.dev/login](https://demo.shamar.dev/login)).
 
 <DemoCredentials />
 
@@ -18,13 +18,13 @@ The product site and admin panel share one server. Open **`/demo`** for the live
   src="/screenshots/dashboard.png"
   darkSrc="/screenshots/dashboard-dark.png"
   alt="Live demo admin dashboard"
-  caption="Sign in with the credentials above, then explore `/demo` — products, media, settings, roles, and API keys are all seeded."
+  caption="Sign in with the credentials above, then explore demo.shamar.dev — products, media, settings, roles, and API keys are all seeded."
   wide
 />
 
 ## What you can try
 
-- Admin panel at `/demo` — products, companies, media, settings pages
+- Admin panel at [demo.shamar.dev](https://demo.shamar.dev/) — products, companies, media, settings pages
 - File manager + `FilePicker`
 - Rich editors (simple / notion / document)
 - Roles, permissions, and API keys
@@ -35,7 +35,7 @@ Every **20 minutes** the demo:
 
 1. Wipes the Mongo database
 2. Re-seeds users, catalog data, and roles
-3. Publishes a fresh `nextResetAt` on `GET /demo-status`
+3. Publishes a fresh `nextResetAt` on `GET https://demo.shamar.dev/demo-status`
 
 Sessions bound to old user ids stop working after a wipe — sign in again with the credentials above.
 

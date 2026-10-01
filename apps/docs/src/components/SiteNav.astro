@@ -4,11 +4,14 @@
  * Theme toggle uses Starlight’s `starlight-theme` + `data-theme` so preference
  * carries into `/docs/*`.
  */
+import { demoHref } from '../lib/demo-url';
+
 const pathname = Astro.url.pathname;
+const demoHome = demoHref('/');
 const links = [
   { href: '/docs/', label: 'Docs' },
   { href: '/docs/guides/first-resource/', label: 'Examples' },
-  { href: '/demo', label: 'Demo' },
+  { href: demoHome, label: 'Demo', external: true },
 ];
 ---
 
@@ -35,7 +38,12 @@ const links = [
       links.map((link) => (
         <a
           href={link.href}
-          aria-current={pathname === link.href || pathname.startsWith(link.href.replace(/\/$/, '')) ? 'page' : undefined}
+          {...(link.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+          aria-current={
+            !link.external && (pathname === link.href || pathname.startsWith(link.href.replace(/\/$/, '')))
+              ? 'page'
+              : undefined
+          }
         >
           {link.label}
         </a>
@@ -56,7 +64,7 @@ const links = [
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"></path>
       </svg>
     </button>
-    <a class="site-nav__cta" href="/demo">Try demo</a>
+    <a class="site-nav__cta" href={demoHome} target="_blank" rel="noopener noreferrer">Try demo</a>
   </div>
 </header>
 

@@ -260,7 +260,7 @@ Section.make('Catalog').columns(2).schema([
 | \`Callout\` | info / success / warning / danger |
 | \`Group\` / \`Flex\` | Inline grouping |
 
-**Playground:** [Form components](/demo/form-components) gallery (all fields), Company (RelationTable), Settings (Tabs).
+**Playground:** [Form components](https://demo.shamar.dev/form-components) gallery (all fields), Company (RelationTable), Settings (Tabs).
 `
   )
 }

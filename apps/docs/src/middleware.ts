@@ -6,8 +6,9 @@ import { defineMiddleware } from 'astro:middleware';
  * Markdown links and screenshot `src` attributes are written as `/docs/…`
  * and `/screenshots/…`.
  *
- * `/demo` and `/login` stay on the live playground when PUBLIC_DEMO_URL is set.
- * At the domain root this middleware is a no-op.
+ * `/demo` and `/login` point at the live panel host when PUBLIC_DEMO_URL is set.
+ * Static Cloudflare deploys also run `scripts/rewrite-demo-links.mjs` after build
+ * because middleware does not run for Workers static assets.
  */
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
