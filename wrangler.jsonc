@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Cloudflare Workers (static assets) — shamar.dev (landing + docs).
+  // Lives at the monorepo root because Workers Builds runs the preview
+  // deploy after `cd` out of apps/docs (see DEPLOY.md). Keep in sync with
+  // apps/docs/wrangler.jsonc (assets path differs).
+  "name": "shamar",
+  "compatibility_date": "2026-08-01",
+  "preview_urls": true,
+  "previews": {},
+  "assets": {
+    "directory": "./apps/docs/dist"
+  }
+}
