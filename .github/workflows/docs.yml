@@ -41,4 +41,4 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build + sync into playground public
-        run: PUBLIC_SITE_URL=https://demo.shamar.dev PUBLIC_DEMO_URL= pnpm site:build
+        run: PUBLIC_SITE_URL=https://shamar.dev PUBLIC_DEMO_URL= pnpm site:build

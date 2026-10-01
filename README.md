@@ -4,7 +4,7 @@
 
 Inspired by [Filament](https://filamentphp.com/) (PHP) and architecturally aligned with [Loom](https://github.com/coolsam726/nodeweaver) (NestJS), but built natively for the latest AdonisJS stack.
 
-**Documentation + demo:** one server — `pnpm site:build` then playground. Routes: `/` landing, `/docs`, `/demo` panel. Public site: [`https://demo.shamar.dev`](https://demo.shamar.dev) on Render, DNS in Cloudflare ([`DEPLOY.md`](DEPLOY.md)).
+**Documentation + demo:** one server — `pnpm site:build` then playground. Routes: `/` landing, `/docs`, `/demo` panel. Public site: [`https://shamar.dev`](https://shamar.dev) on Render, DNS in Cloudflare ([`DEPLOY.md`](DEPLOY.md)).
 
 ## Packages
 

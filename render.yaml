@@ -1,21 +1,22 @@
-# Public site: https://demo.shamar.dev
+# Public site: https://shamar.dev
 # DNS for shamar.dev is in Cloudflare. This service runs on Render.
 # Blueprint → New from repo.
 # MongoDB is not included. Create an Atlas cluster and set MONGO_URI.
 # APP_KEY and DEMO_RESET_TOKEN are generated once and kept by Render.
 #
 # The Astro site URL is baked into the image. The Dockerfile defaults
-# PUBLIC_SITE_URL to https://demo.shamar.dev, which matches APP_URL below.
+# PUBLIC_SITE_URL to https://shamar.dev, which matches APP_URL below.
 
 services:
   - type: web
     name: shamar-playground
     runtime: docker
+    plan: free
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /health
     domains:
-      - demo.shamar.dev
+      - shamar.dev
     envVars:
       - key: NODE_ENV
         value: production
@@ -28,11 +29,11 @@ services:
       - key: SHAMAR_DEMO_MODE
         value: "true"
       - key: APP_URL
-        value: https://demo.shamar.dev
+        value: https://shamar.dev
       - key: DEMO_DOCS_ORIGIN
-        value: https://demo.shamar.dev
+        value: https://shamar.dev
       - key: PUBLIC_SITE_URL
-        value: https://demo.shamar.dev
+        value: https://shamar.dev
       - key: APP_KEY
         generateValue: true
       - key: DEMO_RESET_TOKEN

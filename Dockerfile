@@ -41,7 +41,7 @@ ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 # PORT comes from the host (Render, Fly, docker compose). Adonis refuses to boot without it.
 
-ARG PUBLIC_SITE_URL=https://demo.shamar.dev
+ARG PUBLIC_SITE_URL=https://shamar.dev
 ENV PUBLIC_SITE_URL=$PUBLIC_SITE_URL
 ENV PUBLIC_DEMO_URL=
 
