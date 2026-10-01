@@ -4,6 +4,15 @@ import { wireClientPath } from '@shamar/wire';
 
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), '../..');
 
+/**
+ * URL prefix for a panel. `/` and an empty path mount the panel at the host root.
+ */
+export function panelPathPrefix(path: string | undefined | null): string {
+  if (path == null || path === '' || path === '/') return '';
+  const withSlash = path.startsWith('/') ? path : `/${path}`;
+  return withSlash.replace(/\/+$/, '');
+}
+
 export function shamarAssetsDir(): string {
   return join(packageRoot, 'assets');
 }

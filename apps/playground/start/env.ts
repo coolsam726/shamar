@@ -12,9 +12,9 @@
 import { Env } from '@adonisjs/core/env'
 
 /**
- * The public site is https://shamar.dev. Render also injects RENDER_EXTERNAL_URL
- * (the *.onrender.com hostname) and chooses PORT. Use the public URL when it is set;
- * otherwise fall back to the onrender.com hostname so a first boot still has an APP_URL.
+ * The panel host is https://demo.shamar.dev. Render also injects RENDER_EXTERNAL_URL
+ * (the *.onrender.com hostname) and chooses PORT. Use APP_URL when it is set;
+ * otherwise fall back to the onrender.com hostname so a first boot still has one.
  */
 const renderUrl = process.env.RENDER_EXTERNAL_URL?.replace(/\/$/, '')
 if (!process.env.APP_URL && renderUrl) process.env.APP_URL = renderUrl

@@ -42,7 +42,7 @@ export class ProductStatsWidget extends StatsOverviewWidget {
     // Demo of compact formatting for huge counters (not from DB).
     const lifetimeImpressions = 12_847_320
 
-    const base = ctx.basePath ?? '/demo'
+    const base = ctx.basePath && ctx.basePath !== '/' ? ctx.basePath.replace(/\/+$/, '') : ''
 
     return [
       Stat.make('Total products', total)
@@ -82,7 +82,7 @@ export class RecentProductsWidget extends ListWidget {
   }
 
   static override async records(ctx: WidgetRequestContext) {
-    const base = ctx.basePath ?? '/demo'
+    const base = ctx.basePath && ctx.basePath !== '/' ? ctx.basePath.replace(/\/+$/, '') : ''
     const items = await Product.find()
       .sort({ updatedAt: -1 })
       .limit(5)

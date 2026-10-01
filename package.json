@@ -13,6 +13,7 @@
     "dev:app": "pnpm --filter @shamar/playground dev",
     "docs:dev": "pnpm --filter @shamar/docs dev",
     "docs:build": "pnpm --filter @shamar/docs build",
+    "pages:build": "PUBLIC_SITE_URL=https://shamar.dev PUBLIC_DEMO_URL=https://demo.shamar.dev pnpm --filter @shamar/docs build",
     "site:sync": "node scripts/sync-site-to-playground.mjs",
     "site:build": "PUBLIC_DEMO_URL= pnpm docs:build && pnpm site:sync",
     "docker:up": "docker compose up -d",

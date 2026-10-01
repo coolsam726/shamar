@@ -68,7 +68,7 @@ Optional env for the Astro build:
 
 ```bash
 PUBLIC_SITE_URL=https://shamar.dev
-# leave PUBLIC_DEMO_URL empty for same-origin /demo-status
+PUBLIC_DEMO_URL=https://demo.shamar.dev
 ```
 
 ## Deploy

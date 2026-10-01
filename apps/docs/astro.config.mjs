@@ -7,7 +7,7 @@ import { buildSidebar } from './sidebar.mjs';
 const demoUrl = process.env.PUBLIC_DEMO_URL ?? '';
 const sidebar = await buildSidebar();
 
-// The public site is https://shamar.dev (Render). Local and that host serve at the domain root.
+// Landing and docs: https://shamar.dev (Cloudflare Pages). The panel is https://demo.shamar.dev.
 // GitHub Pages serves this repo at /shamar — set PUBLIC_BASE_PATH=/shamar there.
 const base = process.env.PUBLIC_BASE_PATH || '/';
 

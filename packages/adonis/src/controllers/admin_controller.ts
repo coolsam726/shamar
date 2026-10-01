@@ -1,4 +1,5 @@
 import type { ShamarHttpContext } from '../context.js';
+import { panelPathPrefix } from '../shamar/paths.js';
 import type { ResourceRegistry, ResourceMeta, PageMeta, PageSectionMeta } from '@shamar/core';
 import {
   resolveDefaultPerPage,
@@ -109,7 +110,7 @@ export class AdminController {
   ) {
     this.registry = panel.registry;
     this.pages = panel.pages;
-    this.basePath = panel.path;
+    this.basePath = panelPathPrefix(panel.path);
     this.panelBranding = panel.config.branding ?? config.branding;
     this.panelContentMaxWidth = panel.config.contentMaxWidth;
     this.panelDefaultPerPage = panel.config.defaultPerPage;

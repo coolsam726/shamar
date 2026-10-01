@@ -148,7 +148,7 @@ export function menuLayoutContext(
     {
       label: 'Dashboard',
       icon: 'home',
-      href: basePath,
+      href: basePath || '/',
       rootIndex: 0,
       active: !currentSlug,
     },
