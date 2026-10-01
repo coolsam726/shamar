@@ -1,37 +1,47 @@
-# Shamar
+<p align="center">
+  <a href="https://shamar.dev">
+    <img src="apps/docs/public/screenshots/hero-panel.png" alt="Shamar admin panel" width="920" />
+  </a>
+</p>
 
-**Filament-inspired admin panel for AdonisJS** — declarative resources, Lucid or Mongoose, RBAC (Cherubim), and a JSON API.
+<h1 align="center">Shamar</h1>
 
-Inspired by [Filament](https://filamentphp.com/) (PHP) and architecturally aligned with [Loom](https://github.com/coolsam726/nodeweaver) (NestJS), but built natively for the latest AdonisJS stack.
+<p align="center">
+  <strong>Filament-inspired admin panels for AdonisJS</strong><br />
+  Declarative resources · Lucid or Mongoose · Wire · RBAC · REST
+</p>
 
-**Documentation + demo:** landing and docs at [`https://shamar.dev`](https://shamar.dev) (Cloudflare Pages). The panel is [`https://demo.shamar.dev`](https://demo.shamar.dev) (Render). DNS stays in Cloudflare ([`DEPLOY.md`](DEPLOY.md)).
+<p align="center">
+  <a href="https://shamar.dev"><strong>Docs</strong></a>
+  ·
+  <a href="https://demo.shamar.dev"><strong>Live demo</strong></a>
+  ·
+  <a href="https://www.npmjs.com/package/@shamar/adonis"><strong>npm</strong></a>
+</p>
 
-## Packages
+<p align="center">
+  <a href="https://github.com/coolsam726/shamar/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/coolsam726/shamar/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI" /></a>
+  <a href="https://www.npmjs.com/package/@shamar/core"><img alt="npm version" src="https://img.shields.io/npm/v/%40shamar%2Fcore?style=for-the-badge&logo=npm&logoColor=white&label=npm" /></a>
+  <a href="https://www.npmjs.com/package/@shamar/core"><img alt="npm downloads" src="https://img.shields.io/npm/dm/%40shamar%2Fcore?style=for-the-badge&logo=npm&logoColor=white&label=downloads" /></a>
+  <a href="https://github.com/coolsam726/shamar/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/coolsam726/shamar?style=for-the-badge&logo=github&logoColor=white" /></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/coolsam726/shamar?style=for-the-badge&color=blue" /></a>
+</p>
 
-| Package | Description |
-|---------|-------------|
-| [`@shamar/core`](packages/core) | Resource DSL: forms, tables, actions, navigation, auth contracts |
-| [`@shamar/cherubim`](packages/cherubim) | Auth & access control: abilities, policies, API credentials |
-| [`@shamar/wire`](packages/wire) | Server-driven components (`wire:model`, `wire:click`, `$wire`). Additive; existing Alpine UI stays until a piece is moved over |
-| [`@shamar/lucid`](packages/lucid) | Lucid ORM adapter (SQL — list, CRUD, soft-delete, connections) |
-| [`@shamar/mongoose`](packages/mongoose) | Mongoose adapter (MongoDB — list, CRUD, soft-delete) |
-| [`@shamar/adonis`](packages/adonis) | Service provider, routes, controllers, middleware, Edge views |
-| [`@shamar/rest`](packages/rest) | REST helpers + OpenAPI document + Scalar docs UI |
+Inspired by [Filament](https://filamentphp.com/) and [Almasix Orbit](https://github.com/almasix-dev/almasix-orbit) — built natively for AdonisJS.
 
-## Install (Adonis app)
+## Install
 
 ```bash
 pnpm add @shamar/adonis
-# plus one of:
-pnpm add @adonisjs/lucid    # SQL
-pnpm add mongoose           # MongoDB
+# plus one ORM:
+pnpm add @adonisjs/lucid   # SQL
+# or
+pnpm add mongoose          # MongoDB
 
-node ace configure @shamar/adonis   # pick Lucid or Mongoose
+node ace configure @shamar/adonis
 ```
 
-Then define resources (and optional panel pages) and open the panel path (default `/admin`). Full host docs: [`packages/adonis/README.md`](packages/adonis/README.md).
-
-For OpenAPI docs over the JSON API **and** your custom `/api/*` routes, add [`@shamar/rest`](packages/rest) and register `@shamar/rest/provider` after the Adonis provider — then open `/api/shamar/docs`. Attach `.openapi({ body, query, response })` on routes (Vine + DTO helpers); no hand-written OpenAPI JSON.
+Define resources under `app/panels/…`, then open the panel (default `/admin`).
 
 ## Quick start
 
@@ -72,7 +82,7 @@ export default class UserResource extends Resource {
 ```
 
 ```ts
-// app/panels/admin/panel.ts — discovered on boot. config/shamar.ts holds orm, auth, and shared branding.
+// app/panels/admin/panel.ts
 import { PanelProvider, panel } from '@shamar/adonis'
 
 export default class AdminPanel extends PanelProvider {
@@ -86,129 +96,29 @@ export default class AdminPanel extends PanelProvider {
 }
 ```
 
-`node ace make:panel` writes that class. A class with the same id replaces a panel still listed in `config/shamar.ts`.
+## Packages
 
-At configure time you pick **Lucid (SQL)** or **Mongoose (MongoDB)**. The Resource DSL is the same; only models and `orm` differ. Your app owns the DB connection lifecycle.
-
-### Forms, infolists, and tables (Filament-style)
-
-Containers use `.schema([...])` for children (forms, infolists, and tables). Layout width uses `.columns(n)` on sections/fieldsets. Children are `Component.make()` instances with their own chains.
-
-**Section** (card + header) vs **Fieldset** (`<fieldset>` + legend):
-
-```ts
-static form(form: FormBuilder) {
-  return form.schema([
-    Section.make('Identity')
-      .description('Core details')
-      .icon('building')
-      .columns(2)
-      .schema([TextInput.make('name')]),
-    Fieldset.make('Flags').schema([Toggle.make('active')]),
-  ])
-}
-```
-
-```ts
-import {
-  Section, Fieldset, TextInput, Toggle,
-  TextEntry, TextColumn,
-  type FormBuilder, type TableBuilder, type InfolistBuilder,
-} from '@shamar/core'
-
-static form(form: FormBuilder) {
-  return form.schema([
-    Section.make('Identity')
-      .columns(2)
-      .schema([
-        TextInput.make('name').required().live().afterStateUpdated(({ get, set }) => {
-          set('code', slugify(get('name')))
-        }),
-        TextInput.make('code').columnSpanFull(),
-        TextInput.make('email').email().required(),
-      ]),
-    Fieldset.make('Status').schema([Toggle.make('active')]),
-  ])
-}
-
-static infolist(infolist: InfolistBuilder) {
-  // Same Section / Fieldset layout components as forms (Filament 5 schemas).
-  return infolist.schema([
-    Section.make('Company')
-      .columns(3)
-      .schema([
-        TextEntry.make('name').columnSpanFull(),
-        TextEntry.make('email').label('Email Address'),
-        TextEntry.make('active').boolean().columnSpan(2),
-      ]),
-  ])
-}
-
-static table(table: TableBuilder) {
-  return table.schema([
-    TextColumn.make('name').sortable().searchable(),
-    TextColumn.make('email').email(),
-    TextColumn.make('active').boolean(),
-  ])
-}
-```
-
-`live()` fields still POST to `{panel}/{slug}/form-state` and patch Alpine `shamarForm`. That path stays. Components that move to `@shamar/wire` use `wire:*` and `$wire` instead: the browser posts a signed snapshot and the server morphs the island. Migration is one component at a time; it does not require a 1.x break.
-
-## Filament concepts mapped to Shamar
-
-| Filament | Shamar |
-|----------|--------|
-| `Schemas\Components\Section` / `Fieldset` | Shared `Section` / `Fieldset` (forms + infolists) |
-| `Resource` | `Resource` class (`@shamar/core`) |
-| `TextInput::make()` / `Section::make()->schema()` | `TextInput.make()` / `Section.make().schema([...])` |
-| `TextEntry::make()` / infolist `schema()` | `TextEntry.make()` / `infolist.schema([...])` |
-| `TextColumn::make()` / `$table->columns()` | `TextColumn.make()` / `table.schema([...])` |
-| Multi-panel | `panel(id).path().discoverResources()` |
-| `ListRecords` / `CreateRecord` | Adonis controllers + Edge pages |
-| `Action` / `BulkAction` | `actions.header(…)` / `actions.bulkDelete()` / `actions.row(…)` |
-| `RelationManager` | `Relation.field()` + relation widgets (phase 2) |
-| `Policy` | `Resource.policy` class + Cherubim `Policy` (Loom / Laravel) |
-| Panel navigation | `navigationGroup`, `navigationSubGroup` (top-bar dropdown), `navigationSort` |
-| Livewire | [`@shamar/wire`](packages/wire) — signed islands, `wire:*`, `$wire`. Hosted by `@shamar/adonis` at `POST {panel}/wire` |
-| Live form fields | `.live()` + `.afterStateUpdated()` → `POST …/form-state` |
-| Multi-tenancy | `companyScoped` + session company switcher (phase 2) |
-
-## Multi-database (Laravel-style)
-
-Lucid connections map directly:
-
-```ts
-export default class LegacyProductResource extends Resource {
-  static connection = 'legacy' // uses config/database.ts connection name
-  static model = LegacyProduct
-}
-```
-
-## Playground
-
-[`apps/playground`](apps/playground) is the living Mongoose demo (dual panels `/admin` + `/app`, session auth, API keys, RBAC). See its README for run instructions and seed credentials. Enable `SHAMAR_DEMO_MODE` for the public 20-minute reset sandbox used by [`apps/docs`](apps/docs).
-
-## CI
-
-GitHub Actions [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on pull requests and pushes to `main`: package build + tests, plus a playground production build (catches unused-import / `tsc` failures before publish).
-
-## Publishing
-
-GitHub Actions [`.github/workflows/publish.yml`](.github/workflows/publish.yml) builds, tests, and publishes `@shamar/*` packages when a GitHub Release is published (or via workflow_dispatch dry-run).
+| Package | Role |
+|---------|------|
+| [`@shamar/core`](packages/core) | Resource DSL — forms, tables, actions, schemas |
+| [`@shamar/adonis`](packages/adonis) | Host — providers, routes, Edge UI |
+| [`@shamar/wire`](packages/wire) | Server-driven islands (`wire:*`, `$wire`) |
+| [`@shamar/lucid`](packages/lucid) / [`@shamar/mongoose`](packages/mongoose) | SQL / Mongo adapters |
+| [`@shamar/cherubim`](packages/cherubim) | Auth, abilities, API keys |
+| [`@shamar/rest`](packages/rest) | JSON API + OpenAPI / Scalar |
 
 ## Development
 
 ```bash
 pnpm install
-pnpm docker:up   # MongoDB :27017 + Compass Web :8081 (see DOCKER.md)
-pnpm docker:dev  # + playground HMR on :3333
-pnpm docker:prod # + playground production on :3333
+pnpm docker:up    # MongoDB
 pnpm build
 pnpm test
-pnpm dev         # playground — you manage this process
+pnpm docker:dev   # playground HMR on :3333
 ```
+
+Local demo app: [`apps/playground`](apps/playground). Deploy notes: [`DEPLOY.md`](DEPLOY.md).
 
 ## License
 
-MIT
+[MIT](LICENSE)
