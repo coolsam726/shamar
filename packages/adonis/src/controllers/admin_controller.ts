@@ -1321,7 +1321,13 @@ export class AdminController {
   }
 
   private requireResource(ctx: ShamarHttpContext): ResourceMeta {
-    return this.registry.require(ctx.params.slug);
+    const meta = this.registry.get(ctx.params.slug);
+    if (!meta) {
+      const error = new Error(`Unknown Shamar resource: ${ctx.params.slug}`);
+      ;(error as Error & { status: number }).status = 404;
+      throw error;
+    }
+    return meta;
   }
 
   /**

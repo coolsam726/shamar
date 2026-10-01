@@ -11,7 +11,7 @@ import { buildAuthContext, canAccessPanel } from './shamar/auth.js';
 import { isMasqueradeSession } from './auth/masquerade.js';
 import { isImageLike } from './shamar/media-storage.js';
 import { normalizeMediaVisibility, resolveMediaFileUrl } from './shamar/media-url.js';
-import { panelPathPrefix } from './shamar/paths.js';
+import { panelPathPrefix, panelSlugMatcher } from './shamar/paths.js';
 
 type AdminAction = keyof {
   [Key in keyof AdminController as AdminController[Key] extends (
@@ -36,8 +36,6 @@ type MediaAction = keyof {
     ? Key
     : never]: MediaController[Key];
 };
-
-const RESERVED_SLUG = /^(?!assets$|profile$|media$)/;
 
 export async function registerShamarRoutes(
   app: ApplicationService,
@@ -111,6 +109,10 @@ function registerPanelRoutes(
 ): void {
   const prefix = panelPathPrefix(panel.path);
   const routePrefix = `shamar.${panel.id}`;
+  const slugMatch = panelSlugMatcher([
+    ...panel.registry.all().map((meta) => meta.slug),
+    ...panel.pages.all().map((meta) => meta.slug),
+  ]);
 
   const handler = (action: AdminAction, asJson = false) => {
     return async (ctx: HttpContext) => {
@@ -167,58 +169,96 @@ function registerPanelRoutes(
 
     router
       .post('/:slug/sections/:section/form-state', handler('sectionFormState'))
-      .where('slug', RESERVED_SLUG)
+      .where('slug', slugMatch)
       .as(`${routePrefix}.pages.sectionFormState`);
     router
       .post('/:slug/sections/:section', handler('savePageSection'))
-      .where('slug', RESERVED_SLUG)
+      .where('slug', slugMatch)
       .as(`${routePrefix}.pages.sectionSave`);
     router.get('/', handler('dashboard')).as(`${routePrefix}.dashboard`);
     router
       .post('/:slug/action/:action', handler('pageAction'))
-      .where('slug', RESERVED_SLUG)
+      .where('slug', slugMatch)
       .as(`${routePrefix}.pages.action`);
-    router.get('/:slug/create', handler('create')).as(`${routePrefix}.resources.create`);
-    router.post('/:slug/form-state', handler('formState')).as(`${routePrefix}.resources.formState`);
+    router
+      .get('/:slug/create', handler('create'))
+      .where('slug', slugMatch)
+      .as(`${routePrefix}.resources.create`);
+    router
+      .post('/:slug/form-state', handler('formState'))
+      .where('slug', slugMatch)
+      .as(`${routePrefix}.resources.formState`);
     router
       .get('/:slug/relation-search', handler('relationSearch', true))
+      .where('slug', slugMatch)
       .as(`${routePrefix}.resources.relationSearch`);
     router
       .get('/:slug/relation-table', handler('relationTable', true))
+      .where('slug', slugMatch)
       .as(`${routePrefix}.resources.relationTable`);
     router
       .post('/:slug/relation-quick-create', handler('relationQuickCreate', true))
+      .where('slug', slugMatch)
       .as(`${routePrefix}.resources.relationQuickCreate`);
     router
       .post('/:slug/relation-attach', handler('relationAttach', true))
+      .where('slug', slugMatch)
       .as(`${routePrefix}.resources.relationAttach`);
     router
       .post('/:slug/relation-detach', handler('relationDetach', true))
+      .where('slug', slugMatch)
       .as(`${routePrefix}.resources.relationDetach`);
-    router.post('/:slug', handler('store')).as(`${routePrefix}.resources.store`);
-    router.post('/:slug/bulk', handler('bulk')).as(`${routePrefix}.resources.bulk`);
-    router.get('/:slug/:id/edit', handler('edit')).as(`${routePrefix}.resources.edit`);
+    router
+      .post('/:slug', handler('store'))
+      .where('slug', slugMatch)
+      .as(`${routePrefix}.resources.store`);
+    router
+      .post('/:slug/bulk', handler('bulk'))
+      .where('slug', slugMatch)
+      .as(`${routePrefix}.resources.bulk`);
+    router
+      .get('/:slug/:id/edit', handler('edit'))
+      .where('slug', slugMatch)
+      .as(`${routePrefix}.resources.edit`);
     router
       .get('/:slug/:id/summary', handler('summary', true))
+      .where('slug', slugMatch)
       .as(`${routePrefix}.resources.summary`);
     router
       .post('/:slug/:id/action/:action', handler('recordAction'))
+      .where('slug', slugMatch)
       .as(`${routePrefix}.resources.recordAction`);
-    router.post('/:slug/:id/restore', handler('restore')).as(`${routePrefix}.resources.restore`);
+    router
+      .post('/:slug/:id/restore', handler('restore'))
+      .where('slug', slugMatch)
+      .as(`${routePrefix}.resources.restore`);
     router
       .post('/:slug/:id/force-delete', handler('forceDelete'))
+      .where('slug', slugMatch)
       .as(`${routePrefix}.resources.forceDelete`);
-    router.post('/:slug/:id/delete', handler('destroy')).as(`${routePrefix}.resources.destroy`);
-    router.post('/:slug/:id', handler('update')).as(`${routePrefix}.resources.update`);
-    router.put('/:slug/:id', handler('update')).as(`${routePrefix}.resources.update.put`);
-    router.delete('/:slug/:id', handler('destroy')).as(`${routePrefix}.resources.destroy.delete`);
+    router
+      .post('/:slug/:id/delete', handler('destroy'))
+      .where('slug', slugMatch)
+      .as(`${routePrefix}.resources.destroy`);
+    router
+      .post('/:slug/:id', handler('update'))
+      .where('slug', slugMatch)
+      .as(`${routePrefix}.resources.update`);
+    router
+      .put('/:slug/:id', handler('update'))
+      .where('slug', slugMatch)
+      .as(`${routePrefix}.resources.update.put`);
+    router
+      .delete('/:slug/:id', handler('destroy'))
+      .where('slug', slugMatch)
+      .as(`${routePrefix}.resources.destroy.delete`);
     router
       .get('/:slug/:id', handler('show'))
-      .where('slug', RESERVED_SLUG)
+      .where('slug', slugMatch)
       .as(`${routePrefix}.resources.show`);
     router
       .get('/:slug', handler('index'))
-      .where('slug', RESERVED_SLUG)
+      .where('slug', slugMatch)
       .as(`${routePrefix}.resources.index`);
   });
 
