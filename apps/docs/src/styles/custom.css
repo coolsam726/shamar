@@ -65,3 +65,83 @@
 :root[data-theme='dark'] .shamar-demo-card {
   background: color-mix(in srgb, var(--sl-color-bg-nav) 88%, #4a1f12);
 }
+
+/* Same Filament honey and cocoa Orbit uses for its "A nod to Filament" aside. */
+.filament-callout {
+  --filament-honey: #efaf5d;
+  --filament-cocoa: #46341c;
+}
+
+.filament-callout .starlight-aside.starlight-aside--tip {
+  --sl-color-asides-text-accent: var(--filament-cocoa);
+  --sl-color-asides-border: var(--filament-cocoa);
+  background-color: var(--filament-honey);
+  color: var(--filament-cocoa);
+  border-inline-start-width: 0.35rem;
+  border-inline-start-color: var(--filament-cocoa);
+}
+
+.filament-callout .starlight-aside__title,
+.filament-callout .starlight-aside__content,
+.filament-callout .starlight-aside__content a {
+  color: var(--filament-cocoa);
+}
+
+.filament-callout .starlight-aside__content a:hover {
+  color: color-mix(in srgb, var(--filament-cocoa) 72%, #000);
+}
+
+html[data-theme='dark'] .filament-callout .starlight-aside.starlight-aside--tip {
+  --sl-color-asides-text-accent: var(--filament-cocoa);
+  background-color: var(--filament-honey);
+  color: var(--filament-cocoa);
+  border-inline-start-color: var(--filament-cocoa);
+}
+
+html[data-theme='dark'] .filament-callout .starlight-aside__title,
+html[data-theme='dark'] .filament-callout .starlight-aside__content,
+html[data-theme='dark'] .filament-callout .starlight-aside__content a {
+  color: var(--filament-cocoa);
+}
+
+html[data-theme='dark'] .filament-callout .starlight-aside__content a:hover {
+  color: color-mix(in srgb, var(--filament-cocoa) 60%, #000);
+}
+
+/* Livewire brand pink, used the same way as the Filament callout. */
+.livewire-callout {
+  --livewire-pink: #fb71a9;
+  --livewire-ink: #3d1224;
+}
+
+.livewire-callout .starlight-aside.starlight-aside--tip {
+  --sl-color-asides-text-accent: var(--livewire-ink);
+  --sl-color-asides-border: var(--livewire-ink);
+  background-color: var(--livewire-pink);
+  color: var(--livewire-ink);
+  border-inline-start-width: 0.35rem;
+  border-inline-start-color: var(--livewire-ink);
+}
+
+.livewire-callout .starlight-aside__title,
+.livewire-callout .starlight-aside__content,
+.livewire-callout .starlight-aside__content a {
+  color: var(--livewire-ink);
+}
+
+.livewire-callout .starlight-aside__content a:hover {
+  color: color-mix(in srgb, var(--livewire-ink) 72%, #000);
+}
+
+html[data-theme='dark'] .livewire-callout .starlight-aside.starlight-aside--tip {
+  --sl-color-asides-text-accent: var(--livewire-ink);
+  background-color: var(--livewire-pink);
+  color: var(--livewire-ink);
+  border-inline-start-color: var(--livewire-ink);
+}
+
+html[data-theme='dark'] .livewire-callout .starlight-aside__title,
+html[data-theme='dark'] .livewire-callout .starlight-aside__content,
+html[data-theme='dark'] .livewire-callout .starlight-aside__content a {
+  color: var(--livewire-ink);
+}

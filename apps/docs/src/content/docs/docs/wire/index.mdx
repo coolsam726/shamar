@@ -3,13 +3,19 @@ title: Overview
 description: What @shamar/wire is, and how an island round-trip works.
 ---
 
-`@shamar/wire` is the live-component layer. The rest of the panel is a normal server-rendered page: a request arrives, HTML goes back, and Alpine.js handles small things that never need the server, such as opening a menu. Some interactions are not small. Typing in global search, marking a notification read, or clicking increment on a counter must change data on the server and update only that part of the page.
+`@shamar/wire` is the live-component layer the rest of Shamar is built on. A request still returns HTML. Wire is how a piece of that page keeps its state on the server: typing in global search, marking a notification read, or clicking increment on a counter. Alpine.js can still open a menu that never needs the server. `$wire` is the bridge when Alpine and a Wire island share a page.
 
-Wire is how those pieces work. You write a class whose public fields are the state and whose methods are the actions. The browser holds an HTML island and a signed snapshot of that state. An action posts the snapshot back. The server checks the signature, runs the method, and returns new HTML. The browser morphs the island in place so focus and surrounding page stay put.
+<div class="livewire-callout">
 
-Filament does this with Livewire. You do not need that background. The sentence above is the whole model: state on the server, HTML in the browser, a signed round trip between them. A panel uses Wire for search, notifications, and similar islands. A normal Adonis page can use it too, with no admin panel at all. [Install](/docs/wire/install/) is that path, including where the files live. [Components](/docs/wire/adonis/) is discovery and hooks. [SPA navigation](/docs/wire/spa/) is moving between whole pages without a full reload.
+:::tip[A nod to Livewire]
+Wire stands on the shoulders of [Livewire](https://livewire.laravel.com/). Livewire’s architecture — server-owned state, HTML islands, and a signed round trip — played a major role in shaping Wire. We’re our own package for AdonisJS and Node, with our own runtime. Same *idea*, our *house*.
+:::
 
-Alpine can sit on the same page. `$wire` is the bridge: Alpine reads and calls the island without replacing the rest of the page.
+</div>
+
+You write a class whose public fields are the state and whose methods are the actions. The browser holds an HTML island and a signed snapshot of that state. An action posts the snapshot back. The server checks the signature, runs the method, and returns new HTML. The browser morphs the island in place so focus and surrounding page stay put.
+
+A normal Adonis page can use Wire with no admin panel at all. The panel is one host on top of the same runtime: resources, forms, and tables describe the back office, and Wire carries the pieces that have to round-trip. [Install](/docs/wire/install/) is where the files live. [Components](/docs/wire/adonis/) is discovery and hooks. [SPA navigation](/docs/wire/spa/) is moving between whole pages without a full reload. After that, [Introduction](/docs/guides/introduction/) is how the panel is built on this layer, and [Installation](/docs/guides/installation/) is how you mount it.
 
 ## A round trip
 

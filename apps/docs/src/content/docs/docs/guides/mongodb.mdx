@@ -1,0 +1,31 @@
+---
+title: Using MongoDB
+description: How configure wires MongoDB into Adonis before the panel starts.
+---
+
+MongoDB is a choice during installation, not a later rewrite of the panel. When `node ace configure @shamar/adonis` asks which database to use, choose **Mongoose (MongoDB)**. The command opens the connection. You add models after that.
+
+The panel does not install a database server, and it does not call `mongoose.connect` from your resources. Configure does this for a new app:
+
+1. Installs the `mongoose` package (8 or newer).
+2. Writes `MONGO_URI=mongodb://127.0.0.1:27017/app` into `.env` and `.env.example`.
+3. Adds `MONGO_URI: Env.schema.string()` to `start/env.ts`, so the app refuses to boot when the variable is missing.
+4. Registers `@shamar/adonis/mongo_provider` in `adonisrc.ts` **before** `@shamar/adonis/provider`. That provider connects during boot and disconnects on shutdown, using `MONGO_URI`.
+
+Change the URI to your real database. Leave the name `MONGO_URI`. The provider reads that name.
+
+If you also accept the login page, configure asks **Use MongoDB documents for session login?** Say yes when the user record lives in MongoDB and `config/auth.ts` still uses Adonis's default Lucid lookup (`sessionUserProvider`). That lookup expects a numeric id. A MongoDB id is a 24-character hex string, so sign-in would never find the user. Yes publishes `app/auth/session_mongoose_user_provider.ts` and points the session guard at `User.findById`. Your `app/models/user.ts` still has to be a Mongoose model. Configure does not replace that file. If `config/auth.ts` already has its own user provider, the question defaults to no and the file is left alone.
+
+Start MongoDB, then boot the app. After that, resources use `orm: 'mongoose'` and a Mongoose model class. The screens are the same as a SQL panel.
+
+```ts
+import { Resource } from '@shamar/core'
+import Product from '#models/product'
+
+export default class ProductResource extends Resource {
+  static model = Product
+  static slug = 'products'
+}
+```
+
+The full walkthrough — a model schema, the session provider source, soft delete, relations, and an app that was not created by configure — is [MongoDB](/docs/packages/mongoose/).

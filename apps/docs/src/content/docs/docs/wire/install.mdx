@@ -5,9 +5,9 @@ description: Add the Shamar provider, then generate a component the same way you
 
 This page is how you add Wire to an Adonis app after the [overview](/docs/wire/) has explained the round trip. It is not the admin-panel installer. You make a class, a view, and a tag. The provider finds the class when the app boots. You do not register a route per component.
 
-`@shamar/wire@0.3.0` is on npm. Install it on its own when you want the kernel without waiting for the next `@shamar/adonis` release. The published host at `0.3.0` does not depend on Wire yet; this repository's host does.
+Install `@shamar/adonis`. It depends on `@shamar/wire`, so you get the kernel with the panel. Install `@shamar/wire` on its own only when a page has no admin panel.
 
-Later versions are published from GitHub Actions. npm is configured so the trusted publisher for this package is the `publish.yml` workflow in the `coolsam726/shamar` repository. A GitHub release runs that workflow. A publish from a developer machine is not how a new version gets onto npm.
+Later versions are published from GitHub Actions. npm trusts the `publish.yml` workflow in `coolsam726/shamar` as the publisher for `@shamar/wire`. A GitHub release runs that workflow.
 
 The files live in three places. The left column is the same idea in Livewire, only if that comparison helps.
 

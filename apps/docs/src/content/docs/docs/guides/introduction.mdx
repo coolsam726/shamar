@@ -3,11 +3,26 @@ title: Introduction
 description: What Shamar is, what it draws for you, and how the pieces fit together.
 ---
 
+import DocScreenshot from '../../../../components/DocScreenshot.astro';
+
+<DocScreenshot
+  src="/screenshots/hero-panel.png"
+  alt="Shamar admin dashboard with stats widgets, charts, and sidebar navigation"
+  caption="A Shamar panel after sign-in. The sidebar, dashboard, and resource screens come from the classes you write."
+  wide
+/>
+
 Shamar is an admin panel for [AdonisJS](https://adonisjs.com/). You describe a back office in TypeScript — which models people can manage, which fields appear on a form, which columns appear in a list — and Shamar serves the screens, the routes, and the database calls.
 
 You do not draw the list page, the create form, or the edit form yourself for every model. You declare a **resource**. The panel turns that declaration into the pages your staff actually use.
 
-If you have used Filament, the shape will feel familiar: resources, forms, tables, actions, and a dashboard. You do not need to have used Filament. The rest of this page explains the same ideas from scratch.
+<div class="filament-callout">
+
+:::tip[A nod to Filament]
+Shamar stands on the shoulders of [Filament](https://filamentphp.com/). Filament’s architecture — panels, resources, forms, tables, and how those pieces compose — played a major role in shaping Shamar’s features. We’re our own package for the AdonisJS world, with our own rendering stack. Same *idea*, our *house*.
+:::
+
+</div>
 
 ## What an admin panel is doing
 
@@ -72,7 +87,7 @@ Shamar is split into packages so the description of the UI is not tied to one da
 
 A list request looks like this: the browser asks for `/admin/products`. The host finds `ProductResource`, asks the adapter for a page of records, uses `table()` to decide the columns, and sends back HTML. A save request validates the fields declared on `form()`, then asks the adapter to create or update the model.
 
-Nothing in that flow builds a separate single-page app. The panel is server-rendered HTML, with Alpine.js for small interactive pieces (opening a menu, toggling a sidebar). Live pieces that must round-trip to the server — a counter, a notification bell, global search — use [Wire](/docs/wire/).
+Nothing in that flow builds a separate single-page application by hand. Interactive pieces — search, notifications, counters, and the islands the panel adds over time — sit on [Wire](/docs/wire/). Wire keeps the component's state on the server and morphs HTML in the browser. Alpine.js still handles tiny client-only details, such as opening a menu that never needs a round trip. The panel, the resources, and the forms are the product built on top of that runtime. Read Wire next. The rest of these docs are what Shamar builds with it.
 
 ## Panels
 
@@ -80,17 +95,16 @@ A panel is one mounted admin area: its own URL prefix, its own set of resources,
 
 ## What is optional
 
-The panel works with core, one database adapter, and the Adonis host. Other packages add capabilities you can leave out:
+The panel works with core, one database adapter, and the Adonis host. Wire is the runtime underneath, not an add-on you bolt on later. These packages add capabilities you can leave out until you need them:
 
 | Package | What it adds |
 |---------|----------------|
 | [`@shamar/cherubim`](/docs/packages/cherubim/) | Roles, abilities, and API keys — *who may do what*, after you already know who is signed in |
 | [`@shamar/rest`](/docs/packages/rest/) | A JSON API for the same resources, plus an OpenAPI page |
-| [`@shamar/wire`](/docs/wire/) | Live server components, inside the panel or on a normal Adonis page. Published to npm. Releases go out through GitHub Actions trusted publishing |
 | Media | A file manager and file fields, stored with the same database you already chose |
 
-Those are documented under [Packages](/docs/packages/). They are not required to get a first list and form on screen.
+Those are documented under [Packages](/docs/packages/).
 
 ## What comes next
 
-[Installation](/docs/guides/installation/) adds the host to an Adonis app and chooses SQL or MongoDB. [Your first resource](/docs/guides/first-resource/) is the shortest path from an empty panel to a working CRUD screen. The [live demo](/docs/guides/live-demo/) is a seeded panel you can click through before you install anything.
+[Wire](/docs/wire/) is the next chapter: how a component's state lives on the server. [Installation](/docs/guides/installation/) then adds the host and chooses SQL or MongoDB. [Your first resource](/docs/guides/first-resource/) is the shortest path from an empty panel to a working CRUD screen. The [live demo](/docs/guides/live-demo/) is a seeded panel you can click through before you install anything.
