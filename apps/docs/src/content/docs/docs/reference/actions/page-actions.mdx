@@ -1,0 +1,66 @@
+---
+title: Page actions
+description: Header and list actions on custom, form, and list pages.
+---
+
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+Pages use the same `ActionBuilder` API as resources, but handlers return a page-specific result (including redirects).
+
+## Header actions
+
+```ts
+import { Page, ActionBuilder } from '@shamar/core'
+
+export default class ReportsPage extends Page {
+  static slug = 'reports'
+  static label = 'Reports'
+
+  static headerActions(actions: ActionBuilder) {
+    actions.header('refresh', 'Refresh').icon('arrow-up')
+    return actions
+  }
+
+  static async handleAction(name: string, ctx: PageRequestContext) {
+    if (name === 'refresh') {
+      return { message: 'Refreshed', redirectTo: '/reports' }
+    }
+    return null
+  }
+}
+```
+
+```ts
+interface PageActionResult {
+  message?: string
+  redirectTo?: string // absolute or panel-relative path
+}
+```
+
+## List page table actions
+
+`ListPage` can attach table actions via `listActions()` (same builder; rendered with the list chrome):
+
+```ts
+import { ListPage, ActionBuilder } from '@shamar/core'
+
+export default class AuditLogPage extends ListPage {
+  static listActions(actions: ActionBuilder) {
+    actions.header('export', 'Export').icon('download')
+    return actions
+  }
+}
+```
+
+Resource list toolbars still use `resourceActions` — prefer that for CRUD resources.
+
+<DocApiTable
+  title="Page action API"
+  rows={[
+    { method: 'Page.headerActions(actions)', description: 'Toolbar actions for the page.' },
+    { method: 'Page.handleAction(name, ctx)', description: 'Return { message?, redirectTo? }.' },
+    { method: 'ListPage.listActions(actions)', description: 'Actions for a list-style page.' },
+  ]}
+/>
+
+See [Pages](/docs/reference/pages/) for page kinds and registration.

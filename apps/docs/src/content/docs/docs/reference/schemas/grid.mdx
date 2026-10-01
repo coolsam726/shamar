@@ -1,0 +1,32 @@
+---
+title: Grid
+description: Column layout without card chrome.
+---
+
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+`Grid` lays children out in columns without wrapping them in a section card.
+
+```ts
+import { Grid, Section, TextInput } from '@shamar/core'
+
+Section.make('Details').schema([
+  Grid.make(3).schema([
+    TextInput.make('width'),
+    TextInput.make('height'),
+    TextInput.make('depth'),
+  ]),
+])
+```
+
+<DocApiTable
+  title="Grid"
+  rows={[
+    { method: 'Grid.make(cols?)', description: 'Columns: 1–4 (default 2).' },
+    { method: '.columns(n)', description: 'Override column count.' },
+    { method: '.dense() / .gap(bool)', description: 'Spacing controls.' },
+    { method: '.schema([...])', description: 'Nested layouts and leaves.' },
+  ]}
+/>
+
+Children can still call `.columnSpan()` / `.columnSpanFull()` to span multiple tracks.

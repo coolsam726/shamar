@@ -1,0 +1,33 @@
+---
+title: Callout
+description: Status banner — info, success, warning, or danger.
+---
+
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+`Callout` highlights guidance or warnings inside a form or infolist schema.
+
+```ts
+import { Callout, Section, TextInput } from '@shamar/core'
+
+Section.make('Checkout').schema([
+  Callout.make('Billing note')
+    .warning()
+    .description('Charges apply after the trial ends.')
+    .icon('bell'),
+  TextInput.make('plan').required(),
+])
+```
+
+When there are no nested children, `.description()` is also used as the callout body.
+
+<DocApiTable
+  title="Callout"
+  rows={[
+    { method: 'Callout.make(title?)', description: 'Defaults to info status.' },
+    { method: '.info() / .success() / .warning() / .danger()', description: 'Status tone.' },
+    { method: '.icon(name)', description: 'Optional icon.' },
+    { method: '.description(text)', description: 'Body text (also fills content when empty).' },
+    { method: '.schema([...])', description: 'Optional nested children below the body.' },
+  ]}
+/>

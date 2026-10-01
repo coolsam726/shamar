@@ -1,0 +1,29 @@
+---
+title: Text
+description: Freeform prose inside a form or infolist schema.
+---
+
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+`Text` is Filament’s schema `Text` component: static prose that participates in the layout tree (not a form control). Prefer [Placeholder](/docs/reference/schemas/placeholder/) when you need a **labeled** field-like slot.
+
+```ts
+import { Text, Section } from '@shamar/core'
+
+Section.make('Help').schema([
+  Text.make('Use this panel to review campaign targeting before publish.'),
+  Text.make()
+    .heading('Retention')
+    .content('Records older than 90 days are archived automatically.'),
+])
+```
+
+<DocApiTable
+  title="Text"
+  rows={[
+    { method: 'Text.make(content?)', description: 'Optional initial body string.' },
+    { method: '.content(text)', description: 'Body copy (plain text; pre-wrapped in the UI).' },
+    { method: '.heading(text)', description: 'Optional title above the body.' },
+    { method: '.columnSpan(n) / .columnSpanFull()', description: 'Grid span.' },
+  ]}
+/>

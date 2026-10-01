@@ -499,6 +499,12 @@ export class Wizard extends LayoutComponent {
     return this;
   }
 
+  /** Stack step indicators beside panels (mirrors {@link Tabs.vertical}). */
+  vertical(value = true): this {
+    this.verticalEnabled = value;
+    return this;
+  }
+
   protected override defaultCard(): boolean {
     return true;
   }
@@ -576,7 +582,7 @@ export class EmptyState extends LayoutComponent {
 }
 
 /**
- * Filament-style Placeholder / static content in a schema.
+ * Filament-style Placeholder / labeled static content in a schema.
  */
 export class Placeholder extends LayoutComponent {
   protected readonly kind = 'placeholder' as const;
@@ -588,6 +594,29 @@ export class Placeholder extends LayoutComponent {
   label(value: string): this {
     this.title = value;
     return this;
+  }
+
+  content(value: string): this {
+    this.contentText = value;
+    return this;
+  }
+
+  protected override defaultCard(): boolean {
+    return false;
+  }
+}
+
+/**
+ * Filament `Schemas\Components\Text` — freeform prose in a schema (forms + infolists).
+ * Prefer {@link Placeholder} when you need a labeled field-like slot.
+ */
+export class Text extends LayoutComponent {
+  protected readonly kind = 'text' as const;
+
+  static make(content?: string): Text {
+    const text = new Text();
+    if (content) text.contentText = content;
+    return text;
   }
 
   content(value: string): this {

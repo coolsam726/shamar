@@ -1,0 +1,43 @@
+---
+title: Confirmations
+description: Confirm dialogs before destructive or sensitive actions.
+---
+
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+`.confirm(message)` attaches a confirmation dialog. The Adonis host opens the shared dialog host (`shamar-open-confirm`) before POSTing the action.
+
+```ts
+actions.delete().confirm('Delete this ticket permanently?')
+
+actions.bulkDelete().confirm('Delete %d selected tickets?')
+// Host may interpolate selection counts when supported by the template.
+
+actions.row('resolve', 'Mark resolved')
+  .icon('check')
+  .confirm('Mark this ticket as resolved?')
+```
+
+## Defaults
+
+| Action | Default confirm |
+|--------|-----------------|
+| `delete()` | None until you set `.confirm(…)` (still styled danger) |
+| `bulkDelete()` | `'Delete selected records?'` |
+
+Custom actions never confirm unless you call `.confirm()`.
+
+## UX notes
+
+- Confirm runs for the configured message; cancel aborts with no request.
+- Danger-colored actions keep danger styling in the dialog trigger.
+- Built-in delete / bulk delete routes are handled by the host; custom names still go through `handleAction` **after** confirm.
+
+<DocApiTable
+  title="Confirm API"
+  rows={[
+    { method: '.confirm(message)', description: 'Show a confirm dialog with this message before running.' },
+  ]}
+/>
+
+See also [Built-in actions](/docs/reference/actions/built-in/) and [Custom actions](/docs/reference/actions/custom/).

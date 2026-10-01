@@ -1,0 +1,36 @@
+---
+title: Flex
+description: Responsive row split for side-by-side schema regions.
+---
+
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+`Flex` stacks on small screens and splits horizontally from a breakpoint (default `md`), like Filament’s Flex component.
+
+```ts
+import { Flex, Section, TextInput } from '@shamar/core'
+
+Flex.make([
+  Section.make('Primary').schema([TextInput.make('name')]),
+  Section.make('Meta').schema([TextInput.make('code')]),
+])
+  .from('lg')
+
+// Or build children via schema():
+Flex.make()
+  .from('md')
+  .schema([
+    Section.make('Left').grow(false).schema([/* … */]),
+    Section.make('Right').schema([/* … */]),
+  ])
+```
+
+<DocApiTable
+  title="Flex"
+  rows={[
+    { method: 'Flex.make(children?)', description: 'Optional initial children; default from breakpoint is md.' },
+    { method: '.from(breakpoint)', description: 'Horizontal layout from this Tailwind-style breakpoint (e.g. md, lg).' },
+    { method: '.grow(bool)', description: 'On a child: grow to fill (default true); false keeps fixed width.' },
+    { method: '.schema([...])', description: 'Replace nested children.' },
+  ]}
+/>

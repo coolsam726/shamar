@@ -1,0 +1,51 @@
+---
+title: Authorization
+description: Gate actions with abilities, permissions, and resource policies.
+---
+
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+Actions respect the same permission model as resource CRUD. Use `.ability(name)` to require a specific gate before the button is shown / runnable.
+
+```ts
+static permissions() {
+  return [
+    { name: 'escalate', label: 'Escalate tickets' },
+    { name: 'export', label: 'Export tickets' },
+  ]
+}
+
+static resourceActions(actions: ActionBuilder) {
+  actions.row('escalate', 'Escalate')
+    .ability('escalate')
+    .icon('arrow-up')
+  actions.header('export', 'Export CSV')
+    .ability('export')
+    .icon('download')
+  return actions
+}
+```
+
+## How gating works
+
+1. **Built-in CRUD** — `create` / `view` / `edit` / `delete` map to `viewAny` / `view` / `create` / `edit` / `delete` (via the resource policy or `{slug}:{ability}` permissions).
+2. **`.ability(name)`** — custom gate. Names without `:` are seeded as `{slug}:{name}` from `permissions()`.
+3. **Host filter** — `resourceActionsFor(meta, placement, policy)` drops actions the current user cannot run.
+4. **Special cases** — some resources (e.g. API keys revoke / reactivate) also apply record-state visibility in the Edge layer.
+
+Without `.ability()`, custom actions typically fall back to update/delete-style checks depending on placement — set an explicit ability for sensitive ops.
+
+```ts
+static policy = TicketPolicy // optional PolicyClass with viewAny/view/create/edit/delete
+```
+
+<DocApiTable
+  title="Auth API"
+  rows={[
+    { method: '.ability(name)', description: 'Require this ability (seeded via permissions() unless already namespaced).' },
+    { method: 'permissions()', description: 'Declare extra abilities for the resource slug.' },
+    { method: 'static policy', description: 'Optional policy class for CRUD checks.' },
+  ]}
+/>
+
+See [Auth & RBAC](/docs/concepts/auth/) for the broader permission model.

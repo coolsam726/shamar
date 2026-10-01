@@ -35,11 +35,13 @@ function group(label, items, collapsed = false) {
 }
 
 export async function buildSidebar() {
-  const [forms, infolists, widgets, pages] = await Promise.all([
+  const [forms, schemas, infolists, widgets, pages, actions] = await Promise.all([
     titlesIn('forms'),
+    titlesIn('schemas'),
     titlesIn('infolists'),
     titlesIn('widgets'),
     titlesIn('pages'),
+    titlesIn('actions'),
   ])
 
   return [
@@ -72,6 +74,7 @@ export async function buildSidebar() {
       { label: 'Registration', slug: 'docs/reference/resources/registration' },
       { label: 'Navigation', slug: 'docs/reference/resources/navigation' },
     ]),
+    group('Schemas', schemas),
     group('Forms', forms, true),
     group('Tables', [
       { label: 'Overview', slug: 'docs/reference/tables' },
@@ -79,11 +82,7 @@ export async function buildSidebar() {
     ]),
     group('Infolists', infolists, true),
     group('Widgets', widgets, true),
-    group('Actions', [
-      { label: 'Overview', slug: 'docs/reference/actions' },
-      { label: 'Built-in', slug: 'docs/reference/actions/built-in' },
-      { label: 'Custom', slug: 'docs/reference/actions/custom' },
-    ]),
+    group('Actions', actions),
     group('Pages', pages, true),
     {
       label: 'Concepts',

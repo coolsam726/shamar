@@ -1,0 +1,27 @@
+---
+title: Fieldset
+description: Lightweight legend-style group — transparent by default.
+---
+
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+`Fieldset` mirrors Filament’s fieldset: a labeled boundary without the elevated card of [Section](/docs/reference/schemas/section/).
+
+```ts
+import { Fieldset, TextInput } from '@shamar/core'
+
+Fieldset.make('Address').columns(2).schema([
+  TextInput.make('city'),
+  TextInput.make('country'),
+])
+```
+
+<DocApiTable
+  title="Fieldset"
+  rows={[
+    { method: 'Fieldset.make(title?)', description: 'Legend / title for the group.' },
+    { method: '.columns(1|2|3|4)', description: 'Child grid columns.' },
+    { method: '.card(true)', description: 'Opt into elevated chrome (default is transparent).' },
+    { method: '.schema([...])', description: 'Nested layouts and leaves.' },
+  ]}
+/>
