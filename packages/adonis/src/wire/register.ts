@@ -10,6 +10,11 @@ export interface RegisterWireOptions {
    * `kernel.mount(name, prefix)` must use the same string.
    */
   prefix?: string;
+  /**
+   * When false, only `GET {prefix}.js` is registered. Use when a root-mounted
+   * panel already owns `POST /wire` (AdminController falls through to the kernel).
+   */
+  registerPost?: boolean;
 }
 
 /**
@@ -31,6 +36,8 @@ export function registerWire(router: Router, options: RegisterWireOptions): void
     response.header('Cache-Control', 'no-cache');
     return response.send(readFileSync(wireClientPath(), 'utf8'));
   });
+
+  if (options.registerPost === false) return;
 
   router.post(prefix, async ({ request, response }) => {
     try {

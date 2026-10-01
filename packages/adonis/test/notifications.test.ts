@@ -7,6 +7,7 @@ import {
   pushNotification,
   type NotificationSession,
 } from '../src/wire/notifications.js';
+import { isPanelWireComponent } from '../src/wire/handle.js';
 import { mkdtemp, readFile, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -24,6 +25,16 @@ function memorySession(): NotificationSession & { all: Record<string, unknown> }
     },
   };
 }
+
+describe('panel wire components', () => {
+  it('recognizes panel islands that share POST /wire at the host root', () => {
+    assert.equal(isPanelWireComponent('notifications'), true);
+    assert.equal(isPanelWireComponent('global-search'), true);
+    assert.equal(isPanelWireComponent('relation-manager'), true);
+    assert.equal(isPanelWireComponent('counter'), false);
+    assert.equal(isPanelWireComponent(undefined), false);
+  });
+});
 
 describe('panel notifications', () => {
   it('keeps unread notes, then marks one and all as read', () => {
