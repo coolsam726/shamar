@@ -2,12 +2,13 @@
 name = "shamar"
 compatibility_date = "2026-08-01"
 
+# Required for Worker Previews (`wrangler preview` / PR builds).
+# Inline empty table at root (before [assets]). A bare `[previews]` section
+# or `previews = {}` after `[assets]` does not work — TOML attaches the key
+# to the preceding table.
+previews = {}
+
 # Workers Builds runs `wrangler deploy` (not `pages deploy`).
 # Keep assets / compatibility at top level — do not nest under previews.
 [assets]
 directory = "./dist"
-
-# Required for Worker Previews (`wrangler preview` / PR builds).
-# Must be an inline empty table (`previews = {}`); a bare `[previews]`
-# section is often dropped when the file is parsed, which breaks previews.
-previews = {}
