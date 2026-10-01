@@ -124,6 +124,11 @@
   --color-shamar-top-accent: var(--color-primary-500);
 }
 
+/* Navigate loader uses accent so it stays visible against the primary top stripe. */
+.wire-progress {
+  background: var(--color-shamar-accent, #286291) !important;
+}
+
 .dark {
   /* Calm dark: lighter shell, darker elevated cards */
   --color-body: var(--color-gray-300);
@@ -833,12 +838,12 @@ fieldset.shamar-card {
 }
 
 [data-shamar-embed-detail] .shamar-detail-grid {
-  gap: 0.75rem 1.25rem;
+  gap: 1rem 1.5rem;
 }
 
 [data-shamar-embed-detail] .shamar-detail-cell {
   border: 0;
-  padding: 0.35rem 0;
+  padding: 0;
 }
 
 [data-shamar-embed-form] .shamar-form-section.shamar-card > .shamar-form-section__body:has(.shamar-m2m-table),
@@ -1860,7 +1865,7 @@ select.shamar-input option {
 
 .shamar-detail-grid {
   display: grid;
-  gap: 0;
+  gap: 1rem 1.5rem;
   grid-template-columns: repeat(var(--shamar-detail-cols, 2), minmax(0, 1fr));
 }
 
@@ -1881,14 +1886,32 @@ select.shamar-input option {
   min-width: 0;
 }
 
+.shamar-infolist-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
 .shamar-detail__label {
   display: block;
   margin: 0;
-  font-size: 0.75rem;
-  font-weight: 650;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--color-body-subtle);
+  line-height: 1.35;
+}
+
+.shamar-infolist-entry__value,
+.shamar-detail-cell > .shamar-field__value {
+  margin-top: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
   color: var(--color-heading);
+  line-height: 1.45;
+  word-break: break-word;
 }
 
 .shamar-detail__label-row,
@@ -2584,14 +2607,14 @@ select.shamar-input option {
   padding-left: 0;
   padding-right: 0;
   padding-bottom: 0;
-  border-right-width: 0;
 }
 
 .shamar-detail-cell:has(.shamar-m2m-table) > .shamar-detail__label-row {
-  padding: 0 0.75rem 0.5rem;
+  padding: 0 0 0.5rem;
 }
 
-.shamar-detail-cell:has(.shamar-m2m-table) > .shamar-field__value {
+.shamar-detail-cell:has(.shamar-m2m-table) > .shamar-field__value,
+.shamar-detail-cell:has(.shamar-m2m-table) > .shamar-infolist-entry__value {
   margin-top: 0;
 }
 

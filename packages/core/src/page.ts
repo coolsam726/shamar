@@ -172,6 +172,15 @@ export abstract class FormPage extends Page {
   }
 
   /**
+   * Whether the signed-in user may submit / mutate this form.
+   * When false, the Save control is hidden and fields render read-only.
+   * Defaults to true; override for settings / restricted pages.
+   */
+  static canSave(_user: ShamarUser | null | undefined): boolean {
+    return true;
+  }
+
+  /**
    * Initial form state. Defaults to `{}`; override to load a singleton / settings row.
    */
   static fill(

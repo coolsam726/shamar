@@ -1,6 +1,6 @@
 import type { HttpContext } from '@adonisjs/core/http';
 import { readFileSync } from 'node:fs';
-import { buildBrandingCss, resolveBranding } from './shamar/branding.js';
+import { buildBrandingCss, resolveEffectiveBranding } from './shamar/branding.js';
 import {
   shamarAdminCssPath,
   shamarAlpineJsPath,
@@ -66,9 +66,15 @@ export class AssetsController {
   brandingCss({ response }: HttpContext) {
     response.header('Content-Type', 'text/css; charset=utf-8');
     response.header('Cache-Control', 'no-cache');
-    return response.send(
-      buildBrandingCss(resolveBranding(this.panelBranding ?? this.config.branding)),
+    return this.resolveBrandingCss().then((css) => response.send(css));
+  }
+
+  private async resolveBrandingCss(): Promise<string> {
+    const branding = await resolveEffectiveBranding(
+      this.panelBranding ?? this.config.branding,
+      this.config.resolveBrandingOverrides,
     );
+    return buildBrandingCss(branding);
   }
 
   flowbiteDatepickerCss({ response }: HttpContext) {

@@ -11,6 +11,10 @@
     method="post"
     action="{{ basePath }}/{{ page.slug }}"
     class="space-y-6"
+    @if(canSavePage === false)
+      onsubmit="return false"
+      aria-readonly="true"
+    @endif
     x-data='shamarForm({
       endpoint: {{ jsonAttr(formStateEndpoint) }},
       operation: "edit",

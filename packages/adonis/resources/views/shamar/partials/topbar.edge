@@ -114,6 +114,21 @@
             <a href="{{ profilePath }}" class="block px-4 py-1.5 text-body hover:bg-surface-hover hover:text-heading">Profile</a>
           @endif
           <a href="{{ basePath }}" class="block px-4 py-1.5 text-body hover:bg-surface-hover hover:text-heading">Dashboard</a>
+          @if(userMenuLinks && userMenuLinks.length)
+            <div class="my-1 border-t border-default"></div>
+            @each(link in userMenuLinks)
+              @if(link.external)
+                <a
+                  href="{{ link.href }}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="block px-4 py-1.5 text-body hover:bg-surface-hover hover:text-heading"
+                >{{ link.label }}</a>
+              @else
+                <a href="{{ link.href }}" class="block px-4 py-1.5 text-body hover:bg-surface-hover hover:text-heading">{{ link.label }}</a>
+              @endif
+            @endeach
+          @endif
           @if(logoutPath)
             <form method="post" action="{{ logoutPath }}" class="block">
               @include('shamar::partials/csrf')

@@ -142,11 +142,30 @@ export class PanelBuilder {
     return this;
   }
 
+  /**
+   * Extra links in the user avatar dropdown (other panels, docs, marketing site).
+   *
+   * @example
+   * panel('admin').userMenuLinks([
+   *   { label: 'App panel', href: '/app' },
+   *   { label: 'shamar.dev', href: 'https://shamar.dev', external: true },
+   * ])
+   */
+  userMenuLinks(
+    links: NonNullable<PanelConfig['userMenuLinks']>,
+  ): this {
+    this.config.userMenuLinks = [...links];
+    return this;
+  }
+
   build(): PanelConfig {
     return {
       ...this.config,
       resources: [...this.config.resources],
       pages: [...(this.config.pages ?? [])],
+      userMenuLinks: this.config.userMenuLinks
+        ? [...this.config.userMenuLinks]
+        : undefined,
     };
   }
 }

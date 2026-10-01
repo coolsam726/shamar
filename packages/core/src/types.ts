@@ -692,4 +692,14 @@ export interface PanelConfig {
   allowUsersWithoutRoles?: boolean;
   /** Panel home dashboard class. Defaults to built-in {@link DashboardPage}. */
   dashboardPage?: typeof import('./dashboard-page.js').DashboardPage;
+  /**
+   * Extra links in the shell user dropdown (cross-panel demos, docs, marketing site).
+   * Use absolute paths or full URLs; set `external: true` for new-tab links.
+   */
+  userMenuLinks?: Array<{
+    label: string;
+    href: string;
+    /** Open in a new tab (also skips `wire:navigate`). */
+    external?: boolean;
+  }>;
 }

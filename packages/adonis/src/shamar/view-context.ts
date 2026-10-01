@@ -57,6 +57,8 @@ export interface AdminShellContext {
   globalSearchHtml: string;
   /** Signed notification bell from `@shamar/wire`. */
   notificationsHtml: string;
+  /** Extra user-dropdown links from panel config. */
+  userMenuLinks?: Array<{ label: string; href: string; external?: boolean }>;
 }
 
 export function navigationGroups(
@@ -160,6 +162,8 @@ export async function buildShellContext(options: {
     navigationSort: number;
     navigationIcon: string;
   };
+  /** Extra links for the user avatar dropdown. */
+  userMenuLinks?: Array<{ label: string; href: string; external?: boolean }>;
 }): Promise<AdminShellContext> {
   const basePath = panelPathPrefix(options.basePath ?? options.config.path ?? '/admin');
   const groups = navigationGroups(options.registry, {
@@ -224,6 +228,7 @@ export async function buildShellContext(options: {
     contentMaxWidthStyle: contentMaxWidth.style,
     globalSearchHtml: mountGlobalSearch(basePath),
     notificationsHtml: mountNotifications(basePath, options.notifications ?? []),
+    userMenuLinks: options.userMenuLinks?.length ? options.userMenuLinks : undefined,
   };
 }
 
