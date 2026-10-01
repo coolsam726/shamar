@@ -1,13 +1,13 @@
 name: GitHub Pages
 
+# Legacy URL https://coolsam726.github.io/shamar/ → https://shamar.dev/
+# (client redirect; GitHub Pages cannot issue HTTP 301s)
+
 on:
   push:
     branches: [main]
     paths:
-      - 'apps/docs/**'
-      - 'pnpm-lock.yaml'
-      - 'pnpm-workspace.yaml'
-      - 'package.json'
+      - '.github/pages-redirect/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -22,39 +22,19 @@ concurrency:
 
 jobs:
   build:
-    name: Build docs
+    name: Prepare redirect
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: pnpm
-
       - name: Setup Pages
         uses: actions/configure-pages@v5
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build
-        env:
-          PUBLIC_SITE_URL: https://coolsam726.github.io
-          PUBLIC_BASE_PATH: /shamar
-          PUBLIC_DEMO_URL: https://demo.shamar.dev
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm docs:build
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: apps/docs/dist
+          path: .github/pages-redirect
 
   deploy:
     name: Deploy

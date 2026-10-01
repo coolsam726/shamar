@@ -134,7 +134,11 @@ Custom domains: `shamar.dev` and `www.shamar.dev`. The Worker is the origin for 
 
 Optional: add a Cloudflare Redirect Rule so `docs.shamar.dev/*` → `https://shamar.dev/docs/$1` (301).
 
-## Docker image
+## GitHub Pages (legacy redirect)
+
+`https://coolsam726.github.io/shamar/` still deploys from [`.github/workflows/pages.yml`](.github/workflows/pages.yml), but only as a client-side redirect to `https://shamar.dev/` (path under `/shamar` is preserved). Do **not** set a GitHub Pages custom domain to `shamar.dev` — Cloudflare already serves that hostname.
+
+In the repo: **Settings → Pages → Source: GitHub Actions**, Custom domain empty.
 
 The production image builds the packages and the playground only. It does not include the marketing site. The host must set `PORT`. Set `APP_URL` to `https://demo.shamar.dev`.
 
