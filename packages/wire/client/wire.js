@@ -79,7 +79,7 @@
     return from.nodeType === 1 && to.nodeType === 1 && from.tagName === to.tagName;
   }
 
-  function morph(from, to, origin, skipIslands = true) {
+  function morph(from, to, origin, skipIslands = true, initAlpine = true) {
     if (from.nodeType === 3 && to.nodeType === 3) {
       if (from.nodeValue !== to.nodeValue) from.nodeValue = to.nodeValue;
       return;
@@ -110,10 +110,10 @@
       from.checked = to.checked;
     }
 
-    morphChildren(from, to, origin, skipIslands);
+    morphChildren(from, to, origin, skipIslands, initAlpine);
   }
 
-  function morphChildren(from, to, origin, skipIslands = true) {
+  function morphChildren(from, to, origin, skipIslands = true, initAlpine = true) {
     const current = [...from.childNodes];
     const incoming = [...to.childNodes];
     const used = new Set();
@@ -141,7 +141,7 @@
       }
       if (match) {
         used.add(match);
-        morph(match, target, origin, skipIslands);
+        morph(match, target, origin, skipIslands, initAlpine);
         ordered.push(match);
       } else {
         ordered.push(target.cloneNode(true));
@@ -153,7 +153,12 @@
     ordered.forEach((node, index) => {
       if (from.childNodes[index] !== node) from.insertBefore(node, from.childNodes[index] || null);
     });
-    if (window.Alpine?.initTree) {
+    // Island updates init Alpine on newly inserted subtrees while the parent
+    // scope is still alive. Full-page navigate must skip this — destroyTree already
+    // ran and reviveAlpine() re-inits the whole region after morph. Calling
+    // initTree on orphans here throws (selectedFiles/viewMode/… not defined)
+    // and leaves the destination page blank until a hard refresh.
+    if (initAlpine && window.Alpine?.initTree) {
       for (const node of ordered) {
         if (!used.has(node) && node.nodeType === 1 && !node.hasAttribute('wire:persist')) {
           window.Alpine.initTree(node);
@@ -723,7 +728,8 @@
           /* ignore */
         }
       }
-      morph(from, to, from, false);
+      // Skip Alpine.initTree during morph — parent x-data is dead until reviveAlpine.
+      morph(from, to, from, false, false);
       const restored = restorePersisted(from, kept);
       const alpineRoots = [...synced, from];
       for (const el of from.querySelectorAll('[wire\\:persist]')) {

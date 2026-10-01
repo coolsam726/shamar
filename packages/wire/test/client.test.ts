@@ -20,6 +20,8 @@ describe('wire client and a host without a panel', () => {
     assert.match(source, /window\.Wire = \{/);
     assert.match(source, /wire:persist/);
     assert.match(source, /wire-progress/);
+    // Navigate morph must defer Alpine until reviveAlpine (parent x-data first).
+    assert.match(source, /morph\(from, to, from, false, false\)/);
   });
 
   it('serves an island and increments it over HTTP', async () => {

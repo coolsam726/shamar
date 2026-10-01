@@ -123,7 +123,7 @@ save() {
 
 `@shamar/adonis` serves `assets/wire.js` at `{panel}/assets/wire.js` and loads it from the admin shell. The script listens on `document`, so every island on the page shares one runtime.
 
-It coexists with Alpine. On `alpine:init` it registers the `$wire` magic. After a morph it calls `Alpine.initTree` on nodes that were inserted.
+It coexists with Alpine. On `alpine:init` it registers the `$wire` magic. Island morphs call `Alpine.initTree` on inserted nodes while the parent scope is still alive. Full-page `wire:navigate` destroys Alpine on the outgoing region, morphs without initializing orphans, then `Alpine.initTree`s the destination root so nested `x-data` (media library, forms, …) sees its scope.
 
 ### Bindings
 
