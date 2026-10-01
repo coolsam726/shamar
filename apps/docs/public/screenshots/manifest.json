@@ -1,26 +1,12 @@
 {
-  "capturedAt": "2026-10-01T16:56:43.136Z",
-  "baseUrl": "http://localhost:3333",
+  "capturedAt": "2026-10-01T19:19:42.670Z",
+  "baseUrl": "http://127.0.0.1:3333",
   "themes": [
     "light",
     "dark"
   ],
   "files": [
     "login.png",
-    "dashboard.png",
-    "products-list.png",
-    "product-form.png",
-    "media-library.png",
-    "settings.png",
-    "product-catalog.png",
-    "hero-panel.png",
-    "login-dark.png",
-    "dashboard-dark.png",
-    "products-list-dark.png",
-    "product-form-dark.png",
-    "media-library-dark.png",
-    "settings-dark.png",
-    "product-catalog-dark.png",
-    "hero-panel-dark.png"
+    "login-dark.png"
   ]
 }

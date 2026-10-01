@@ -19,9 +19,13 @@ const EMAIL = process.env.DEMO_EMAIL ?? 'admin@example.com'
 const PASSWORD = process.env.DEMO_PASSWORD ?? 'password'
 const THEME_MODE = (process.env.SHOT_THEME ?? 'both').toLowerCase()
 const THEMES = THEME_MODE === 'both' ? ['light', 'dark'] : [THEME_MODE === 'dark' ? 'dark' : 'light']
+const ONLY = (process.env.SHOT_ONLY ?? '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean)
 
 /** @type {{ name: string; path: string; auth?: boolean; waitFor?: string }[]} */
-const SHOTS = [
+const ALL_SHOTS = [
   { name: 'login', path: '/login', auth: false },
   { name: 'dashboard', path: '/', waitFor: '[data-shamar-page]' },
   { name: 'products-list', path: '/products', waitFor: 'table' },
@@ -30,6 +34,8 @@ const SHOTS = [
   { name: 'settings', path: '/settings', waitFor: 'form' },
   { name: 'product-catalog', path: '/product-catalog', waitFor: 'table' },
 ]
+const SHOTS = ONLY.length ? ALL_SHOTS.filter((s) => ONLY.includes(s.name)) : ALL_SHOTS
+const CAPTURE_HERO = !ONLY.length || ONLY.includes('hero-panel')
 
 function shotFilename(name, theme) {
   return theme === 'dark' ? `${name}-dark.png` : `${name}.png`
@@ -50,6 +56,25 @@ async function settle(page) {
 }
 
 /**
+ * Ensure the panel theme matches the shot (login FOUC + authenticated shell).
+ * Auth pages only read `shamar-theme` / `html.dark`; colorScheme alone is not enough.
+ * @param {import('playwright').Page} page
+ * @param {'light' | 'dark'} theme
+ */
+async function applyTheme(page, theme) {
+  await page.evaluate((t) => {
+    try {
+      localStorage.setItem('shamar-theme', t)
+    } catch {
+      /* ignore */
+    }
+    const root = document.documentElement
+    if (t === 'dark') root.classList.add('dark')
+    else root.classList.remove('dark')
+  }, theme)
+}
+
+/**
  * @param {import('playwright').Browser} browser
  * @param {'light' | 'dark'} theme
  */
@@ -65,6 +90,13 @@ async function themedContext(browser, theme) {
     } catch {
       /* ignore */
     }
+    const apply = () => {
+      const root = document.documentElement
+      if (t === 'dark') root.classList.add('dark')
+      else root.classList.remove('dark')
+    }
+    apply()
+    document.addEventListener('DOMContentLoaded', apply)
   }, theme)
   return context
 }
@@ -74,6 +106,7 @@ async function capture(page, shot, theme) {
   if (shot.waitFor) {
     await page.waitForSelector(shot.waitFor, { timeout: 20_000 }).catch(() => {})
   }
+  await applyTheme(page, theme)
   await settle(page)
 
   const file = join(OUT_DIR, shotFilename(shot.name, theme))
@@ -104,7 +137,10 @@ async function main() {
   for (const theme of THEMES) {
     const context = await themedContext(browser, theme)
     const page = await context.newPage()
-    await login(page)
+    const needsAuth = SHOTS.some((s) => s.auth !== false) || CAPTURE_HERO
+    if (needsAuth) {
+      await login(page)
+    }
 
     for (const shot of SHOTS) {
       if (shot.auth === false) {
@@ -117,16 +153,19 @@ async function main() {
       captured.push(await capture(page, shot, theme))
     }
 
-    await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded' })
-    await page.waitForSelector('[data-shamar-page]', { timeout: 20_000 }).catch(() => {})
-    await settle(page)
-    const heroFile = join(OUT_DIR, shotFilename('hero-panel', theme))
-    await page.screenshot({
-      path: heroFile,
-      clip: { x: 0, y: 0, width: 1440, height: 820 },
-      animations: 'disabled',
-    })
-    captured.push(heroFile)
+    if (CAPTURE_HERO) {
+      await page.goto(`${BASE_URL}/`, { waitUntil: 'domcontentloaded' })
+      await page.waitForSelector('[data-shamar-page]', { timeout: 20_000 }).catch(() => {})
+      await applyTheme(page, theme)
+      await settle(page)
+      const heroFile = join(OUT_DIR, shotFilename('hero-panel', theme))
+      await page.screenshot({
+        path: heroFile,
+        clip: { x: 0, y: 0, width: 1440, height: 820 },
+        animations: 'disabled',
+      })
+      captured.push(heroFile)
+    }
 
     await context.close()
   }
