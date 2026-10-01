@@ -58,9 +58,19 @@
         @each(action in headerActions)
           <button
             type="button"
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md border border-default text-body hover:bg-surface-hover transition {{ action.color === 'danger' ? 'text-fg-danger' : '' }}"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md border transition
+              {{ action.color === 'danger'
+                ? 'border-default text-fg-danger hover:bg-danger-soft'
+                : action.color === 'primary' || action.color === 'accent'
+                  ? 'border-transparent bg-fg-brand text-white hover:opacity-90'
+                  : 'border-default text-body hover:bg-surface-hover' }}"
             @click="$dispatch('shamar-open-confirm', { variant: {{ jsonAttr(action.color === 'danger' ? 'danger' : 'primary') }}, mode: 'confirm', title: {{ jsonAttr(action.label) }}, message: {{ jsonAttr(action.confirm || 'Are you sure?') }}, confirmLabel: {{ jsonAttr(action.label) }}, action: '{{ basePath }}/{{ resource.slug }}/action/{{ action.name }}' })"
-          >{{ action.label }}</button>
+          >
+            @if(action.icon)
+              @!component('shamar::partials/action-icon', { icon: action.icon })
+            @endif
+            {{ action.label }}
+          </button>
         @endeach
       @endif
 
@@ -161,10 +171,19 @@
             @if(action.name !== 'view' && action.name !== 'edit' && action.name !== 'delete')
               <button
                 type="button"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-default rounded-md transition
-                  {{ action.color === 'danger' ? 'text-fg-danger hover:bg-danger-soft' : 'text-body hover:bg-surface-hover' }}"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border rounded-md transition
+                  {{ action.color === 'danger'
+                    ? 'border-default text-fg-danger hover:bg-danger-soft'
+                    : action.color === 'primary' || action.color === 'accent'
+                      ? 'border-transparent bg-fg-brand text-white hover:opacity-90'
+                      : 'border-default text-body hover:bg-surface-hover' }}"
                 @click="$dispatch('shamar-open-confirm', { variant: {{ jsonAttr(action.color === 'danger' ? 'danger' : 'primary') }}, mode: 'confirm', title: {{ jsonAttr(action.label) }}, message: {{ jsonAttr(action.confirm || 'Are you sure?') }}, confirmLabel: {{ jsonAttr(action.label) }}, action: '{{ basePath }}/{{ resource.slug }}/{{ record.id }}/action/{{ action.name }}' })"
-              >{{ action.label }}</button>
+              >
+                @if(action.icon)
+                  @!component('shamar::partials/action-icon', { icon: action.icon })
+                @endif
+                {{ action.label }}
+              </button>
             @endif
           @endeach
         @endif

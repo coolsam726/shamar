@@ -18,7 +18,7 @@ static override async handleAction(name, ctx) {
 }
 ```
 
-**Playground:** Tickets — Escalate / Mark resolved (with bell notifications), Export CSV, and **Test notification** header action; API keys — revoke/reactivate.
+**Playground:** Tickets (Ops) — header **Test notification** (bell icon) and **Export CSV**, plus row **Escalate** / **Mark resolved**. Each returns `{ notification }` and appears in the topbar bell. Settings → Notifications is unrelated email/SMS prefs.
 
 Return `{ notification: true }` (or `{ notification: { title, body } }`) from `handleAction` to push to the signed-in user's topbar bell.
 
