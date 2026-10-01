@@ -3,7 +3,7 @@
   :class="{ '-translate-x-full': !sidebarOpen }"
 >
   <div class="shamar-brand-panel relative px-4 shrink-0 flex items-center min-h-[60px] bg-neutral-primary border-b border-card-border">
-    <a href="{{ basePath }}" class="flex min-w-0 items-center gap-2.5 text-inherit no-underline">
+    <a href="{{ basePath || '/' }}" class="flex min-w-0 items-center gap-2.5 text-inherit no-underline">
       @if(branding.showLogo && branding.logoUrl)
         <img
           src="{{ branding.logoUrl }}"

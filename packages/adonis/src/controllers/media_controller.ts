@@ -10,6 +10,7 @@ import {
   sanitizeFilename,
 } from '../shamar/media-storage.js';
 import { normalizeMediaVisibility, resolveMediaFileUrl } from '../shamar/media-url.js';
+import { panelPathPrefix } from '../shamar/paths.js';
 
 export interface MediaControllerOptions {
   adapter: MediaLibraryAdapter;
@@ -62,7 +63,7 @@ export class MediaController {
   }
 
   private get basePath() {
-    return this.options.basePath.replace(/\/+$/, '') || '/admin';
+    return panelPathPrefix(this.options.basePath);
   }
 
   private get publicPath() {

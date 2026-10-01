@@ -91,7 +91,7 @@ export default class SessionController {
       }
       session.put(MASQUERADE_SESSION_KEY, true)
       await auth.use('web').login(user)
-      return response.redirect('/demo')
+      return response.redirect('/')
     }
 
     const loginMode = (
@@ -130,7 +130,7 @@ export default class SessionController {
     }
 
     await auth.use('web').login(result.user)
-    response.redirect('/demo')
+    response.redirect('/')
   }
 
   /**

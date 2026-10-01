@@ -11,6 +11,7 @@ import { buildAuthContext, canAccessPanel } from './shamar/auth.js';
 import { isMasqueradeSession } from './auth/masquerade.js';
 import { isImageLike } from './shamar/media-storage.js';
 import { normalizeMediaVisibility, resolveMediaFileUrl } from './shamar/media-url.js';
+import { panelPathPrefix } from './shamar/paths.js';
 
 type AdminAction = keyof {
   [Key in keyof AdminController as AdminController[Key] extends (
@@ -108,7 +109,7 @@ function registerPanelRoutes(
   runtime: ShamarRuntime,
   panel: PanelRuntime,
 ): void {
-  const prefix = panel.path.replace(/\/+$/, '') || '/admin';
+  const prefix = panelPathPrefix(panel.path);
   const routePrefix = `shamar.${panel.id}`;
 
   const handler = (action: AdminAction, asJson = false) => {
@@ -221,7 +222,7 @@ function registerPanelRoutes(
       .as(`${routePrefix}.resources.index`);
   });
 
-  group.prefix(prefix);
+  if (prefix) group.prefix(prefix);
   void app;
 }
 
@@ -232,7 +233,7 @@ function registerMediaRoutes(
   routePrefix: string,
 ): void {
   const media = panel.media!;
-  const basePath = panel.path.replace(/\/+$/, '') || '/admin';
+  const basePath = panelPathPrefix(panel.path);
 
   const mediaHandler = (action: MediaAction) => {
     return async (ctx: HttpContext) => {
@@ -370,7 +371,7 @@ function registerPublicMediaRoutes(router: Router, runtime: ShamarRuntime): void
   if (!media) return;
 
   const publicPath = media.publicPath.replace(/\/+$/, '') || '/media';
-  const basePath = panelWithMedia!.path.replace(/\/+$/, '') || '/admin';
+  const basePath = panelPathPrefix(panelWithMedia!.path);
   const controller = new MediaController({
     adapter: media.adapter,
     storage: media.storage,

@@ -8,7 +8,7 @@ import AdminDashboard from '#pages/admin/dashboard_page'
 export default class AdminPanel extends PanelProvider {
   panel() {
     return panel('admin')
-      .path('/demo')
+      .path('/')
       .branding({
         name: 'SHAMAR',
         logo: '/branding/shamar-logo.svg',

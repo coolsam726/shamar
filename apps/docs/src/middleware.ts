@@ -16,7 +16,18 @@ const DEMO_ORIGIN = (import.meta.env.PUBLIC_DEMO_URL || '').replace(/\/$/, '');
 const ROOT_URL = /((?:href|src|data-lightbox-src)=")(\/[^"]*)(")/g;
 
 function isDemoPath(url: string) {
-  return url === '/demo' || url.startsWith('/demo/') || url === '/login' || url.startsWith('/login');
+  return url === '/demo' || url.startsWith('/demo/') || url.startsWith('/demo?') || url === '/login' || url.startsWith('/login');
+}
+
+/** Docs still write `/demo/...`. The live panel is the root of the demo host. */
+function demoHref(url: string) {
+  if (url === '/login' || url.startsWith('/login/') || url.startsWith('/login?')) {
+    return `${DEMO_ORIGIN}${url}`;
+  }
+  if (url === '/demo' || url === '/demo/') return `${DEMO_ORIGIN}/`;
+  if (url.startsWith('/demo?')) return `${DEMO_ORIGIN}/${url.slice('/demo'.length)}`;
+  if (url.startsWith('/demo/')) return `${DEMO_ORIGIN}${url.slice('/demo'.length)}`;
+  return `${DEMO_ORIGIN}${url}`;
 }
 
 export const onRequest = defineMiddleware(async (_context, next) => {
@@ -28,7 +39,7 @@ export const onRequest = defineMiddleware(async (_context, next) => {
   const based = html.replace(ROOT_URL, (whole, open: string, url: string, close: string) => {
     if (url.startsWith('//') || url === BASE || url.startsWith(`${BASE}/`)) return whole;
     if (isDemoPath(url)) {
-      return DEMO_ORIGIN ? `${open}${DEMO_ORIGIN}${url}${close}` : whole;
+      return DEMO_ORIGIN ? `${open}${demoHref(url)}${close}` : whole;
     }
     if (!BASE) return whole;
     return `${open}${BASE}${url}${close}`;

@@ -3,6 +3,7 @@ import { DEFAULT_LIST_PER_PAGE, resolveContentMaxWidth } from '@shamar/core';
 import type { AuthorizationContext } from '@shamar/cherubim';
 import type { Authorizer } from '@shamar/cherubim';
 import type { ShamarConfig } from '../config.js';
+import { panelPathPrefix } from './paths.js';
 import { canViewResource } from './auth.js';
 import {
   resolveEffectiveBranding,
@@ -160,7 +161,7 @@ export async function buildShellContext(options: {
     navigationIcon: string;
   };
 }): Promise<AdminShellContext> {
-  const basePath = options.basePath ?? options.config.path ?? '/admin';
+  const basePath = panelPathPrefix(options.basePath ?? options.config.path ?? '/admin');
   const groups = navigationGroups(options.registry, {
     authorizer: options.authorizer,
     authCtx: options.authCtx,

@@ -21,7 +21,7 @@ primary_region = 'lhr'
   SESSION_DRIVER = 'cookie'
   LOG_LEVEL = 'info'
   SHAMAR_DEMO_MODE = 'true'
-  APP_URL = 'https://shamar.dev'
+  APP_URL = 'https://demo.shamar.dev'
   DEMO_DOCS_ORIGIN = 'https://shamar.dev,http://localhost:3333,http://localhost:4321'
 
 [http_service]
