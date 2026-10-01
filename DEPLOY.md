@@ -116,16 +116,23 @@ Media uploads persist in the `shamar_media` Docker volume. A demo reset reseeds 
 
 ## Cloudflare Pages
 
-Create a Pages project from this repo.
+Create a Pages project named **`shamar`** from this repo (Workers & Pages → Connect to Git). Project name must match [`apps/docs/wrangler.toml`](apps/docs/wrangler.toml).
+
+Because this is a pnpm monorepo, set **Root directory** to `apps/docs` and run the install/build from the repo root:
 
 | Setting | Value |
 |---------|--------|
-| Build command | `pnpm install --frozen-lockfile && pnpm pages:build` |
-| Output directory | `apps/docs/dist` |
+| Root directory | `apps/docs` |
+| Build command | `cd ../.. && pnpm install --frozen-lockfile && pnpm pages:build` |
+| Build output directory | `dist` |
 | Production branch | `main` |
 | `NODE_VERSION` | `22` |
 
-Custom domains: `shamar.dev` and `www.shamar.dev` if you want it. Pages is the origin for the apex, so the Cloudflare DNS records for `@` and `www` stay on Pages. The demo hostname is a separate record pointed at the VPS.
+`wrangler.toml` already sets `pages_build_output_dir = "dist"` (relative to `apps/docs`). Do not set output to `apps/docs/dist` when Root is `apps/docs`.
+
+Custom domains: `shamar.dev` and `www.shamar.dev`. Pages is the origin for the apex; DNS for `@` and `www` stay on Pages. The demo hostname is a separate record pointed at the VPS.
+
+Optional: add a Cloudflare Redirect Rule so `docs.shamar.dev/*` → `https://shamar.dev/docs/$1` (301).
 
 ## Docker image
 
