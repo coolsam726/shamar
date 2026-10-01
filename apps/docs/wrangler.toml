@@ -1,8 +1,10 @@
-# Cloudflare Pages — shamar.dev (landing + docs)
+# Cloudflare Workers (static assets) — shamar.dev (landing + docs)
 name = "shamar"
 compatibility_date = "2026-08-01"
-pages_build_output_dir = "dist"
 
-# Required by Workers Builds / Worker Previews (branch deploys).
-# Empty is fine: this site is static and has no bindings or secrets.
+# Workers Builds runs `wrangler deploy` (not `pages deploy`).
+[assets]
+directory = "./dist"
+
+# Required by Worker Previews (branch deploys). Empty is fine: static, no bindings.
 [previews]
