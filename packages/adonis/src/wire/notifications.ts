@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { escapeHtml, WireKernel, type WireComponent, type WireRequest } from '@shamar/wire';
+import { panelWireSecret } from './secret.js';
 
 const secretKey = 'shamar.notifications';
 
@@ -61,8 +62,6 @@ function isNotification(value: unknown): value is PanelNotification {
   return typeof note.id === 'string' && typeof note.title === 'string' && typeof note.createdAt === 'string';
 }
 
-const kernelSecret = randomUUID();
-
 function renderBell(component: WireComponent): string {
   const open = component.data.open === true;
   const items = Array.isArray(component.data.items)
@@ -113,7 +112,7 @@ function bellComponent(items: PanelNotification[], session?: NotificationSession
 
 export function mountNotifications(basePath: string, items: PanelNotification[] = []): string {
   const endpoint = `${basePath.replace(/\/+$/, '')}/wire`;
-  const kernel = new WireKernel(kernelSecret, {
+  const kernel = new WireKernel(panelWireSecret(), {
     notifications: {
       create: () => bellComponent(items),
       render: renderBell,
@@ -128,7 +127,7 @@ export function updateNotifications(
   request: WireRequest,
 ) {
   const endpoint = `${basePath.replace(/\/+$/, '')}/wire`;
-  const kernel = new WireKernel(kernelSecret, {
+  const kernel = new WireKernel(panelWireSecret(), {
     notifications: {
       create: () => bellComponent([], session),
       refresh(component) {
