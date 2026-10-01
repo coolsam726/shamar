@@ -1,7 +1,11 @@
 ---
 title: Registering resources
-description: Panel registration and auto-discovery.
+description: How a resource class becomes a set of routes.
 ---
+
+Registration is the step that connects a resource class to a panel. Writing `class ProductResource` does nothing until the panel knows the class exists. Discovery walks a directory and loads every class whose name ends in `Resource`. An explicit list is the alternative when you want to choose the classes by hand, or when they do not live in that folder.
+
+Either way, the result is the same: the host builds list, create, edit, and show routes for each class under the panel path.
 
 ```ts
 // config/shamar.ts

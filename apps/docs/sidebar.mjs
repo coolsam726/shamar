@@ -46,6 +46,7 @@ export async function buildSidebar() {
     {
       label: 'Getting started',
       items: [
+        { label: 'Introduction', slug: 'docs/guides/introduction' },
         { label: 'Installation', slug: 'docs/guides/installation' },
         { label: 'Your first resource', slug: 'docs/guides/first-resource' },
         { label: 'Live demo', slug: 'docs/guides/live-demo' },
@@ -71,18 +72,35 @@ export async function buildSidebar() {
     ]),
     group('Pages', pages, true),
     {
+      label: 'Wire',
+      items: [
+        { label: 'Overview', slug: 'docs/wire' },
+        { label: 'Install', slug: 'docs/wire/install' },
+        { label: 'Components', slug: 'docs/wire/adonis' },
+        { label: 'SPA navigation', slug: 'docs/wire/spa' },
+        { label: 'Without Adonis', slug: 'docs/wire/node' },
+        { label: 'Kernel', slug: 'docs/wire/components' },
+        { label: 'Browser', slug: 'docs/wire/browser' },
+        { label: 'Nesting', slug: 'docs/wire/nesting' },
+      ],
+    },
+    {
       label: 'Concepts',
       items: [
-        { label: 'Wire', slug: 'docs/concepts/wire' },
         { label: 'Auth & RBAC', slug: 'docs/concepts/auth' },
         { label: 'Media library', slug: 'docs/concepts/media' },
       ],
     },
     {
-      label: 'Other reference',
+      label: 'Packages',
       items: [
-        { label: 'REST & OpenAPI', slug: 'docs/reference/rest' },
-        { label: 'Packages', slug: 'docs/reference/packages' },
+        { label: 'Overview', slug: 'docs/packages' },
+        { label: 'Core', slug: 'docs/packages/core' },
+        { label: 'Adonis host', slug: 'docs/packages/adonis' },
+        { label: 'SQL (Lucid)', slug: 'docs/packages/lucid' },
+        { label: 'MongoDB', slug: 'docs/packages/mongoose' },
+        { label: 'Cherubim', slug: 'docs/packages/cherubim' },
+        { label: 'REST', slug: 'docs/packages/rest' },
       ],
     },
     {

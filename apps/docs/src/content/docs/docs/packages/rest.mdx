@@ -1,0 +1,48 @@
+---
+title: REST
+description: The same resources, as JSON, with an OpenAPI page.
+---
+
+`@shamar/rest` is a second door onto the resources you already declared for the panel. The panel door returns HTML. This door returns JSON, and it publishes an OpenAPI document so the API can be read in a browser with Scalar.
+
+You do not describe the product form twice. The form and table schema on the resource are the source of the read and write shapes. Custom routes that are not resources can be added by hand with a small annotation.
+
+Install it only when something other than the admin UI needs the data. An internal panel does not require a public API.
+
+## How it sits in the app
+
+Register its provider after the Adonis host, so the panel's resources already exist when the API document is built.
+
+```ts
+providers: [
+  () => import('@shamar/adonis/provider'),
+  () => import('@shamar/rest/provider'),
+]
+```
+
+```bash
+pnpm add @shamar/rest
+```
+
+The playground exposes the browser UI at `/api/docs`. The JSON document is served next to that path. Both are configurable. Paths under `/api/shamar` cover the resource CRUD the panel already knows about, when that generation is turned on.
+
+## Custom routes
+
+A route that is not a resource can still appear in the document. The `.openapi()` call attaches a summary, a query schema, and a response schema. Schemas are small builders (`dto`, `string`, `number`) or a Vine validator you already use for the request.
+
+```ts
+router.get('/api/users', handler).openapi({
+  tags: ['Users'],
+  summary: 'List users',
+  query: listValidator,
+  response: listDto,
+})
+```
+
+Those routes are your HTTP handlers. REST records them in the OpenAPI document. It does not replace the handler.
+
+## Authorization
+
+If [Cherubim](/docs/packages/cherubim/) API keys are enabled, the same principal that may call the panel's JSON routes is the one you checked the key against. REST does not invent a second permission system.
+
+The shorter configuration reminder, including the playground URLs, stays on [REST & OpenAPI](/docs/reference/rest/). This page is the reason that feature exists.

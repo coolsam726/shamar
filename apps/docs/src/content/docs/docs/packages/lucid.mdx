@@ -1,0 +1,58 @@
+---
+title: SQL with Lucid
+description: How the panel reads and writes SQL when the app uses Adonis Lucid.
+---
+
+`@shamar/lucid` is the database adapter for SQL. PostgreSQL, MySQL, SQLite — whichever Lucid is already using. When a staff member opens a list or saves a form, the Adonis host asks this adapter to query or persist the Lucid model on the resource.
+
+You normally do not construct the adapter yourself. Setting `orm: 'lucid'` in `config/shamar.ts` makes the provider do it. This page is here so you know what that choice means, and what is still your job.
+
+## What an adapter is
+
+The panel's screens are the same for every database. The difference is how a "page of products" is loaded. An adapter is the object that implements list, find, create, update, and delete. Lucid's adapter uses Lucid's query builder. Your resource still says `static model = Product`. `Product` must be a Lucid model class, not a string.
+
+The app owns the connection. `@adonisjs/lucid` and your `config/database.ts` stay in charge of hosts, credentials, and migrations. Shamar never opens a SQL connection of its own.
+
+## Turn it on
+
+```bash
+pnpm add @shamar/adonis @adonisjs/lucid
+```
+
+`@shamar/adonis` already depends on `@shamar/lucid`. You install Lucid because the peer is the database layer your app uses.
+
+```ts
+export default defineConfig({
+  orm: 'lucid',
+  panels: [
+    panel('admin').path('/admin').discoverResources('app/resources/admin'),
+  ],
+})
+```
+
+`node ace configure @shamar/adonis` asks this question for you the first time.
+
+## Models, connections, and soft delete
+
+Each resource points at one model:
+
+```ts
+import Product from '#models/product'
+
+export default class ProductResource extends Resource {
+  static model = Product
+  static slug = 'products'
+}
+```
+
+If that model lives on a named Lucid connection from `config/database.ts`, set `static connection = 'legacy'` on the resource. Other resources keep the default connection.
+
+Soft delete means "hide this row instead of removing it." With `static softDelete = true`, the adapter filters lists to rows whose `deletedAt` is empty, and a delete from the panel writes that timestamp instead of issuing a hard delete. The field name can change: `static softDelete = { field: 'deleted_at' }`. Restore and permanent delete are actions the panel shows when a row is already stamped. The column has to exist on the table. The adapter does not add it.
+
+## Media
+
+The file manager can store folders and files in SQL as well. `createLucidMediaLibraryAdapter({ Folder, File })` takes two Lucid models and is passed into the panel's `media` configuration. [Media library](/docs/concepts/media/) is the screen. This adapter is only the storage behind it.
+
+## When you would call the adapter yourself
+
+`createLucidAdapter()` returns the same object the provider builds. Use it if you are driving Shamar from a host that is not the standard provider. Inside a normal Adonis app, `orm: 'lucid'` is the whole integration.

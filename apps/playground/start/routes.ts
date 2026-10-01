@@ -22,6 +22,9 @@ router
  * Marketing landing is the Astro build synced into public/index.html.
  * Keep this ahead of catch-alls; static middleware also serves /docs/*.
  */
+router.get('/counter', async ({ view }) => view.render('pages/counter'))
+router.get('/counter/about', async ({ view }) => view.render('pages/counter_about'))
+
 router.get('/', async ({ response, view }) => {
   const { default: app } = await import('@adonisjs/core/services/app')
   const { access } = await import('node:fs/promises')

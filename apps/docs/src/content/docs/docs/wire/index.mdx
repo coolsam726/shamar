@@ -1,0 +1,56 @@
+---
+title: Overview
+description: What @shamar/wire is, and how an island round-trip works.
+---
+
+`@shamar/wire` is the live-component layer. The rest of the panel is a normal server-rendered page: a request arrives, HTML goes back, and Alpine.js handles small things that never need the server, such as opening a menu. Some interactions are not small. Typing in global search, marking a notification read, or clicking increment on a counter must change data on the server and update only that part of the page.
+
+Wire is how those pieces work. You write a class whose public fields are the state and whose methods are the actions. The browser holds an HTML island and a signed snapshot of that state. An action posts the snapshot back. The server checks the signature, runs the method, and returns new HTML. The browser morphs the island in place so focus and surrounding page stay put.
+
+Filament does this with Livewire. You do not need that background. The sentence above is the whole model: state on the server, HTML in the browser, a signed round trip between them. A panel uses Wire for search, notifications, and similar islands. A normal Adonis page can use it too, with no admin panel at all. [Install](/docs/wire/install/) is that path, including where the files live. [Components](/docs/wire/adonis/) is discovery and hooks. [SPA navigation](/docs/wire/spa/) is moving between whole pages without a full reload.
+
+Alpine can sit on the same page. `$wire` is the bridge: Alpine reads and calls the island without replacing the rest of the page.
+
+## A round trip
+
+```text
+GET /                mount()  →  HTML island + signed snapshot
+user input           browser  →  POST /wire  { snapshot, updates, calls }
+server               update() →  verify, hooks, methods, new HTML
+browser              morph    →  same DOM node, or follow effects.redirect
+```
+
+The endpoint in `kernel.mount('counter', '/wire')` must be the POST URL you registered. The script URL can be different. `registerWire` uses `/wire` for POST and `/wire.js` for the script. A Shamar panel uses `POST /admin/wire` and `GET /admin/assets/wire.js`.
+
+```json
+{
+  "snapshot": {
+    "id": "a1b2c3d4e5f67890",
+    "name": "counter",
+    "data": { "count": 0 },
+    "checksum": "hex hmac"
+  },
+  "updates": { "count": 1 },
+  "calls": [{ "method": "increment", "params": [] }]
+}
+```
+
+```json
+{
+  "snapshot": {
+    "id": "a1b2c3d4e5f67890",
+    "name": "counter",
+    "data": { "count": 2 },
+    "checksum": "new hmac"
+  },
+  "html": "<div wire:id=\"…\" wire:snapshot=\"…\" wire:endpoint=\"/wire\"><button type=\"button\" wire:click=\"increment\">2</button></div>"
+}
+```
+
+`effects` is added only when the component set one. A redirect is not stored in the snapshot.
+
+```json
+{ "effects": { "redirect": "/orders/4" } }
+```
+
+Continue with [Install](/docs/wire/install/). The kernel protocol on this page is what the provider does for you. Build it by hand only in [Without Adonis](/docs/wire/node/).

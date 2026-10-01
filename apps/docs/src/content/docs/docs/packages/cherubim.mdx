@@ -1,0 +1,30 @@
+---
+title: Cherubim
+description: Permissions, roles, and API keys once you already know who is signed in.
+---
+
+`@shamar/cherubim` answers a different question from login. Login tells the app who the current person is. Cherubim tells the panel what that person is allowed to do: view a list of products, create one, delete one, or call the API with a key instead of a session.
+
+Shamar does not ship its own user table. Adonis auth (or LDAP, or both) remains the way people sign in. Cherubim sits on top of that identity. [Auth & RBAC](/docs/concepts/auth/) is the panel-facing walkthrough. This page is what the package itself is.
+
+## Abilities
+
+An ability is a named permission string. Resources imply a set of them, such as `products:viewAny` and `products:create`, from the resource slug and the action. Cherubim can build that catalog from the resources you registered, so you are not inventing a parallel list of permission names by hand.
+
+A role is a bundle of abilities. A user has roles. At request time an authorizer looks at the current user and answers `can('products:create')`. The panel hides navigation and refuses routes when the answer is no. Your own code can call the same authorizer outside the panel.
+
+## Policies
+
+A policy is a class that decides access to one kind of record when the rule is more specific than a global ability — for example, "an editor may update a product only when they created it." Cherubim includes a base policy type for that. The panel checks policies where a resource declares them. A missing policy falls back to the ability catalog, so a simple app can live on abilities alone.
+
+## API keys
+
+Some callers are not a person in a browser. A script or another service sends `Authorization: Bearer …`. Cherubim can issue a key, store only a hash, and resolve the key back to a principal with a fixed set of permissions. The panel can then protect `/api/shamar` with that check when `auth.apiKeys.protectApi` is on. Session cookies and API keys are two doors onto the same authorizer.
+
+## What you install
+
+```bash
+pnpm add @shamar/cherubim
+```
+
+`@shamar/adonis` already depends on it, because the panel's login publish command and ability checks live in the host. You configure the bridge — how a session user is loaded, and where roles are stored — in the Shamar config. The package does not assume one users schema.

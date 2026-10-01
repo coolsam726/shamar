@@ -1,0 +1,96 @@
+---
+title: Introduction
+description: What Shamar is, what it draws for you, and how the pieces fit together.
+---
+
+Shamar is an admin panel for [AdonisJS](https://adonisjs.com/). You describe a back office in TypeScript — which models people can manage, which fields appear on a form, which columns appear in a list — and Shamar serves the screens, the routes, and the database calls.
+
+You do not draw the list page, the create form, or the edit form yourself for every model. You declare a **resource**. The panel turns that declaration into the pages your staff actually use.
+
+If you have used Filament, the shape will feel familiar: resources, forms, tables, actions, and a dashboard. You do not need to have used Filament. The rest of this page explains the same ideas from scratch.
+
+## What an admin panel is doing
+
+An admin panel is the private part of an application. Customers use the public site. Staff use the panel to create products, edit orders, upload files, and change settings. Those screens repeat: a table of records, a form to create one, a form to edit one, a page that shows one record, and buttons that do something to a record.
+
+Shamar owns that repetition. Your application still owns the database models, the authentication (who is signed in), and the business rules that are unique to you.
+
+## What you write
+
+A resource is a class. It points at a model and answers a few questions:
+
+- What is this thing called, and where does it live in the sidebar?
+- Which inputs appear when someone creates or edits a record?
+- Which columns appear in the list, and which of them can be searched or sorted?
+- Who is allowed to see or change it?
+
+```ts
+import { Resource, form, table, TextInput, TextColumn } from '@shamar/core'
+import Product from '#models/product'
+
+export default class ProductResource extends Resource {
+  static model = Product
+  static slug = 'products'
+  static label = 'Products'
+
+  static form() {
+    return form((f) => {
+      f.schema([TextInput.make('name').required()])
+    })
+  }
+
+  static table() {
+    return table((t) => {
+      t.schema([TextColumn.make('name').searchable()])
+    })
+  }
+}
+```
+
+That class does not contain HTML. `TextInput` and `TextColumn` are descriptions. The Adonis package reads them and renders the actual page.
+
+## What Shamar draws for you
+
+After the panel is installed and the person is signed in, a resource registered at slug `products` gets routes under the panel path (often `/admin`):
+
+| Page | What the person sees |
+|------|----------------------|
+| List | A table of records, with search, filters, sorting, and pagination |
+| Create | An empty form built from `form()` |
+| Edit | The same form, filled with one record |
+| Show | A read-only view of one record |
+
+Around those pages the panel draws the chrome that is the same everywhere: a sidebar, a top bar, a login screen, breadcrumbs, and flash messages. Branding (name, color, logo) is configuration, not a separate front-end project.
+
+## How a request moves through the stack
+
+Shamar is split into packages so the description of the UI is not tied to one database.
+
+1. **`@shamar/core`** is the language you write resources in. It does not open a database connection and it does not speak HTTP.
+2. An **adapter** reads and writes records. `@shamar/lucid` talks to SQL through Adonis Lucid. `@shamar/mongoose` talks to MongoDB through Mongoose. You pick one when you configure the panel. A resource class looks the same either way; `static model` is a Lucid model or a Mongoose model.
+3. **`@shamar/adonis`** is the host. It registers routes, renders Edge templates, and calls the adapter when a list or a form is submitted.
+
+A list request looks like this: the browser asks for `/admin/products`. The host finds `ProductResource`, asks the adapter for a page of records, uses `table()` to decide the columns, and sends back HTML. A save request validates the fields declared on `form()`, then asks the adapter to create or update the model.
+
+Nothing in that flow builds a separate single-page app. The panel is server-rendered HTML, with Alpine.js for small interactive pieces (opening a menu, toggling a sidebar). Live pieces that must round-trip to the server — a counter, a notification bell, global search — use [Wire](/docs/wire/).
+
+## Panels
+
+A panel is one mounted admin area: its own URL prefix, its own set of resources, and its own branding. A simple app has one panel at `/admin`. The playground mounts more than one so a public demo can live next to another panel in the same process. Each panel is a `panel('name')` call in `config/shamar.ts`.
+
+## What is optional
+
+The panel works with core, one database adapter, and the Adonis host. Other packages add capabilities you can leave out:
+
+| Package | What it adds |
+|---------|----------------|
+| [`@shamar/cherubim`](/docs/packages/cherubim/) | Roles, abilities, and API keys — *who may do what*, after you already know who is signed in |
+| [`@shamar/rest`](/docs/packages/rest/) | A JSON API for the same resources, plus an OpenAPI page |
+| [`@shamar/wire`](/docs/wire/) | Live server components, inside the panel or on a normal Adonis page. Published to npm. Releases go out through GitHub Actions trusted publishing |
+| Media | A file manager and file fields, stored with the same database you already chose |
+
+Those are documented under [Packages](/docs/packages/). They are not required to get a first list and form on screen.
+
+## What comes next
+
+[Installation](/docs/guides/installation/) adds the host to an Adonis app and chooses SQL or MongoDB. [Your first resource](/docs/guides/first-resource/) is the shortest path from an empty panel to a working CRUD screen. The [live demo](/docs/guides/live-demo/) is a seeded panel you can click through before you install anything.

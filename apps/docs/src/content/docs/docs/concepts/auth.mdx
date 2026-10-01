@@ -5,6 +5,10 @@ description: Session login, Cherubim abilities, roles, and API keys.
 
 Shamar expects you to own authentication, then plug **Cherubim** for authorization.
 
+Sign-in and permission are two different problems, and Shamar keeps them in different places. Sign-in answers "who is this request?" That is Adonis auth: a session, a user model, optionally LDAP. The panel can publish a branded login page, but it does not invent your users table. Authorization answers "what may this person do?" That is [Cherubim](/docs/packages/cherubim/): abilities such as `products:viewAny`, roles that bundle those abilities, and API keys for callers that are not a browser session.
+
+If everyone who can log in may do everything, you can ignore Cherubim at first. The panel still requires a logged-in user wherever you put the auth middleware. Add abilities when two people should see different sidebar items, or when a script should call the JSON API with a key instead of a password.
+
 ## Session login
 
 `@shamar/adonis` can publish a branded login page. Wire `auth.loginMode` (`local` | `ldap` | `both`) and optional LDAP domains in `defineConfig`.

@@ -6,6 +6,10 @@ description: CRUD resources — form, table, infolist, actions, and navigation.
 import DocScreenshot from '../../../../../components/DocScreenshot.astro';
 import DocApiTable from '../../../../../components/DocApiTable.astro';
 
+A resource is how one model becomes part of the admin panel. Staff need to list records, open one, create one, and edit one. Writing those four screens by hand, for every model, is the work Shamar exists to remove. You write a class that points at the model and describes the form, the table, and the read-only view. The host turns that class into routes and HTML.
+
+The class does not know whether the model is SQL or MongoDB. It stores the model and the schema. The [adapter](/docs/packages/) you chose at installation performs the query. If this is your first resource, the short path is [Your first resource](/docs/guides/first-resource/). This page is the full picture: the configuration a class can carry, and how it is discovered.
+
 <DocScreenshot
   src="/screenshots/products-list.png"
   alt="Products resource list"

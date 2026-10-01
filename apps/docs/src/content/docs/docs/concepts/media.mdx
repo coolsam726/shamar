@@ -5,6 +5,10 @@ description: File Manager, folders, and FilePicker fields.
 
 import DocScreenshot from '../../../../components/DocScreenshot.astro';
 
+The media library is a file manager inside the panel, plus form fields that pick or upload a file stored there. It is optional. A panel that only edits text records never needs it. When you enable it, staff get folders, uploads, and public or private URLs, and your forms can use a file picker instead of asking for a raw path.
+
+Files are not stored by core. The library needs an adapter that matches your database: Lucid models if you are on SQL, Mongoose models if you are on MongoDB. Those adapters are documented with the packages, [SQL](/docs/packages/lucid/) and [MongoDB](/docs/packages/mongoose/). This page is the screen and the panel option that turns it on.
+
 Enable media on a panel to get a File Manager UI and `FilePicker` form fields.
 
 <DocScreenshot

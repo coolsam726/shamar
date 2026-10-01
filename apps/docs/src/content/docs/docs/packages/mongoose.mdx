@@ -1,0 +1,73 @@
+---
+title: MongoDB
+description: Native MongoDB support through Mongoose, as a first-class adapter beside SQL.
+---
+
+`@shamar/mongoose` is Shamar's MongoDB adapter. It is not a sidecar or a community driver. A panel can use it the same way it uses SQL: `orm: 'mongoose'` in config, a Mongoose model on each resource, and the same form and table builders from [core](/docs/packages/core/).
+
+The playground and the [live demo](/docs/guides/live-demo/) run on this adapter. If you are clicking through `/demo`, you are already looking at MongoDB records drawn by the same screens a Lucid app would use.
+
+## Why a separate package
+
+Documents are not rows. MongoDB uses `_id`, schemaless collections, and a different query language. The admin UI does not want to know any of that. Core describes a field named `name`. The Mongoose adapter is the only place that turns "list products, page 2, search for acme" into a Mongoose query, and the only place that writes a form submission back onto a document.
+
+Keeping that in its own package means a SQL app never loads Mongoose, and a MongoDB app never loads Lucid's query builder. The host depends on both adapters so the configure command can offer the choice, but only the `orm` you set is constructed at boot.
+
+## What you own
+
+Shamar does not call `mongoose.connect`. Your app opens the connection during startup, the same way it would without a panel, and the adapter uses the connection that is already there. Models, schemas, and indexes stay in the application.
+
+```bash
+pnpm add @shamar/adonis mongoose
+```
+
+Mongoose 8 or newer is the peer. `@shamar/adonis` already depends on `@shamar/mongoose`.
+
+## Turn it on
+
+```ts
+import { defineConfig, panel } from '@shamar/adonis'
+
+export default defineConfig({
+  orm: 'mongoose',
+  panels: [
+    panel('admin')
+      .path('/admin')
+      .discoverResources('app/resources/admin'),
+  ],
+})
+```
+
+A resource binds the model class:
+
+```ts
+import { Resource } from '@shamar/core'
+import Product from '#models/product'
+
+export default class ProductResource extends Resource {
+  static model = Product
+  static slug = 'products'
+}
+```
+
+`Product` is a Mongoose model. The panel lists and saves documents of that model. String model names (`static model = 'Product'`) also work if you pass the connection into `createMongooseAdapter({ connection })` yourself. On the normal provider path, use the class.
+
+## How documents look inside the panel
+
+MongoDB stores the primary key as `_id`. The admin UI, URLs, and form payloads speak `id`. The adapter copies `_id` into a string `id` when it hands a document to the screen, and it accepts that string when it looks a document up again. You do not add an `id` field to the schema for Shamar's sake.
+
+Search in a list is a regular expression match on the columns you marked `.searchable()`. `\`, `%`, and related characters are treated as literal text, so a user can search for a backslash without the query throwing. That behavior lives in this adapter; the table column in core only says "this column is searchable."
+
+## Soft delete
+
+`static softDelete = true` stores a `deletedAt` timestamp instead of removing the document. Lists hide those documents. Delete from the panel sets the timestamp. The toolbar can show trashed records, restore them, or delete them permanently, which does remove the document. Use `static softDelete = { field: 'deleted_at' }` when the field is named differently. The field has to be in your schema. The adapter does not alter the collection.
+
+## Relations and media
+
+Relation fields on a form (a company picker on a product, a list of linked records) search the related Mongoose model through this same adapter. The form field in core only names the relation. The query runs here.
+
+The file manager can store folder and file metadata in MongoDB too. `createMongooseMediaLibraryAdapter({ Folder, File })` takes the two models and is handed to the panel `media` option. The screen is documented under [Media library](/docs/concepts/media/).
+
+## Using the adapter without the provider
+
+`createMongooseAdapter()` returns the object the provider would have built. Pass it only if you are hosting Shamar outside `defineConfig`. In an Adonis app, `orm: 'mongoose'` is the integration. The playground's `config/shamar.ts` is a full example: one process, Mongoose models, and panels that never mention MongoDB in their resource classes.

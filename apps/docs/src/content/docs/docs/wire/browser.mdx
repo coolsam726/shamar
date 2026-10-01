@@ -1,0 +1,107 @@
+---
+title: Browser
+description: wire:* attributes, morphing, loading, and $wire.
+---
+
+One script handles every island on the page. It listens on `document`. Islands do not each boot a copy.
+
+Load it from the URL you serve. On `registerWire` that is `/wire.js`. On a Shamar panel it is `{panel}/assets/wire.js`.
+
+## Model
+
+| Attribute | When the value is posted |
+|-----------|--------------------------|
+| `wire:model="title"` | With the next click, submit, or other call. Nothing is sent on each keystroke. |
+| `wire:model.live="title"` | On `input`. |
+| `wire:model.blur="title"` | On `blur`. |
+| `wire:model.debounce.250ms="query"` | After 250ms without another `input`. |
+
+Deferred `wire:model` is the default so a form can edit several fields and send them with one submit. A search box that should query as you type wants `.debounce` or `.live`.
+
+```html
+<form wire:submit="save">
+  <input wire:model="title" value="Draft" />
+  <textarea wire:model="body">Notes</textarea>
+  <button type="submit">Save</button>
+</form>
+```
+
+The submit posts the queued `title` and `body` together with `{ method: "save" }`. The browser submit is cancelled.
+
+A file input posts the file to `{endpoint}/upload` as `FormData` field `file`, then writes the JSON response onto the property. The panel route is `POST {panel}/wire/upload`. A host you write yourself needs that route if you use a file input. The JSON is whatever your route returns. The panel returns `{ id, name, size }` after writing the bytes to a temp file.
+
+```html
+<input type="file" wire:model="attachment" />
+```
+
+## Calls
+
+```html
+<button type="button" wire:click="archive">Archive</button>
+<button type="button" wire:click="remove('row-4')">Remove</button>
+<input wire:keydown.enter="search" wire:model.debounce.300ms="query" />
+<input wire:keydown="onKey" />
+```
+
+`wire:keydown.enter` runs only for Enter. `wire:keydown` with no key suffix runs for every key on that element.
+
+Arguments are parsed as a comma-separated list:
+
+```html
+<button type="button" wire:click="move(1, 'up', true)">Move</button>
+```
+
+That calls `move(1, "up", true)`.
+
+## Loading
+
+```html
+<button type="button" wire:click="save">
+  <span wire:loading.remove>Save</span>
+  <span wire:loading>Saving…</span>
+</button>
+```
+
+`wire:loading` is hidden until this island has a request in flight. `wire:loading.remove` is hidden during that request. A newer request for the same island drops the older response, so a slow search cannot overwrite a faster one.
+
+## Morph
+
+The island element (`wire:id`) stays in the document. Attributes and children are patched.
+
+- The focused text field keeps its caret.
+- `wire:key` reuses that child across renders. Use it on rows you remove or reorder.
+
+```html
+<ul>
+  <li wire:key="sku-1">First</li>
+  <li wire:key="sku-2">Second</li>
+</ul>
+```
+
+- `wire:ignore` skips that element and everything inside it. Use it for a chart or a third-party widget that must not be recreated.
+- A nested element that has its own `wire:id` is another island. The parent morph does not rewrite it. See [Nesting](/docs/wire/nesting/).
+
+Nodes that were added by the morph are passed to `Alpine.initTree` when Alpine is on the page.
+
+## `$wire`
+
+Available inside an island after `alpine:init`.
+
+```html
+<div x-data>
+  <button type="button" x-on:click="$wire.increment()">Add</button>
+  <button type="button" x-on:click="$wire.$set('title', 'Draft')">Rename</button>
+  <button type="button" x-on:click="$wire.$call('remove', 'sku-1')">Remove</button>
+  <span x-text="$wire.count"></span>
+</div>
+```
+
+| Expression | Request |
+|------------|---------|
+| `$wire.count` | Read the property from the snapshot in the DOM. No request. |
+| `$wire.count = 3` | `{ updates: { count: 3 } }` |
+| `$wire.$set('count', 3)` | Same as a property write. |
+| `$wire.increment()` | `{ calls: [{ method: "increment", params: [] }] }` |
+| `$wire.$call('increment', 1)` | `{ calls: [{ method: "increment", params: [1] }] }` |
+
+Queued `wire:model` values are included with a `$wire` call, the same way they are included with `wire:click`.

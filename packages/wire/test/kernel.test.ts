@@ -32,6 +32,18 @@ describe('@shamar/wire', () => {
     assert.equal(next.snapshot.id, mounted.snapshot.id);
   });
 
+  it('seeds numeric and boolean fields from string props', () => {
+    const seeded = new WireKernel('test-secret', {
+      counter: {
+        create: () => ({ data: { count: 0, open: false } }),
+        render: () => '',
+      },
+    }).mount('counter', '/wire', undefined, { count: '4', open: 'true', extra: 1 });
+    assert.equal(seeded.snapshot.data.count, 4);
+    assert.equal(seeded.snapshot.data.open, true);
+    assert.equal('extra' in seeded.snapshot.data, false);
+  });
+
   it('rejects a tampered snapshot', async () => {
     const mounted = kernel.mount('counter', '/admin/wire');
     mounted.snapshot.data.count = 99;

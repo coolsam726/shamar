@@ -1,0 +1,104 @@
+---
+title: Without Adonis
+description: Host the kernel on node:http, with no panel and no Adonis provider.
+---
+
+The kernel and the browser script do not import Adonis, Edge, or the panel. This page is a full host in one file. It is the same counter as the [Adonis guide](/docs/wire/adonis/), served with `node:http`.
+
+```ts
+import { createServer } from 'node:http'
+import { readFileSync } from 'node:fs'
+import {
+  WireKernel,
+  wireClientPath,
+  escapeHtml,
+  type WireComponent,
+  type WireRequest,
+} from '@shamar/wire'
+
+class Counter implements WireComponent {
+  data = { count: 0 }
+
+  increment(): void {
+    this.data.count = Number(this.data.count) + 1
+  }
+}
+
+const endpoint = '/wire'
+const kernel = new WireKernel('replace-with-a-long-secret', {
+  counter: {
+    create: () => new Counter(),
+    render: (component) =>
+      `<button type="button" wire:click="increment">${escapeHtml(String(component.data.count))}</button>`,
+  },
+})
+
+const client = readFileSync(wireClientPath())
+
+const server = createServer(async (req, res) => {
+  if (req.method === 'GET' && req.url === '/wire.js') {
+    res.writeHead(200, { 'content-type': 'application/javascript; charset=utf-8' })
+    res.end(client)
+    return
+  }
+
+  if (req.method === 'POST' && req.url === endpoint) {
+    const chunks: Buffer[] = []
+    for await (const chunk of req) chunks.push(chunk as Buffer)
+    const body = JSON.parse(Buffer.concat(chunks).toString()) as WireRequest
+    try {
+      const result = await kernel.update(body, endpoint)
+      res.writeHead(200, { 'content-type': 'application/json' })
+      res.end(JSON.stringify(result))
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Wire request failed'
+      res.writeHead(400, { 'content-type': 'application/json' })
+      res.end(JSON.stringify({ message }))
+    }
+    return
+  }
+
+  if (req.method === 'GET' && req.url === '/') {
+    const { html } = kernel.mount('counter', endpoint)
+    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
+    res.end(`<!doctype html>
+      <meta name="csrf-token" content="" />
+      <script src="/wire.js"></script>
+      ${html}`)
+    return
+  }
+
+  res.writeHead(404)
+  res.end()
+})
+
+server.listen(3000)
+```
+
+`mount`’s second argument and the POST path must be identical. Here both are `/wire`.
+
+There is no CSRF middleware in this server. The empty meta tag keeps the script from looking for a token. On Adonis, keep Shield’s real token in that tag.
+
+## Express or Fastify
+
+Do the same two routes. Read the JSON body, pass it to `kernel.update`, and send the result back as JSON. Serve `wireClientPath()` on the script route with `Content-Type: application/javascript`.
+
+```ts
+app.get('/wire.js', (_req, res) => {
+  res.type('application/javascript').send(readFileSync(wireClientPath()))
+})
+
+app.post('/wire', async (req, res) => {
+  const result = await kernel.update(req.body as WireRequest, '/wire')
+  res.json(result)
+})
+
+app.get('/', (_req, res) => {
+  const { html } = kernel.mount('counter', '/wire')
+  res.type('html').send(`<script src="/wire.js"></script>${html}`)
+})
+```
+
+## What the panel adds on top
+
+A Shamar panel uses this same kernel. It also authenticates the session, searches resources, and renders the admin shell. None of that is required to run a component. If the page only needs a counter or a form, stop at the server above.

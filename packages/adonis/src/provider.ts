@@ -5,6 +5,7 @@ import type { ShamarConfig } from './config.js';
 import { createShamarRuntime } from './runtime.js';
 import { registerShamarRoutes } from './routes.js';
 import { resolveGridItemStyle } from '@shamar/core';
+import type { WireDefinition } from '@shamar/wire';
 import './types.js';
 
 export default class ShamarProvider {
@@ -43,6 +44,10 @@ export default class ShamarProvider {
   }
 
   async boot(): Promise<void> {
+    await this.bootDiscoveredWire();
+    const configured = this.app.config.get<ShamarConfig | null>('shamar', null);
+    if (!configured) return;
+
     const runtime = await this.app.container.make('shamar.runtime');
     const router = await this.app.container.make('router');
 
@@ -105,5 +110,66 @@ export default class ShamarProvider {
     }
 
     await registerShamarRoutes(this.app, router, runtime);
+  }
+
+  /**
+   * Livewire-style host: every class in `app/wire` is a component.
+   * Routes `POST /wire` and `GET /wire.js` are registered even when that
+   * folder is empty. A missing `shamar` config skips the admin panel only.
+   */
+  private async bootDiscoveredWire(): Promise<void> {
+    const { randomBytes } = await import('node:crypto');
+    const { WireKernel, escapeHtml } = await import('@shamar/wire');
+    const { discoverWireComponents } = await import('./wire/discover.js');
+    const { wireDefinitionFromClass } = await import('./wire/class_component.js');
+    const { registerWire } = await import('./wire/register.js');
+    const { registerWireTag } = await import('./wire/edge_tag.js');
+
+    const discovered = await discoverWireComponents(this.app.makePath());
+    const components: Record<string, WireDefinition> = {};
+    const edge = this.app.usingEdgeJS ? (await import('edge.js')).default : null;
+    if (edge) {
+      try {
+        edge.mount('wire', join(this.app.makePath(), 'resources/views/wire'));
+      } catch {
+        /* disk already mounted */
+      }
+    }
+
+    for (const item of discovered) {
+      if (components[item.name]) {
+        throw new Error(`Duplicate Wire component "${item.name}"`);
+      }
+      const view = item.view;
+      components[item.name] = wireDefinitionFromClass(item.Class, (data) => {
+        if (!edge) return '<p>Edge is required to render Wire views.</p>';
+        try {
+          return edge.renderSync(`wire::${view}`, data);
+        } catch (error) {
+          const detail = error instanceof Error ? error.message : 'Unable to render the view';
+          return `<p>Missing or invalid view resources/views/wire/${escapeHtml(view)}.edge. ${escapeHtml(detail)}</p>`;
+        }
+      });
+    }
+
+    const configuredKey = process.env.APP_KEY?.trim();
+    const secret = configuredKey || randomBytes(32).toString('hex');
+    const kernel = new WireKernel(secret, components);
+    this.app.container.singleton('shamar.wire', () => kernel);
+
+    if (edge) {
+      edge.global(
+        'wire',
+        (name: string, props?: Record<string, unknown>) => kernel.mount(name, '/wire', undefined, props).html,
+      );
+      try {
+        registerWireTag(edge as never);
+      } catch {
+        /* tag already registered */
+      }
+    }
+
+    const router = await this.app.container.make('router');
+    registerWire(router, { kernel });
   }
 }

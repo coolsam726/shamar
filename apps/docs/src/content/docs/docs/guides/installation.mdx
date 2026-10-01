@@ -5,6 +5,16 @@ description: Add Shamar to an AdonisJS app with Lucid or Mongoose.
 
 import DocScreenshot from '../../../../components/DocScreenshot.astro';
 
+Installation is how an existing AdonisJS application gains a panel. You are not creating a second app, and you are not choosing a front-end framework. A service provider boots with the rest of Adonis, reads `config/shamar.ts`, and starts serving HTML at a path you choose, usually `/admin`.
+
+Before the commands below, it helps to know the three decisions the installer is walking you through:
+
+1. **The host.** `@shamar/adonis` is the package that registers routes and views. [Introduction](/docs/guides/introduction/) explains why that package is separate from the resource language.
+2. **The database.** The panel does not ship with a database. It uses one you already have. `orm: 'lucid'` means SQL through Lucid. `orm: 'mongoose'` means MongoDB. Both are first-class. The configure command asks, and you can read either choice in [Packages](/docs/packages/) before you answer.
+3. **Sign-in.** The published login page is a screen. The user model and session guard stay yours. You can finish installation and still see a login form that has nowhere to put a real user until auth is wired. That is expected, and [Auth & RBAC](/docs/concepts/auth/) is the next page for it.
+
+The rest of this page is the commands and the smallest config that makes `/admin` exist.
+
 Shamar plugs into AdonisJS as a service provider. Pick an ORM adapter, configure a panel, and open `/admin`.
 
 <DocScreenshot
@@ -38,7 +48,7 @@ node ace configure @shamar/adonis
 
 The codemod registers the provider, stubs `config/shamar.ts`, and asks Lucid vs Mongoose.
 
-`@shamar/adonis` depends on `@shamar/wire`, the server-driven runtime the panel UI is built on. You do not install it separately. See [Wire](/docs/concepts/wire/).
+`@shamar/adonis` in this repository depends on `@shamar/wire`. The panel uses it, and a plain Adonis app can register it without a panel. See [Wire](/docs/wire/). `@shamar/wire@0.3.0` is on npm. The published `@shamar/adonis@0.3.0` does not depend on it yet, so install `@shamar/wire` yourself until the next host release. New Wire versions are published by the `publish.yml` GitHub Actions workflow, which npm trusts as this package's publisher.
 
 ## Minimal panel
 
@@ -70,4 +80,4 @@ Boot the app and visit `/admin` (after your auth middleware allows it).
 
 - [Your first resource](/docs/guides/first-resource/)
 - [Live demo](/docs/guides/live-demo/) — try a seeded sandbox without installing
-- [Packages](/docs/reference/packages/) — what each `@shamar/*` package owns
+- [Packages](/docs/packages/) — what each `@shamar/*` package owns, including [MongoDB](/docs/packages/mongoose/)

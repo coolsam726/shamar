@@ -2,25 +2,23 @@
 
 Server-driven reactive components for Shamar admin panels. This is the runtime those panels are built on: the same role [Livewire](https://livewire.laravel.com/) plays for Filament, and Conduit plays for Almasix Orbit.
 
-`@shamar/wire` is the kernel. [`@shamar/adonis`](../adonis) hosts it inside a panel: it serves the browser runtime, mounts islands in Edge, and posts updates to `{panel}/wire`. A host that is not Adonis can use the kernel on its own.
+`@shamar/wire` is the kernel and the browser script (`client/wire.js`, `wireClientPath()`). On Adonis, `@shamar/adonis` discovers `app/wire`, serves `GET /wire.js` and `POST /wire`, and renders `@wire('counter')`. `node ace make:wire counter` creates the class and the Edge view. A Shamar admin panel is one host. Any other Node server calls `mount` and `update` itself. The docs section **Wire** walks through both.
 
 Existing Alpine UI stays. A piece of the panel moves onto Wire when its markup opts in with `wire:*`. `live()` form fields still use `POST {panel}/{slug}/form-state`.
 
 ## Install
 
-You get Wire by installing the panel package:
-
-```bash
-pnpm add @shamar/adonis
-```
-
-`@shamar/adonis` depends on `@shamar/wire` and re-exports `WireKernel`, `WireComponent`, and `WireRequest`. Use the package directly when writing a component outside the Adonis provider, or when testing the kernel:
+`@shamar/wire` is on npm as `0.3.0`.
 
 ```bash
 pnpm add @shamar/wire
 ```
 
+The Adonis host re-exports `WireKernel`, `WireComponent`, and `WireRequest`. The copy of `@shamar/adonis` currently on npm (`0.3.0`) does not depend on Wire yet. In this repository it does, and the next host release will too. Until that release, install Wire itself when you want the kernel.
+
 No peer dependencies. Node 20+.
+
+New versions are published by GitHub Actions, not from a laptop token. npm trusted publishing for this package accepts publishes from the `publish.yml` workflow in `coolsam726/shamar`. That workflow already has `id-token: write`. A GitHub release of the monorepo runs it.
 
 ## What a request does
 

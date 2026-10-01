@@ -1,0 +1,49 @@
+---
+title: Adonis
+description: The HTTP host that turns resources into a panel.
+---
+
+`@shamar/adonis` is the part of Shamar that an AdonisJS app actually boots. It is a service provider. On boot it reads `config/shamar.ts`, mounts one or more panels, registers their routes, and renders the admin screens with Edge.
+
+[Core](/docs/packages/core/) describes a resource. This package is what makes `/admin/products` exist.
+
+## What the provider registers
+
+When the provider starts, and a Shamar config is present, it:
+
+- Creates a runtime for each panel: which resources, which adapter, which branding.
+- Registers HTTP routes for lists, forms, shows, deletes, assets, and the panel's [Wire](/docs/wire/) endpoint.
+- Mounts the Edge views that draw the sidebar, top bar, tables, and forms.
+- Discovers `app/wire` classes even when you never open the panel, so Wire can be used on ordinary pages.
+
+If `config/shamar.ts` is missing, the admin routes are skipped. Wire's `/wire` routes still register. That is how a plain Adonis app can use Wire without a back office. See [Install Wire](/docs/wire/install/).
+
+## What you configure
+
+`defineConfig` is the root. `panel('admin')` is one mounted panel: a URL path, a list of resources (or a directory to discover), branding, and optional extras such as a media library.
+
+```ts
+import { defineConfig, panel } from '@shamar/adonis'
+
+export default defineConfig({
+  orm: 'lucid', // or 'mongoose'
+  panels: [
+    panel('admin')
+      .path('/admin')
+      .branding({ name: 'Admin', primaryColor: '#f1511b' })
+      .discoverResources('app/resources/admin'),
+  ],
+})
+```
+
+`orm` chooses the adapter. `'lucid'` uses [SQL](/docs/packages/lucid/). `'mongoose'` uses [MongoDB](/docs/packages/mongoose/). The provider constructs that adapter. You do not call `createLucidAdapter()` yourself unless you are embedding Shamar outside the normal provider.
+
+## What you still own
+
+The provider does not create your users table, and it does not log people in until you point it at Adonis auth. `node ace configure @shamar/adonis` can publish a login page, but the session guard, the user model, and the password check remain your application's. [Auth & RBAC](/docs/concepts/auth/) is the page that separates "who is signed in" from "what they may do."
+
+Database connections are also yours. Lucid migrations stay in the app. For MongoDB, the app calls `mongoose.connect`. Shamar only borrows the connection that is already open.
+
+## Install
+
+The commands and the codemod are on [Installation](/docs/guides/installation/). Come back here when you want to know what that codemod changed, not how to run it.

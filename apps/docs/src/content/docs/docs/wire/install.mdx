@@ -1,0 +1,128 @@
+---
+title: Install
+description: Add the Shamar provider, then generate a component the same way you would with Livewire.
+---
+
+This page is how you add Wire to an Adonis app after the [overview](/docs/wire/) has explained the round trip. It is not the admin-panel installer. You make a class, a view, and a tag. The provider finds the class when the app boots. You do not register a route per component.
+
+`@shamar/wire@0.3.0` is on npm. Install it on its own when you want the kernel without waiting for the next `@shamar/adonis` release. The published host at `0.3.0` does not depend on Wire yet; this repository's host does.
+
+Later versions are published from GitHub Actions. npm is configured so the trusted publisher for this package is the `publish.yml` workflow in the `coolsam726/shamar` repository. A GitHub release runs that workflow. A publish from a developer machine is not how a new version gets onto npm.
+
+The files live in three places. The left column is the same idea in Livewire, only if that comparison helps.
+
+| Livewire | Wire |
+|----------|------|
+| `app/Livewire/Counter.php` | `app/wire/counter.ts` |
+| `resources/views/livewire/counter.blade.php` | `resources/views/wire/counter.edge` |
+| `<livewire:counter />` | `<wire:counter />` or `@wire('counter')` |
+
+The provider registers every class it finds. You do not write a kernel file, and you do not add routes for the browser script.
+
+## 1. Add the provider
+
+```bash
+pnpm add @shamar/adonis
+```
+
+`@shamar/adonis` already depends on `@shamar/wire`. In `adonisrc.ts`:
+
+```ts
+providers: [
+  () => import('@adonisjs/core/providers/app_provider'),
+  () => import('@adonisjs/core/providers/edge_provider'),
+  () => import('@adonisjs/shield/shield_provider'),
+  () => import('@shamar/adonis/provider'),
+]
+```
+
+If this app already hosts a Shamar panel, the provider is already in that list. Stop here and generate a component.
+
+Boot does four things:
+
+1. Imports every class under `app/wire` (an empty folder is fine).
+2. Mounts `resources/views/wire` so Edge can render `wire::counter`.
+3. Registers `<wire:counter />`, `@wire()`, `@persist()`, and the `wire()` helper.
+4. Registers `GET /wire.js` and `POST /wire`, and signs snapshots with `APP_KEY`.
+
+No `config/shamar.ts` means there is no admin panel. `/wire` is still registered.
+
+## 2. Make a component
+
+```bash
+node ace make:wire counter
+node ace make:wire posts/form
+```
+
+| File | Tag |
+|------|-----|
+| `app/wire/counter.ts` | `@wire('counter')` |
+| `app/wire/posts/form.ts` | `@wire('posts.form')` |
+| `app/wire/posts/create_form.ts` | `@wire('posts.create-form')` |
+
+The class default-exports public fields as state and methods as actions. The view sits next to it, with the same path under `resources/views/wire`.
+
+```ts
+import { Wire } from '@shamar/adonis'
+
+export default class Counter extends Wire {
+  count = 0
+
+  increment() {
+    this.count++
+  }
+}
+```
+
+```edge
+<button type="button" wire:click="increment">{{ count }}</button>
+```
+
+`{{ count }}` is the public field. Edge escapes it. `@wire` is one component per line, the same way `@include` is. Restart the dev server after adding a class: discovery runs at boot, not on every request.
+
+## 3. Put it on a page
+
+```edge
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Counter</title>
+    <meta name="csrf-token" content="{{ csrfToken }}" />
+    <script defer src="/wire.js"></script>
+  </head>
+  <body>
+    <wire:counter />
+  </body>
+</html>
+```
+
+```ts
+router.get('/counter', async ({ view }) => view.render('pages/counter'))
+```
+
+`<wire:counter />` and `@wire('counter')` render the same island. `@wire` is one component per line. The element form can sit in markup:
+
+```edge
+<wire:counter />
+<wire:counter :count="4" />
+<wire:posts.form title="Hello" :open="canEdit" />
+```
+
+A plain attribute is a string. `:count` is JavaScript, and `count="{{ starting }}"` is the same expression. Number and boolean fields are coerced from those strings, so `count="4"` still fills a `count = 0` field. Unknown keys are ignored. `<wire:counter></wire:counter>` is the same as the self-closing tag when the body is empty.
+
+`@wire('counter', { count: 3 })` passes a props object directly. Inside the provider's islands, the browser posts to `/wire`.
+
+The playground serves this at `/counter`, with a second page at `/counter/about` linked by `wire:navigate`.
+
+```edge
+@persist('nav')
+  <a href="/counter" wire:navigate>Counter</a>
+@end
+```
+
+`@persist` wraps a region in `wire:persist` so SPA navigation keeps that DOM node. The full behavior is [SPA navigation](/docs/wire/spa/).
+
+## What you can skip
+
+[Without Adonis](/docs/wire/node/) is the kernel used by itself: you construct `WireKernel`, return HTML from `render`, and serve `/wire.js`. [Components](/docs/wire/components/) documents that object API. A normal Adonis app stays on this page.

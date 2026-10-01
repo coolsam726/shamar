@@ -3,8 +3,9 @@ title: Infolists overview
 description: Show/detail views for resources and pages.
 ---
 
-import DocScreenshot from '../../../../../components/DocScreenshot.astro';
-import DocApiTable from '../../../../../components/DocApiTable.astro';
+An infolist is the read-only view of one record, the show page. A form collects input. An infolist only displays what is already stored: a name, a colored swatch, an icon for a boolean, a thumbnail. People use it when they need to look at a record without the risk of editing it, or when the edit form would be the wrong density for a quick check.
+
+You describe it with `infolist()`, using entries instead of inputs. `TextEntry.make('name')` reads the same model attribute a `TextInput` would edit. Sections group entries the same way they group fields. If you omit an infolist, the panel can still show a record from the form's fields, but a dedicated infolist is how you choose a different layout for reading than for writing.
 
 ```ts
 static infolist() {

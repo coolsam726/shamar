@@ -1,0 +1,78 @@
+---
+title: Nesting
+description: Child islands, slots, and what the parent is allowed to redraw.
+---
+
+A child island has its own snapshot, its own `wire:id`, and the same POST endpoint as its parent. Clicking inside the child updates the child only. A parent update re-renders the slot, but the browser leaves an existing child `wire:id` in place so the child’s cursor and open state survive.
+
+## Register both components
+
+The third argument to `mount` maps a slot name to a child component name.
+
+```ts
+import { WireKernel, escapeHtml, type WireComponent } from '@shamar/wire'
+
+class Badge implements WireComponent {
+  data = { label: 'Draft' }
+
+  cycle(): void {
+    this.data.label = this.data.label === 'Draft' ? 'Live' : 'Draft'
+  }
+}
+
+class Card implements WireComponent {
+  data = { title: 'Invoice' }
+}
+
+const kernel = new WireKernel(process.env.APP_KEY!, {
+  badge: {
+    create: () => new Badge(),
+    render: (component) =>
+      `<button type="button" wire:click="cycle">${escapeHtml(String(component.data.label))}</button>`,
+  },
+  card: {
+    create: () => new Card(),
+    render: (component, slots) => `
+      <article>
+        <h2>${escapeHtml(String(component.data.title))}</h2>
+        ${slots?.status ?? ''}
+      </article>
+    `,
+  },
+})
+
+const { html, snapshot } = kernel.mount('card', '/wire', { status: 'badge' })
+```
+
+`html` contains two islands. The outer snapshot’s `children.status` is the badge snapshot, checksum included. Editing `children` in the browser fails the parent checksum.
+
+## When each one updates
+
+| Action | Request snapshot | What re-renders |
+|--------|------------------|-----------------|
+| Click the badge | The badge’s snapshot | The badge island |
+| An update that hits the card | The card’s snapshot, including `children` | The card. The badge DOM node is kept if it is already on the page |
+
+`render(component, slots)` receives the child HTML under the slot name. Put it where the child should appear. If you omit `slots.status` from the parent render, the next parent response no longer contains the badge and the morph removes it.
+
+## A child that loads its own rows
+
+Pass the id the child needs as public data. The child action reloads from the database. The parent does not have to know the rows.
+
+```ts
+class Comments implements WireComponent {
+  data = {
+    postId: '',
+    rows: [] as Array<{ id: string; body: string }>,
+  }
+
+  async remove(id: string): Promise<void> {
+    await deleteComment(String(this.data.postId), id)
+    this.data.rows = await listComments(String(this.data.postId))
+  }
+}
+```
+
+Set `postId` in `create()` from the route’s record id before `mount` returns. Because `create()` runs again on POST, copy `postId` from the snapshot by declaring it on `data`, which the kernel already does.
+
+Child actions and parent actions share the endpoint. The `name` field inside the snapshot decides which component runs.

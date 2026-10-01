@@ -1,5 +1,6 @@
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { wireClientPath } from '@shamar/wire';
 
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), '../..');
 
@@ -20,7 +21,7 @@ export function shamarUiJsPath(): string {
 }
 
 export function shamarWireJsPath(): string {
-  return join(shamarAssetsDir(), 'wire.js');
+  return wireClientPath();
 }
 
 export function shamarFlowbiteDatepickerCssPath(): string {

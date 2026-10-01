@@ -410,9 +410,27 @@ button:disabled,
   margin-top: auto;
   flex-shrink: 0;
 }
+.shamar-topbar__menu,
+.shamar-topbar__tools {
+  min-width: 0;
+}
+.shamar-topbar__tools {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 0 1 auto;
+}
 .shamar-topbar__menu {
   display: none;
   align-items: center;
+}
+.shamar-app-menu {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  overflow-x: auto;
 }
 @media (width >= 48rem) {
   .shamar-sidebar__roots {
