@@ -1,0 +1,95 @@
+---
+title: Schemas overview
+description: Shared Filament-style layout tree for forms and infolists — sections, tabs, wizards, and prime layout components.
+---
+
+import DocScreenshot from '../../../../../components/DocScreenshot.astro';
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+<DocScreenshot
+  src="/screenshots/components/forms/schema-layouts.png"
+  darkSrc="/screenshots/components/forms/schema-layouts-dark.png"
+  alt="Schema layouts"
+  caption="Shared schema chrome on forms and infolists."
+  wide
+/>
+
+Shamar schemas mirror **Filament 5** (and Orbit’s layout/prime components): one layout tree for both **forms** and **infolists**. Leaves stay typed (`TextInput`, `TextEntry`, …); chrome is shared (`Section`, `Tabs`, `Wizard`, …).
+
+```ts
+import {
+  Section, Fieldset, Grid, Group, Flex,
+  Tabs, Tab, Wizard, Step,
+  Callout, Text, Placeholder, EmptyState,
+  TextInput,
+} from '@shamar/core'
+
+static form(form: FormBuilder) {
+  return form.schema([
+    Section.make('Basics').columns(2).schema([
+      TextInput.make('name').required(),
+      Callout.make('Tip').info().description('Shown beside fields.'),
+    ]),
+  ])
+}
+
+static infolist(infolist: InfolistBuilder) {
+  return infolist.schema([
+    Section.make('Profile').schema([
+      TextEntry.make('name'),
+      Text.make('Additional notes live in the same tree.'),
+    ]),
+  ])
+}
+```
+
+## Layout catalog
+
+| Component | Role |
+|-----------|------|
+| [Section](/docs/reference/schemas/section/) | Card with heading, icon, collapsible body |
+| [Fieldset](/docs/reference/schemas/fieldset/) | Legend + bordered group (transparent by default) |
+| [Grid](/docs/reference/schemas/grid/) | Column layout without card chrome |
+| [Group](/docs/reference/schemas/group/) | Unstyled wrapper |
+| [Flex](/docs/reference/schemas/flex/) | Responsive row/column split |
+| [Tabs](/docs/reference/schemas/tabs/) / `Tab` | Horizontal or vertical tabbed panels |
+| [Wizard](/docs/reference/schemas/wizard/) / `Step` | Multi-step UI (horizontal or vertical) |
+| [Callout](/docs/reference/schemas/callout/) | Status banner (info / success / warning / danger) |
+| [Text](/docs/reference/schemas/text/) | Freeform prose in the schema |
+| [Placeholder](/docs/reference/schemas/placeholder/) | Labeled static slot |
+| [EmptyState](/docs/reference/schemas/empty-state/) | Empty / placeholder block |
+
+Field controls live under [Forms](/docs/reference/forms/). Detail entries live under [Infolists](/docs/reference/infolists/).
+
+## Shared layout API
+
+Most layout components inherit these modifiers:
+
+<DocApiTable
+  title="Common layout methods"
+  rows={[
+    { method: '.schema([...])', description: 'Nested layout nodes and/or field/entry leaves.' },
+    { method: '.heading(text) / .description(text)', description: 'Title and supporting copy.' },
+    { method: '.columns(1|2|3|4)', description: 'Child grid columns.' },
+    { method: '.card(bool) / .contained(bool)', description: 'Elevated card chrome (defaults vary by component).' },
+    { method: '.collapsible() / .collapsed()', description: 'Section-style collapse (Section and compatible chrome).' },
+    { method: '.dense() / .gap(bool)', description: 'Tighter spacing; omit gaps between children.' },
+    { method: '.columnSpan(n) / .columnSpanFull()', description: 'Span inside a parent grid.' },
+    { method: '.extraAttributes(attrs)', description: 'Pass-through HTML attributes on the root node.' },
+  ]}
+/>
+
+## Filament / Orbit mapping
+
+| Filament / Orbit idea | Shamar |
+|-----------------------|--------|
+| `Schemas\Components\Section` | `Section` |
+| `Fieldset` | `Fieldset` |
+| `Grid` / `Group` / `Flex` | Same names |
+| `Tabs` + `Tab` (+ vertical) | `Tabs.vertical()` |
+| `Wizard` + `Step` (+ vertical) | `Wizard.vertical()` |
+| `Text` / static content | `Text`, `Placeholder` |
+| `Callout` / empty state | `Callout`, `EmptyState` |
+| Orbit “prime” layouts | Same builders; panel discovery under `app/panels/…` |
+
+**Playground:** [Form components](https://demo.shamar.dev/form-components), Settings (Tabs), Tickets (schema + actions).

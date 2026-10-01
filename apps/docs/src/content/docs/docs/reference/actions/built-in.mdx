@@ -1,22 +1,56 @@
 ---
 title: Built-in actions
-description: Default CRUD action set.
+description: Default CRUD action set — create, view, edit, delete, bulkDelete.
 ---
+
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+Omitting `resourceActions` (or returning `defaultActions()`) registers the Filament-style CRUD set.
 
 ```ts
 import { defaultActions } from '@shamar/core'
 
-static resourceActions(_actions) {
+static resourceActions(_actions: ActionBuilder) {
   return defaultActions() // create, view, edit, delete, bulkDelete
 }
 ```
 
-| Action | Placement | Default |
-|--------|-----------|---------|
-| `create()` | header | + New |
-| `view()` | row | View |
-| `edit()` | row | Edit |
-| `delete()` | row | Delete (danger) |
-| `bulkDelete()` | bulk | Delete selected |
+Or pick only what you need:
 
-Customize labels: `actions.create('New ticket')`, `actions.delete().confirm('…')`.
+```ts
+static resourceActions(actions: ActionBuilder) {
+  actions.create('New ticket')
+  actions.view()
+  actions.edit()
+  actions.delete().confirm('Delete this ticket?')
+  // omit bulkDelete to hide the selection-bar delete
+  return actions
+}
+```
+
+## Defaults
+
+| Builder | Name | Placement | Icon | Color | Confirm |
+|---------|------|-----------|------|-------|---------|
+| `create(label?)` | `create` | header | `plus` | — | — |
+| `view(label?)` | `view` | row | `eye` | — | — |
+| `edit(label?)` | `edit` | row | `pencil` | — | — |
+| `delete(label?)` | `delete` | row | `trash` | `danger` | set with `.confirm()` |
+| `bulkDelete(label?)` | `delete` | bulk | `trash` | `danger` | `Delete selected records?` |
+
+Create / view / edit honor [Modal CRUD](/docs/reference/actions/modal-crud/) (`quickActions` / `createMode` / `editMode` / `viewMode`). Delete and bulk delete are handled by the host’s resource routes — they do **not** call `handleAction`.
+
+Customize freely:
+
+```ts
+actions.create('Add product').icon('plus')
+actions.delete('Remove').confirm('This cannot be undone.')
+```
+
+<DocApiTable
+  title="Built-in helpers"
+  rows={[
+    { method: 'defaultActions()', description: 'Full CRUD set as ActionConfig[].' },
+    { method: 'actions.create / view / edit / delete / bulkDelete', description: 'Register one built-in action on the builder.' },
+  ]}
+/>

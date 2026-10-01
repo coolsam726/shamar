@@ -1,0 +1,28 @@
+---
+title: EmptyState
+description: Empty / placeholder block inside a schema.
+---
+
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+`EmptyState` shows a heading (and optional description) when a region has nothing to display — useful in nested schemas and relation-heavy forms.
+
+```ts
+import { EmptyState, Section } from '@shamar/core'
+
+Section.make('Attachments').schema([
+  EmptyState.make('No files yet')
+    .description('Upload documents after the record is created.')
+    .icon('inbox'),
+])
+```
+
+<DocApiTable
+  title="EmptyState"
+  rows={[
+    { method: 'EmptyState.make(heading?)', description: 'Primary heading.' },
+    { method: '.description(text)', description: 'Supporting copy.' },
+    { method: '.icon(name)', description: 'Optional icon (when rendered by the host).' },
+    { method: '.heading(text)', description: 'Replace the heading.' },
+  ]}
+/>

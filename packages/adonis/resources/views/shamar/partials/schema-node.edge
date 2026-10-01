@@ -30,6 +30,16 @@
     @endif
   </div>
 
+@elseif(node.kind === 'text')
+  <div class="shamar-schema-text" style="{{ resolveGridItemStyle(node, 2) }}">
+    @if(node.title)
+      <div class="shamar-schema-text__heading">{{ node.title }}</div>
+    @endif
+    @if(node.content)
+      <div class="shamar-schema-text__body">{{ node.content }}</div>
+    @endif
+  </div>
+
 @elseif(node.kind === 'callout')
   <div class="shamar-callout shamar-callout--{{ node.status ?? 'info' }}" style="{{ resolveGridItemStyle(node, 2) }}">
     @if(node.title)
@@ -115,7 +125,7 @@
 
 @elseif(node.kind === 'wizard')
   <div
-    class="shamar-wizard{{ node.card !== false ? ' shamar-card rounded-xl' : '' }}"
+    class="shamar-wizard{{ node.card !== false ? ' shamar-card rounded-xl' : '' }}{{ node.vertical ? ' shamar-wizard--vertical' : '' }}"
     style="{{ resolveGridItemStyle(node, 2) }}"
     x-data='shamarWizard({{ (node.children || []).length }})'
   >

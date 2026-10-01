@@ -1,0 +1,56 @@
+---
+title: Tabs
+description: Horizontal and vertical tabbed schema panels.
+---
+
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+`Tabs` + `Tab` organize long forms and infolists into panels. Vertical layout puts the tab list beside the panels (Filament / Orbit parity).
+
+```ts
+import { Tabs, Tab, TextInput } from '@shamar/core'
+
+// Horizontal (default)
+Tabs.make()
+  .tabs([
+    Tab.make('General').icon('cog').schema([
+      TextInput.make('name').required(),
+    ]),
+    Tab.make('Billing').badge(2).schema([
+      TextInput.make('plan'),
+    ]),
+  ])
+  .activeTab(1)
+
+// Vertical
+Tabs.make()
+  .vertical()
+  .tabs([
+    Tab.make('Profile').schema([/* … */]),
+    Tab.make('Security').schema([/* … */]),
+  ])
+```
+
+<DocApiTable
+  title="Tabs"
+  rows={[
+    { method: 'Tabs.make(title?)', description: 'Container; card chrome on by default.' },
+    { method: '.tabs([...Tab])', description: 'Ordered tab panels.' },
+    { method: '.activeTab(index)', description: '1-based default active tab.' },
+    { method: '.vertical(bool?)', description: 'Tab list beside panels (default false = horizontal).' },
+    { method: '.card(bool) / .contained(bool)', description: 'Contained chrome around the tab shell.' },
+  ]}
+/>
+
+<DocApiTable
+  title="Tab"
+  rows={[
+    { method: 'Tab.make(title)', description: 'Panel title shown on the tab control.' },
+    { method: '.icon(name)', description: 'Optional icon on the tab.' },
+    { method: '.badge(value)', description: 'Small count / label badge.' },
+    { method: '.description(text)', description: 'Optional panel description.' },
+    { method: '.columns(n) / .schema([...])', description: 'Panel body layout.' },
+  ]}
+/>
+
+**Playground:** Settings page uses horizontal Tabs.

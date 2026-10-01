@@ -1,0 +1,26 @@
+---
+title: Group
+description: Unstyled schema wrapper for nesting without chrome.
+---
+
+import DocApiTable from '../../../../../components/DocApiTable.astro';
+
+`Group` is an invisible wrapper — useful when you need a nesting boundary for visibility, spans, or composition without a card or legend.
+
+```ts
+import { Group, TextInput } from '@shamar/core'
+
+Group.make().schema([
+  TextInput.make('firstName'),
+  TextInput.make('lastName'),
+])
+```
+
+<DocApiTable
+  title="Group"
+  rows={[
+    { method: 'Group.make()', description: 'Create an unstyled wrapper.' },
+    { method: '.schema([...])', description: 'Nested layouts and leaves.' },
+    { method: '.columnSpan(n) / .columnSpanFull()', description: 'Span inside a parent grid.' },
+  ]}
+/>
