@@ -1134,6 +1134,34 @@ export function form(callback: (builder: FormBuilder) => void): FormSchema {
   return builder.build();
 }
 
+/** `static form(form: FormBuilder)` returns the builder or a built schema. */
+export function acceptForm(
+  result: FormBuilder | FormSchema | void,
+  builder: FormBuilder,
+): FormSchema {
+  if (isFormBuilder(result)) return result.build();
+  if (isFormSchema(result)) return result;
+  return builder.build();
+}
+
+function isFormBuilder(value: unknown): value is FormBuilder {
+  return (
+    !!value &&
+    typeof (value as FormBuilder).build === 'function' &&
+    typeof (value as FormBuilder).schema === 'function' &&
+    typeof (value as FormBuilder).columns === 'function'
+  );
+}
+
+function isFormSchema(value: unknown): value is FormSchema {
+  return (
+    !!value &&
+    Array.isArray((value as FormSchema).fields) &&
+    Array.isArray((value as FormSchema).schema) &&
+    Array.isArray((value as FormSchema).sections)
+  );
+}
+
 export function fieldTypeLabel(type: FieldType): string {
   return getFieldType(type)?.label ?? type.charAt(0).toUpperCase() + type.slice(1);
 }

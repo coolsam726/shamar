@@ -17,7 +17,7 @@ This guide assumes the panel is already installed and you can open it in a brows
 />
 
 ```ts
-import { Resource, form, table, TextInput, TextColumn } from '@shamar/core'
+import { Resource, TextInput, TextColumn, type FormBuilder, type TableBuilder } from '@shamar/core'
 import Product from '#models/product'
 
 export default class ProductResource extends Resource {
@@ -26,24 +26,20 @@ export default class ProductResource extends Resource {
   static label = 'Products'
   static navigationGroup = 'Catalog'
 
-  static form() {
-    return form((f) => {
-      f.schema([
-        TextInput.make('name').required(),
-        TextInput.make('sku').required(),
-        TextInput.make('price').numeric().required(),
-      ])
-    })
+  static form(form: FormBuilder) {
+    return form.schema([
+      TextInput.make('name').required(),
+      TextInput.make('sku').required(),
+      TextInput.make('price').numeric().required(),
+    ])
   }
 
-  static table() {
-    return table((t) => {
-      t.schema([
-        TextColumn.make('name').searchable().sortable(),
-        TextColumn.make('sku').searchable(),
-        TextColumn.make('price').sortable(),
-      ])
-    })
+  static table(table: TableBuilder) {
+    return table.schema([
+      TextColumn.make('name').searchable().sortable(),
+      TextColumn.make('sku').searchable(),
+      TextColumn.make('price').sortable(),
+    ])
   }
 }
 ```

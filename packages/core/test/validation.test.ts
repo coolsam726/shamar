@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   Resource,
-  form,
+  type FormBuilder,
   TextInput,
   Repeater,
   Slider,
@@ -51,13 +51,12 @@ class CompanyResource extends Resource {
   static override singularLabel = 'Company';
   static override model = 'Company';
 
-  static override form() {
-    return form((f) => {
-      f.schema([
-        TextInput.make('code').label('Code').unique(),
-        TextInput.make('name'),
-      ]);
-    });
+  static override form(form: FormBuilder) {
+    form.schema([
+      TextInput.make('code').label('Code').unique(),
+      TextInput.make('name'),
+    ]);
+    return form
   }
 }
 
@@ -121,16 +120,15 @@ describe('@shamar/core field constraints', () => {
     static override singularLabel = 'Constraint';
     static override model = 'Constraint';
 
-    static override form() {
-      return form((f) => {
-        f.schema([
-          TextInput.make('name').required().minLength(3).maxLength(8),
-          TextInput.make('code').length(4).pattern('[A-Z]+'),
-          TextInput.make('qty').numeric().min(2).max(5),
-          TextInput.make('site').url(),
-          TextInput.make('secret').password().dehydrated(false),
-        ]);
-      });
+    static override form(form: FormBuilder) {
+      form.schema([
+        TextInput.make('name').required().minLength(3).maxLength(8),
+        TextInput.make('code').length(4).pattern('[A-Z]+'),
+        TextInput.make('qty').numeric().min(2).max(5),
+        TextInput.make('site').url(),
+        TextInput.make('secret').password().dehydrated(false),
+      ]);
+      return form
     }
   }
 
@@ -202,17 +200,16 @@ describe('widget field constraints', () => {
     static override singularLabel = 'Widget';
     static override model = 'Widget';
 
-    static override form() {
-      return form((f) => {
-        f.schema([
-          Repeater.make('items')
-            .schema([TextInput.make('sku').required()])
-            .minItems(1)
-            .maxItems(2),
-          Slider.make('volume').min(0).max(10),
-          RichEditor.make('html').required(),
-        ]);
-      });
+    static override form(form: FormBuilder) {
+      form.schema([
+        Repeater.make('items')
+          .schema([TextInput.make('sku').required()])
+          .minItems(1)
+          .maxItems(2),
+        Slider.make('volume').min(0).max(10),
+        RichEditor.make('html').required(),
+      ]);
+      return form
     }
   }
 

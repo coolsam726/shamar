@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
+  FormBuilder,
+  TableBuilder,
   RelationTable,
   TextColumn,
   TextInput,
   Select,
   Checkbox,
-  form,
-  table,
   Resource,
 } from '@shamar/core';
 import { buildRelationUiConfig } from '../src/shamar/relation-fields.js';
@@ -22,25 +22,23 @@ class ProductResource extends Resource {
   static override label = 'Products';
   static override singularLabel = 'Product';
   static override model = 'Product';
-  static override form() {
-    return form((f) => {
-      f.schema([
-        TextInput.make('sku').searchable(),
-        TextInput.make('name').searchable(),
-        Select.make('companyId').relationship('companies', 'name'),
-        Checkbox.make('featured'),
-      ]);
-    });
+  static override form(form: FormBuilder) {
+    form.schema([
+      TextInput.make('sku').searchable(),
+      TextInput.make('name').searchable(),
+      Select.make('companyId').relationship('companies', 'name'),
+      Checkbox.make('featured'),
+    ]);
+    return form
   }
-  static override table() {
-    return table((t) => {
-      t.defaultSort('name', 'asc').schema([
-        TextColumn.make('sku').searchable().sortable(),
-        TextColumn.make('name').searchable().sortable(),
-        TextColumn.make('company.name').label('Company').filterable(),
-        TextColumn.make('featured').boolean().filterable(),
-      ]);
-    });
+  static override table(table: TableBuilder) {
+    table.defaultSort('name', 'asc').schema([
+      TextColumn.make('sku').searchable().sortable(),
+      TextColumn.make('name').searchable().sortable(),
+      TextColumn.make('company.name').label('Company').filterable(),
+      TextColumn.make('featured').boolean().filterable(),
+    ]);
+    return table
   }
 }
 

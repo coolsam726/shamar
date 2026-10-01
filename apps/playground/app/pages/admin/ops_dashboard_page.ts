@@ -1,9 +1,6 @@
 import {
   Page,
   pageContent,
-  form,
-  table,
-  infolist,
   Section,
   TextColumn,
   TextEntry,
@@ -34,22 +31,20 @@ export default class OpsDashboardPage extends Page {
 
       p.form('quick-settings', {
         title: 'Quick settings',
-        form: () =>
-          form((f) => {
-            f.schema([
-              Section.make('Preferences').schema([
-                Select.make('theme')
-                  .label('Default theme')
-                  .options([
-                    { label: 'System', value: 'system' },
-                    { label: 'Light', value: 'light' },
-                    { label: 'Dark', value: 'dark' },
-                  ])
-                  .selectablePlaceholder(false)
-                  .default('system'),
-              ]),
-            ])
-          }),
+        form: (form) =>
+          form.schema([
+            Section.make('Preferences').schema([
+              Select.make('theme')
+                .label('Default theme')
+                .options([
+                  { label: 'System', value: 'system' },
+                  { label: 'Light', value: 'light' },
+                  { label: 'Dark', value: 'dark' },
+                ])
+                .selectablePlaceholder(false)
+                .default('system'),
+            ]),
+          ]),
         fill: async () => {
           const settings = await getAppSettings()
           return { theme: settings?.theme ?? 'system' }
@@ -67,16 +62,13 @@ export default class OpsDashboardPage extends Page {
         model: Product,
         linkResourceSlug: 'products',
         defaultPerPage: 10,
-        table: () =>
-          table((t) => {
-            t.defaultSort('name', 'asc')
-            t.schema([
-              TextColumn.make('sku').label('SKU').searchable().sortable(),
-              TextColumn.make('name').searchable().sortable(),
-              TextColumn.make('price').currency('USD').sortable(),
-              TextColumn.make('stock').sortable(),
-            ])
-          }),
+        table: (table) =>
+          table.defaultSort('name', 'asc').schema([
+            TextColumn.make('sku').label('SKU').searchable().sortable(),
+            TextColumn.make('name').searchable().sortable(),
+            TextColumn.make('price').currency('USD').sortable(),
+            TextColumn.make('stock').sortable(),
+          ]),
       })
 
       p.infolist('environment', {
@@ -85,15 +77,13 @@ export default class OpsDashboardPage extends Page {
           nodeEnv: process.env.NODE_ENV ?? 'development',
           appVersion: '0.2.0',
         }),
-        infolist: () =>
-          infolist((i) => {
-            i.schema([
-              Section.make('Runtime').schema([
-                TextEntry.make('nodeEnv').label('NODE_ENV'),
-                TextEntry.make('appVersion').label('Version'),
-              ]),
-            ])
-          }),
+        infolist: (infolist) =>
+          infolist.schema([
+            Section.make('Runtime').schema([
+              TextEntry.make('nodeEnv').label('NODE_ENV'),
+              TextEntry.make('appVersion').label('Version'),
+            ]),
+          ]),
       })
     })
   }

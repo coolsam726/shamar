@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { Resource, form, table, panel, TextInput, Toggle, TextColumn, FormPage } from '@shamar/core';
+import { FormBuilder, TableBuilder, Resource, panel, TextInput, Toggle, TextColumn, FormPage } from '@shamar/core';
 import { defineConfig, createShamarRuntime } from '../src/index.js';
 import { evaluateFormState } from '../src/form-state.js';
 
@@ -10,30 +10,28 @@ class CompanyResource extends Resource {
   static override singularLabel = 'Company';
   static override model = 'Company';
 
-  static override form() {
-    return form((f) => {
-      f.schema([
-        TextInput.make('name')
-          .required()
-          .live()
-          .afterStateUpdated(({ get, set }) => {
-            set('code', String(get('name') ?? '').toUpperCase().slice(0, 8));
-          }),
-        TextInput.make('code'),
-        TextInput.make('email').email(),
-        Toggle.make('active'),
-      ]);
-    });
+  static override form(form: FormBuilder) {
+    form.schema([
+      TextInput.make('name')
+        .required()
+        .live()
+        .afterStateUpdated(({ get, set }) => {
+          set('code', String(get('name') ?? '').toUpperCase().slice(0, 8));
+        }),
+      TextInput.make('code'),
+      TextInput.make('email').email(),
+      Toggle.make('active'),
+    ]);
+    return form
   }
 
-  static override table() {
-    return table((t) => {
-      t.schema([
-        TextColumn.make('name').sortable().searchable(),
-        TextColumn.make('code'),
-        TextColumn.make('active').toggle(),
-      ]);
-    });
+  static override table(table: TableBuilder) {
+    table.schema([
+      TextColumn.make('name').sortable().searchable(),
+      TextColumn.make('code'),
+      TextColumn.make('active').toggle(),
+    ]);
+    return table
   }
 }
 
@@ -42,10 +40,9 @@ class DemoSettingsPage extends FormPage {
   static override label = 'Demo settings';
   static override navigationGroup = 'Settings';
 
-  static override form() {
-    return form((f) => {
-      f.schema([TextInput.make('title')]);
-    });
+  static override form(form: FormBuilder) {
+    form.schema([TextInput.make('title')]);
+    return form
   }
 }
 

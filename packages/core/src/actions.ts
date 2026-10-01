@@ -128,6 +128,16 @@ export function actions(
   return builder.build();
 }
 
+/** `static resourceActions(actions: ActionBuilder)` returns the builder or a built list. */
+export function acceptActions(
+  result: ActionBuilder | ActionConfig[] | void,
+  builder: ActionBuilder,
+): ActionConfig[] {
+  if (Array.isArray(result)) return result;
+  if (result && typeof result.build === 'function') return result.build();
+  return builder.build();
+}
+
 /** Default CRUD actions (Filament defaults). */
 export function defaultActions(): ActionConfig[] {
   return actions((a) => {

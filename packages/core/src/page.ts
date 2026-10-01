@@ -1,15 +1,23 @@
-import { form } from './form.js';
-import { infolist, columnsToInfolistSchema } from './infolist.js';
-import { table } from './table.js';
+import { acceptActions, ActionBuilder } from './actions.js';
+import { acceptForm, FormBuilder } from './form.js';
+import { acceptInfolist, columnsToInfolistSchema, InfolistBuilder } from './infolist.js';
+import { acceptTable, TableBuilder } from './table.js';
 import type { PageSectionDefinition, PageSectionMeta } from './page-content.js';
 import type {
   ActionConfig,
   FieldConfig,
   FormSchema,
+  InfolistSchema,
   ResourceMeta,
   ResourceModel,
   ShamarUser,
+  TableSchema,
 } from './types.js';
+
+function headerActionList(page: typeof Page): ActionConfig[] {
+  const builder = new ActionBuilder();
+  return acceptActions(page.headerActions(builder), builder);
+}
 
 export type PageKind = 'custom' | 'form' | 'list' | 'composite';
 
@@ -81,7 +89,7 @@ export abstract class Page {
     return true;
   }
 
-  static headerActions(): ActionConfig[] {
+  static headerActions(_actions: ActionBuilder): ActionBuilder | ActionConfig[] {
     return [];
   }
 
@@ -134,7 +142,7 @@ export abstract class Page {
         icon: this.icon,
         view: this.view ?? 'shamar::page-sections',
         contentMaxWidth: this.contentMaxWidth,
-        actions: this.headerActions(),
+        actions: headerActionList(this),
         sections,
       };
     }
@@ -150,7 +158,7 @@ export abstract class Page {
       icon: this.icon,
       view: this.view,
       contentMaxWidth: this.contentMaxWidth,
-      actions: this.headerActions(),
+      actions: headerActionList(this),
     };
   }
 }
@@ -159,8 +167,8 @@ export abstract class Page {
  * Filament-style settings / form page — mount/fill data, save on POST.
  */
 export abstract class FormPage extends Page {
-  static form(): ReturnType<typeof form> {
-    return form(() => undefined);
+  static form(form: FormBuilder): FormBuilder | FormSchema {
+    return form;
   }
 
   /**
@@ -183,7 +191,8 @@ export abstract class FormPage extends Page {
   }
 
   static override configure(): PageMeta {
-    const formSchema = this.form();
+    const formBuilder = new FormBuilder();
+    const formSchema = acceptForm(this.form(formBuilder), formBuilder);
     return {
       ...super.configure(),
       kind: 'form',
@@ -214,27 +223,32 @@ export abstract class ListPage extends Page {
   static softDelete?: boolean | { field?: string };
   static defaultPerPage?: number;
 
-  static table(): ReturnType<typeof table> {
-    return table(() => undefined);
+  static table(table: TableBuilder): TableBuilder | TableSchema {
+    return table;
   }
 
   /**
    * Optional show/infolist for row clicks (`GET /:slug/:id`).
    * Defaults to entries derived from {@link table} columns.
    */
-  static infolist(): ReturnType<typeof infolist> | undefined {
+  static infolist(
+    _infolist: InfolistBuilder,
+  ): InfolistBuilder | InfolistSchema | undefined {
     return undefined;
   }
 
-  static listActions(): ActionConfig[] {
+  static listActions(_actions: ActionBuilder): ActionBuilder | ActionConfig[] {
     // Read-only list by default — no create/edit/delete chrome.
     return [];
   }
 
   static override configure(): PageMeta {
-    const tableSchema = this.table();
-    const actionList = this.listActions();
-    const explicitInfolist = this.infolist();
+    const tableBuilder = new TableBuilder();
+    const tableSchema = acceptTable(this.table(tableBuilder), tableBuilder);
+    const actionBuilder = new ActionBuilder();
+    const actionList = acceptActions(this.listActions(actionBuilder), actionBuilder);
+    const infolistBuilder = new InfolistBuilder();
+    const explicitInfolist = acceptInfolist(this.infolist(infolistBuilder));
     const infolistSchema = explicitInfolist ?? columnsToInfolistSchema(tableSchema.columns);
 
     const searchableFields = tableSchema.columns
@@ -271,7 +285,7 @@ export abstract class ListPage extends Page {
       ...super.configure(),
       kind: 'list',
       defaultPerPage: this.defaultPerPage,
-      actions: [...this.headerActions(), ...actionList.filter((a) => a.placement === 'header')],
+      actions: [...headerActionList(this), ...actionList.filter((a) => a.placement === 'header')],
       view: this.view ?? 'shamar::page-list',
       listResource,
     };

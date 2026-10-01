@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { Resource, form, table, TextInput, TextColumn } from '@shamar/core';
+import { FormBuilder, TableBuilder, Resource, TextInput, TextColumn } from '@shamar/core';
 import { createMongooseAdapter } from '../src/index.js';
 
 const ID = '507f1f77bcf86cd799439011';
@@ -116,22 +116,20 @@ class ProductResource extends Resource {
     { _id: ID, name: 'Widget', sku: 'W-1' },
   ]);
 
-  static override form() {
-    return form((f) => {
-      f.schema([
-        TextInput.make('name').required().searchable(),
-        TextInput.make('sku').searchable(),
-      ]);
-    });
+  static override form(form: FormBuilder) {
+    form.schema([
+      TextInput.make('name').required().searchable(),
+      TextInput.make('sku').searchable(),
+    ]);
+    return form
   }
 
-  static override table() {
-    return table((t) => {
-      t.schema([
-        TextColumn.make('name').sortable().searchable(),
-        TextColumn.make('sku').searchable(),
-      ]);
-    });
+  static override table(table: TableBuilder) {
+    table.schema([
+      TextColumn.make('name').sortable().searchable(),
+      TextColumn.make('sku').searchable(),
+    ]);
+    return table
   }
 }
 
@@ -154,15 +152,13 @@ describe('@shamar/mongoose adapter', () => {
     class Temp extends Resource {
       static override slug = 'temps';
       static override model = Model;
-      static override form() {
-        return form((f) => {
-          f.schema([TextInput.make('name').searchable()]);
-        });
+      static override form(form: FormBuilder) {
+        form.schema([TextInput.make('name').searchable()]);
+        return form
       }
-      static override table() {
-        return table((t) => {
-          t.schema([TextColumn.make('name').searchable()]);
-        });
+      static override table(table: TableBuilder) {
+        table.schema([TextColumn.make('name').searchable()]);
+        return table
       }
     }
 
@@ -184,15 +180,13 @@ describe('@shamar/mongoose adapter', () => {
     class Temp extends Resource {
       static override slug = 'temps';
       static override model = Model;
-      static override form() {
-        return form((f) => {
-          f.schema([TextInput.make('name')]);
-        });
+      static override form(form: FormBuilder) {
+        form.schema([TextInput.make('name')]);
+        return form
       }
-      static override table() {
-        return table((t) => {
-          t.schema([TextColumn.make('name')]);
-        });
+      static override table(table: TableBuilder) {
+        table.schema([TextColumn.make('name')]);
+        return table
       }
     }
 
@@ -207,15 +201,13 @@ describe('@shamar/mongoose adapter', () => {
     class Temp extends Resource {
       static override slug = 'temps';
       static override model = Model;
-      static override form() {
-        return form((f) => {
-          f.schema([TextInput.make('code')]);
-        });
+      static override form(form: FormBuilder) {
+        form.schema([TextInput.make('code')]);
+        return form
       }
-      static override table() {
-        return table((t) => {
-          t.schema([TextColumn.make('code')]);
-        });
+      static override table(table: TableBuilder) {
+        table.schema([TextColumn.make('code')]);
+        return table
       }
     }
 
@@ -238,15 +230,13 @@ describe('@shamar/mongoose adapter', () => {
     class Temp extends Resource {
       static override slug = 'widgets';
       static override model = 'Widget';
-      static override form() {
-        return form((f) => {
-          f.schema([TextInput.make('name').searchable()]);
-        });
+      static override form(form: FormBuilder) {
+        form.schema([TextInput.make('name').searchable()]);
+        return form
       }
-      static override table() {
-        return table((t) => {
-          t.schema([TextColumn.make('name').searchable()]);
-        });
+      static override table(table: TableBuilder) {
+        table.schema([TextColumn.make('name').searchable()]);
+        return table
       }
     }
 
@@ -267,15 +257,13 @@ describe('@shamar/mongoose adapter', () => {
       static override slug = 'temps';
       static override model = Model;
       static override softDelete = true;
-      static override form() {
-        return form((f) => {
-          f.schema([TextInput.make('name')]);
-        });
+      static override form(form: FormBuilder) {
+        form.schema([TextInput.make('name')]);
+        return form
       }
-      static override table() {
-        return table((t) => {
-          t.schema([TextColumn.make('name')]);
-        });
+      static override table(table: TableBuilder) {
+        table.schema([TextColumn.make('name')]);
+        return table
       }
     }
 
@@ -300,15 +288,13 @@ describe('@shamar/mongoose adapter', () => {
     class Temp extends Resource {
       static override slug = 'temps';
       static override model = Model;
-      static override form() {
-        return form((f) => {
-          f.schema([TextInput.make('name').searchable()]);
-        });
+      static override form(form: FormBuilder) {
+        form.schema([TextInput.make('name').searchable()]);
+        return form
       }
-      static override table() {
-        return table((t) => {
-          t.schema([TextColumn.make('name').searchable()]);
-        });
+      static override table(table: TableBuilder) {
+        table.schema([TextColumn.make('name').searchable()]);
+        return table
       }
     }
 
@@ -332,15 +318,13 @@ describe('@shamar/mongoose adapter', () => {
     class Temp extends Resource {
       static override slug = 'temps';
       static override model = Model;
-      static override form() {
-        return form((f) => {
-          f.schema([TextInput.make('name').searchable()]);
-        });
+      static override form(form: FormBuilder) {
+        form.schema([TextInput.make('name').searchable()]);
+        return form
       }
-      static override table() {
-        return table((t) => {
-          t.schema([TextColumn.make('name').searchable()]);
-        });
+      static override table(table: TableBuilder) {
+        table.schema([TextColumn.make('name').searchable()]);
+        return table
       }
     }
 

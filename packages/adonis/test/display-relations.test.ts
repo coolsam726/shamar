@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
+  FormBuilder,
+  TableBuilder,
+  InfolistBuilder,
   CheckboxList,
   Select,
   TextColumn,
   TextEntry,
-  form,
-  infolist,
-  table,
   Section,
   Resource,
 } from '@shamar/core';
@@ -16,28 +16,25 @@ import { hydrateRecordsForDisplay } from '../src/shamar/display-relations.js';
 
 class ProductResource extends Resource {
   static override slug = 'products';
-  static override form() {
-    return form((f) => {
-      f.schema([
-        Select.make('companyId').relationship('companies', 'name'),
-        CheckboxList.make('categoryIds').relationship('categories', 'name'),
-      ]);
-    });
+  static override form(form: FormBuilder) {
+    form.schema([
+      Select.make('companyId').relationship('companies', 'name'),
+      CheckboxList.make('categoryIds').relationship('categories', 'name'),
+    ]);
+    return form
   }
-  static override table() {
-    return table((t) => {
-      t.schema([TextColumn.make('company.name').label('Company')]);
-    });
+  static override table(table: TableBuilder) {
+    table.schema([TextColumn.make('company.name').label('Company')]);
+    return table
   }
-  static override infolist() {
-    return infolist((i) => {
-      i.schema([
-        Section.make('Main').schema([
-          TextEntry.make('company.name').label('Company'),
-          TextEntry.make('categories.name').label('Categories').badge(),
-        ]),
-      ]);
-    });
+  static override infolist(infolist: InfolistBuilder) {
+    infolist.schema([
+      Section.make('Main').schema([
+        TextEntry.make('company.name').label('Company'),
+        TextEntry.make('categories.name').label('Categories').badge(),
+      ]),
+    ]);
+    return infolist
   }
 }
 

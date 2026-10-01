@@ -217,6 +217,28 @@ export function table(callback: (builder: TableBuilder) => void): TableSchema {
   return builder.build();
 }
 
+/** `static table(table: TableBuilder)` returns the builder or a built schema. */
+export function acceptTable(
+  result: TableBuilder | TableSchema | void,
+  builder: TableBuilder,
+): TableSchema {
+  if (isTableBuilder(result)) return result.build();
+  if (isTableSchema(result)) return result;
+  return builder.build();
+}
+
+function isTableBuilder(value: unknown): value is TableBuilder {
+  return (
+    !!value &&
+    typeof (value as TableBuilder).build === 'function' &&
+    typeof (value as TableBuilder).schema === 'function'
+  );
+}
+
+function isTableSchema(value: unknown): value is TableSchema {
+  return !!value && Array.isArray((value as TableSchema).columns);
+}
+
 export function columnTypeLabel(type: FieldType): string {
   return type;
 }

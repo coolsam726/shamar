@@ -1,8 +1,8 @@
 import {
+  FormBuilder,
+  TableBuilder,
+  InfolistBuilder,
   Resource,
-  form,
-  table,
-  infolist,
   Section,
   TextInput,
   TextColumn,
@@ -34,44 +34,41 @@ export default class PermissionResource extends Resource {
     return false
   }
 
-  static override form() {
-    return form((f) => {
-      f.schema([
-        Section.make('Permission')
-          .columns(2)
-          .schema([
-            TextInput.make('name').readonly().searchable().columnSpanFull(),
-            TextInput.make('resource').readonly(),
-            TextInput.make('ability').readonly(),
-            TextInput.make('label').readonly().columnSpanFull(),
-          ]),
-      ])
-    })
+  static override form(form: FormBuilder) {
+    form.schema([
+      Section.make('Permission')
+        .columns(2)
+        .schema([
+          TextInput.make('name').readonly().searchable().columnSpanFull(),
+          TextInput.make('resource').readonly(),
+          TextInput.make('ability').readonly(),
+          TextInput.make('label').readonly().columnSpanFull(),
+        ]),
+    ])
+    return form
   }
 
-  static override table() {
-    return table((t) => {
-      t.defaultSort('name', 'asc').schema([
-        TextColumn.make('name').searchable().sortable(),
-        TextColumn.make('resource').searchable().sortable(),
-        TextColumn.make('ability').sortable(),
-        TextColumn.make('label'),
-      ])
-    })
+  static override table(table: TableBuilder) {
+    table.defaultSort('name', 'asc').schema([
+      TextColumn.make('name').searchable().sortable(),
+      TextColumn.make('resource').searchable().sortable(),
+      TextColumn.make('ability').sortable(),
+      TextColumn.make('label'),
+    ])
+    return table
   }
 
-  static override infolist() {
-    return infolist((i) => {
-      i.schema([
-        Section.make('Permission')
-          .columns(2)
-          .schema([
-            TextEntry.make('name').copyable().columnSpanFull(),
-            TextEntry.make('resource'),
-            TextEntry.make('ability'),
-            TextEntry.make('label').columnSpanFull(),
-          ]),
-      ])
-    })
+  static override infolist(infolist: InfolistBuilder) {
+    infolist.schema([
+      Section.make('Permission')
+        .columns(2)
+        .schema([
+          TextEntry.make('name').copyable().columnSpanFull(),
+          TextEntry.make('resource'),
+          TextEntry.make('ability'),
+          TextEntry.make('label').columnSpanFull(),
+        ]),
+    ])
+    return infolist
   }
 }

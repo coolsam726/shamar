@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { actions } from '../src/actions.js';
-import { form, TextInput } from '../src/form.js';
+import { TextInput, type FormBuilder } from '../src/form.js';
+import { type ActionBuilder } from '../src/actions.js';
 import { Resource } from '../src/resource.js';
 import { ResourceRegistry } from '../src/registry.js';
-import { table, TextColumn } from '../src/table.js';
+import { TextColumn, type TableBuilder } from '../src/table.js';
 
 class UserResource extends Resource {
   static override slug = 'users';
@@ -12,32 +12,29 @@ class UserResource extends Resource {
   static override singularLabel = 'User';
   static override model = 'User';
 
-  static override form() {
-    return form((f) => {
-      f.schema([
-        TextInput.make('name').required(),
-        TextInput.make('email').email().required().searchable(),
-        TextInput.make('password').password().createOnly(),
-      ]);
-    });
+  static override form(form: FormBuilder) {
+    form.schema([
+      TextInput.make('name').required(),
+      TextInput.make('email').email().required().searchable(),
+      TextInput.make('password').password().createOnly(),
+    ]);
+    return form
   }
 
-  static override table() {
-    return table((t) => {
-      t.schema([
-        TextColumn.make('name').sortable(),
-        TextColumn.make('email').sortable().searchable(),
-        TextColumn.make('active').toggle(),
-      ]);
-    });
+  static override table(table: TableBuilder) {
+    table.schema([
+      TextColumn.make('name').sortable(),
+      TextColumn.make('email').sortable().searchable(),
+      TextColumn.make('active').toggle(),
+    ]);
+    return table
   }
 
-  static override resourceActions() {
-    return actions((a) => {
-      a.create();
-      a.edit();
-      a.delete();
-    });
+  static override resourceActions(actions: ActionBuilder) {
+    actions.create();
+    actions.edit();
+    actions.delete();
+    return actions
   }
 }
 

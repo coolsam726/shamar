@@ -1,9 +1,9 @@
 import {
+  FormBuilder,
+  TableBuilder,
+  InfolistBuilder,
+  ActionBuilder,
   Resource,
-  form,
-  table,
-  infolist,
-  actions,
   Section,
   TextInput,
   Textarea,
@@ -50,104 +50,100 @@ export default class ApiKeyResource extends Resource {
     return false
   }
 
-  static override resourceActions() {
-    return actions((a) => {
-      a.create()
-      a.view()
-      a.delete().confirm('Permanently delete this API key? This cannot be undone.')
-      a.bulkDelete('Delete selected').confirm('Permanently delete %d selected API key(s)?')
-      a
-        .row('revoke', 'Deactivate')
-        .color('danger')
-        .confirm('Deactivate this API key? It will stop working immediately.')
-        .ability('delete')
-      a
-        .row('reactivate', 'Reactivate')
-        .confirm('Reactivate this API key?')
-        .ability('delete')
-      a
-        .bulk('revoke', 'Deactivate selected')
-        .color('danger')
-        .confirm('Deactivate %d selected API key(s)?')
-        .ability('delete')
-    })
+  static override resourceActions(actions: ActionBuilder) {
+    actions.create()
+    actions.view()
+    actions.delete().confirm('Permanently delete this API key? This cannot be undone.')
+    actions.bulkDelete('Delete selected').confirm('Permanently delete %d selected API key(s)?')
+    actions
+      .row('revoke', 'Deactivate')
+      .color('danger')
+      .confirm('Deactivate this API key? It will stop working immediately.')
+      .ability('delete')
+    actions
+      .row('reactivate', 'Reactivate')
+      .confirm('Reactivate this API key?')
+      .ability('delete')
+    actions
+      .bulk('revoke', 'Deactivate selected')
+      .color('danger')
+      .confirm('Deactivate %d selected API key(s)?')
+      .ability('delete')
+    return actions
   }
 
-  static override form() {
-    return form((f) => {
-      f.schema([
-        Section.make('Credential')
-          .columns(2)
-          .schema([
-            TextInput.make('name').required().searchable().columnSpanFull(),
-            Textarea.make('description')
-              .rows(3)
-              .columnSpanFull()
-              .helperText('Optional note about what this credential is for.'),
-            Select.make('kind')
-              .label('Type')
-              .options([
-                { label: 'Machine API key', value: 'machine' },
-                { label: 'Personal access token', value: 'pat' },
-              ])
-              .default('machine')
-              .required()
-              .live()
-              .helperText(
-                'Machine keys are standalone principals. PATs act as the selected user.',
-              ),
-            Select.make('userId')
-              .label('User')
-              .relationship('users', 'email')
-              .visible(({ get }) => get('kind') === 'pat')
-              .required(({ get }) => get('kind') === 'pat')
-              .helperText('Required for personal access tokens.'),
-            AbilitiesAssignment.make('abilities').helperText(
-              'Machine: permissions for the key (default * when empty). PAT: optional narrow of the user’s permissions.',
-            ),
-            DatePicker.make('expiresAt').label('Expires at (optional)'),
-          ]),
-      ])
-    })
-  }
-
-  static override table() {
-    return table((t) => {
-      t.defaultSort('createdAt', 'desc')
-        .defaultFilters([{ field: 'kind', value: 'machine' }])
+  static override form(form: FormBuilder) {
+    form.schema([
+      Section.make('Credential')
+        .columns(2)
         .schema([
-        TextColumn.make('name').searchable().sortable(),
-        TextColumn.make('description'),
-        TextColumn.make('kind').label('Type').sortable().filterable().groupable(),
-        TextColumn.make('tokenPrefix').label('Prefix'),
-        TextColumn.make('status').label('Status').badge(),
-        TextColumn.make('user.email').label('User'),
-        TextColumn.make('lastUsedAt').dateTime().label('Last used'),
-        TextColumn.make('expiresAt').dateTime().label('Expires'),
-      ])
-    })
+          TextInput.make('name').required().searchable().columnSpanFull(),
+          Textarea.make('description')
+            .rows(3)
+            .columnSpanFull()
+            .helperText('Optional note about what this credential is for.'),
+          Select.make('kind')
+            .label('Type')
+            .options([
+              { label: 'Machine API key', value: 'machine' },
+              { label: 'Personal access token', value: 'pat' },
+            ])
+            .default('machine')
+            .required()
+            .live()
+            .helperText(
+              'Machine keys are standalone principals. PATs act as the selected user.',
+            ),
+          Select.make('userId')
+            .label('User')
+            .relationship('users', 'email')
+            .visible(({ get }) => get('kind') === 'pat')
+            .required(({ get }) => get('kind') === 'pat')
+            .helperText('Required for personal access tokens.'),
+          AbilitiesAssignment.make('abilities').helperText(
+            'Machine: permissions for the key (default * when empty). PAT: optional narrow of the user’s permissions.',
+          ),
+          DatePicker.make('expiresAt').label('Expires at (optional)'),
+        ]),
+    ])
+    return form
   }
 
-  static override infolist() {
-    return infolist((i) => {
-      i.schema([
-        Section.make('Credential')
-          .columns(2)
-          .schema([
-            TextEntry.make('name').columnSpanFull(),
-            TextEntry.make('description').columnSpanFull(),
-            TextEntry.make('kind').label('Type'),
-            TextEntry.make('status').label('Status').badge(),
-            TextEntry.make('tokenPrefix').label('Prefix').copyable(),
-            TextEntry.make('user.email').label('User'),
-            TextEntry.make('abilities').badge().label('Abilities').columnSpanFull(),
-            TextEntry.make('lastUsedAt').dateTime().label('Last used'),
-            TextEntry.make('expiresAt').dateTime().label('Expires'),
-            TextEntry.make('revokedAt').dateTime().label('Revoked'),
-            TextEntry.make('createdAt').dateTime().label('Created'),
-          ]),
-      ])
-    })
+  static override table(table: TableBuilder) {
+    table.defaultSort('createdAt', 'desc')
+      .defaultFilters([{ field: 'kind', value: 'machine' }])
+      .schema([
+      TextColumn.make('name').searchable().sortable(),
+      TextColumn.make('description'),
+      TextColumn.make('kind').label('Type').sortable().filterable().groupable(),
+      TextColumn.make('tokenPrefix').label('Prefix'),
+      TextColumn.make('status').label('Status').badge(),
+      TextColumn.make('user.email').label('User'),
+      TextColumn.make('lastUsedAt').dateTime().label('Last used'),
+      TextColumn.make('expiresAt').dateTime().label('Expires'),
+    ])
+    return table
+  }
+
+  static override infolist(infolist: InfolistBuilder) {
+    infolist.schema([
+      Section.make('Credential')
+        .columns(2)
+        .schema([
+          TextEntry.make('name').columnSpanFull(),
+          TextEntry.make('description').columnSpanFull(),
+          TextEntry.make('kind').label('Type'),
+          TextEntry.make('status').label('Status').badge(),
+          TextEntry.make('tokenPrefix').label('Prefix').copyable(),
+          TextEntry.make('user.email').label('User'),
+          TextEntry.make('abilities').badge().label('Abilities').columnSpanFull(),
+          TextEntry.make('lastUsedAt').dateTime().label('Last used'),
+          TextEntry.make('expiresAt').dateTime().label('Expires'),
+          TextEntry.make('revokedAt').dateTime().label('Revoked'),
+          TextEntry.make('createdAt').dateTime().label('Created'),
+        ]),
+    ])
+    return infolist
   }
 
   static override async prepareCreate(

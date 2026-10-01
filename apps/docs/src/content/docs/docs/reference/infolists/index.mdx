@@ -8,16 +8,14 @@ An infolist is the read-only view of one record, the show page. A form collects 
 You describe it with `infolist()`, using entries instead of inputs. `TextEntry.make('name')` reads the same model attribute a `TextInput` would edit. Sections group entries the same way they group fields. If you omit an infolist, the panel can still show a record from the form's fields, but a dedicated infolist is how you choose a different layout for reading than for writing.
 
 ```ts
-static infolist() {
-  return infolist((i) => {
-    i.schema([
-      Section.make('Product').columns(3).schema([
-        TextEntry.make('name'),
-        IconEntry.make('featured').boolean(),
-        ColorEntry.make('color'),
-      ]),
-    ])
-  })
+static infolist(infolist: InfolistBuilder) {
+  return infolist.schema([
+    Section.make('Product').columns(3).schema([
+      TextEntry.make('name'),
+      IconEntry.make('featured').boolean(),
+      ColorEntry.make('color'),
+    ]),
+  ])
 }
 ```
 

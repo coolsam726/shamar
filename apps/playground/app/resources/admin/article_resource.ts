@@ -1,8 +1,8 @@
 import {
+  FormBuilder,
+  TableBuilder,
+  InfolistBuilder,
   Resource,
-  form,
-  table,
-  infolist,
   Section,
   Flex,
   Group,
@@ -51,90 +51,87 @@ export default class ArticleResource extends Resource {
     ]
   }
 
-  static override form() {
-    return form((f) => {
-      f.schema([
-        Flex.make([
-          Group.make().schema([
-            TextInput.make('title')
-              .required()
-              .searchable()
-              .maxLength(160)
-              .live({ onBlur: true })
-              .afterStateUpdated(({ get, set, operation }) => {
-                if (operation === 'create') set('slug', slugify(get('title')))
-              }),
-            TextInput.make('slug')
-              .required()
-              .unique()
-              .createOnly()
-              .minLength(3)
-              .maxLength(80)
-              .pattern('[a-z0-9-]+')
-              .helperText('Set once on create; generated from the title.'),
-            DatePicker.make('publishedAt').label('Publish date'),
-            Toggle.make('draft').inline().default(true),
-          ]),
-          Group.make()
-            .grow(false)
-            .schema([
-              Placeholder.make('cover')
-                .label('Cover')
-                .content('Pick an image from the media library, or paste an external URL.'),
-              FilePicker.make('coverMediaId')
-                .image()
-                .label('Cover image')
-                .helperText('Select from Files (media library).')
-                .live()
-                .afterStateUpdated(({ get, set }) => {
-                  const id = String(get('coverMediaId') ?? '').trim()
-                  if (id) {
-                    set('coverUrl', `/demo/media/files/${id}/raw`)
-                  }
-                }),
-              TextInput.make('coverUrl')
-                .url()
-                .placeholder('https://…/cover.jpg')
-                .helperText('Filled from the library picker, or paste an external URL.'),
-            ]),
-        ]).columnSpanFull(),
-        Section.make('Body').schema([
-          Textarea.make('body')
-            .rows(10)
-            .maxLength(8000)
-            .columnSpanFull()
-            .helperText('Markdown supported on the detail page.'),
+  static override form(form: FormBuilder) {
+    form.schema([
+      Flex.make([
+        Group.make().schema([
+          TextInput.make('title')
+            .required()
+            .searchable()
+            .maxLength(160)
+            .live({ onBlur: true })
+            .afterStateUpdated(({ get, set, operation }) => {
+              if (operation === 'create') set('slug', slugify(get('title')))
+            }),
+          TextInput.make('slug')
+            .required()
+            .unique()
+            .createOnly()
+            .minLength(3)
+            .maxLength(80)
+            .pattern('[a-z0-9-]+')
+            .helperText('Set once on create; generated from the title.'),
+          DatePicker.make('publishedAt').label('Publish date'),
+          Toggle.make('draft').inline().default(true),
         ]),
-      ])
-    })
-  }
-
-  static override table() {
-    return table((t) => {
-      t.defaultSort('updatedAt', 'desc').schema([
-        TextColumn.make('title').searchable().sortable(),
-        TextColumn.make('slug').searchable(),
-        TextColumn.make('publishedAt').date().sortable(),
-        TextColumn.make('draft').toggle(),
-      ])
-    })
-  }
-
-  static override infolist() {
-    return infolist((i) => {
-      i.schema([
-        Section.make('Article')
-          .columns(2)
+        Group.make()
+          .grow(false)
           .schema([
-            TextEntry.make('title').columnSpanFull(),
-            TextEntry.make('slug').copyable(),
-            TextEntry.make('publishedAt').date(),
-            TextEntry.make('draft').boolean().badge(),
-            ImageEntry.make('coverUrl').label('Cover'),
-            TextEntry.make('coverMediaId').label('Cover media id').copyable(),
-            TextEntry.make('body').markdown().columnSpanFull(),
+            Placeholder.make('cover')
+              .label('Cover')
+              .content('Pick an image from the media library, or paste an external URL.'),
+            FilePicker.make('coverMediaId')
+              .image()
+              .label('Cover image')
+              .helperText('Select from Files (media library).')
+              .live()
+              .afterStateUpdated(({ get, set }) => {
+                const id = String(get('coverMediaId') ?? '').trim()
+                if (id) {
+                  set('coverUrl', `/demo/media/files/${id}/raw`)
+                }
+              }),
+            TextInput.make('coverUrl')
+              .url()
+              .placeholder('https://…/cover.jpg')
+              .helperText('Filled from the library picker, or paste an external URL.'),
           ]),
-      ])
-    })
+      ]).columnSpanFull(),
+      Section.make('Body').schema([
+        Textarea.make('body')
+          .rows(10)
+          .maxLength(8000)
+          .columnSpanFull()
+          .helperText('Markdown supported on the detail page.'),
+      ]),
+    ])
+    return form
+  }
+
+  static override table(table: TableBuilder) {
+    table.defaultSort('updatedAt', 'desc').schema([
+      TextColumn.make('title').searchable().sortable(),
+      TextColumn.make('slug').searchable(),
+      TextColumn.make('publishedAt').date().sortable(),
+      TextColumn.make('draft').toggle(),
+    ])
+    return table
+  }
+
+  static override infolist(infolist: InfolistBuilder) {
+    infolist.schema([
+      Section.make('Article')
+        .columns(2)
+        .schema([
+          TextEntry.make('title').columnSpanFull(),
+          TextEntry.make('slug').copyable(),
+          TextEntry.make('publishedAt').date(),
+          TextEntry.make('draft').boolean().badge(),
+          ImageEntry.make('coverUrl').label('Cover'),
+          TextEntry.make('coverMediaId').label('Cover media id').copyable(),
+          TextEntry.make('body').markdown().columnSpanFull(),
+        ]),
+    ])
+    return infolist
   }
 }

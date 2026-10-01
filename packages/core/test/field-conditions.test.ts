@@ -2,29 +2,28 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
   Resource,
+  type FormBuilder,
   TextInput,
   Select,
-  form,
   validateFieldConstraints,
   ValidationException,
 } from '../src/index.js'
 
 class CondResource extends Resource {
   static override slug = 'conds'
-  static override form() {
-    return form((f) => {
-      f.schema([
-        Select.make('kind')
-          .options([
-            { label: 'A', value: 'a' },
-            { label: 'B', value: 'b' },
-          ])
-          .default('a'),
-        TextInput.make('extra')
-          .visible(({ get }) => get('kind') === 'b')
-          .required(({ get }) => get('kind') === 'b'),
-      ])
-    })
+  static override form(form: FormBuilder) {
+    form.schema([
+      Select.make('kind')
+        .options([
+          { label: 'A', value: 'a' },
+          { label: 'B', value: 'b' },
+        ])
+        .default('a'),
+      TextInput.make('extra')
+        .visible(({ get }) => get('kind') === 'b')
+        .required(({ get }) => get('kind') === 'b'),
+    ])
+    return form
   }
 }
 

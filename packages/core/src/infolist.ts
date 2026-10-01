@@ -340,6 +340,36 @@ export function infolist(callback: (builder: InfolistBuilder) => void): Infolist
 }
 
 /**
+ * `static infolist(infolist: InfolistBuilder)` returns the builder or a built schema.
+ * `undefined` means “derive the show page from the form”.
+ */
+export function acceptInfolist(
+  result: InfolistBuilder | InfolistSchema | undefined | void,
+): InfolistSchema | undefined {
+  if (result == null) return undefined;
+  if (isInfolistBuilder(result)) return result.build();
+  if (isInfolistSchema(result)) return result;
+  return undefined;
+}
+
+function isInfolistBuilder(value: unknown): value is InfolistBuilder {
+  return (
+    !!value &&
+    typeof (value as InfolistBuilder).build === 'function' &&
+    typeof (value as InfolistBuilder).schema === 'function'
+  );
+}
+
+function isInfolistSchema(value: unknown): value is InfolistSchema {
+  return (
+    !!value &&
+    Array.isArray((value as InfolistSchema).entries) &&
+    Array.isArray((value as InfolistSchema).schema) &&
+    Array.isArray((value as InfolistSchema).sections)
+  );
+}
+
+/**
  * Map a form field to an infolist entry (shared heuristics for derived show schemas).
  */
 export function fieldConfigToEntry(field: FieldConfig): InfolistEntryConfig {
