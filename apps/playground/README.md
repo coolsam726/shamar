@@ -50,7 +50,7 @@ Set `SHAMAR_DEMO_MODE=true` to enable the docs sandbox:
 
 - `GET /demo-status` — credentials + `nextResetAt` (CORS for `DEMO_DOCS_ORIGIN`)
 - `POST /demo-reset` — wipe + reseed (requires `DEMO_RESET_TOKEN`)
-- Automatic wipe every **20 minutes**
+- Automatic wipe every **20 minutes**, deferred while any user was active in the last 5 minutes (forced after 1 hour of deferrals)
 - Login banner with shared accounts
 
 See [`.env.example`](./.env.example), [`fly.toml`](./fly.toml), and the Render section in [`DEPLOY.md`](../../DEPLOY.md).

@@ -6,7 +6,7 @@
   @if(widget.payload.content.view)
     @!component(widget.payload.content.view, widget.payload.content.data ?? {})
   @elseif(widget.payload.content.html)
-    <div class="prose prose-sm max-w-none text-body">{!! widget.payload.content.html !!}</div>
+    <div class="prose prose-sm max-w-none text-body">{{{ widget.payload.content.html }}}</div>
   @else
     <p class="text-sm text-body-subtle">No card content configured.</p>
   @endif

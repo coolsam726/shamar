@@ -18,6 +18,8 @@ export interface UserAttrs {
   ldapDomainId?: string | null
   /** Optional company for branding / tenancy demos. */
   companyId?: string | null
+  /** Demo sandbox: last authenticated request (for idle reset gating). */
+  lastSeenAt?: Date | null
 }
 
 async function hasher() {
@@ -43,6 +45,7 @@ const userSchema = new Schema<UserAttrs>(
     externalId: { type: String, default: null, sparse: true, unique: true, index: true },
     ldapDomainId: { type: String, default: null, index: true },
     companyId: { type: String, default: null, index: true },
+    lastSeenAt: { type: Date, default: null, index: true },
   },
   {
     timestamps: true,
