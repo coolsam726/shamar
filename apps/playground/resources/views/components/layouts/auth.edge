@@ -7,10 +7,11 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <script>
     (function () {
-      var stored = localStorage.getItem('shamar-theme');
-      if (stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.documentElement.classList.add('dark');
-      }
+      var stored = localStorage.getItem('shamar-theme') || 'system';
+      var dark =
+        stored === 'dark' ||
+        (stored !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.classList.add('dark');
     })();
   </script>
   @if(branding.fontPreconnect)
@@ -157,15 +158,13 @@
       height: 1.05rem;
     }
 
-    .auth-theme-icon--dark {
+    .auth-theme-icon {
       display: none;
     }
 
-    html.dark .auth-theme-icon--light {
-      display: none;
-    }
-
-    html.dark .auth-theme-icon--dark {
+    .auth-theme-toggle[data-theme-pref='light'] .auth-theme-icon--light,
+    .auth-theme-toggle[data-theme-pref='dark'] .auth-theme-icon--dark,
+    .auth-theme-toggle[data-theme-pref='system'] .auth-theme-icon--system {
       display: block;
     }
 
@@ -360,13 +359,17 @@
       type="button"
       class="auth-theme-toggle"
       data-auth-theme-toggle
-      aria-label="Toggle dark mode"
+      data-theme-pref="system"
+      aria-label="Theme: System"
     >
       <svg class="auth-theme-icon auth-theme-icon--light" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>
       </svg>
       <svg class="auth-theme-icon auth-theme-icon--dark" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+      </svg>
+      <svg class="auth-theme-icon auth-theme-icon--system" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25H5.25A2.25 2.25 0 013 15V6.75A2.25 2.25 0 015.25 4.5h13.5A2.25 2.25 0 0121 6.75V15a2.25 2.25 0 01-2.25 2.25H15M9 17.25v1.5c0 .621.504 1.125 1.125 1.125h3.75c.621 0 1.125-.504 1.125-1.125v-1.5M9 17.25h6"/>
       </svg>
     </button>
     <div class="auth-atmosphere" aria-hidden="true"></div>
@@ -381,10 +384,37 @@
     (function () {
       var btn = document.querySelector('[data-auth-theme-toggle]');
       if (!btn) return;
+      var order = ['light', 'dark', 'system'];
+      var media = window.matchMedia('(prefers-color-scheme: dark)');
+      function readPref() {
+        var stored = localStorage.getItem('shamar-theme');
+        return stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system';
+      }
+      function resolvedDark(pref) {
+        if (pref === 'dark') return true;
+        if (pref === 'light') return false;
+        return media.matches;
+      }
+      function apply(pref) {
+        document.documentElement.classList.toggle('dark', resolvedDark(pref));
+        localStorage.setItem('shamar-theme', pref);
+        btn.setAttribute('data-theme-pref', pref);
+        btn.setAttribute(
+          'aria-label',
+          pref === 'system' ? 'Theme: System' : pref === 'dark' ? 'Theme: Dark' : 'Theme: Light'
+        );
+      }
+      apply(readPref());
       btn.addEventListener('click', function () {
-        var next = document.documentElement.classList.toggle('dark');
-        localStorage.setItem('shamar-theme', next ? 'dark' : 'light');
+        var current = readPref();
+        var next = order[(order.indexOf(current) + 1) % order.length];
+        apply(next);
       });
+      var onSchemeChange = function () {
+        if (readPref() === 'system') apply('system');
+      };
+      if (typeof media.addEventListener === 'function') media.addEventListener('change', onSchemeChange);
+      else if (typeof media.addListener === 'function') media.addListener(onSchemeChange);
     })();
   </script>
 </body>

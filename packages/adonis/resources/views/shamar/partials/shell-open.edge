@@ -18,10 +18,11 @@
   <meta name="csrf-token" content="{{ csrfToken }}" />
   <script>
     (function () {
-      const stored = localStorage.getItem('shamar-theme');
-      if (stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.documentElement.classList.add('dark');
-      }
+      const stored = localStorage.getItem('shamar-theme') || 'system';
+      const dark =
+        stored === 'dark' ||
+        (stored !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      if (dark) document.documentElement.classList.add('dark');
     })();
   </script>
   <script defer src="{{ basePath }}/assets/shamar-ui.js"></script>

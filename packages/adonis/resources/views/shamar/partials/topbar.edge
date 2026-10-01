@@ -71,19 +71,60 @@
   <div class="shamar-topbar__tools flex items-center gap-2 min-w-0">
     {{{ globalSearchHtml }}}
     {{{ notificationsHtml }}}
-    <button
-      type="button"
-      @click="toggleTheme()"
-      aria-label="Toggle dark mode"
-      class="p-1.5 rounded-md text-body hover:bg-surface-hover hover:text-heading"
-    >
-      <svg class="w-4 h-4 shamar-theme-icon shamar-theme-icon--light" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-      </svg>
-      <svg class="w-4 h-4 shamar-theme-icon shamar-theme-icon--dark" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>
-      </svg>
-    </button>
+    <div class="relative" @click.outside="themeOpen = false">
+      <button
+        type="button"
+        @click="themeOpen = !themeOpen"
+        class="shamar-theme-trigger p-1.5 rounded-md text-body hover:bg-surface-hover hover:text-heading"
+        :data-theme-pref="themePref"
+        :aria-label="themePref === 'system' ? 'Theme: System' : themePref === 'dark' ? 'Theme: Dark' : 'Theme: Light'"
+        :aria-expanded="themeOpen.toString()"
+        aria-haspopup="menu"
+      >
+        <svg class="w-4 h-4 shamar-theme-icon shamar-theme-icon--light" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>
+        </svg>
+        <svg class="w-4 h-4 shamar-theme-icon shamar-theme-icon--dark" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+        </svg>
+        <svg class="w-4 h-4 shamar-theme-icon shamar-theme-icon--system" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25H5.25A2.25 2.25 0 013 15V6.75A2.25 2.25 0 015.25 4.5h13.5A2.25 2.25 0 0121 6.75V15a2.25 2.25 0 01-2.25 2.25H15M9 17.25v1.5c0 .621.504 1.125 1.125 1.125h3.75c.621 0 1.125-.504 1.125-1.125v-1.5M9 17.25h6"/>
+        </svg>
+      </button>
+      <div
+        x-show="themeOpen"
+        x-cloak
+        x-transition
+        role="menu"
+        aria-label="Color theme"
+        class="absolute right-0 top-full mt-2 w-40 shamar-card rounded-xl shadow-lg overflow-hidden z-50 py-1 text-sm"
+      >
+        <button
+          type="button"
+          role="menuitemradio"
+          class="shamar-theme-menu-item w-full text-left px-3 py-1.5 text-body hover:bg-surface-hover hover:text-heading"
+          :class="themePref === 'light' && 'is-active'"
+          :aria-checked="(themePref === 'light').toString()"
+          @click="setTheme('light')"
+        >Light</button>
+        <button
+          type="button"
+          role="menuitemradio"
+          class="shamar-theme-menu-item w-full text-left px-3 py-1.5 text-body hover:bg-surface-hover hover:text-heading"
+          :class="themePref === 'dark' && 'is-active'"
+          :aria-checked="(themePref === 'dark').toString()"
+          @click="setTheme('dark')"
+        >Dark</button>
+        <button
+          type="button"
+          role="menuitemradio"
+          class="shamar-theme-menu-item w-full text-left px-3 py-1.5 text-body hover:bg-surface-hover hover:text-heading"
+          :class="themePref === 'system' && 'is-active'"
+          :aria-checked="(themePref === 'system').toString()"
+          @click="setTheme('system')"
+        >System</button>
+      </div>
+    </div>
 
     <div class="relative" x-data="{ open: false }" @click.outside="open = false">
       <button
