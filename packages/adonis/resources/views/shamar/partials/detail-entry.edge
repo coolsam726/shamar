@@ -1,14 +1,14 @@
 <div
-  class="shamar-detail-cell px-3 py-3 border-t border-card-border sm:border-t-0 sm:border-r sm:border-card-border last:border-r-0"
+  class="shamar-detail-cell shamar-infolist-entry"
   style="{{ resolveGridItemStyle(field, 2) }}"
 >
   <div class="shamar-detail__label-row">
-    <dt class="shamar-detail__label">{{ field.label ?? field.name }}</dt>
+    <div class="shamar-detail__label">{{ field.label ?? field.name }}</div>
     @if(field.hint)
       <span class="shamar-field__hint">{{ field.hint }}</span>
     @endif
   </div>
-  <dd class="shamar-field__value mt-1 {{ alignmentTextClass(field.alignment) }}">
+  <div class="shamar-field__value shamar-infolist-entry__value {{ alignmentTextClass(field.alignment) }}">
     @if(field.type === 'icon' || field.type === 'boolean' || field.type === 'checkbox' || field.format === 'boolean' || field.format === 'toggle')
       @!component('shamar::partials/boolean-value', {
         checked: fieldChecked(record, field),
@@ -75,7 +75,7 @@
     @else
       {{ detailValue(record, field) }}
     @endif
-  </dd>
+  </div>
   @if(field.help)
     <p class="shamar-field__help">{{ field.help }}</p>
   @endif

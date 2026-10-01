@@ -145,7 +145,7 @@ export default defineConfig({
     // Full lockup for the login page (mark + wordmark).
     logo: '/branding/shamar-banner.svg',
     logoDark: '/branding/shamar-banner-dark.svg',
-    logoHeight: 48,
+    logoHeight: 60,
     brandDisplay: 'logo',
     primaryColor: '#f1511b',
     accentColor: '#286291',

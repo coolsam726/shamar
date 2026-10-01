@@ -15,6 +15,8 @@ export interface AppSettingsAttrs {
   logoDarkMediaId?: string | null
   logoHeight?: string | null
   brandDisplay?: BrandDisplayMode | null
+  primaryColor?: string | null
+  accentColor?: string | null
   /** Preferences */
   channels?: string[]
   notifyEmail?: boolean
@@ -36,6 +38,8 @@ const appSettingsSchema = new Schema<AppSettingsAttrs>(
       enum: ['both', 'logo', 'name', null],
       default: null,
     },
+    primaryColor: { type: String, default: null, trim: true },
+    accentColor: { type: String, default: null, trim: true },
     channels: { type: [String], default: [] },
     notifyEmail: { type: Boolean, default: true },
     notifySms: { type: Boolean, default: false },
@@ -89,6 +93,8 @@ export async function upsertAppSettings(
         logoDarkMediaId: data.logoDarkMediaId ?? null,
         logoHeight: data.logoHeight ?? null,
         brandDisplay,
+        primaryColor: data.primaryColor ?? null,
+        accentColor: data.accentColor ?? null,
         channels: Array.isArray(data.channels) ? data.channels : [],
         notifyEmail: data.notifyEmail !== false,
         notifySms: Boolean(data.notifySms),

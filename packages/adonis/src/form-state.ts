@@ -115,12 +115,22 @@ export function formClientFields(
     state?: Record<string, unknown>;
     record?: Record<string, unknown> | null;
     operation?: FormOperation;
+    /** Force every field disabled (e.g. form page without canSave). */
+    forceDisabled?: boolean;
   } = {},
 ): FormFieldClientMeta[] {
   const state = options.state ?? {};
   const operation = options.operation ?? 'edit';
+  const forceDisabled = options.forceDisabled === true;
 
   return meta.fields
     .filter((f) => !f.hiddenOnForm)
-    .map((field) => fieldClientMeta(field, state, options.record, operation));
+    .map((field) => {
+      const client = fieldClientMeta(field, state, options.record, operation);
+      if (forceDisabled) {
+        client.disabled = true;
+        client.readonly = true;
+      }
+      return client;
+    });
 }

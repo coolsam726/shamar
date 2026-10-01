@@ -99,6 +99,22 @@ describe('Page.configure', () => {
     assert.equal(meta.fields?.[0]?.name, 'logo');
     assert.equal(isFormPage(BrandingPage), true);
     assert.equal(isListPage(BrandingPage), false);
+    assert.equal(BrandingPage.canSave(null), true);
+  });
+
+  it('allows FormPage subclasses to deny save', () => {
+    class ReadOnlySettings extends FormPage {
+      static override slug = 'readonly-settings';
+      static override canSave() {
+        return false;
+      }
+      static override form(form: FormBuilder) {
+        form.schema([TextInput.make('theme')]);
+        return form;
+      }
+    }
+    assert.equal(ReadOnlySettings.canSave({ id: '1', permissions: ['products:view'] }), false);
+    assert.equal(FormPage.canSave({ id: '1', permissions: ['products:view'] }), true);
   });
 
   it('configures a settings page with 7xl content width', () => {

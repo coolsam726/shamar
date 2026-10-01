@@ -297,7 +297,7 @@
   const style = document.createElement('style');
   style.textContent =
     '[wire\\:loading]{display:none !important}.wire-loading [wire\\:loading]{display:revert !important}.wire-loading [wire\\:loading\\.remove]{display:none !important}' +
-    '.wire-progress{position:fixed;top:0;left:0;height:2px;width:0;opacity:0;z-index:2147483646;pointer-events:none;background:#f59e0b;transition:width .2s ease,opacity .2s ease}' +
+    '.wire-progress{position:fixed;top:0;left:0;height:2px;width:0;opacity:0;z-index:2147483646;pointer-events:none;background:var(--color-shamar-accent,#286291);transition:width .2s ease,opacity .2s ease}' +
     '.wire-progress.is-active{opacity:1}';
   document.head.appendChild(style);
 

@@ -336,6 +336,7 @@ function registerMediaRoutes(
               navigationSort: media.navigationSort,
               navigationIcon: media.navigationIcon,
             },
+            userMenuLinks: panel.config.userMenuLinks,
           });
           const folderId = (ctx.request.qs().folderId as string | undefined) || null;
           const browse = await media.adapter.browse({

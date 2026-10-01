@@ -7,6 +7,13 @@ function nonEmpty(value: unknown): string | undefined {
   return raw === '' ? undefined : raw
 }
 
+function hexColor(value: unknown): string | undefined {
+  const raw = nonEmpty(value)
+  if (!raw) return undefined
+  const hex = raw.startsWith('#') ? raw : `#${raw}`
+  return /^#[0-9a-fA-F]{6}$/.test(hex) ? hex.toLowerCase() : undefined
+}
+
 /**
  * Merge order: AppSettings singleton overrides panel / `defineConfig({ branding })`.
  */
@@ -27,6 +34,8 @@ export async function resolvePlaygroundBrandingOverrides(
     logoDark: nonEmpty(settings?.logoDark),
     logoHeight: nonEmpty(settings?.logoHeight),
     brandDisplay,
+    primaryColor: hexColor(settings?.primaryColor),
+    accentColor: hexColor(settings?.accentColor),
   }
 
   return hasAny(global) ? global : undefined
@@ -38,6 +47,8 @@ function hasAny(override: BrandingOverride): boolean {
       override.logo ||
       override.logoDark ||
       override.logoHeight ||
-      override.brandDisplay,
+      override.brandDisplay ||
+      override.primaryColor ||
+      override.accentColor,
   )
 }

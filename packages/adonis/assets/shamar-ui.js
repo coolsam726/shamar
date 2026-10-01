@@ -3716,9 +3716,9 @@
   function readMediaViewMode() {
     try {
       const mode = localStorage.getItem('shamar-media-view-mode');
-      return MEDIA_VIEW_MODES.includes(mode) ? mode : 'icons';
+      return MEDIA_VIEW_MODES.includes(mode) ? mode : 'details';
     } catch {
-      return 'icons';
+      return 'details';
     }
   }
 
@@ -6206,6 +6206,22 @@
   document.addEventListener('wire:navigated', () => {
     applyListHrefs();
     bindStickyPageHeading();
+    // Teleported media menus live on <body>; destroyTree on the scroll root
+    // leaves orphans that break Alpine re-init of the media manager.
+    document.querySelectorAll('body > .shamar-media__menu').forEach((el) => el.remove());
+    const media = document.querySelector('.shamar-media[x-data]');
+    if (media instanceof HTMLElement && window.Alpine?.initTree) {
+      try {
+        window.Alpine.destroyTree?.(media);
+      } catch {
+        /* ignore */
+      }
+      try {
+        window.Alpine.initTree(media);
+      } catch {
+        /* ignore */
+      }
+    }
   });
 
   function bindStickyPageHeading() {

@@ -248,6 +248,7 @@ export class AdminController {
             navigationIcon: this.panel.media.navigationIcon,
           }
         : undefined,
+      userMenuLinks: this.panel.config.userMenuLinks,
       showCreateButton:
         showCreateButton === true ? policy?.create ?? true : showCreateButton,
       showEditButton:
@@ -1848,6 +1849,7 @@ export class AdminController {
             navigationIcon: this.panel.media.navigationIcon,
           }
         : undefined,
+      userMenuLinks: this.panel.config.userMenuLinks,
     });
 
     const view = page.view ?? 'shamar::page';
@@ -1872,6 +1874,7 @@ export class AdminController {
       return ctx.response.badRequest({ message: 'Not a form page' });
     }
 
+    const canSavePage = PageClass.canSave(authResult.user);
     const pageCtx = this.pageRequestContext(ctx, authResult);
     const filled = await PageClass.fill(pageCtx);
     const mountLocals = await PageClass.mount(pageCtx);
@@ -1885,7 +1888,7 @@ export class AdminController {
     }
 
     if (this.wantsJson(ctx, options?.asJson)) {
-      return ctx.response.json({ page: page.slug, record, ...mountLocals });
+      return ctx.response.json({ page: page.slug, record, canSave: canSavePage, ...mountLocals });
     }
 
     const shellWithSlug = await buildShellContext({
@@ -1911,6 +1914,7 @@ export class AdminController {
             navigationIcon: this.panel.media.navigationIcon,
           }
         : undefined,
+      userMenuLinks: this.panel.config.userMenuLinks,
     });
 
     const view = page.view ?? 'shamar::page-form';
@@ -1921,6 +1925,7 @@ export class AdminController {
       meta: resourceMeta,
       // Avoid resource create/edit/show chrome in page-heading (View/Cancel/id URLs).
       mode: 'form',
+      canSavePage,
       record,
       formSchema: formSchemaTree(resourceMeta),
       formStateEndpoint: `${this.basePath}/${page.slug}/form-state`,
@@ -1929,6 +1934,7 @@ export class AdminController {
         state: formInitialState,
         record,
         operation: 'edit',
+        forceDisabled: !canSavePage,
       }),
       formErrors: {},
       pageActions: page.actions.filter((a) => a.placement === 'header'),
@@ -2019,6 +2025,7 @@ export class AdminController {
             navigationIcon: this.panel.media.navigationIcon,
           }
         : undefined,
+      userMenuLinks: this.panel.config.userMenuLinks,
       showCreateButton: false,
     });
 
@@ -2375,6 +2382,7 @@ export class AdminController {
             navigationIcon: this.panel.media.navigationIcon,
           }
         : undefined,
+      userMenuLinks: this.panel.config.userMenuLinks,
     });
 
     const view = page.view ?? 'shamar::page-sections';
@@ -2487,6 +2495,15 @@ export class AdminController {
       return ctx.response.badRequest({ message: 'Not a form page' });
     }
 
+    if (!PageClass.canSave(authResult.user)) {
+      return respondForbidden(
+        ctx,
+        'You do not have permission to save this page.',
+        options?.asJson || this.wantsJson(ctx, options?.asJson),
+        this.basePath,
+      );
+    }
+
     const resourceMeta = this.formPageAsResourceMeta(page);
     const data = this.resourcePayload(resourceMeta, ctx, 'update');
 
@@ -2541,6 +2558,7 @@ export class AdminController {
               navigationIcon: this.panel.media.navigationIcon,
             }
           : undefined,
+        userMenuLinks: this.panel.config.userMenuLinks,
       });
 
       return ctx.view.render(page.view ?? 'shamar::page-form', {
@@ -2549,6 +2567,7 @@ export class AdminController {
         resource: resourceMeta,
         meta: resourceMeta,
         mode: 'form',
+        canSavePage: true,
         record: filled,
         formSchema: formSchemaTree(resourceMeta),
         formStateEndpoint: `${this.basePath}/${page.slug}/form-state`,
@@ -2571,6 +2590,9 @@ export class AdminController {
     const authResult = await this.ensurePageAccess(ctx, page, true);
     if (!this.isAuthContext(authResult)) return authResult;
 
+    const PageClass = this.pages.pageClass(page.slug);
+    const canSavePage = !PageClass || !isFormPage(PageClass) || PageClass.canSave(authResult.user);
+
     const resourceMeta = this.formPageAsResourceMeta(page);
     const body = ctx.request.body() as {
       operation?: string;
@@ -2584,6 +2606,13 @@ export class AdminController {
       state: body.state ?? {},
       record: body.state ?? {},
     });
+
+    if (!canSavePage) {
+      for (const field of result.fields) {
+        field.disabled = true;
+        field.readonly = true;
+      }
+    }
 
     return ctx.response.json(result);
   }

@@ -9,14 +9,37 @@ import {
   Checkbox,
   Toggle,
   FilePicker,
+  ColorPicker,
+  can,
   type PageRequestContext,
   type PageSaveResult,
+  type ShamarUser,
 } from '@shamar/core'
 import { getAppSettings, upsertAppSettings } from '#models/app_settings'
 
 function mediaUrlFromId(id: unknown): string {
   const value = String(id ?? '').trim()
   return value ? `/media/${value}` : ''
+}
+
+function normalizeHex(value: unknown, fallback: string): string {
+  const raw = String(value ?? '').trim()
+  if (!raw) return fallback
+  const hex = raw.startsWith('#') ? raw : `#${raw}`
+  return /^#[0-9a-fA-F]{6}$/.test(hex) ? hex.toLowerCase() : fallback
+}
+
+/** True when the user has any mutating resource ability (not view-only). */
+function canWriteSettings(user: ShamarUser | null | undefined): boolean {
+  if (can(user, '*')) return true
+  const permissions = user?.permissions ?? []
+  return permissions.some(
+    (name) =>
+      name.endsWith(':edit') ||
+      name.endsWith(':create') ||
+      name.endsWith(':delete') ||
+      name.endsWith(':*'),
+  )
 }
 
 /**
@@ -29,18 +52,26 @@ export default class AppSettingsPage extends SettingsPage {
   static override navigationSort = 1
   static override icon = 'cog'
 
+  /** Viewers keep read access; Save / pickers stay off without write abilities. */
+  static override canSave(user: ShamarUser | null | undefined): boolean {
+    return canWriteSettings(user)
+  }
+
   static override form(form: FormBuilder) {
     form.schema([
       Tabs.make()
         .columnSpanFull()
+        .columns(1)
         .tabs([
           Tab.make('Branding')
             .icon('sparkles')
+            .columns(1)
             .schema([
               Section.make('App branding')
                 .description(
-                  'Overrides panel defaults for logo and display name.',
+                  'Overrides panel defaults for logo, colors, and display name.',
                 )
+                .columnSpanFull()
                 .columns(2)
                 .schema([
                   TextInput.make('name')
@@ -48,6 +79,12 @@ export default class AppSettingsPage extends SettingsPage {
                     .placeholder('Shamar Playground')
                     .helperText('Optional override for the shell brand name.')
                     .columnSpanFull(),
+                  ColorPicker.make('primaryColor')
+                    .label('Primary color')
+                    .helperText('Buttons, links, and the top-bar stripe.'),
+                  ColorPicker.make('accentColor')
+                    .label('Accent color')
+                    .helperText('Navigate loader and secondary brand accents.'),
                   FilePicker.make('logoMediaId')
                     .image()
                     .makePublic()
@@ -99,9 +136,11 @@ export default class AppSettingsPage extends SettingsPage {
             ]),
           Tab.make('Preferences')
             .icon('bell')
+            .columns(1)
             .schema([
               Section.make('Notifications')
                 .description('Default notification preferences for the application.')
+                .columnSpanFull()
                 .columns(2)
                 .schema([
                   Select.make('channels')
@@ -143,6 +182,8 @@ export default class AppSettingsPage extends SettingsPage {
         logoDarkMediaId: '',
         logoHeight: '',
         brandDisplay: '',
+        primaryColor: '#f1511b',
+        accentColor: '#286291',
         channels: [],
         notifyEmail: true,
         notifySms: false,
@@ -157,6 +198,8 @@ export default class AppSettingsPage extends SettingsPage {
       logoDarkMediaId: doc.logoDarkMediaId ?? '',
       logoHeight: doc.logoHeight ?? '',
       brandDisplay: doc.brandDisplay ?? '',
+      primaryColor: normalizeHex(doc.primaryColor, '#f1511b'),
+      accentColor: normalizeHex(doc.accentColor, '#286291'),
       channels: Array.isArray(doc.channels) ? doc.channels : [],
       notifyEmail: doc.notifyEmail !== false,
       notifySms: Boolean(doc.notifySms),
@@ -176,6 +219,8 @@ export default class AppSettingsPage extends SettingsPage {
 
     const logoMediaId = String(data.logoMediaId ?? '').trim() || null
     const logoDarkMediaId = String(data.logoDarkMediaId ?? '').trim() || null
+    const primaryColor = normalizeHex(data.primaryColor, '')
+    const accentColor = normalizeHex(data.accentColor, '')
 
     await upsertAppSettings({
       name: String(data.name ?? '').trim() || null,
@@ -187,6 +232,8 @@ export default class AppSettingsPage extends SettingsPage {
       logoDarkMediaId,
       logoHeight: String(data.logoHeight ?? '').trim() || null,
       brandDisplay,
+      primaryColor: primaryColor || null,
+      accentColor: accentColor || null,
       channels: Array.isArray(data.channels)
         ? data.channels.map((value) => String(value))
         : [],
