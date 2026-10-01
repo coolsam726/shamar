@@ -47,7 +47,7 @@ jobs:
         env:
           PUBLIC_SITE_URL: https://coolsam726.github.io
           PUBLIC_BASE_PATH: /shamar
-          PUBLIC_DEMO_URL: https://shamar.savannabits.com
+          PUBLIC_DEMO_URL: https://demo.shamar.dev
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm docs:build
 

@@ -11,6 +11,9 @@ import { middleware } from '#start/kernel'
 import { controllers } from '#generated/controllers'
 import router from '@adonisjs/core/services/router'
 
+/** Render and other hosts probe this. It does not depend on demo mode. */
+router.get('/health', async ({ response }) => response.ok({ ok: true }))
+
 router
   .group(() => {
     router.get('demo-status', [controllers.DemoSandbox, 'status'])

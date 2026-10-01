@@ -67,7 +67,7 @@ Optional env: `BASE_URL`, `DEMO_EMAIL`, `DEMO_PASSWORD`.
 Optional env for the Astro build:
 
 ```bash
-PUBLIC_SITE_URL=https://shamar.savannabits.com
+PUBLIC_SITE_URL=https://demo.shamar.dev
 # leave PUBLIC_DEMO_URL empty for same-origin /demo-status
 ```
 

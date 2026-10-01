@@ -76,23 +76,22 @@ auth: {
 ## Quick start
 
 ```ts
-// config/shamar.ts
-import { defineConfig, panel } from '@shamar/adonis'
+// app/panels/admin/panel.ts — discovered on boot. config/shamar.ts keeps orm, auth, and branding.
+import { PanelProvider, panel } from '@shamar/adonis'
 
-export default defineConfig({
-  orm: 'lucid', // or 'mongoose'
-  branding: { name: 'Admin' },
-  panels: [
-    panel('admin')
+export default class AdminPanel extends PanelProvider {
+  panel() {
+    return panel('admin')
       .path('/admin')
-      .discoverResources('app/resources/admin'),
-    // .allowUsersWithoutRoles() // opt in: empty role/permission users may enter
-  ],
-})
+      .discoverResources('app/panels/admin/resources')
+      .discoverPages('app/panels/admin/pages')
+    // .allowUsersWithoutRoles() lets people in when they have no roles or permissions
+  }
+}
 ```
 
 ```ts
-// app/resources/admin/product_resource.ts
+// app/panels/admin/resources/product_resource.ts
 import { Resource, TextInput, TextColumn } from '@shamar/core'
 import Product from '#models/product'
 
@@ -175,7 +174,7 @@ Use `resolveBrandingOverrides` to overlay logos from a DB (global settings) at r
 
 #### Pages (Filament-style)
 
-Custom panel pages live beside resources. Discover them with `.discoverPages('app/pages/admin')` (`*_page.ts` / `*Page.ts`).
+Custom panel pages live beside resources. Discover them with `.discoverPages('app/panels/admin/pages')` (`*_page.ts` / `*Page.ts`).
 
 **Single-purpose shortcuts** — `SettingsPage` (singleton settings layout), `FormPage` (generic form), and `ListPage` (one table):
 
@@ -252,8 +251,8 @@ Empty `content()` keeps the original custom-page behavior: `static view` + `moun
 panel('admin')
   .brandDisplay('both') // or 'logo' | 'name' — also `.brandLogoOnly()` / `.brandNameOnly()`
   .dashboardPage(AdminDashboard) // optional — defaults to nav cards only
-  .discoverResources('app/resources/admin')
-  .discoverPages('app/pages/admin')
+  .discoverResources('app/panels/admin/resources')
+  .discoverPages('app/panels/admin/pages')
 ```
 
 **Dashboard home** — override the panel root with a {@link DashboardPage} from `@shamar/core` and widget classes (`StatsOverviewWidget`, `ListWidget`, `ChartWidget`, …). Charts lazy-load ApexCharts (default) or Chart.js from panel assets. Omit `.dashboardPage()` to keep the built-in navigation card grid.
@@ -293,7 +292,7 @@ export default defineConfig({
         File: MediaFile,
       }),
   },
-  panels: [panel('admin').path('/admin').discoverResources('app/resources/admin')],
+  panels: [panel('admin').path('/admin').discoverResources('app/panels/admin/resources')],
 })
 ```
 

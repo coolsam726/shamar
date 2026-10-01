@@ -333,9 +333,9 @@ Override \`canViewAny\`, \`canCreate\`, \`canEdit\`, \`canDelete\`, or attach a 
       code(`// config/shamar.ts
 panel('admin')
   .path('/demo')
-  .discoverResources('app/resources/admin')
+  .discoverResources('app/panels/admin/resources')
   .resources([UserResource])`) +
-      `Use \`.discoverResources('app/resources/admin')\` to auto-load classes ending in \`Resource\`, or pass explicit classes to \`.resources([...])\`.
+      `Use \`.discoverResources('app/panels/admin/resources')\` to auto-load classes ending in \`Resource\`, or pass explicit classes to \`.resources([...])\`.
 
 Generate a stub:
 
@@ -741,7 +741,7 @@ async function writePages() {
     'pages/index.mdx',
     frontmatter('Pages overview', 'Custom admin pages beyond resources.') +
       IMPORT +
-      code(`panel('admin').discoverPages('app/pages/admin')`) +
+      code(`panel('admin').discoverPages('app/panels/admin/pages')`) +
       `| Page type | Class | Use |
 |-----------|-------|-----|
 | [FormPage](/docs/reference/pages/form-page/) | \`FormPage\` | One-off form |

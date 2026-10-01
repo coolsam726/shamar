@@ -4,7 +4,7 @@
 
 Inspired by [Filament](https://filamentphp.com/) (PHP) and architecturally aligned with [Loom](https://github.com/coolsam726/nodeweaver) (NestJS), but built natively for the latest AdonisJS stack.
 
-**Documentation + demo:** one server — `pnpm site:build` then playground. Routes: `/` landing, `/docs`, `/demo` panel. Hosting: [`DEPLOY.md`](DEPLOY.md) (`shamar.savannabits.com`).
+**Documentation + demo:** one server — `pnpm site:build` then playground. Routes: `/` landing, `/docs`, `/demo` panel. Public site: [`https://demo.shamar.dev`](https://demo.shamar.dev) on Render, DNS in Cloudflare ([`DEPLOY.md`](DEPLOY.md)).
 
 ## Packages
 
@@ -36,7 +36,7 @@ For OpenAPI docs over the JSON API **and** your custom `/api/*` routes, add [`@s
 ## Quick start
 
 ```ts
-// app/resources/admin/user_resource.ts
+// app/panels/admin/resources/user_resource.ts
 import {
   Resource,
   TextInput,
@@ -72,24 +72,21 @@ export default class UserResource extends Resource {
 ```
 
 ```ts
-// config/shamar.ts
-import { defineConfig, panel } from '@shamar/adonis'
+// app/panels/admin/panel.ts — discovered on boot. config/shamar.ts holds orm, auth, and shared branding.
+import { PanelProvider, panel } from '@shamar/adonis'
 
-export default defineConfig({
-  orm: 'lucid', // or 'mongoose' — chosen at `node ace configure @shamar/adonis`
-  panels: [
-    panel('admin')
+export default class AdminPanel extends PanelProvider {
+  panel() {
+    return panel('admin')
       .path('/admin')
-      .discoverResources('app/resources/admin')
-      .branding({ name: 'Admin' }),
-    panel('app')
-      .path('/app')
-      .discoverResources('app/resources/app'),
-  ],
-})
+      .discoverResources('app/panels/admin/resources')
+      .discoverPages('app/panels/admin/pages')
+      .branding({ name: 'Admin' })
+  }
+}
 ```
 
-Single-panel apps can still use legacy `path` + `resources` (becomes one default panel).
+`node ace make:panel` writes that class. A class with the same id replaces a panel still listed in `config/shamar.ts`.
 
 At configure time you pick **Lucid (SQL)** or **Mongoose (MongoDB)**. The Resource DSL is the same; only models and `orm` differ. Your app owns the DB connection lifecycle.
 

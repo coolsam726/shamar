@@ -7,7 +7,7 @@ import type { Resource } from './resource.js';
  * Filament-style panel builder.
  *
  * @example
- * panel('admin').path('/admin').discoverResources('app/resources/admin')
+ * panel('admin').path('/admin').discoverResources('app/panels/admin/resources')
  */
 export class PanelBuilder {
   private config: PanelConfig;

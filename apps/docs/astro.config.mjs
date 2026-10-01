@@ -7,13 +7,13 @@ import { buildSidebar } from './sidebar.mjs';
 const demoUrl = process.env.PUBLIC_DEMO_URL ?? '';
 const sidebar = await buildSidebar();
 
-// Playground and savannabits.com serve the site at the domain root.
+// The public site is https://demo.shamar.dev (Render). Local and that host serve at the domain root.
 // GitHub Pages serves this repo at /shamar — set PUBLIC_BASE_PATH=/shamar there.
 const base = process.env.PUBLIC_BASE_PATH || '/';
 
 // https://astro.build/config
 export default defineConfig({
-  site: process.env.PUBLIC_SITE_URL || 'https://shamar.savannabits.com',
+  site: process.env.PUBLIC_SITE_URL || 'https://demo.shamar.dev',
   base,
   integrations: [
     starlight({

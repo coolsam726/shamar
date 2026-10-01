@@ -23,7 +23,7 @@ export default defineConfig({
   panels: [
     panel('admin')
       .path('/admin')
-      .discoverResources('app/resources/admin'),
+      .discoverResources('app/panels/admin/resources'),
   ],
 })
 ```

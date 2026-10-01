@@ -12,6 +12,6 @@ export default class AppPanel extends PanelProvider {
         logoHeight: 32,
       })
       .brandDisplay('both')
-      .discoverResources('app/resources/app')
+      .discoverResources('app/panels/app/resources')
   }
 }

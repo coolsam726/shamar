@@ -11,7 +11,7 @@ A page is an admin screen that is not the CRUD of one model. Settings, a custom 
 The host discovers page classes from a directory you name on the panel, the same way it discovers resources. `slug` is the URL segment. `canAccess()` is the optional gate. The class you extend — `SettingsPage`, `DashboardPage`, `ListPage`, `FormPage`, or a plain `Page` — decides which screen shape you get. Pick the shape first, then open that page's reference. This overview is only the choice.
 
 ```ts
-panel('admin').discoverPages('app/pages/admin')
+panel('admin').discoverPages('app/panels/admin/pages')
 ```
 
 | Page type | Class | Use |
