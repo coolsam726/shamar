@@ -130,6 +130,8 @@ Because this is a pnpm monorepo, set **Root directory** to `apps/docs` and run t
 | Production branch | `main` |
 | `NODE_VERSION` | `22` |
 
+`apps/docs/wrangler.toml` must include `previews = {}` (inline empty table). PR/preview builds run `wrangler preview` and fail without it. Do not use a bare `[previews]` section — parsers can omit it when empty.
+
 Custom domains: `shamar.dev` and `www.shamar.dev`. The Worker is the origin for the apex; DNS for `@` and `www` stay on that Worker. The demo hostname is a separate record pointed at the VPS.
 
 Optional: add a Cloudflare Redirect Rule so `docs.shamar.dev/*` → `https://shamar.dev/docs/$1` (301).
