@@ -1313,6 +1313,17 @@ export class AdminController {
       result.message ??
       `${meta.singularLabel} ${action}${records.length > 1 ? ` (${records.length})` : ''}`;
 
+    if (result.notification) {
+      const custom =
+        typeof result.notification === 'object' && result.notification
+          ? result.notification
+          : null;
+      pushNotification(ctx.session, {
+        title: custom?.title?.trim() || message,
+        body: custom?.body,
+      });
+    }
+
     if (this.wantsJson(ctx, asJson)) {
       return ctx.response.json({ message, count: records.length });
     }

@@ -18,6 +18,8 @@ static override async handleAction(name, ctx) {
 }
 ```
 
-**Playground:** Tickets — escalate row action + export header; API keys — revoke/reactivate.
+**Playground:** Tickets — Escalate / Mark resolved (with bell notifications), Export CSV, and **Test notification** header action; API keys — revoke/reactivate.
+
+Return `{ notification: true }` (or `{ notification: { title, body } }`) from `handleAction` to push to the signed-in user's topbar bell.
 
 Pages use `headerActions()` and `handleAction()` with the same action builder API.

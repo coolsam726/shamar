@@ -41,6 +41,11 @@ export interface HandleActionContext {
 
 export interface HandleActionResult {
   message?: string;
+  /**
+   * Also push a panel notification (topbar bell) for the current session.
+   * `true` uses `message` as the title; pass `{ title, body }` to customize.
+   */
+  notification?: boolean | { title?: string; body?: string };
 }
 
 /**
