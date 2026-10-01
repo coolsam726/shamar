@@ -101,7 +101,9 @@ The monorepo `Dockerfile` `production` stage builds packages, the Astro site, sy
 
 ## Render + Cloudflare
 
-[`render.yaml`](render.yaml) is a Blueprint for one Docker web service at `shamar.dev`. It serves `/`, `/docs`, and `/demo`. MongoDB is Atlas (or any URI you already have). Render does not run the database. Cloudflare only publishes the DNS record; it does not host the app.
+[`render.yaml`](render.yaml) is a Blueprint for one Docker web service at `shamar.dev` on Render’s Free plan. It serves `/`, `/docs`, and `/demo`. MongoDB is Atlas (or any URI you already have). Render does not run the database. Cloudflare only publishes the DNS record; it does not host the app.
+
+The Free plan is 512 MB and spins down after 15 minutes without traffic. The next visit waits about a minute while it starts. A disk for uploads is not available on this plan.
 
 A split (`shamar.dev` for the landing page, `docs.shamar.dev` for the docs, `demo.shamar.dev` for the panel) needs three hosts, or host-based routing in front of this process. This deploy is the single host, so the public name is the apex.
 

@@ -11,6 +11,7 @@ services:
   - type: web
     name: shamar-playground
     runtime: docker
+    plan: free
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /health
