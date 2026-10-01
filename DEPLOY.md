@@ -4,8 +4,8 @@ The landing page and the docs are static. The panel is the only piece that needs
 
 | Host | What |
 |------|------|
-| `https://shamar.dev/` | Marketing landing (Cloudflare Pages) |
-| `https://shamar.dev/docs/` | Starlight docs (same Pages project) |
+| `https://shamar.dev/` | Marketing landing (Cloudflare Workers static assets) |
+| `https://shamar.dev/docs/` | Starlight docs (same Worker) |
 | `https://demo.shamar.dev/` | Admin panel, login, and `/api` (private VPS) |
 
 Docs links written as `/demo/...` are rewritten to the demo host at build time. `/demo/products` becomes `https://demo.shamar.dev/products`.
@@ -114,9 +114,11 @@ curl -X POST https://demo.shamar.dev/demo-reset \
 
 Media uploads persist in the `shamar_media` Docker volume. A demo reset reseeds DB records; it does not wipe that volume.
 
-## Cloudflare Pages
+## Cloudflare Workers (static site)
 
-Create a Pages project named **`shamar`** from this repo (Workers & Pages → Connect to Git). Project name must match [`apps/docs/wrangler.toml`](apps/docs/wrangler.toml).
+Create a Worker named **`shamar`** from this repo (Workers & Pages → Create → Connect to Git). Project name must match [`apps/docs/wrangler.toml`](apps/docs/wrangler.toml).
+
+Workers Builds uses `wrangler deploy` with static assets (`[assets] directory = "./dist"`), not the older Pages `pages_build_output_dir` flow.
 
 Because this is a pnpm monorepo, set **Root directory** to `apps/docs` and run the install/build from the repo root:
 
@@ -124,13 +126,11 @@ Because this is a pnpm monorepo, set **Root directory** to `apps/docs` and run t
 |---------|--------|
 | Root directory | `apps/docs` |
 | Build command | `cd ../.. && pnpm install --frozen-lockfile && pnpm pages:build` |
-| Build output directory | `dist` |
+| Deploy command | `npx wrangler deploy` |
 | Production branch | `main` |
 | `NODE_VERSION` | `22` |
 
-`wrangler.toml` already sets `pages_build_output_dir = "dist"` (relative to `apps/docs`). Do not set output to `apps/docs/dist` when Root is `apps/docs`.
-
-Custom domains: `shamar.dev` and `www.shamar.dev`. Pages is the origin for the apex; DNS for `@` and `www` stay on Pages. The demo hostname is a separate record pointed at the VPS.
+Custom domains: `shamar.dev` and `www.shamar.dev`. The Worker is the origin for the apex; DNS for `@` and `www` stay on that Worker. The demo hostname is a separate record pointed at the VPS.
 
 Optional: add a Cloudflare Redirect Rule so `docs.shamar.dev/*` → `https://shamar.dev/docs/$1` (301).
 
