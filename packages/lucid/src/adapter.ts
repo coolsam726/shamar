@@ -6,6 +6,7 @@ import type {
   RelationSearchResult,
   ResourceMeta,
 } from '@shamar/core';
+import { whereContains } from './like.js';
 
 /**
  * Lucid model contract — the adapter ducks-types against Lucid model statics.
@@ -24,8 +25,11 @@ interface LucidQueryBuilder {
   whereNot?(key: string, value: unknown): this;
   whereIn?(key: string, values: unknown[]): this;
   whereILike?(key: string, value: string): this;
+  whereRaw?(sql: string, bindings?: unknown[]): this;
   orWhere?(key: string, op: string, value: unknown): this;
   orWhereILike?(key: string, value: string): this;
+  orWhereRaw?(sql: string, bindings?: unknown[]): this;
+  client?: { dialect?: { name?: string } | string };
   whereNull?(key: string): this;
   whereNotNull?(key: string): this;
   orderBy(field: string, direction: string): this;
@@ -42,6 +46,27 @@ interface LucidRow {
   delete(): Promise<void>;
   serialize(): Record<string, unknown>;
   toJSON(): Record<string, unknown>;
+}
+
+function softDeleteColumn(meta: ResourceMeta): string | null {
+  if (!meta.softDelete) return null;
+  if (typeof meta.softDelete === 'object') return meta.softDelete.field ?? 'deletedAt';
+  return 'deletedAt';
+}
+
+function applyLucidTrashed(
+  qb: LucidQueryBuilder,
+  meta: ResourceMeta,
+  trashed?: 'with' | 'only',
+): void {
+  const field = softDeleteColumn(meta);
+  if (!field) return;
+  if (trashed === 'with') return;
+  if (trashed === 'only') {
+    if (typeof qb.whereNotNull === 'function') qb.whereNotNull(field);
+    return;
+  }
+  if (typeof qb.whereNull === 'function') qb.whereNull(field);
 }
 
 function resolveModel(meta: ResourceMeta): LucidModelLike {
@@ -80,6 +105,12 @@ export function createLucidAdapter(): DataAdapter {
     async delete(meta, id) {
       return deleteLucid(meta, id);
     },
+    async restore(meta, id) {
+      return restoreLucid(meta, id);
+    },
+    async forceDelete(meta, id) {
+      return forceDeleteLucid(meta, id);
+    },
     async exists(meta, column, value, options) {
       return existsLucid(meta, column, value, options);
     },
@@ -98,20 +129,11 @@ async function listLucid(
 
   // Search across searchable fields
   if (query.search && meta.searchableFields.length > 0) {
-    const term = `%${query.search}%`;
     const [first, ...rest] = meta.searchableFields;
     if (first) {
-      if (typeof qb.whereILike === 'function') {
-        qb.whereILike(first, term);
-      } else {
-        qb.where(first, 'LIKE', term);
-      }
+      whereContains(qb, first, query.search);
       for (const field of rest) {
-        if (typeof (qb as unknown as { orWhereILike(k: string, v: string): void }).orWhereILike === 'function') {
-          (qb as unknown as { orWhereILike(k: string, v: string): void }).orWhereILike(field, term);
-        } else {
-          (qb as unknown as { orWhere(k: string, op: string, v: string): void }).orWhere(field, 'LIKE', term);
-        }
+        whereContains(qb, field, query.search, true);
       }
     }
   }
@@ -130,11 +152,7 @@ async function listLucid(
       if (!field || field.includes('.')) continue;
       const op = filter.op ?? '=';
       if (op === 'ilike') {
-        if (typeof qb.whereILike === 'function') {
-          qb.whereILike(field, `%${String(filter.value ?? '')}%`);
-        } else {
-          qb.where(field, 'LIKE', `%${String(filter.value ?? '')}%`);
-        }
+        whereContains(qb, field, String(filter.value ?? ''));
       } else if (op === '!=') {
         if (typeof qb.whereNot === 'function') {
           qb.whereNot(field, filter.value);
@@ -147,14 +165,7 @@ async function listLucid(
     }
   }
 
-  // Soft-delete: exclude trashed by default
-  if (meta.softDelete) {
-    const field =
-      typeof meta.softDelete === 'object' ? meta.softDelete.field ?? 'deletedAt' : 'deletedAt';
-    if (typeof qb.whereNull === 'function') {
-      qb.whereNull(field);
-    }
-  }
+  applyLucidTrashed(qb, meta, query.trashed);
 
   // Sort — groupBy wins as primary key so sections stay contiguous
   const sortField = query.groupBy ?? query.sort ?? meta.defaultSort?.field ?? 'id';
@@ -226,13 +237,7 @@ async function existsLucid(
     }
   }
 
-  if (meta.softDelete) {
-    const field =
-      typeof meta.softDelete === 'object' ? meta.softDelete.field ?? 'deletedAt' : 'deletedAt';
-    if (typeof qb.whereNull === 'function') {
-      qb.whereNull(field);
-    }
-  }
+  applyLucidTrashed(qb, meta);
 
   const row = await qb.first();
   return row != null;
@@ -257,6 +262,21 @@ async function deleteLucid(
   }
 }
 
+async function restoreLucid(meta: ResourceMeta, id: string): Promise<void> {
+  const field = softDeleteColumn(meta);
+  if (!field) return;
+  const Model = resolveModel(meta);
+  const row = await Model.findOrFail(id, { connection: meta.connection });
+  row.merge({ [field]: null });
+  await row.save();
+}
+
+async function forceDeleteLucid(meta: ResourceMeta, id: string): Promise<void> {
+  const Model = resolveModel(meta);
+  const row = await Model.findOrFail(id, { connection: meta.connection });
+  await row.delete();
+}
+
 async function searchLucid(
   meta: ResourceMeta,
   query: RelationSearchQuery,
@@ -278,12 +298,7 @@ async function searchLucid(
       }
     }
   } else if (query.q?.trim()) {
-    const term = `%${query.q.trim()}%`;
-    if (typeof qb.whereILike === 'function') {
-      qb.whereILike(titleAttribute, term);
-    } else {
-      qb.where(titleAttribute, 'LIKE', term);
-    }
+    whereContains(qb, titleAttribute, query.q.trim());
   }
 
   if (query.scope) {
@@ -292,13 +307,7 @@ async function searchLucid(
     }
   }
 
-  if (meta.softDelete) {
-    const field =
-      typeof meta.softDelete === 'object' ? meta.softDelete.field ?? 'deletedAt' : 'deletedAt';
-    if (typeof qb.whereNull === 'function') {
-      qb.whereNull(field);
-    }
-  }
+  applyLucidTrashed(qb, meta);
 
   qb.orderBy(titleAttribute, 'asc');
   const paginated = await qb.paginate(1, limit);

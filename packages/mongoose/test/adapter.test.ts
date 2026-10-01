@@ -85,18 +85,22 @@ function matches(doc: Record<string, unknown>, filter: Record<string, unknown>):
       if (!re.test(String(doc[key] ?? ''))) return false;
       continue;
     }
-    if (value && typeof value === 'object' && '$ne' in (value as object)) {
-      if (doc[key] === (value as { $ne: unknown }).$ne) return false;
-      continue;
-    }
     if (value && typeof value === 'object' && '$in' in (value as object)) {
       const list = (value as { $in: unknown[] }).$in.map(String);
       if (!list.includes(String(doc[key] ?? doc._id ?? ''))) return false;
       continue;
     }
-    if (value && typeof value === 'object' && '$exists' in (value as object)) {
-      const exists = (value as { $exists: boolean }).$exists;
-      if (exists ? doc[key] === undefined : doc[key] !== undefined) return false;
+    if (
+      value &&
+      typeof value === 'object' &&
+      ('$ne' in (value as object) || '$exists' in (value as object))
+    ) {
+      const spec = value as { $ne?: unknown; $exists?: boolean };
+      if ('$ne' in spec && doc[key] === spec.$ne) return false;
+      if ('$exists' in spec) {
+        const present = doc[key] !== undefined && doc[key] !== null;
+        if (spec.$exists ? !present : present) return false;
+      }
       continue;
     }
     if (doc[key] !== value) return false;
@@ -249,6 +253,74 @@ describe('@shamar/mongoose adapter', () => {
     const adapter = createMongooseAdapter({ connection });
     const result = await adapter.list(Temp.configure(), { page: 1, perPage: 10 });
     assert.equal(result.items[0]?.name, 'ViaConn');
+  });
+
+  it('lists only soft-deleted rows when trashed is only', async () => {
+    const liveId = '507f1f77bcf86cd799439014';
+    const goneId = '507f1f77bcf86cd799439015';
+    const Model = createMockModel([
+      { _id: liveId, name: 'Live' },
+      { _id: goneId, name: 'Gone', deletedAt: '2026-01-01T00:00:00.000Z' },
+    ]);
+
+    class Temp extends Resource {
+      static override slug = 'temps';
+      static override model = Model;
+      static override softDelete = true;
+      static override form() {
+        return form((f) => {
+          f.schema([TextInput.make('name')]);
+        });
+      }
+      static override table() {
+        return table((t) => {
+          t.schema([TextColumn.make('name')]);
+        });
+      }
+    }
+
+    const adapter = createMongooseAdapter();
+    const meta = Temp.configure();
+    const hidden = await adapter.list(meta, { page: 1, perPage: 10 });
+    assert.equal(hidden.total, 1);
+    assert.equal(hidden.items[0]?.id, liveId);
+
+    const only = await adapter.list(meta, { page: 1, perPage: 10, trashed: 'only' });
+    assert.equal(only.total, 1);
+    assert.equal(only.items[0]?.id, goneId);
+  });
+
+  it('treats a backslash in table search as literal text', async () => {
+    const slashId = '507f1f77bcf86cd799439013';
+    const Model = createMockModel([
+      { _id: ID, name: 'Widget', sku: 'W-1' },
+      { _id: slashId, name: 'path\\file', sku: 'W-2' },
+    ]);
+
+    class Temp extends Resource {
+      static override slug = 'temps';
+      static override model = Model;
+      static override form() {
+        return form((f) => {
+          f.schema([TextInput.make('name').searchable()]);
+        });
+      }
+      static override table() {
+        return table((t) => {
+          t.schema([TextColumn.make('name').searchable()]);
+        });
+      }
+    }
+
+    const adapter = createMongooseAdapter();
+    const result = await adapter.list(Temp.configure(), {
+      page: 1,
+      perPage: 10,
+      search: '\\',
+    });
+
+    assert.equal(result.total, 1);
+    assert.equal(result.items[0]?.id, slashId);
   });
 
   it('searches relation options by q, ids, and scope', async () => {

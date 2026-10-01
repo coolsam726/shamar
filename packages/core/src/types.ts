@@ -517,6 +517,11 @@ export interface ListQuery {
   filters?: ListFilter[];
   /** Group list rows by this field (also used as primary sort). */
   groupBy?: string;
+  /**
+   * Soft-deleted rows. Omit to hide them, `with` to include them, `only` to
+   * show deleted rows alone.
+   */
+  trashed?: 'with' | 'only';
 }
 
 export interface PaginatedResult<T = Record<string, unknown>> {
@@ -574,6 +579,10 @@ export interface DataAdapter {
     data: Record<string, unknown>,
   ): Promise<Record<string, unknown>>;
   delete(meta: ResourceMeta, id: string): Promise<void>;
+  /** Clear the soft-delete stamp. No-op contract for hard-delete-only adapters. */
+  restore?(meta: ResourceMeta, id: string): Promise<void>;
+  /** Remove the row even when the resource uses soft deletes. */
+  forceDelete?(meta: ResourceMeta, id: string): Promise<void>;
   /**
    * Whether a row already exists for `column = value`.
    * Used by `.unique()` validation.

@@ -45,6 +45,8 @@ export type ScannedRoutes = {
     'shamar.admin.resources.edit': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
     'shamar.admin.resources.summary': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
     'shamar.admin.resources.recordAction': { paramsTuple: [ParamValue,ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue,'action': ParamValue} }
+    'shamar.admin.resources.restore': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
+    'shamar.admin.resources.forceDelete': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
     'shamar.admin.resources.destroy': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
     'shamar.admin.resources.update': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
     'shamar.admin.resources.update.put': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
@@ -92,6 +94,8 @@ export type ScannedRoutes = {
     'shamar.app.resources.edit': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
     'shamar.app.resources.summary': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
     'shamar.app.resources.recordAction': { paramsTuple: [ParamValue,ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue,'action': ParamValue} }
+    'shamar.app.resources.restore': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
+    'shamar.app.resources.forceDelete': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
     'shamar.app.resources.destroy': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
     'shamar.app.resources.update': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
     'shamar.app.resources.update.put': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
@@ -248,6 +252,8 @@ export type ScannedRoutes = {
     'shamar.admin.resources.store': { paramsTuple: [ParamValue]; params: {'slug': ParamValue} }
     'shamar.admin.resources.bulk': { paramsTuple: [ParamValue]; params: {'slug': ParamValue} }
     'shamar.admin.resources.recordAction': { paramsTuple: [ParamValue,ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue,'action': ParamValue} }
+    'shamar.admin.resources.restore': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
+    'shamar.admin.resources.forceDelete': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
     'shamar.admin.resources.destroy': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
     'shamar.admin.resources.update': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
     'shamar.app.media.folders.create': { paramsTuple?: []; params?: {} }
@@ -270,6 +276,8 @@ export type ScannedRoutes = {
     'shamar.app.resources.store': { paramsTuple: [ParamValue]; params: {'slug': ParamValue} }
     'shamar.app.resources.bulk': { paramsTuple: [ParamValue]; params: {'slug': ParamValue} }
     'shamar.app.resources.recordAction': { paramsTuple: [ParamValue,ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue,'action': ParamValue} }
+    'shamar.app.resources.restore': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
+    'shamar.app.resources.forceDelete': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
     'shamar.app.resources.destroy': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
     'shamar.app.resources.update': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
     'shamar.api.store': { paramsTuple: [ParamValue]; params: {'slug': ParamValue} }

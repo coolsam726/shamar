@@ -46,6 +46,7 @@
   },
   "dependencies": {
     "@shamar/cherubim": "workspace:*",
+    "@shamar/wire": "workspace:*",
     "@shamar/core": "workspace:*",
     "@shamar/lucid": "workspace:*",
     "@shamar/mongoose": "workspace:*",

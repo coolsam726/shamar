@@ -102,9 +102,27 @@
                   basePath: basePath,
                   query: query,
                   showEditButton: showEditButton,
-                  showDeleteButton: showDeleteButton,
+                  showDeleteButton: showDeleteButton && !(softDeleteField && record[softDeleteField]),
                 })
               @endeach
+              @if(softDeleteField && record[softDeleteField] && showDeleteButton !== false)
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="shamar-row-actions__item"
+                  @click="open = false; $dispatch('shamar-open-confirm', { variant: 'primary', mode: 'confirm', title: 'Restore', message: 'Restore this record?', confirmLabel: 'Restore', action: '{{ basePath }}/{{ resource.slug }}/{{ record.id }}/restore?trashed={{ query.trashed || 'only' }}' })"
+                >
+                  <span>Restore</span>
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="shamar-row-actions__item is-danger"
+                  @click="open = false; $dispatch('shamar-open-confirm', { variant: 'danger', mode: 'confirm', title: 'Delete permanently', message: 'This cannot be undone.', confirmLabel: 'Delete permanently', action: '{{ basePath }}/{{ resource.slug }}/{{ record.id }}/force-delete?trashed={{ query.trashed || 'only' }}' })"
+                >
+                  <span>Delete permanently</span>
+                </button>
+              @endif
             </div>
           </div>
         @endif
