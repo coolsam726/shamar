@@ -6,12 +6,39 @@
 
   <script>
     function shamarShell() {
+      const media = window.matchMedia('(prefers-color-scheme: dark)');
+      function readThemePref() {
+        const stored = localStorage.getItem('shamar-theme');
+        return stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system';
+      }
+      function resolvedDark(pref) {
+        if (pref === 'dark') return true;
+        if (pref === 'light') return false;
+        return media.matches;
+      }
+      function applyTheme(pref) {
+        document.documentElement.classList.toggle('dark', resolvedDark(pref));
+        localStorage.setItem('shamar-theme', pref);
+      }
       return {
         sidebarOpen: false,
-        toggleTheme() {
-          const root = document.documentElement;
-          const next = root.classList.toggle('dark');
-          localStorage.setItem('shamar-theme', next ? 'dark' : 'light');
+        themeOpen: false,
+        themePref: readThemePref(),
+        init() {
+          applyTheme(this.themePref);
+          const onSchemeChange = () => {
+            if (this.themePref === 'system') applyTheme('system');
+          };
+          if (typeof media.addEventListener === 'function') {
+            media.addEventListener('change', onSchemeChange);
+          } else if (typeof media.addListener === 'function') {
+            media.addListener(onSchemeChange);
+          }
+        },
+        setTheme(pref) {
+          this.themePref = pref;
+          applyTheme(pref);
+          this.themeOpen = false;
         },
       };
     }

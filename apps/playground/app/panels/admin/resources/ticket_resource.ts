@@ -19,7 +19,8 @@ import {
 import Ticket from '#models/ticket'
 
 /**
- * Demos: custom unique message, table dateTime + badge, modal (confirm) quick actions.
+ * Demos: custom unique message, table dateTime + badge, confirm modals on
+ * custom actions, and `quickActions` so create/edit/view open over the list.
  */
 export default class TicketResource extends Resource {
   static override model = Ticket
@@ -29,6 +30,8 @@ export default class TicketResource extends Resource {
   static override recordTitleField = 'subject'
   static override navigationGroup = 'Ops'
   static override navigationSort = 10
+  /** Simple resource — default CRUD opens in a modal over the list. */
+  static override quickActions = true
 
   static override resourceActions(actions: ActionBuilder) {
     actions.create('New ticket')

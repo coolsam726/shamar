@@ -484,17 +484,19 @@ button:disabled,
   display: block;
 }
 
-.shamar-theme-icon--light {
-  display: block;
-}
-.shamar-theme-icon--dark {
+.shamar-theme-icon {
   display: none;
 }
-:where(.dark, .dark *) .shamar-theme-icon--light {
-  display: none;
-}
-:where(.dark, .dark *) .shamar-theme-icon--dark {
+.shamar-theme-trigger[data-theme-pref='light'] .shamar-theme-icon--light,
+.shamar-theme-trigger[data-theme-pref='dark'] .shamar-theme-icon--dark,
+.shamar-theme-trigger[data-theme-pref='system'] .shamar-theme-icon--system {
   display: block;
+}
+
+.shamar-theme-menu-item.is-active {
+  color: var(--color-heading);
+  font-weight: 600;
+  background: var(--color-surface-hover, var(--color-neutral-secondary));
 }
 
 .shamar-topbar-link {
@@ -838,14 +840,21 @@ fieldset.shamar-card {
 }
 
 [data-shamar-embed-detail] .shamar-detail-grid {
-  gap: 1px;
-  background: var(--color-card-border);
+  column-gap: 1.25rem;
+  row-gap: 0;
+  background: transparent;
 }
 
-[data-shamar-embed-detail] .shamar-detail-cell {
+[data-shamar-embed-detail] .shamar-detail-cell,
+[data-shamar-embed-detail] .shamar-infolist-entry {
   border: 0;
-  padding: 0.75rem 1rem;
-  background: var(--color-neutral-primary);
+  border-bottom: 1px solid var(--color-card-border);
+  padding: 1rem;
+  background: transparent;
+}
+
+[data-shamar-embed-detail] .shamar-detail-grid > .shamar-infolist-entry:last-child {
+  border-bottom: none;
 }
 
 [data-shamar-embed-form] .shamar-form-section.shamar-card > .shamar-form-section__body:has(.shamar-m2m-table),
@@ -1865,16 +1874,13 @@ select.shamar-input option {
   grid-template-columns: repeat(var(--shamar-form-cols, 2), minmax(0, 1fr));
 }
 
+/* Match form column rhythm; horizontal rules only (no ruled/gray empty tracks). */
 .shamar-detail-grid {
   display: grid;
-  gap: 1px;
-  background: var(--color-card-border);
+  column-gap: 1.25rem;
+  row-gap: 0;
+  background: transparent;
   grid-template-columns: repeat(var(--shamar-detail-cols, 2), minmax(0, 1fr));
-}
-
-/* Orbit-style: flush entry grid inside section cards so cell borders meet the chrome. */
-.shamar-form-section.shamar-card > .shamar-form-section__body:has(> .shamar-detail-grid) {
-  padding: 0;
 }
 
 @media (max-width: 639px) {
@@ -1899,8 +1905,17 @@ select.shamar-input option {
   flex-direction: column;
   gap: 0.375rem;
   min-width: 0;
-  padding: 0.875rem 1.25rem;
-  background: var(--color-neutral-primary);
+  padding: 1rem;
+  background: transparent;
+  border-bottom: 1px solid var(--color-card-border);
+}
+
+.shamar-detail-grid > .shamar-infolist-entry:last-child {
+  border-bottom: none;
+}
+
+.shamar-infolist-entry > .shamar-detail__label-row {
+  margin-bottom: 0;
 }
 
 .shamar-detail__label {
@@ -2796,10 +2811,18 @@ select.shamar-input option {
 }
 
 /* Schema layout: tabs, wizard, flex, callout, tags, etc. */
-.shamar-form-grid.is-dense,
-.shamar-detail-grid.is-dense { gap: 0.5rem; }
+.shamar-form-grid.is-dense { gap: 0.5rem; }
+.shamar-detail-grid.is-dense {
+  column-gap: 0.75rem;
+}
+.shamar-detail-grid.is-dense > .shamar-infolist-entry {
+  padding: 0.75rem;
+}
 .shamar-form-grid.is-gapless,
-.shamar-detail-grid.is-gapless { gap: 0; }
+.shamar-detail-grid.is-gapless { gap: 0; column-gap: 0; }
+.shamar-detail-grid.is-gapless > .shamar-infolist-entry {
+  padding: 0.5rem 0;
+}
 
 .shamar-tabs { display: flex; flex-direction: column; gap: 0; }
 .shamar-tabs--contained { border: 1px solid var(--color-card-border); border-radius: 0.75rem; overflow: hidden; background: var(--color-neutral-primary); }
