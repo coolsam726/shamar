@@ -334,7 +334,7 @@
         accept: {{ jsonAttr(field.accept ?? '') }},
         folderId: {{ jsonAttr(field.mediaFolderId ?? null) }},
         makePublic: {{ field.mediaMakePublic ? 'true' : 'false' }},
-        apiBase: {{ jsonAttr(basePath ? basePath + '/media' : '') }},
+        apiBase: {{ jsonAttr(basePath + '/media') }},
         getValue: () => {{ stateRef }},
         setValue: (v) => { {{ stateRef }} = v; onFieldChange({{ jsonAttr(field.name) }}); },
         isDisabled: () => isDisabled({{ jsonAttr(field.name) }}),

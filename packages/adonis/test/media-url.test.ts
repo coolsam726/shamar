@@ -26,4 +26,21 @@ describe('media-url helpers', () => {
       '/admin/media/files/1/raw',
     );
   });
+
+  it('keeps private file URLs on the host root when the panel mounts at /', () => {
+    assert.equal(
+      resolveMediaFileUrl(
+        { id: '42', visibility: 'private' },
+        { panelBasePath: '', publicPath: '/media' },
+      ),
+      '/media/files/42/raw',
+    );
+    assert.equal(
+      resolveMediaFileUrl(
+        { id: '42', visibility: 'private' },
+        { panelBasePath: '/', publicPath: '/media' },
+      ),
+      '/media/files/42/raw',
+    );
+  });
 });
