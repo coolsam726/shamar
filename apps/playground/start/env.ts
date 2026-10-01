@@ -12,7 +12,7 @@
 import { Env } from '@adonisjs/core/env'
 
 /**
- * The public site is https://demo.shamar.dev. Render also injects RENDER_EXTERNAL_URL
+ * The public site is https://shamar.dev. Render also injects RENDER_EXTERNAL_URL
  * (the *.onrender.com hostname) and chooses PORT. Use the public URL when it is set;
  * otherwise fall back to the onrender.com hostname so a first boot still has an APP_URL.
  */
