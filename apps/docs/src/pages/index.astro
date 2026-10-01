@@ -39,6 +39,18 @@ const gallery = [
     />
     <meta name="theme-color" content="#f1511b" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script is:inline>
+      (function () {
+        var stored = typeof localStorage !== 'undefined' && localStorage.getItem('starlight-theme');
+        var theme =
+          stored === 'light' || stored === 'dark'
+            ? stored
+            : window.matchMedia('(prefers-color-scheme: light)').matches
+              ? 'light'
+              : 'dark';
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -60,10 +72,19 @@ const gallery = [
           <p class="landing__eyebrow" data-reveal>AdonisJS · Filament-shaped</p>
           <p class="landing__brand" data-reveal>
             <img
+              class="landing__brand-img landing__brand-img--light"
               src="/branding/shamar-banner.svg"
               width="300"
               height="77"
               alt="Shamar"
+            />
+            <img
+              class="landing__brand-img landing__brand-img--dark"
+              src="/branding/shamar-banner-dark.svg"
+              width="300"
+              height="77"
+              alt=""
+              aria-hidden="true"
             />
           </p>
           <h1 data-reveal>
@@ -99,11 +120,19 @@ const gallery = [
               aria-label="Enlarge dashboard screenshot"
             >
               <img
-                class="landing__panel-shot"
+                class="landing__panel-shot landing__panel-shot--light"
                 src="/screenshots/hero-panel.png"
                 width="1440"
                 height="820"
                 alt="Shamar admin dashboard with stats widgets, charts, and sidebar navigation"
+              />
+              <img
+                class="landing__panel-shot landing__panel-shot--dark"
+                src="/screenshots/hero-panel-dark.png"
+                width="1440"
+                height="820"
+                alt=""
+                aria-hidden="true"
               />
             </button>
           </div>
@@ -130,7 +159,23 @@ const gallery = [
                   data-lightbox-caption={item.caption}
                   aria-label={`Enlarge: ${item.label}`}
                 >
-                  <img src={item.src} width="720" height="450" alt={item.alt} loading="lazy" />
+                  <img
+                    class="landing__gallery-shot landing__gallery-shot--light"
+                    src={item.src}
+                    width="720"
+                    height="450"
+                    alt={item.alt}
+                    loading="lazy"
+                  />
+                  <img
+                    class="landing__gallery-shot landing__gallery-shot--dark"
+                    src={item.darkSrc}
+                    width="720"
+                    height="450"
+                    alt=""
+                    aria-hidden="true"
+                    loading="lazy"
+                  />
                 </button>
                 <figcaption>{item.label}</figcaption>
               </figure>
@@ -156,6 +201,14 @@ const gallery = [
         --shamar-mist: #e7ddd2;
         --font-display: 'Poppins', ui-sans-serif, system-ui, sans-serif;
         --font-body: 'Figtree', ui-sans-serif, system-ui, sans-serif;
+      }
+
+      :root[data-theme='dark'] {
+        --shamar-ink: #e8eef7;
+        --shamar-sand: #0f1419;
+        --shamar-mist: #1a222c;
+        --shamar-ember-deep: #ff7a45;
+        color-scheme: dark;
       }
 
       * {
@@ -192,6 +245,13 @@ const gallery = [
           linear-gradient(165deg, #fbf7f2 0%, var(--shamar-sand) 48%, #e9e0d5 100%);
       }
 
+      :root[data-theme='dark'] .landing__atmosphere {
+        background:
+          radial-gradient(ellipse 70% 55% at 12% 18%, color-mix(in srgb, var(--shamar-ember) 28%, transparent), transparent 70%),
+          radial-gradient(ellipse 55% 45% at 88% 8%, color-mix(in srgb, #286291 22%, transparent), transparent 68%),
+          linear-gradient(165deg, #121820 0%, var(--shamar-sand) 48%, #0b1016 100%);
+      }
+
       .landing__atmosphere::after {
         content: '';
         position: absolute;
@@ -199,6 +259,11 @@ const gallery = [
         opacity: 0.28;
         background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E");
         mix-blend-mode: multiply;
+      }
+
+      :root[data-theme='dark'] .landing__atmosphere::after {
+        opacity: 0.18;
+        mix-blend-mode: soft-light;
       }
 
       .landing__orb {
@@ -287,6 +352,12 @@ const gallery = [
         box-shadow: 0 18px 40px -28px rgba(15, 23, 42, 0.45);
       }
 
+      :root[data-theme='dark'] .landing__sandbox .shamar-demo-card {
+        background: color-mix(in srgb, var(--shamar-mist) 88%, #000);
+        border-color: color-mix(in srgb, #94a3b8 22%, transparent);
+        box-shadow: 0 18px 40px -28px rgba(0, 0, 0, 0.65);
+      }
+
       .landing__sandbox .shamar-demo-card h3 {
         margin: 0 0 0.35rem;
         font-family: var(--font-display);
@@ -336,6 +407,11 @@ const gallery = [
         border: 1px solid color-mix(in srgb, var(--shamar-ink) 18%, transparent);
       }
 
+      :root[data-theme='dark'] .landing__sandbox .shamar-demo-actions a.secondary {
+        color: #ffb089;
+        border-color: color-mix(in srgb, #94a3b8 30%, transparent);
+      }
+
       @media (min-width: 960px) {
         .landing__hero {
           grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
@@ -347,11 +423,23 @@ const gallery = [
         margin: 0 0 1.1rem;
       }
 
-      .landing__brand img {
+      .landing__brand-img {
         display: block;
         width: min(100%, 19rem);
         height: auto;
         filter: drop-shadow(0 16px 32px color-mix(in srgb, var(--shamar-ember) 32%, transparent));
+      }
+
+      .landing__brand-img--dark {
+        display: none;
+      }
+
+      :root[data-theme='dark'] .landing__brand-img--light {
+        display: none;
+      }
+
+      :root[data-theme='dark'] .landing__brand-img--dark {
+        display: block;
       }
 
       .landing__copy h1 {
@@ -409,6 +497,12 @@ const gallery = [
         border: 1px solid color-mix(in srgb, var(--shamar-ember) 28%, transparent);
       }
 
+      :root[data-theme='dark'] .landing__pills li {
+        background: color-mix(in srgb, var(--shamar-ember) 18%, #1a222c);
+        color: #ffb089;
+        border-color: color-mix(in srgb, var(--shamar-ember) 40%, transparent);
+      }
+
       .btn {
         display: inline-flex;
         align-items: center;
@@ -450,6 +544,11 @@ const gallery = [
         background: color-mix(in srgb, #fff 72%, transparent);
       }
 
+      :root[data-theme='dark'] .btn--ghost {
+        background: color-mix(in srgb, #1e293b 75%, transparent);
+        border-color: color-mix(in srgb, #94a3b8 28%, transparent);
+      }
+
       .btn--text {
         font-family: var(--font-body);
         color: var(--shamar-ember-deep);
@@ -475,6 +574,15 @@ const gallery = [
         animation: panel-float 7s ease-in-out infinite;
       }
 
+      :root[data-theme='dark'] .landing__panel-frame {
+        background: #111827;
+        border-color: color-mix(in srgb, #94a3b8 22%, transparent);
+        box-shadow:
+          0 40px 80px -40px rgba(0, 0, 0, 0.75),
+          0 0 0 1px color-mix(in srgb, #fff 8%, transparent) inset,
+          0 0 80px -20px color-mix(in srgb, var(--shamar-ember) 28%, transparent);
+      }
+
       .landing__panel-chrome {
         display: flex;
         align-items: center;
@@ -482,6 +590,11 @@ const gallery = [
         padding: 0.75rem 1rem;
         background: color-mix(in srgb, var(--shamar-mist) 70%, #fff);
         border-bottom: 1px solid color-mix(in srgb, var(--shamar-ink) 8%, transparent);
+      }
+
+      :root[data-theme='dark'] .landing__panel-chrome {
+        background: color-mix(in srgb, #1e293b 85%, #000);
+        border-bottom-color: color-mix(in srgb, #94a3b8 18%, transparent);
       }
 
       .landing__panel-chrome span {
@@ -501,6 +614,18 @@ const gallery = [
         height: auto;
         vertical-align: middle;
         transition: transform 0.4s ease;
+      }
+
+      .landing__panel-shot--dark {
+        display: none;
+      }
+
+      :root[data-theme='dark'] .landing__panel-shot--light {
+        display: none;
+      }
+
+      :root[data-theme='dark'] .landing__panel-shot--dark {
+        display: block;
       }
 
       .landing__panel-trigger:hover .landing__panel-shot {
@@ -549,19 +674,37 @@ const gallery = [
           box-shadow 0.35s ease;
       }
 
+      :root[data-theme='dark'] .landing__gallery figure {
+        background: #111827;
+        border-color: color-mix(in srgb, #94a3b8 20%, transparent);
+        box-shadow: 0 22px 48px -32px rgba(0, 0, 0, 0.7);
+      }
+
       .landing__gallery figure:hover {
         transform: translateY(-4px);
         box-shadow: 0 28px 56px -28px rgba(15, 23, 42, 0.48);
       }
 
-      .landing__gallery img {
+      .landing__gallery-shot {
         display: block;
         width: 100%;
         height: auto;
         transition: transform 0.4s ease;
       }
 
-      .landing__gallery figure:hover img {
+      .landing__gallery-shot--dark {
+        display: none;
+      }
+
+      :root[data-theme='dark'] .landing__gallery-shot--light {
+        display: none;
+      }
+
+      :root[data-theme='dark'] .landing__gallery-shot--dark {
+        display: block;
+      }
+
+      .landing__gallery figure:hover .landing__gallery-shot {
         transform: scale(1.02);
       }
 
