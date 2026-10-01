@@ -44,8 +44,10 @@
     outline-offset: 3px;
   }
 
+  /* Do not set `display` here — it is unlayered and overrides Starlight's
+     theme utilities (`light:sl-hidden` / `dark:sl-hidden`) and DocScreenshot
+     theme pairing. Width/height only. */
   .lightbox-trigger img {
-    display: block;
     width: 100%;
     height: auto;
     max-width: 100%;

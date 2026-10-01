@@ -13,7 +13,8 @@ const darkSrc = Astro.props.darkSrc ?? src;
 const hasThemePair = darkSrc !== src;
 ---
 
-<figure class:list={['doc-shot', { 'doc-shot--wide': wide }]}>
+{/* `not-content` keeps Starlight markdown img rules from forcing display:block. */}
+<figure class:list={['doc-shot', 'not-content', { 'doc-shot--wide': wide }]}>
   <button
     type="button"
     class="doc-shot__trigger lightbox-trigger"
@@ -25,7 +26,7 @@ const hasThemePair = darkSrc !== src;
     aria-label={`Enlarge: ${alt}`}
   >
     <img
-      class:list={[{ 'dark:sl-hidden': hasThemePair }]}
+      class:list={['doc-shot__img', { 'doc-shot__img--light': hasThemePair }]}
       src={src}
       alt={alt}
       loading="lazy"
@@ -34,7 +35,7 @@ const hasThemePair = darkSrc !== src;
     {
       hasThemePair ? (
         <img
-          class="light:sl-hidden print:hidden"
+          class="doc-shot__img doc-shot__img--dark"
           src={darkSrc}
           alt=""
           loading="lazy"
@@ -73,13 +74,36 @@ const hasThemePair = darkSrc !== src;
     position: relative;
   }
 
-  .doc-shot__trigger img {
+  .doc-shot__img {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
     vertical-align: middle;
     transition: transform 0.35s ease, filter 0.35s ease;
   }
 
-  .doc-shot__trigger:hover img,
-  .doc-shot__trigger:focus-visible img {
+  /*
+   * Theme pairing must beat unlayered `.lightbox-trigger img { display: block }`
+   * and Starlight's layered markdown img rules. Match almasix: dark is default,
+   * light is only when data-theme="light".
+   */
+  :global(:root[data-theme='light']) .doc-shot__img--dark,
+  :global(:root:not([data-theme='light'])) .doc-shot__img--light {
+    display: none;
+  }
+
+  @media print {
+    :global(:root) .doc-shot__img--dark {
+      display: none;
+    }
+    :global(:root) .doc-shot__img--light {
+      display: block;
+    }
+  }
+
+  .doc-shot__trigger:hover .doc-shot__img,
+  .doc-shot__trigger:focus-visible .doc-shot__img {
     transform: scale(1.012);
     filter: brightness(1.02);
   }
