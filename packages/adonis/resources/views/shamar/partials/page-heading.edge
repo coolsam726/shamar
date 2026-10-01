@@ -65,12 +65,29 @@
       @endif
 
       @if(showCreateButton)
-        <a href="{{ basePath }}/{{ resource.slug }}/create" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-md bg-fg-brand hover:opacity-90 transition-opacity">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
-          </svg>
-          New
-        </a>
+        @if(resource.createMode === 'modal')
+          <button
+            type="button"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-md bg-fg-brand hover:opacity-90 transition-opacity"
+            @click="$dispatch('shamar-open-dialog', {
+              url: {{ jsonAttr(`${basePath}/${resource.slug}/create`) }},
+              title: {{ jsonAttr(`New ${resource.singularLabel}`) }},
+              slug: {{ jsonAttr(resource.slug) }},
+            })"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+            </svg>
+            New
+          </button>
+        @else
+          <a href="{{ basePath }}/{{ resource.slug }}/create" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-md bg-fg-brand hover:opacity-90 transition-opacity">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+            </svg>
+            New
+          </a>
+        @endif
       @endif
 
       @if(mode === 'form' && canSavePage !== false)
@@ -125,7 +142,19 @@
         @endif
       @elseif(mode === 'show')
         @if(showEditButton !== false && showEditButton)
-        <a href="{{ basePath }}/{{ resource.slug }}/{{ record.id }}/edit{{ recordPager ? recordPager.navQuery : '' }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-md bg-fg-brand hover:opacity-90 transition">Edit</a>
+          @if(resource.editMode === 'modal')
+            <button
+              type="button"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-md bg-fg-brand hover:opacity-90 transition"
+              @click="$dispatch('shamar-open-dialog', {
+                url: {{ jsonAttr(`${basePath}/${resource.slug}/${record.id}/edit${recordPager ? recordPager.navQuery : ''}`) }},
+                title: {{ jsonAttr(`Edit ${pageTitle}`) }},
+                slug: {{ jsonAttr(resource.slug) }},
+              })"
+            >Edit</button>
+          @else
+            <a href="{{ basePath }}/{{ resource.slug }}/{{ record.id }}/edit{{ recordPager ? recordPager.navQuery : '' }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-md bg-fg-brand hover:opacity-90 transition">Edit</a>
+          @endif
         @endif
         @if(recordActions)
           @each(action in recordActions)

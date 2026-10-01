@@ -1,7 +1,13 @@
 <tr
   class="shamar-list-row hover:bg-surface-row-hover transition-colors cursor-pointer"
   data-shamar-record-id="{{ record.id }}"
-  data-shamar-row-href="{{ basePath }}/{{ resource.slug }}/{{ record.id }}{{ recordNavQuery(query) }}"
+  @if(resource.viewMode === 'modal')
+    data-shamar-row-dialog-url="{{ basePath }}/{{ resource.slug }}/{{ record.id }}{{ recordNavQuery(query) }}"
+    data-shamar-row-dialog-title="{{ record[resource.recordTitleField] || resource.singularLabel }}"
+    data-shamar-row-dialog-slug="{{ resource.slug }}"
+  @else
+    data-shamar-row-href="{{ basePath }}/{{ resource.slug }}/{{ record.id }}{{ recordNavQuery(query) }}"
+  @endif
 >
   <td class="px-3 py-3" data-shamar-stop-row-nav>
     @if(bulkActions && bulkActions.length)

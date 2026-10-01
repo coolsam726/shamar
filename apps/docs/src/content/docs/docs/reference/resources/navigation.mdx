@@ -1,11 +1,7 @@
 ---
 title: Resource navigation
-description: How a resource shows up in the sidebar.
+description: Sidebar groups, icons, and sort order.
 ---
-
-Navigation is where a resource appears in the panel, not how its data is stored. `navigationGroup` is the sidebar cluster ("Content", "Settings"). `navigationSubGroup` collapses several resources into one dropdown under that cluster, instead of a link each. `navigationSort` is the order inside the group. `navigationHidden` keeps the routes but removes the link, which is useful for records that should only be opened from somewhere else.
-
-Icons are names the shell already knows, not image files. Groups from resources, custom pages, and the media library are merged into one sidebar, so a resource and a settings page can share a group.
 
 ```ts
 static override navigationGroup = 'Content'

@@ -11,6 +11,7 @@ import type {
   InfolistSchema,
   ResourceMeta,
   ResourceModel,
+  ResourcePageMode,
   ShamarUser,
   TableSchema,
 } from './types.js';
@@ -77,6 +78,17 @@ export abstract class Resource {
    * Overrides panel `defaultPerPage` when set. Built-in default: `15`.
    */
   static defaultPerPage?: number;
+  /**
+   * When true, create / edit / view open in a modal over the list (quick actions).
+   * Override individual operations with `createMode` / `editMode` / `viewMode`.
+   */
+  static quickActions?: boolean;
+  /** Create from the list: full page (default) or modal. */
+  static createMode?: ResourcePageMode;
+  /** Edit from the list / show: full page (default) or modal. */
+  static editMode?: ResourcePageMode;
+  /** View / row click: full page (default) or modal. */
+  static viewMode?: ResourcePageMode;
   /** Optional record-level policy (Loom / Laravel style). */
   static policy?: PolicyClass;
 
@@ -203,6 +215,8 @@ export abstract class Resource {
       ...tableSchema.columns.filter((c) => c.searchable).map((c) => c.name),
     ];
 
+    const defaultMode: ResourcePageMode = this.quickActions ? 'modal' : 'page';
+
     return {
       slug: this.slug,
       label: this.label,
@@ -230,6 +244,9 @@ export abstract class Resource {
       customPermissions: normalizeCustomPermissions(this.slug, this.permissions()),
       contentMaxWidth: this.contentMaxWidth,
       defaultPerPage: this.defaultPerPage,
+      createMode: this.createMode ?? defaultMode,
+      editMode: this.editMode ?? defaultMode,
+      viewMode: this.viewMode ?? defaultMode,
     };
   }
 

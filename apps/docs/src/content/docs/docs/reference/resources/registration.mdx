@@ -1,31 +1,20 @@
 ---
 title: Registering resources
-description: How a resource class becomes a set of routes.
+description: Panel registration and auto-discovery.
 ---
 
-Registration is how a panel learns about a resource, and how the app learns about a panel.
-
-A panel is a class the provider discovers. `app/panels/admin/panel.ts` is the admin panel. `node ace make:panel billing` creates the next one. `config/shamar.ts` does not list them. It holds the database choice, sign-in, and branding that every panel shares. Putting `panel('admin')` inside that config still works, and a class with the same id replaces it.
-
-A resource is a class the panel discovers. Writing `class ProductResource` does nothing until it sits in the directory that panel names with `.discoverResources()`, or you pass the class to `.resources([...])`. Discovery loads every default export whose name ends in `Resource`.
-
 ```ts
-// app/panels/admin/panel.ts
-import { PanelProvider, panel } from '@shamar/adonis'
-
-export default class AdminPanel extends PanelProvider {
-  panel() {
-    return panel('admin')
-      .path('/admin')
-      .discoverResources('app/panels/admin/resources')
-      .resources([UserResource])
-  }
-}
+// config/shamar.ts
+panel('admin')
+  .path('/demo')
+  .discoverResources('app/panels/admin/resources')
+  .resources([UserResource])
 ```
 
-Generate a resource stub:
+Use `.discoverResources('app/panels/admin/resources')` to auto-load classes ending in `Resource`, or pass explicit classes to `.resources([...])`.
+
+Generate a stub:
 
 ```bash
 node ace shamar:make-resource Product --group Catalog
-node ace make:panel billing
 ```

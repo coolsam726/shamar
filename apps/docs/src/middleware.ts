@@ -13,7 +13,7 @@ import { defineMiddleware } from 'astro:middleware';
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
 const DEMO_ORIGIN = (import.meta.env.PUBLIC_DEMO_URL || '').replace(/\/$/, '');
 
-const ROOT_URL = /((?:href|src|data-lightbox-src)=")(\/[^"]*)(")/g;
+const ROOT_URL = /((?:href|src|data-lightbox-src(?:-dark)?)=")(\/[^"]*)(")/g;
 
 function isDemoPath(url: string) {
   return url === '/demo' || url.startsWith('/demo/') || url.startsWith('/demo?') || url === '/login' || url.startsWith('/login');

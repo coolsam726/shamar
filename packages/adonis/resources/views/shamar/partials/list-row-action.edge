@@ -1,32 +1,82 @@
 {{-- Single list-row action control. Expects: action, record, resource, basePath, query, showEditButton, showDeleteButton, menuItem (bool) --}}
 @if(action.name === 'view')
-  <a
-    href="{{ basePath }}/{{ resource.slug }}/{{ record.id }}{{ recordNavQuery(query) }}"
-    @if(menuItem)
-      role="menuitem"
-      class="shamar-row-actions__item"
-      @click="open = false"
-    @else
-      class="shamar-row-actions__inline"
-    @endif
-  >
-    @!component('shamar::partials/action-icon', { icon: action.icon || 'eye' })
-    <span>{{ action.label }}</span>
-  </a>
+  @if(resource.viewMode === 'modal')
+    <button
+      type="button"
+      @if(menuItem)
+        role="menuitem"
+        class="shamar-row-actions__item"
+        @click="open = false; $dispatch('shamar-open-dialog', {
+          url: {{ jsonAttr(`${basePath}/${resource.slug}/${record.id}${recordNavQuery(query)}`) }},
+          title: {{ jsonAttr(String(record[resource.recordTitleField] || resource.singularLabel)) }},
+          slug: {{ jsonAttr(resource.slug) }},
+        })"
+      @else
+        class="shamar-row-actions__inline"
+        @click="$dispatch('shamar-open-dialog', {
+          url: {{ jsonAttr(`${basePath}/${resource.slug}/${record.id}${recordNavQuery(query)}`) }},
+          title: {{ jsonAttr(String(record[resource.recordTitleField] || resource.singularLabel)) }},
+          slug: {{ jsonAttr(resource.slug) }},
+        })"
+      @endif
+    >
+      @!component('shamar::partials/action-icon', { icon: action.icon || 'eye' })
+      <span>{{ action.label }}</span>
+    </button>
+  @else
+    <a
+      href="{{ basePath }}/{{ resource.slug }}/{{ record.id }}{{ recordNavQuery(query) }}"
+      @if(menuItem)
+        role="menuitem"
+        class="shamar-row-actions__item"
+        @click="open = false"
+      @else
+        class="shamar-row-actions__inline"
+      @endif
+    >
+      @!component('shamar::partials/action-icon', { icon: action.icon || 'eye' })
+      <span>{{ action.label }}</span>
+    </a>
+  @endif
 @elseif(action.name === 'edit' && showEditButton !== false)
-  <a
-    href="{{ basePath }}/{{ resource.slug }}/{{ record.id }}/edit{{ recordNavQuery(query) }}"
-    @if(menuItem)
-      role="menuitem"
-      class="shamar-row-actions__item"
-      @click="open = false"
-    @else
-      class="shamar-row-actions__inline"
-    @endif
-  >
-    @!component('shamar::partials/action-icon', { icon: action.icon || 'pencil' })
-    <span>{{ action.label }}</span>
-  </a>
+  @if(resource.editMode === 'modal')
+    <button
+      type="button"
+      @if(menuItem)
+        role="menuitem"
+        class="shamar-row-actions__item"
+        @click="open = false; $dispatch('shamar-open-dialog', {
+          url: {{ jsonAttr(`${basePath}/${resource.slug}/${record.id}/edit${recordNavQuery(query)}`) }},
+          title: {{ jsonAttr(`Edit ${record[resource.recordTitleField] || resource.singularLabel}`) }},
+          slug: {{ jsonAttr(resource.slug) }},
+        })"
+      @else
+        class="shamar-row-actions__inline"
+        @click="$dispatch('shamar-open-dialog', {
+          url: {{ jsonAttr(`${basePath}/${resource.slug}/${record.id}/edit${recordNavQuery(query)}`) }},
+          title: {{ jsonAttr(`Edit ${record[resource.recordTitleField] || resource.singularLabel}`) }},
+          slug: {{ jsonAttr(resource.slug) }},
+        })"
+      @endif
+    >
+      @!component('shamar::partials/action-icon', { icon: action.icon || 'pencil' })
+      <span>{{ action.label }}</span>
+    </button>
+  @else
+    <a
+      href="{{ basePath }}/{{ resource.slug }}/{{ record.id }}/edit{{ recordNavQuery(query) }}"
+      @if(menuItem)
+        role="menuitem"
+        class="shamar-row-actions__item"
+        @click="open = false"
+      @else
+        class="shamar-row-actions__inline"
+      @endif
+    >
+      @!component('shamar::partials/action-icon', { icon: action.icon || 'pencil' })
+      <span>{{ action.label }}</span>
+    </a>
+  @endif
 @elseif(action.name === 'delete' && showDeleteButton !== false)
   <button
     type="button"

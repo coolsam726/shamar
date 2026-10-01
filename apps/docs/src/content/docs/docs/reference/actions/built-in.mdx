@@ -6,7 +6,7 @@ description: Default CRUD action set.
 ```ts
 import { defaultActions } from '@shamar/core'
 
-static resourceActions() {
+static resourceActions(_actions) {
   return defaultActions() // create, view, edit, delete, bulkDelete
 }
 ```
@@ -19,4 +19,4 @@ static resourceActions() {
 | `delete()` | row | Delete (danger) |
 | `bulkDelete()` | bulk | Delete selected |
 
-Customize labels: `a.create('New ticket')`, `a.delete().confirm('…')`.
+Customize labels: `actions.create('New ticket')`, `actions.delete().confirm('…')`.

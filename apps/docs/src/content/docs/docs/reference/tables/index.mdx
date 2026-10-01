@@ -6,14 +6,9 @@ description: List tables, search, filters, grouping, and pagination.
 import DocScreenshot from '../../../../../components/DocScreenshot.astro';
 import DocApiTable from '../../../../../components/DocApiTable.astro';
 
-A table is the list of records for a resource. It is the first screen staff see when they open a model in the sidebar: rows, column headings, a search box, filters, and a way to move between pages. You do not query the database in the template. `table()` declares which attributes become columns, which of those columns can be searched or sorted, and how a value should be formatted (plain text, a badge, a date).
-
-The host asks the adapter for one page of records, applying the search, the filters, and the sort the user chose. The adapter is Lucid or Mongoose depending on installation. The column definition is the same in both cases. Searchable text is matched as literal text, including characters such as backslash that would otherwise break a SQL `LIKE` or a MongoDB regular expression.
-
-This page is the table itself. Column types and modifiers are the child pages, starting at [TextColumn](/docs/reference/tables/text-column/).
-
 <DocScreenshot
   src="/screenshots/products-list.png"
+  darkSrc="/screenshots/products-list-dark.png"
   alt="Product list table"
   caption="Table chrome is provided by the Adonis host."
   wide

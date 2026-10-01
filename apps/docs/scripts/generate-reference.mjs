@@ -7,7 +7,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { componentShotPath, FORM_OPEN_DOC_SHOTS } from './component-shots-manifest.mjs'
+import { componentShotPath, screenshotDarkSibling, FORM_OPEN_DOC_SHOTS } from './component-shots-manifest.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../src/content/docs/docs/reference')
 
@@ -41,7 +41,9 @@ function apiTable(rows, title = 'Methods') {
 
 function shot(src, alt, caption, wide = false) {
   if (!src) return ''
-  return `<DocScreenshot\n  src="${src}"\n  alt="${alt}"\n  caption="${caption.replace(/"/g, '&quot;')}"${wide ? '\n  wide' : ''}\n/>\n\n`
+  const dark = screenshotDarkSibling(src)
+  const darkAttr = dark ? `\n  darkSrc="${dark}"` : ''
+  return `<DocScreenshot\n  src="${src}"${darkAttr}\n  alt="${alt}"\n  caption="${caption.replace(/"/g, '&quot;')}"${wide ? '\n  wide' : ''}\n/>\n\n`
 }
 
 function openShots(category, slug) {
@@ -286,7 +288,7 @@ async function writeResources() {
 | Property | Purpose |
 |----------|---------|
 | \`model\` | Lucid / Mongoose model class |
-| \`slug\` | URL segment (\`/demo/products\`) |
+| \`slug\` | URL segment (\`/products\`) |
 | \`label\` / \`singularLabel\` | Navigation and headings |
 | \`navigationGroup\` / \`navigationSubGroup\` | Sidebar grouping |
 | \`navigationSort\` / \`navigationHidden\` | Order and visibility |
@@ -296,6 +298,31 @@ async function writeResources() {
 | \`softDelete\` | Soft-delete aware queries |
 | \`contentMaxWidth\` | Page width token |
 | \`defaultPerPage\` | Pagination default |
+| \`quickActions\` | When \`true\`, create/edit/view open in a modal over the list |
+| \`createMode\` / \`editMode\` / \`viewMode\` | \`'page'\` (default) or \`'modal'\` per operation |
+
+## Quick actions (modal CRUD)
+
+For simple resources (categories, tags, types), open create / edit / view in a dialog instead of a full page. The same routes and forms are used; only the presentation changes.
+
+\`\`\`ts
+export default class CategoryResource extends Resource {
+  static model = Category
+  static slug = 'categories'
+  /** Shorthand: create, edit, and view all open in a modal. */
+  static quickActions = true
+}
+\`\`\`
+
+Or set modes individually:
+
+\`\`\`ts
+static createMode = 'modal'
+static editMode = 'modal'
+static viewMode = 'page' // row click still navigates to the show page
+\`\`\`
+
+**Playground:** Categories uses \`quickActions\` — New, View, Edit, and row click open a modal over the list.
 
 ## Builders
 

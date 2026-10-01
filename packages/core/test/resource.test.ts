@@ -53,4 +53,24 @@ describe('@shamar/core Resource', () => {
     assert.equal(registry.require('users').label, 'Users');
     assert.throws(() => registry.require('missing'), /Unknown Shamar resource/);
   });
+
+  it('defaults create/edit/view to page and honors quickActions', () => {
+    const pageMeta = UserResource.configure();
+    assert.equal(pageMeta.createMode, 'page');
+    assert.equal(pageMeta.editMode, 'page');
+    assert.equal(pageMeta.viewMode, 'page');
+
+    class QuickCategory extends Resource {
+      static override slug = 'categories';
+      static override label = 'Categories';
+      static override singularLabel = 'Category';
+      static override model = 'Category';
+      static override quickActions = true;
+      static override editMode = 'page' as const;
+    }
+    const quick = QuickCategory.configure();
+    assert.equal(quick.createMode, 'modal');
+    assert.equal(quick.viewMode, 'modal');
+    assert.equal(quick.editMode, 'page');
+  });
 });

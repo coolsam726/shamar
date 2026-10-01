@@ -6,10 +6,6 @@ description: Custom admin pages beyond resources.
 import DocScreenshot from '../../../../../components/DocScreenshot.astro';
 import DocApiTable from '../../../../../components/DocApiTable.astro';
 
-A page is an admin screen that is not the CRUD of one model. Settings, a custom list that does not map to a resource class, a dashboard of charts, or a mixed layout all fit here. Resources cover "manage these records." Pages cover "give staff somewhere else to go" that still lives in the same sidebar, the same auth, and the same panel chrome.
-
-The host discovers page classes from a directory you name on the panel, the same way it discovers resources. `slug` is the URL segment. `canAccess()` is the optional gate. The class you extend — `SettingsPage`, `DashboardPage`, `ListPage`, `FormPage`, or a plain `Page` — decides which screen shape you get. Pick the shape first, then open that page's reference. This overview is only the choice.
-
 ```ts
 panel('admin').discoverPages('app/panels/admin/pages')
 ```
