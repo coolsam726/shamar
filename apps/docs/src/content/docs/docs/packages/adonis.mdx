@@ -20,19 +20,29 @@ If `config/shamar.ts` is missing, the admin routes are skipped. Wire's `/wire` r
 
 ## What you configure
 
-`defineConfig` is the root. `panel('admin')` is one mounted panel: a URL path, a list of resources (or a directory to discover), branding, and optional extras such as a media library.
+`config/shamar.ts` is the application: which database, how people sign in, branding shared by every panel, media, and the API. A panel is not configured there. It is a class in `app/panels/{id}/panel.ts`, discovered when the provider boots. `node ace make:panel admin` creates the first one, and configure writes that file for you.
 
 ```ts
-import { defineConfig, panel } from '@shamar/adonis'
+// app/panels/admin/panel.ts
+import { PanelProvider, panel } from '@shamar/adonis'
+
+export default class AdminPanel extends PanelProvider {
+  panel() {
+    return panel('admin')
+      .path('/admin')
+      .branding({ name: 'Admin', primaryColor: '#f1511b' })
+      .discoverResources('app/panels/admin/resources')
+  }
+}
+```
+
+```ts
+// config/shamar.ts
+import { defineConfig } from '@shamar/adonis'
 
 export default defineConfig({
   orm: 'lucid', // or 'mongoose'
-  panels: [
-    panel('admin')
-      .path('/admin')
-      .branding({ name: 'Admin', primaryColor: '#f1511b' })
-      .discoverResources('app/resources/admin'),
-  ],
+  branding: { name: 'Admin' },
 })
 ```
 

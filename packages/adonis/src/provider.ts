@@ -14,7 +14,9 @@ export default class ShamarProvider {
   register(): void {
     this.app.container.singleton('shamar.runtime', async () => {
       const config = this.app.config.get<ShamarConfig>('shamar');
-      return createShamarRuntime(config, { appRoot: this.app.makePath() });
+      const { withDiscoveredPanels } = await import('./discover_panels.js');
+      const panels = await withDiscoveredPanels(config, this.app.makePath());
+      return createShamarRuntime(panels, { appRoot: this.app.makePath() });
     });
 
     this.app.container.singleton('shamar.config', async () => {

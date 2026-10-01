@@ -52,19 +52,21 @@ The codemod registers the provider, stubs `config/shamar.ts`, and asks Lucid vs 
 
 ## Minimal panel
 
-```ts
-// config/shamar.ts
-import { defineConfig, panel } from '@shamar/adonis'
-import { UserResource } from '#resources/admin/user_resource'
+`node ace configure @shamar/adonis` writes `config/shamar.ts` for the database, auth, and branding, and `app/panels/admin/panel.ts` for the panel itself. Add another panel with `node ace make:panel billing`.
 
-export default defineConfig({
-  panels: [
-    panel('admin')
+```ts
+// app/panels/admin/panel.ts
+import { PanelProvider, panel } from '@shamar/adonis'
+
+export default class AdminPanel extends PanelProvider {
+  panel() {
+    return panel('admin')
       .path('/admin')
       .branding({ name: 'Admin', primaryColor: '#f1511b' })
-      .resources([UserResource]),
-  ],
-})
+      .discoverResources('app/panels/admin/resources')
+      .discoverPages('app/panels/admin/pages')
+  }
+}
 ```
 
 Boot the app and visit `/admin` (after your auth middleware allows it).

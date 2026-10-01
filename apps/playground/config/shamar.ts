@@ -1,10 +1,9 @@
-import { defineConfig, panel, type LdapDomainConfig } from '@shamar/adonis'
+import { defineConfig, type LdapDomainConfig } from '@shamar/adonis'
 import { createMongooseMediaLibraryAdapter } from '@shamar/mongoose'
 import { toCherubimUser, sanitizeRoleIds, type AuthLoginMode } from '@shamar/cherubim'
 import { resolveDatabaseRolePermissions } from '#auth/role_resolver'
 import { resolvePlaygroundApiKeyUser } from '#auth/api_key_store'
 import { resolvePlaygroundBrandingOverrides } from '#branding/resolve_overrides'
-import AdminDashboard from '#pages/admin/dashboard_page'
 import MediaFolder from '#models/media_folder'
 import MediaFile from '#models/media_file'
 
@@ -178,36 +177,4 @@ export default defineConfig({
     docs: { path: '/api/docs' },
     discover: { prefixes: ['/api'] },
   },
-  panels: [
-    panel('admin')
-      .path('/demo')
-      .branding({
-        name: 'SHAMAR',
-        // Icon mark in the sidebar; brand name rendered beside it.
-        logo: '/branding/shamar-logo.svg',
-        logoDark: '/branding/shamar-logo-dark.svg',
-        // Panel theme colors override global branding for this panel.
-        primaryColor: '#F1511B',
-        accentColor: '#286291',
-        logoHeight: 32,
-      })
-      // Logo + name | logo only | name only.
-      // Settings → Branding can override; leave Brand mark as “Use panel default” there.
-      .brandDisplay('both')
-      .contentMaxWidth('screen-2xl')
-      .defaultPerPage(10)
-      .dashboardPage(AdminDashboard)
-      .discoverResources('app/resources/admin')
-      .discoverPages('app/pages/admin'),
-    panel('app')
-      .path('/app')
-      .branding({
-        name: 'SHAMAR APP',
-        logo: '/branding/shamar-logo.svg',
-        logoDark: '/branding/shamar-logo-dark.svg',
-        logoHeight: 32,
-      })
-      .brandDisplay('both')
-      .discoverResources('app/resources/app'),
-  ],
 })

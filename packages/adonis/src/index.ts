@@ -96,6 +96,8 @@ export {
 export { MediaController } from './controllers/media_controller.js';
 export { registerFieldView, getFieldView, listFieldViews } from './shamar/field-views.js';
 export { discoverResources, discoverPages } from './discover.js';
+export { PanelProvider } from './panel_provider.js';
+export { discoverPanelProviders } from './discover_panels.js';
 export { default as ApiKeyResource } from './resources/api_key_resource.js';
 export { WireKernel, wireClientPath, type WireComponent, type WireRequest } from '@shamar/wire';
 export { registerWire, type RegisterWireOptions } from './wire/register.js';

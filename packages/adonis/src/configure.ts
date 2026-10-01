@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { publishAuthViews } from './publish_auth.js';
 import { patchSessionAuthForMongoose, sessionAuthUsesStockLucidProvider } from './mongo_auth.js';
+import { panelStub } from './commands/make_panel.js';
 
 export const stubsRoot = fileURLToPath(new URL('../stubs', import.meta.url));
 
@@ -91,6 +92,8 @@ export async function configure(command: ConfigureCommand): Promise<void> {
   if (orm === 'mongoose') {
     await installMongoConnection(command, codemods);
   }
+
+  await ensureAdminPanelClass(command);
 
   if (publishLogin) {
     await publishAuthViews(command, { skipConfirm: true });
@@ -183,4 +186,18 @@ async function publishMongoSession(command: ConfigureCommand): Promise<void> {
 async function copyAuthStub(destination: string): Promise<void> {
   await mkdir(dirname(destination), { recursive: true });
   await copyFile(join(stubsRoot, 'auth/session_mongoose_user_provider.ts'), destination);
+}
+
+async function ensureAdminPanelClass(command: ConfigureCommand): Promise<void> {
+  const relative = 'app/panels/admin/panel.ts';
+  const destination = appMakePath(command)(relative);
+  try {
+    await access(destination);
+    return;
+  } catch {
+    /* create the default panel */
+  }
+  await mkdir(dirname(destination), { recursive: true });
+  await writeFile(destination, panelStub('AdminPanel', 'admin'));
+  command.logger.success(`Panel  ${relative}`);
 }
