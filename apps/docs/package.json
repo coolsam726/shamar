@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "PUBLIC_DEMO_URL=${PUBLIC_DEMO_URL:-http://localhost:3333} astro dev --port 4321",
     "start": "astro dev --port 4321",
-    "build": "astro build",
+    "build": "astro build && node scripts/rewrite-demo-links.mjs",
     "preview": "astro preview --port 4321",
     "cf:deploy": "wrangler deploy",
     "cf:preview": "wrangler preview",

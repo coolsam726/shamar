@@ -8,7 +8,7 @@ The landing page and the docs are static. The panel is the only piece that needs
 | `https://shamar.dev/docs/` | Starlight docs (same Worker) |
 | `https://demo.shamar.dev/` | Admin panel, login, and `/api` (private VPS) |
 
-Docs links written as `/demo/...` are rewritten to the demo host at build time. `/demo/products` becomes `https://demo.shamar.dev/products`.
+Docs links written as `/demo/...` are rewritten to the demo host at build time (`scripts/rewrite-demo-links.mjs`). `/demo/products` becomes `https://demo.shamar.dev/products`. Landing CTAs use `PUBLIC_DEMO_URL` directly.
 
 ## Build the docs site
 
