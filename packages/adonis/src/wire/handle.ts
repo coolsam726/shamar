@@ -7,6 +7,17 @@ import { updateGlobalSearch } from './global-search.js';
 import { updateNotifications } from './notifications.js';
 import { updateRelationManager } from './relation-manager.js';
 
+/** Panel islands that share POST /wire when a panel mounts at `/`. */
+export const PANEL_WIRE_COMPONENTS = new Set([
+  'notifications',
+  'global-search',
+  'relation-manager',
+]);
+
+export function isPanelWireComponent(name: unknown): boolean {
+  return typeof name === 'string' && PANEL_WIRE_COMPONENTS.has(name);
+}
+
 /**
  * One panel endpoint serves every island. The snapshot name picks the component.
  * Unknown names fail closed instead of running global search by accident.

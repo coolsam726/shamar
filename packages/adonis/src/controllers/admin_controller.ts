@@ -85,7 +85,7 @@ import {
 } from '../shamar/relation-table.js';
 import { resolveDashboardWidgets } from '../shamar/dashboard-widgets.js';
 import type { WireRequest } from '@shamar/wire';
-import { handleWireRequest } from '../wire/handle.js';
+import { handleWireRequest, isPanelWireComponent } from '../wire/handle.js';
 import { listNotifications, pushNotification } from '../wire/notifications.js';
 import { relationManagerHtml } from '../wire/relation-manager.js';
 import { storeWireUpload } from '../wire/uploads.js';
@@ -286,10 +286,23 @@ export class AdminController {
   }
 
   async wire(ctx: ShamarHttpContext) {
+    const body = ctx.request.body() as WireRequest;
+
+    // Root panel owns POST /wire; app/wire components share that endpoint.
+    if (!isPanelWireComponent(body?.snapshot?.name) && panelPathPrefix(this.panel.path) === '') {
+      try {
+        const { default: app } = await import('@adonisjs/core/services/app');
+        const kernel = await app.container.make('shamar.wire');
+        return ctx.response.json(await kernel.update(body, '/wire'));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Wire request failed';
+        return ctx.response.badRequest({ message });
+      }
+    }
+
     const authResult = await this.ensureAuthenticated(ctx, true);
     if (!this.isAuthContext(authResult)) return authResult;
     try {
-      const body = ctx.request.body() as WireRequest;
       const updated = await handleWireRequest({
         panel: this.panel,
         authorizer: this.authorizer,

@@ -118,6 +118,10 @@ export default class ShamarProvider {
    * Livewire-style host: every class in `app/wire` is a component.
    * Routes `POST /wire` and `GET /wire.js` are registered even when that
    * folder is empty. A missing `shamar` config skips the admin panel only.
+   *
+   * When a panel mounts at `/`, it owns `POST /wire` for its islands. Skip the
+   * kernel POST here so Adonis does not see a duplicate; AdminController.wire
+   * falls through to the discovered kernel for app/wire components.
    */
   private async bootDiscoveredWire(): Promise<void> {
     const { randomBytes } = await import('node:crypto');
@@ -126,6 +130,7 @@ export default class ShamarProvider {
     const { wireDefinitionFromClass } = await import('./wire/class_component.js');
     const { registerWire } = await import('./wire/register.js');
     const { registerWireTag } = await import('./wire/edge_tag.js');
+    const { panelPathPrefix } = await import('./shamar/paths.js');
 
     const discovered = await discoverWireComponents(this.app.makePath());
     const components: Record<string, WireDefinition> = {};
@@ -172,6 +177,13 @@ export default class ShamarProvider {
     }
 
     const router = await this.app.container.make('router');
-    registerWire(router, { kernel });
+    const configured = this.app.config.get<ShamarConfig | null>('shamar', null);
+    let registerPost = true;
+    if (configured) {
+      const runtime = await this.app.container.make('shamar.runtime');
+      registerPost = !runtime.panels.some((panel) => panelPathPrefix(panel.path) === '');
+    }
+
+    registerWire(router, { kernel, registerPost });
   }
 }
