@@ -10,7 +10,7 @@ Installation is how an existing AdonisJS application gains a panel. You are not 
 Before the commands below, it helps to know the three decisions the installer is walking you through:
 
 1. **The host.** `@shamar/adonis` is the package that registers routes and views. [Introduction](/docs/guides/introduction/) explains why that package is separate from the resource language.
-2. **The database.** The panel does not ship with a database. It uses one you already have. `orm: 'lucid'` means SQL through Lucid. `orm: 'mongoose'` means MongoDB. Both are first-class. The configure command asks, and you can read either choice in [Packages](/docs/packages/) before you answer.
+2. **The database.** The panel does not ship with a database. It uses one you already have. `orm: 'lucid'` means SQL through Lucid. `orm: 'mongoose'` means MongoDB. Choosing Mongoose also installs `mongoose`, sets `MONGO_URI`, and registers a provider that connects before the panel boots. [Using MongoDB](/docs/guides/mongodb/) is that path. The longer explanation, including session login, is [MongoDB](/docs/packages/mongoose/).
 3. **Sign-in.** The published login page is a screen. The user model and session guard stay yours. You can finish installation and still see a login form that has nowhere to put a real user until auth is wired. That is expected, and [Auth & RBAC](/docs/concepts/auth/) is the next page for it.
 
 The rest of this page is the commands and the smallest config that makes `/admin` exist.
@@ -48,7 +48,7 @@ node ace configure @shamar/adonis
 
 The codemod registers the provider, stubs `config/shamar.ts`, and asks Lucid vs Mongoose.
 
-`@shamar/adonis` in this repository depends on `@shamar/wire`. The panel uses it, and a plain Adonis app can register it without a panel. See [Wire](/docs/wire/). `@shamar/wire@0.3.0` is on npm. The published `@shamar/adonis@0.3.0` does not depend on it yet, so install `@shamar/wire` yourself until the next host release. New Wire versions are published by the `publish.yml` GitHub Actions workflow, which npm trusts as this package's publisher.
+`@shamar/adonis` depends on `@shamar/wire`. The panel uses it, and a plain Adonis app can register it without a panel. See [Wire](/docs/wire/). New versions of both packages are published by the `publish.yml` GitHub Actions workflow. npm trusts that workflow as the publisher for `@shamar/wire`.
 
 ## Minimal panel
 

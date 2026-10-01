@@ -3,30 +3,143 @@ title: MongoDB
 description: Native MongoDB support through Mongoose, as a first-class adapter beside SQL.
 ---
 
-`@shamar/mongoose` is Shamar's MongoDB adapter. It is not a sidecar or a community driver. A panel can use it the same way it uses SQL: `orm: 'mongoose'` in config, a Mongoose model on each resource, and the same form and table builders from [core](/docs/packages/core/).
+`@shamar/mongoose` is Shamar's MongoDB adapter. The short path is [Using MongoDB](/docs/guides/mongodb/): choose Mongoose when `node ace configure @shamar/adonis` asks, and the command installs the driver, sets `MONGO_URI`, and connects before the panel starts. This page is what that command sets up, and the rest you still write yourself when the app was not scaffolded that way.
 
 The playground and the [live demo](/docs/guides/live-demo/) run on this adapter. If you are clicking through `/demo`, you are already looking at MongoDB records drawn by the same screens a Lucid app would use.
 
-## Why a separate package
+Setting `orm: 'mongoose'` does not make an Adonis app a MongoDB app. The connection, the models, and the auth user lookup have to exist before a panel is useful. Do those steps first. The panel config at the end only points Shamar at a database the application already opens.
 
-Documents are not rows. MongoDB uses `_id`, schemaless collections, and a different query language. The admin UI does not want to know any of that. Core describes a field named `name`. The Mongoose adapter is the only place that turns "list products, page 2, search for acme" into a Mongoose query, and the only place that writes a form submission back onto a document.
-
-Keeping that in its own package means a SQL app never loads Mongoose, and a MongoDB app never loads Lucid's query builder. The host depends on both adapters so the configure command can offer the choice, but only the `orm` you set is constructed at boot.
-
-## What you own
-
-Shamar does not call `mongoose.connect`. Your app opens the connection during startup, the same way it would without a panel, and the adapter uses the connection that is already there. Models, schemas, and indexes stay in the application.
+## 1. Install Mongoose
 
 ```bash
-pnpm add @shamar/adonis mongoose
+pnpm add mongoose
 ```
 
-Mongoose 8 or newer is the peer. `@shamar/adonis` already depends on `@shamar/mongoose`.
+Mongoose 8 or newer. Install `@shamar/adonis` when you are ready for the panel. That package already depends on `@shamar/mongoose`. You still install `mongoose` yourself, because the application owns the driver.
 
-## Turn it on
+## 2. Declare the connection string
+
+Put the URI in `.env`. Adonis will refuse to boot if a variable used in `start/env.ts` is missing, so add it there too.
+
+```dotenv
+MONGO_URI=mongodb://127.0.0.1:27017/your_app
+```
+
+```ts
+// start/env.ts
+MONGO_URI: Env.schema.string(),
+```
+
+Shamar does not read `MONGO_URI`. Your provider does. The panel never opens MongoDB on its own.
+
+## 3. Connect during boot, and disconnect on shutdown
+
+A service provider calls `mongoose.connect` in `boot()` and `mongoose.disconnect` in `shutdown()`. Register it in `adonisrc.ts` **before** `@shamar/adonis/provider`. The panel's adapter uses the default Mongoose connection. If that connection is not open yet, the first list or save has nothing to query.
+
+```ts
+// providers/mongo_provider.ts
+import type { ApplicationService } from '@adonisjs/core/types'
+import mongoose from 'mongoose'
+import env from '#start/env'
+
+export default class MongoProvider {
+  constructor(protected app: ApplicationService) {}
+
+  async boot() {
+    mongoose.set('strictQuery', true)
+    await mongoose.connect(env.get('MONGO_URI'))
+  }
+
+  async shutdown() {
+    await mongoose.disconnect()
+  }
+}
+```
+
+```ts
+// adonisrc.ts
+providers: [
+  () => import('@adonisjs/core/providers/app_provider'),
+  () => import('@adonisjs/auth/auth_provider'),
+  () => import('#providers/mongo_provider'),
+  () => import('@shamar/adonis/provider'),
+]
+```
+
+Leave Lucid installed only if something else in the app still uses SQL. A MongoDB-only panel does not need Lucid models.
+
+## 4. Write Mongoose models
+
+A resource's `static model` is a Mongoose model class, the same object you would import in a controller. Define the schema in the app. Shamar does not generate collections.
+
+```ts
+// app/models/product.ts
+import mongoose, { Schema, type Model } from 'mongoose'
+
+const productSchema = new Schema({
+  name: { type: String, required: true },
+})
+
+export default (mongoose.models.Product as Model | undefined) ??
+  mongoose.model('Product', productSchema)
+```
+
+MongoDB stores the key as `_id`. The panel speaks `id`. The adapter copies `_id` into a string `id` when it hands a document to a screen, and it accepts that string when it looks the document up. You do not add an `id` path to the schema for Shamar's sake.
+
+## 5. Point session auth at those documents
+
+Adonis session auth, by default, looks up a Lucid user by numeric id. A Mongoose `_id` is a 24-character hex string, so that lookup misses. Replace the session guard's user provider with one that calls `User.findById`. The guard only needs `getId()` and `getOriginal()`.
+
+```ts
+// app/auth/session_mongoose_user_provider.ts
+import { symbols } from '@adonisjs/auth'
+import type { SessionGuardUser, SessionUserProviderContract } from '@adonisjs/auth/types/session'
+import User, { type UserDocument } from '#models/user'
+
+export class SessionMongooseUserProvider implements SessionUserProviderContract<UserDocument> {
+  declare [symbols.PROVIDER_REAL_USER]: UserDocument
+
+  async createUserForGuard(user: UserDocument): Promise<SessionGuardUser<UserDocument>> {
+    return {
+      getId() {
+        return String(user.id ?? user._id)
+      },
+      getOriginal() {
+        return user
+      },
+    }
+  }
+
+  async findById(identifier: string | number | bigint) {
+    const id = String(identifier)
+    if (!/^[a-f\d]{24}$/i.test(id)) return null
+    const user = await User.findById(id)
+    if (!user) return null
+    return this.createUserForGuard(user as UserDocument)
+  }
+}
+```
+
+```ts
+// config/auth.ts
+web: sessionGuard({
+  useRememberMeTokens: false,
+  provider: configProvider.create(async () => {
+    const { SessionMongooseUserProvider } = await import('#auth/session_mongoose_user_provider')
+    return new SessionMongooseUserProvider()
+  }),
+})
+```
+
+Sign-in still hashes the password with Adonis `hash` and writes the session. Only the user row comes from MongoDB. The playground does this for the same `User` documents the panel edits.
+
+## 6. Then configure the panel
+
+Only after the connection, models, and auth provider exist:
 
 ```ts
 import { defineConfig, panel } from '@shamar/adonis'
+import ProductResource from '#resources/admin/product_resource'
 
 export default defineConfig({
   orm: 'mongoose',
@@ -38,8 +151,6 @@ export default defineConfig({
 })
 ```
 
-A resource binds the model class:
-
 ```ts
 import { Resource } from '@shamar/core'
 import Product from '#models/product'
@@ -50,13 +161,17 @@ export default class ProductResource extends Resource {
 }
 ```
 
-`Product` is a Mongoose model. The panel lists and saves documents of that model. String model names (`static model = 'Product'`) also work if you pass the connection into `createMongooseAdapter({ connection })` yourself. On the normal provider path, use the class.
+`Product` is the Mongoose model from step 4. The resource does not mention MongoDB. `orm: 'mongoose'` tells the host to build `createMongooseAdapter()` and use the connection from step 3. String model names (`static model = 'Product'`) work only if you pass that connection into `createMongooseAdapter({ connection })` yourself. On the normal provider path, use the class.
 
-## How documents look inside the panel
+## Why this is a separate package
 
-MongoDB stores the primary key as `_id`. The admin UI, URLs, and form payloads speak `id`. The adapter copies `_id` into a string `id` when it hands a document to the screen, and it accepts that string when it looks a document up again. You do not add an `id` field to the schema for Shamar's sake.
+Documents are not rows. MongoDB uses `_id`, schemaless collections, and a different query language. The admin UI does not want to know any of that. Core describes a field named `name`. The Mongoose adapter is the only place that turns "list products, page 2, search for acme" into a Mongoose query, and the only place that writes a form submission back onto a document.
 
-Search in a list is a regular expression match on the columns you marked `.searchable()`. `\`, `%`, and related characters are treated as literal text, so a user can search for a backslash without the query throwing. That behavior lives in this adapter; the table column in core only says "this column is searchable."
+Keeping that in its own package means a SQL app never loads Mongoose, and a MongoDB app never loads Lucid's query builder. The host depends on both adapters so the configure command can offer the choice, but only the `orm` you set is constructed at boot.
+
+## What you no longer configure by hand
+
+Shamar does not call `mongoose.connect`. That stayed in step 3. Once the panel uses `orm: 'mongoose'`, this adapter runs list, save, search, soft delete, and relation queries. Search on a `.searchable()` column is a regular expression, and `\`, `%`, and `_` are matched as literal characters.
 
 ## Soft delete
 

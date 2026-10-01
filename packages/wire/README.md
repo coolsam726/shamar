@@ -8,17 +8,15 @@ Existing Alpine UI stays. A piece of the panel moves onto Wire when its markup o
 
 ## Install
 
-`@shamar/wire` is on npm as `0.3.0`.
+`pnpm add @shamar/adonis` installs the panel and `@shamar/wire`. The host re-exports `WireKernel`, `WireComponent`, and `WireRequest`. Install the kernel on its own only when you are not using the Adonis host:
 
 ```bash
 pnpm add @shamar/wire
 ```
 
-The Adonis host re-exports `WireKernel`, `WireComponent`, and `WireRequest`. The copy of `@shamar/adonis` currently on npm (`0.3.0`) does not depend on Wire yet. In this repository it does, and the next host release will too. Until that release, install Wire itself when you want the kernel.
-
 No peer dependencies. Node 20+.
 
-New versions are published by GitHub Actions, not from a laptop token. npm trusted publishing for this package accepts publishes from the `publish.yml` workflow in `coolsam726/shamar`. That workflow already has `id-token: write`. A GitHub release of the monorepo runs it.
+New versions are published by GitHub Actions, not from a laptop token. npm trusted publishing for `@shamar/wire` accepts publishes from the `publish.yml` workflow in `coolsam726/shamar`. A GitHub release of the monorepo runs it.
 
 ## What a request does
 

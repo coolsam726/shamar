@@ -48,9 +48,23 @@ export async function buildSidebar() {
       items: [
         { label: 'Introduction', slug: 'docs/guides/introduction' },
         { label: 'Installation', slug: 'docs/guides/installation' },
+        { label: 'Using MongoDB', slug: 'docs/guides/mongodb' },
         { label: 'Your first resource', slug: 'docs/guides/first-resource' },
         { label: 'Live demo', slug: 'docs/guides/live-demo' },
         { label: 'Changelog', slug: 'docs/guides/changelog' },
+      ],
+    },
+    {
+      label: 'Wire',
+      items: [
+        { label: 'Overview', slug: 'docs/wire' },
+        { label: 'Install', slug: 'docs/wire/install' },
+        { label: 'Components', slug: 'docs/wire/adonis' },
+        { label: 'SPA navigation', slug: 'docs/wire/spa' },
+        { label: 'Without Adonis', slug: 'docs/wire/node' },
+        { label: 'Kernel', slug: 'docs/wire/components' },
+        { label: 'Browser', slug: 'docs/wire/browser' },
+        { label: 'Nesting', slug: 'docs/wire/nesting' },
       ],
     },
     group('Resources', [
@@ -71,19 +85,6 @@ export async function buildSidebar() {
       { label: 'Custom', slug: 'docs/reference/actions/custom' },
     ]),
     group('Pages', pages, true),
-    {
-      label: 'Wire',
-      items: [
-        { label: 'Overview', slug: 'docs/wire' },
-        { label: 'Install', slug: 'docs/wire/install' },
-        { label: 'Components', slug: 'docs/wire/adonis' },
-        { label: 'SPA navigation', slug: 'docs/wire/spa' },
-        { label: 'Without Adonis', slug: 'docs/wire/node' },
-        { label: 'Kernel', slug: 'docs/wire/components' },
-        { label: 'Browser', slug: 'docs/wire/browser' },
-        { label: 'Nesting', slug: 'docs/wire/nesting' },
-      ],
-    },
     {
       label: 'Concepts',
       items: [
