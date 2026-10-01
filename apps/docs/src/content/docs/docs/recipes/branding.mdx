@@ -5,6 +5,10 @@ description: Panel branding and runtime logo overrides.
 
 import DocScreenshot from '../../../../components/DocScreenshot.astro';
 
+Branding is how the panel looks like your product instead of a generic admin: the name in the corner, the logo, and the color on buttons and the active nav item. It is configuration on the panel, applied to the login screen and the shell together. You are not writing a separate theme stylesheet for each screen.
+
+Panels can each carry their own branding, which matters when one process hosts a public demo and an internal admin. Logos that should change without a deploy — stored in settings — are overlaid at request time rather than baked into the config file.
+
 <DocScreenshot
   src="/screenshots/login.png"
   alt="Branded login screen with panel colors and logo lockup"

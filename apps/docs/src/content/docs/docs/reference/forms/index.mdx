@@ -6,6 +6,12 @@ description: Form schemas, shared field API, and layout components.
 import DocScreenshot from '../../../../../components/DocScreenshot.astro';
 import DocApiTable from '../../../../../components/DocApiTable.astro';
 
+A form is the screen where someone types a record. On create it is empty, aside from defaults. On edit it is filled with the record the adapter loaded. Shamar does not give you a blank HTML form. A resource implements `form()` and lists fields — a text input, a select, a toggle — in a schema. The host renders the inputs, reads them back on submit, checks the rules you declared (required, numeric, and so on), and asks the adapter to save.
+
+Fields are builders, not components you mount in a JavaScript page. `TextInput.make('name')` means the value lives on the model's `name` attribute. Layout pieces such as sections and tabs are also builders: they group fields on the page and do not have a column of their own.
+
+Every field type has its own page in this section. Those pages assume you already know you are filling in a resource's `form()`. This overview is that context. The gallery in the screenshot is `/demo/form-components`, one page that renders each field so you can see them before you pick one.
+
 <DocScreenshot
   src="/screenshots/components/forms/select.png"
   alt="Form fields gallery"

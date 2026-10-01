@@ -1,0 +1,52 @@
+---
+title: SPA navigation
+description: wire:navigate swaps pages in place, with prefetch, a progress bar, and persisted regions.
+---
+
+`wire:navigate` on a same-origin link fetches the next document and swaps it without a full reload. Back and forward do the same. `Wire.navigate('/path')` does it from JavaScript.
+
+```edge
+<a href="/counter" wire:navigate>Counter</a>
+<a href="/orders" wire:navigate.preserve-scroll>Orders</a>
+<a href="/heavy" wire:navigate.no-prefetch>Heavy</a>
+```
+
+The browser script is `/wire.js`. A Shamar panel already loads it, and sidebar links already use `wire:navigate`.
+
+## What gets swapped
+
+When both documents share a region, only that region is morphed. The first match wins:
+
+1. `[data-shamar-scroll-root]`, which the admin shell uses so the sidebar stays mounted.
+2. `[data-wire-navigate-root]`, for a layout that wants the same treatment.
+
+When the two documents do not share one of those regions, the `<body>` is morphed. A page outside the panel does not need an extra attribute. A modified click, `target`, `download`, or a different origin stays a normal navigation. A hash on the current path scrolls instead of fetching. A non-HTML response, a failed status, or a failed fetch assigns `window.location`.
+
+`wire:navigating` fires before the request and can be cancelled with `preventDefault()`. `wire:navigated` fires after the swap. Both carry `event.detail.url`.
+
+## Prefetch and the progress bar
+
+A `wire:navigate` link is prefetched on hover and on keyboard focus, after 60ms. The HTML is reused for 30 seconds. `wire:navigate.no-prefetch` skips that. A bar appears at the top of the viewport when the request is still running after 150ms, then completes when the page is applied. `Wire.prefetch('/path')` stores the same cache entry.
+
+A component request clears the cache, so the next link does not reuse HTML from before the action. `this.effects = { redirect: '/orders/4' }` follows that redirect with `wire:navigate` when the URL is same-origin. Other origins use `location.assign`.
+
+## Keeping elements
+
+`@persist('nav')` renders a `wire:persist="nav"` wrapper. The node with that name is moved onto the next page, so Alpine state and form focus inside it survive. The name has to match.
+
+```edge
+@persist('nav')
+  <a href="/counter" wire:navigate>Counter</a>
+  <a href="/counter/about" wire:navigate>About</a>
+@end
+```
+
+`wire:persist="nav"` on your own element is the same marker. An empty `wire:persist` falls back to the element id. An island updated by `wire:click` still leaves nested `wire:id` nodes alone. A page swap morphs those islands to the next document.
+
+## Head, scripts, and scroll
+
+The title is replaced. Stylesheets and script files are added when the next page introduces them and left in place when it does not. A meta tag is replaced when the `name` or `property` matches. Inline scripts in the swapped region run. `data-navigate-once` on a script runs it a single time, and a script `src` is loaded once.
+
+A new page scrolls to the hash, or to the top. `wire:navigate.preserve-scroll` keeps the current scroll. Back and forward restore the scroll saved on that history entry. The panel scroll region is reset to the top on a new visit.
+
+The playground pages `/counter` and `/counter/about` are linked this way. The nav is persisted, so it stays mounted while the page body changes.

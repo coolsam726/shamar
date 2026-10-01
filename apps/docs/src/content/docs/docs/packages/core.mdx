@@ -1,0 +1,39 @@
+---
+title: Core
+description: The resource language. No HTTP, no database driver.
+---
+
+`@shamar/core` is the vocabulary of a Shamar panel. A `Resource`, a `TextInput`, a `TextColumn`, a page, an action, and a widget are all classes from this package. They describe a screen. They do not render it, and they do not query a database.
+
+That split is why the same resource works with SQL and with MongoDB. Core never imports Lucid or Mongoose. The [Adonis host](/docs/packages/adonis/) reads the description and asks an [adapter](/docs/packages/) to load records.
+
+## What you import
+
+Almost every resource file starts here:
+
+```ts
+import {
+  Resource,
+  form,
+  table,
+  infolist,
+  TextInput,
+  TextColumn,
+  TextEntry,
+} from '@shamar/core'
+```
+
+`form()`, `table()`, and `infolist()` are builders. You pass a callback, and inside it you describe the schema. `TextInput.make('name')` means "a text field whose value is stored on `name`." The string `'name'` is the model attribute, not a label. The label is derived from that name unless you call `.label()`.
+
+## What core deliberately does not do
+
+- It does not register HTTP routes. That is the host.
+- It does not know if `Product` is a Lucid model or a Mongoose model. The resource only holds `static model`.
+- It does not decide who is logged in. [Cherubim](/docs/packages/cherubim/) and your Adonis auth guard do that.
+- It does not ship the admin CSS or Edge views.
+
+If you are reading core's types and expecting a `render()` that returns HTML, you are in the wrong package. The HTML lives in `@shamar/adonis`.
+
+## How the rest of the docs use it
+
+The reference sections — [resources](/docs/reference/resources/), [forms](/docs/reference/forms/), [tables](/docs/reference/tables/), [infolists](/docs/reference/infolists/), [actions](/docs/reference/actions/), [pages](/docs/reference/pages/), [widgets](/docs/reference/widgets/) — are the catalog of this language. Each of those pages assumes you know you are describing UI, not writing a controller. This page is that assumption, stated once.

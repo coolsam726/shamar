@@ -335,6 +335,9 @@
   .inset-y-0 {
     inset-block: 0;
   }
+  .-top-0\.5 {
+    top: calc(var(--spacing) * -0.5);
+  }
   .top-0 {
     top: 0;
   }
@@ -343,6 +346,9 @@
   }
   .top-full {
     top: 100%;
+  }
+  .-right-0\.5 {
+    right: calc(var(--spacing) * -0.5);
   }
   .right-0 {
     right: 0;
@@ -632,9 +638,6 @@
   .max-w-\[12rem\] {
     max-width: 12rem;
   }
-  .max-w-\[40vw\] {
-    max-width: 40vw;
-  }
   .max-w-\[120px\] {
     max-width: 120px;
   }
@@ -686,6 +689,9 @@
   .min-w-0 {
     min-width: 0;
   }
+  .min-w-\[1rem\] {
+    min-width: 1rem;
+  }
   .min-w-\[2\.25rem\] {
     min-width: 2.25rem;
   }
@@ -694,6 +700,9 @@
   }
   .min-w-\[7rem\] {
     min-width: 7rem;
+  }
+  .min-w-\[9rem\] {
+    min-width: 9rem;
   }
   .min-w-\[10rem\] {
     min-width: 10rem;
@@ -1195,6 +1204,10 @@
   }
   .text-\[11px\] {
     font-size: 11px;
+  }
+  .leading-4 {
+    --tw-leading: calc(var(--spacing) * 4);
+    line-height: calc(var(--spacing) * 4);
   }
   .leading-6 {
     --tw-leading: calc(var(--spacing) * 6);
@@ -4017,9 +4030,26 @@ button:disabled, [aria-disabled='true'] {
   margin-top: auto;
   flex-shrink: 0;
 }
+.shamar-topbar__menu, .shamar-topbar__tools {
+  min-width: 0;
+}
+.shamar-topbar__tools {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 0 1 auto;
+}
 .shamar-topbar__menu {
   display: none;
   align-items: center;
+}
+.shamar-app-menu {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  overflow-x: auto;
 }
 @media (width >= 48rem) {
   .shamar-sidebar__roots {

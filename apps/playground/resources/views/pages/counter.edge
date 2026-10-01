@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Wire counter</title>
+    <meta name="csrf-token" content="{{ csrfToken }}" />
+    <script defer src="/wire.js"></script>
+  </head>
+  <body>
+    @persist('counter-nav')
+      <nav>
+        <a href="/counter" wire:navigate>Counter</a>
+        <a href="/counter/about" wire:navigate>About</a>
+      </nav>
+    @end
+    <h1>Wire counter</h1>
+    <wire:counter />
+  </body>
+</html>

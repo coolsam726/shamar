@@ -1,0 +1,149 @@
+---
+title: Kernel
+description: Public state, hooks, methods, refresh, and redirects.
+---
+
+Most apps never write this page. Put a class in `app/wire`, run `node ace make:wire`, and use `@wire('name')`. That path is [Install](/docs/wire/install/) and [Components](/docs/wire/adonis/).
+
+The kernel itself still takes an object with a `data` record. Use that when you are not on Adonis, or when you want the render function in the same file as the state.
+
+```ts
+import { WireKernel, escapeHtml, type WireComponent } from '@shamar/wire'
+
+class Note implements WireComponent {
+  data = { title: '', body: '', saved: false }
+
+  save(): void {
+    this.data.saved = this.data.title.trim().length > 0
+  }
+
+  updating(key: string, value: unknown): void {
+    if (key === 'title' && typeof value === 'string' && value.length > 80) {
+      throw new Error('Title is too long')
+    }
+  }
+}
+
+export const kernel = new WireKernel(process.env.APP_KEY!, {
+  note: {
+    create: () => new Note(),
+    render: (component) => {
+      const title = escapeHtml(String(component.data.title))
+      const body = escapeHtml(String(component.data.body))
+      const saved = component.data.saved ? 'Saved' : 'Draft'
+      return `
+        <form wire:submit="save">
+          <input wire:model="title" value="${title}" />
+          <textarea wire:model="body">${body}</textarea>
+          <button type="submit">${saved}</button>
+          <span wire:loading>Saving…</span>
+        </form>
+      `
+    },
+  },
+})
+```
+
+`create()` runs on every request. The kernel then copies the snapshot onto the new object, but only for keys that already exist. Put anything that must survive the next POST on `data`. Recompute the rest inside `refresh`, `updated`, or the action.
+
+## Order of a request
+
+1. `create()`.
+2. Copy snapshot `data` onto keys the new object already has. Extra client keys are dropped.
+3. `refresh(component)`, if you defined one.
+4. For each entry in `updates`: `updating(key, value)`, assign, `updated(key)`, then `updatedTitle()` when the key is `title`.
+5. Each `calls` entry, in order.
+6. Sign a new snapshot and render.
+
+Hooks and methods may be `async`. A throw returns an error response. The browser keeps the previous DOM.
+
+## Property hooks
+
+```ts
+class Cart implements WireComponent {
+  data = { qty: 1, total: 10 }
+
+  updating(_key: string, value: unknown): void {
+    if (_key === 'qty' && Number(value) < 1) {
+      throw new Error('Quantity must be at least 1')
+    }
+  }
+
+  updatedQty(): void {
+    this.data.total = Number(this.data.qty) * 10
+  }
+}
+```
+
+The specific hook name is `updated` plus the key with its first letter uppercased. `qty` becomes `updatedQty`. `query` becomes `updatedQuery`. There is no `updatingQty`. Use `updating(key, value)` for that.
+
+## Methods the browser can call
+
+`wire:click`, `wire:submit`, and `wire:keydown` send `calls`.
+
+```html
+<button type="button" wire:click="remove('sku-1')">Remove</button>
+<button type="button" wire:click="setQty(2)">Two</button>
+```
+
+```ts
+remove(sku: string): void {
+  this.data.items = (this.data.items as string[]).filter((item) => item !== sku)
+}
+
+setQty(qty: number): void {
+  this.data.qty = qty
+}
+```
+
+Quoted strings, numbers, `true`, `false`, and `null` keep their types. Anything else arrives as a string. `remove(sku-1)` without quotes is the string `"sku-1"`, because the hyphen is not a number.
+
+These names are rejected:
+
+`data`, `updated`, `call`, `constructor`, `hydrate`, `dehydrate`, `render`, and any name that starts with `_`.
+
+An unknown name throws `Unknown wire method`.
+
+## Redirects
+
+```ts
+place(): void {
+  const id = String(this.data.orderId)
+  this.effects = { redirect: `/orders/${id}` }
+}
+```
+
+The response includes `effects.redirect`. The browser navigates and does not morph. `effects` is not part of the signed `data`.
+
+## `refresh`
+
+Use `refresh` when a list lives in a database or a session and the snapshot should not be the source of truth.
+
+```ts
+kernel = new WireKernel(secret, {
+  inbox: {
+    create: () => ({ data: { open: false, items: [] as string[] } }),
+    async refresh(component) {
+      const open = component.data.open === true
+      component.data.items = await loadInbox()
+      component.data.open = open
+    },
+    render: (component) => `<!-- list component.data.items -->`,
+  },
+})
+```
+
+`refresh` runs after the snapshot is copied and before updates and calls. Keep flags such as `open` yourself, or the store overwrite will close the panel on every request.
+
+## Escaping
+
+`render` returns raw HTML. Escape every value that came from the user or a record.
+
+```ts
+import { escapeHtml, escapeAttr } from '@shamar/wire'
+
+const name = escapeHtml(String(component.data.name))
+return `<a href="/users/${escapeAttr(id)}" title="${escapeAttr(name)}">${name}</a>`
+```
+
+`escapeHtml` covers text and attributes that use double quotes. `escapeAttr` also escapes single quotes.

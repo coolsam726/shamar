@@ -10,9 +10,9 @@
     </svg>
   </button>
 
-  <div class="shamar-topbar__menu flex-1 min-w-0 overflow-visible">
+  <div class="shamar-topbar__menu flex-1 min-w-0 overflow-hidden">
     <nav
-      class="shamar-app-menu flex-1 min-w-0 flex flex-wrap items-center gap-1 overflow-visible"
+      class="shamar-app-menu flex-1 min-w-0"
       aria-label="{{ menuActiveRoot ? `${menuActiveRoot.label} menu` : 'App menu' }}"
     >
       @if(menuActiveRoot && menuActiveRoot.label !== 'Dashboard')
@@ -25,13 +25,14 @@
         @if(item.children && item.children.length)
           <div
             class="relative shrink-0"
-            x-data="{ open: false }"
-            @click.outside="open = false"
-            @keydown.escape.window="open = false"
+            x-data="shamarFloatingMenu()"
+            @click.outside="close()"
+            @keydown.escape.window="close()"
           >
             <button
               type="button"
-              @click="open = !open"
+              x-ref="trigger"
+              @click="toggle()"
               class="shamar-topbar-link flex items-center gap-1 px-2.5 py-1.5 rounded-md text-sm whitespace-nowrap {{ item.active ? 'is-active' : '' }}"
               :aria-expanded="open.toString()"
             >
@@ -43,8 +44,9 @@
             <div
               x-show="open"
               x-cloak
-              x-transition
-              class="absolute left-0 top-full z-50 mt-1 min-w-[10rem] shamar-card rounded-xl shadow-lg py-1"
+              x-ref="panel"
+              x-bind:style="panelStyle"
+              class="min-w-[10rem] shamar-card rounded-xl shadow-lg py-1"
             >
               @each(child in item.children)
                 <a href="{{ child.href }}" class="shamar-topbar-menu-item block px-3 py-1.5 text-sm whitespace-nowrap {{ child.active ? 'is-active' : '' }}">{{ child.label }}</a>
@@ -64,7 +66,7 @@
     <div class="md:hidden flex-1 min-w-0" aria-hidden="true"></div>
   @endif
 
-  <div class="flex items-center gap-2 shrink-0">
+  <div class="shamar-topbar__tools flex items-center gap-2 min-w-0">
     {{{ globalSearchHtml }}}
     {{{ notificationsHtml }}}
     <button

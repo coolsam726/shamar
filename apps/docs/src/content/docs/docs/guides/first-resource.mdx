@@ -5,7 +5,9 @@ description: Declare a Filament-style resource with form and table schemas.
 
 import DocScreenshot from '../../../../components/DocScreenshot.astro';
 
-A **resource** is a CRUD surface: list, create, edit, show — driven by builders on a model class.
+A resource is the unit of work in a Shamar panel. One class stands for one kind of record — products, companies, tickets — and the panel builds four screens from it: a list, a create form, an edit form, and a read-only show page. You do not add four routes or four Edge templates. You describe the form and the table, point the class at a model, and register it on a panel.
+
+This guide assumes the panel is already installed and you can open it in a browser. If `/admin` does not exist yet, do [Installation](/docs/guides/installation/) first. If the words "resource" and "panel" are still new, [Introduction](/docs/guides/introduction/) is the map. What follows is the smallest class that produces a real list and a real form.
 
 <DocScreenshot
   src="/screenshots/products-list.png"

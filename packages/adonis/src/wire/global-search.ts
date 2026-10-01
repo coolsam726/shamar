@@ -38,7 +38,7 @@ function renderSearch(component: WireComponent): string {
   const panel = open
     ? `<div class="absolute right-0 z-50 mt-1 w-full min-w-[16rem] max-h-80 overflow-auto shamar-card rounded-xl py-1">${rows}${empty}</div>`
     : '';
-  return `<div class="relative w-56 max-w-[40vw]">
+  return `<div class="relative w-56 max-w-full min-w-[9rem]">
     <input wire:model.debounce.250ms="query" type="search" value="${escapeHtml(query)}" placeholder="Search" aria-label="Search panel" class="w-full rounded-md border border-default bg-transparent px-2.5 py-1.5 text-sm text-body placeholder:text-body-subtle focus:outline-none focus:ring-2 focus:ring-fg-brand" />
     ${panel}
   </div>`;

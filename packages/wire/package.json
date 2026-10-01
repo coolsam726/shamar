@@ -1,7 +1,7 @@
 {
   "name": "@shamar/wire",
   "version": "0.3.0",
-  "description": "Server-driven reactive components for Shamar — the Livewire-style runtime for the 1.x panel.",
+  "description": "Server-driven reactive components. Usable on its own or inside a Shamar admin panel.",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -15,10 +15,12 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    }
+    },
+    "./client/wire.js": "./client/wire.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "client"
   ],
   "scripts": {
     "build": "tsc",

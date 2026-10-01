@@ -5,6 +5,10 @@ description: Singleton settings with SettingsPage and sticky Save.
 
 import DocScreenshot from '../../../../components/DocScreenshot.astro';
 
+A settings page is for values that exist once, not as a list of records. A site name, a support email, a feature flag: there is a single current value, and the screen is a form with a Save button that updates that value. A resource would force a list and an id in the URL. `SettingsPage` is the page type that skips the list and calls `fill()` to load the singleton and `save()` to write it back.
+
+This recipe is that screen. The general idea of pages that are not resources is [Pages](/docs/reference/pages/).
+
 <DocScreenshot
   src="/screenshots/settings.png"
   alt="Settings page with Branding and Preferences tabs"

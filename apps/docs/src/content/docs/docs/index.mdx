@@ -1,48 +1,47 @@
 ---
 title: Documentation
-description: Guides, concepts, and reference for building admin panels with Shamar.
+description: What Shamar is, then the guides and reference for building a panel.
 ---
 
 import DocScreenshot from '../../../components/DocScreenshot.astro';
 
-Welcome — Filament-style reference docs for every major building block.
+Shamar is an admin panel for AdonisJS. You describe resources in TypeScript. The panel serves the lists, forms, and navigation. Start with [Introduction](/docs/guides/introduction/) if you have not seen how those pieces fit. It explains the host, the database adapters, and what you still own before any install command.
 
 <DocScreenshot
   src="/screenshots/dashboard.png"
   alt="Shamar admin dashboard"
-  caption="Live playground at /demo — dashboard, resources, media, settings, and RBAC."
+  caption="A panel after sign-in — dashboard, sidebar, and resources. The live sandbox is at /demo."
   wide
 />
 
-## Quick start
+## Start here
+
+| If you want to… | Read |
+|-----------------|------|
+| Understand the product before installing | [Introduction](/docs/guides/introduction/) |
+| Add it to an Adonis app | [Installation](/docs/guides/installation/) |
+| Get one CRUD screen working | [Your first resource](/docs/guides/first-resource/) |
+| Click a seeded panel | [Live demo](/docs/guides/live-demo/) |
+| Use MongoDB, SQL, permissions, or a JSON API | [Packages](/docs/packages/) |
 
 ```bash
 pnpm add @shamar/adonis
 node ace configure @shamar/adonis
 ```
 
-| Step | Guide |
-|------|--------|
-| Install | [Installation](/docs/guides/installation/) |
-| First CRUD | [Your first resource](/docs/guides/first-resource/) |
-| Try it | [Live demo](/docs/guides/live-demo/) |
+## The panel, section by section
 
-## Component reference
+Each section below starts by explaining what the feature is. The pages inside it are the reference: method names, options, and examples.
 
-| Section | What you'll find |
-|---------|------------------|
-| [Resources](/docs/reference/resources/) | CRUD resources, registration, navigation, lifecycle |
-| [Forms](/docs/reference/forms/) | Every field type + schema layouts |
-| [Tables](/docs/reference/tables/) | TextColumn formats, filters, grouping |
-| [Infolists](/docs/reference/infolists/) | Show/detail entries |
-| [Widgets](/docs/reference/widgets/) | Dashboard stats, charts, lists |
-| [Actions](/docs/reference/actions/) | Header, row, and bulk actions |
-| [Pages](/docs/reference/pages/) | Settings, List, Dashboard, composite |
-
-## Concepts & recipes
-
-- [Wire](/docs/concepts/wire/) — the runtime admin panels run on
-- [Auth & RBAC](/docs/concepts/auth/)
-- [Media library](/docs/concepts/media/)
-- [Settings page recipe](/docs/recipes/settings-page/)
-- [Branding](/docs/recipes/branding/)
+| Section | What it is |
+|---------|------------|
+| [Resources](/docs/reference/resources/) | One model, exposed as list, create, edit, and show |
+| [Forms](/docs/reference/forms/) | The inputs on create and edit |
+| [Tables](/docs/reference/tables/) | The columns, search, and filters on a list |
+| [Infolists](/docs/reference/infolists/) | The read-only view of one record |
+| [Widgets](/docs/reference/widgets/) | The cards and charts on a dashboard |
+| [Actions](/docs/reference/actions/) | Buttons that do something to a record or a selection |
+| [Pages](/docs/reference/pages/) | Screens that are not a resource, such as settings |
+| [Wire](/docs/wire/) | Live components whose state lives on the server |
+| [Auth & RBAC](/docs/concepts/auth/) | Sign-in, then permissions |
+| [Media library](/docs/concepts/media/) | Files, folders, and file fields |

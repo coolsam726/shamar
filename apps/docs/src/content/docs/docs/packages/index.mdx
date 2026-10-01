@@ -1,0 +1,55 @@
+---
+title: Packages
+description: What each @shamar package is for, and which ones an app actually needs.
+---
+
+Shamar is not one npm package. The panel is a small set of packages that plug into each other. You install the ones your app needs. You do not install a database adapter you will not use, and you do not install authorization or a public API until those features are real work.
+
+This section explains each package in plain terms: the problem it solves, where it sits, and the minimum configuration that turns it on. The API details live on each page.
+
+## The required trio
+
+Every panel is these three:
+
+| Package | You write against it? | What it is |
+|---------|------------------------|------------|
+| [`@shamar/core`](/docs/packages/core/) | Yes | The resource, form, and table language |
+| [`@shamar/adonis`](/docs/packages/adonis/) | Yes, as the host | Routes, Edge screens, the provider |
+| One adapter | Rarely, by hand | Talks to the database |
+
+The adapter is a choice:
+
+- [`@shamar/lucid`](/docs/packages/lucid/) — SQL databases through Adonis Lucid.
+- [`@shamar/mongoose`](/docs/packages/mongoose/) — MongoDB through Mongoose.
+
+`node ace configure @shamar/adonis` asks which one you want and sets `orm` in `config/shamar.ts`. `@shamar/adonis` already depends on both adapters, so choosing one does not mean a second install of Shamar itself. You still install the database library your adapter needs (`@adonisjs/lucid` or `mongoose`) and you still own the connection: migrations for SQL, `mongoose.connect` for MongoDB.
+
+## Add-ons
+
+These are useful and independent. Leave them out until you want the feature.
+
+| Package | When you want it |
+|---------|------------------|
+| [`@shamar/cherubim`](/docs/packages/cherubim/) | Staff must have different permissions, or machines call the API with a key |
+| [`@shamar/rest`](/docs/packages/rest/) | The same resources should be available as JSON, with an OpenAPI page |
+| [`@shamar/wire`](/docs/wire/) | A piece of UI must update from the server without a full reload. On npm as `0.3.0`. New versions are published by GitHub Actions (`publish.yml`), which is the npm trusted publisher |
+
+Wire has its own section in the sidebar because it is also a standalone component toolkit. You can use it on a normal Adonis page that never mounts an admin panel. The other add-ons are panel companions.
+
+## A picture of one request
+
+```text
+Browser  →  @shamar/adonis (routes, HTML)
+              ↓
+         @shamar/core (what the screen means)
+              ↓
+         @shamar/lucid  or  @shamar/mongoose
+              ↓
+         SQL database   or  MongoDB
+```
+
+Cherubim, when present, sits beside the host and answers "is this user allowed?" before the adapter runs. REST, when present, exposes a second door — JSON instead of HTML — onto the same resources.
+
+## Where to go
+
+Start with [Core](/docs/packages/core/) if you want the vocabulary, [Adonis](/docs/packages/adonis/) if you want the host, then the database page that matches your app. The playground uses Mongoose, so [MongoDB](/docs/packages/mongoose/) is the path that matches the [live demo](/docs/guides/live-demo/).

@@ -20,6 +20,20 @@ export interface WireRequest {
   calls?: Array<{ method: string; params?: unknown[] }>;
 }
 
+/**
+ * HTML attributes arrive as strings. When the class field is a number or
+ * boolean, `<wire:counter count="4" />` should still seed that field.
+ */
+function seedValue(current: unknown, incoming: unknown): unknown {
+  if (typeof current === 'number' && typeof incoming === 'string' && /^-?\d+(\.\d+)?$/.test(incoming)) {
+    return Number(incoming);
+  }
+  if (typeof current === 'boolean' && typeof incoming === 'string') {
+    return incoming === 'true' || incoming === '1';
+  }
+  return incoming;
+}
+
 export interface WireEnvelope {
   snapshot: WireSnapshot;
   html: string;
@@ -37,9 +51,19 @@ export class WireKernel {
    * islands: they keep their own snapshot and the browser does not morph them
    * when the parent re-renders.
    */
-  mount(name: string, endpoint: string, slots?: Record<string, string>): WireEnvelope {
+  mount(
+    name: string,
+    endpoint: string,
+    slots?: Record<string, string>,
+    state?: Record<string, unknown>,
+  ): WireEnvelope {
     const definition = this.require(name);
     const component = definition.create();
+    if (state) {
+      for (const [key, value] of Object.entries(state)) {
+        if (key in component.data) component.data[key] = seedValue(component.data[key], value);
+      }
+    }
     const nested = this.mountChildren(slots, endpoint);
     const snapshot = signSnapshot(this.secret, {
       id: newComponentId(),

@@ -1,0 +1,105 @@
+---
+title: Components
+description: Where classes live, how names are chosen, and which hooks the class can define.
+---
+
+`node ace make:wire posts/form` is the whole registration step. On the next boot the class is available as `@wire('posts.form')`.
+
+## Discovery
+
+The provider walks `app/wire` recursively and imports each `.ts` or `.js` file. The file must `export default` a class. Files that do not are skipped. A missing `app/wire` directory is an empty registry, not an error.
+
+The tag is the path relative to `app/wire`, with `/` replaced by `.` and each segment written in kebab case:
+
+| File | Tag | View |
+|------|-----|------|
+| `counter.ts` | `counter` | `resources/views/wire/counter.edge` |
+| `posts/form.ts` | `posts.form` | `resources/views/wire/posts/form.edge` |
+| `posts/create_form.ts` | `posts.create-form` | `resources/views/wire/posts/create_form.edge` |
+
+Two files that produce the same tag fail boot with `Duplicate Wire component`.
+
+Override either side with static fields. You still default-export the class.
+
+```ts
+import { Wire } from '@shamar/adonis'
+
+export default class CreateForm extends Wire {
+  static componentName = 'posts.create'
+  static view = 'posts/create'
+}
+```
+
+`static view` is the path under `resources/views/wire`, without `.edge`.
+
+## State and actions
+
+Public instance fields are the snapshot. Methods on the class are `wire:click` and `wire:submit` actions. Each request constructs a new instance, copies the signed snapshot onto those fields, then runs the action.
+
+```ts
+import { Wire } from '@shamar/adonis'
+
+export default class Counter extends Wire {
+  count = 0
+
+  increment() {
+    this.count++
+  }
+}
+```
+
+Only those field names can be written from the browser. A method cannot be used as a model, and a field that is not declared is dropped.
+
+These names are reserved and cannot be called from the browser: `data`, `updated`, `call`, `constructor`, `hydrate`, `dehydrate`, `render`, and anything starting with `_`.
+
+## Hooks
+
+```ts
+import { Wire } from '@shamar/adonis'
+
+export default class Editor extends Wire {
+  title = ''
+
+  updating(key: string, value: unknown) {
+    if (key === 'title' && typeof value === 'string' && value.length > 80) {
+      throw new Error('Title is too long')
+    }
+  }
+
+  updatedTitle() {
+    this.title = this.title.trim()
+  }
+
+  refresh() {
+    // Runs on every request, after the snapshot is copied and before updates.
+  }
+}
+```
+
+`updating(key, value)` runs before the assignment. `updated(key)` runs after it, and so does `updated` + the capitalized key (`updatedTitle`). `refresh()` reloads server-owned lists before the user's change is applied. Throw to reject the request; the previous snapshot stays in the browser.
+
+## Redirects
+
+```ts
+this.effects = { redirect: '/orders/4' }
+```
+
+The browser navigates with `location.assign`. The redirect is not stored in the snapshot.
+
+## Views
+
+The view receives the public fields as Edge data. Escape user text with `{{ title }}`. A missing view renders a short message inside the island instead of a blank island.
+
+`<wire:counter />` and `@wire('counter')` both emit the island. `{{{ wire('counter') }}}` is the same helper. Use one component per `@wire` line. The element form accepts attributes: `title="Hello"` is a string, `:count="4"` and `count="{{ starting }}"` are JavaScript.
+
+## Passing props
+
+```edge
+@wire('counter', { count: 4 })
+```
+
+Props fill fields that already exist on a new instance. They do not add new fields, and they are only applied on `mount`. Later requests use the snapshot.
+
+## The kernel object
+
+The class above is an adapter. The kernel still stores `{ data, methods }` and a `render` function. That shape is what [Without Adonis](/docs/wire/node/) and [the kernel page](/docs/wire/components/) use when you build the component yourself. `registerWire(router, { kernel })` is the same helper the provider calls, for a kernel you constructed by hand.
