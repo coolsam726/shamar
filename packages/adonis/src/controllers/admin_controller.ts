@@ -83,8 +83,14 @@ import {
   relationTableListMeta,
 } from '../shamar/relation-table.js';
 import { resolveDashboardWidgets } from '../shamar/dashboard-widgets.js';
-import { updateGlobalSearch } from '../wire/global-search.js';
 import type { WireRequest } from '@shamar/wire';
+import { handleWireRequest } from '../wire/handle.js';
+import { listNotifications, pushNotification } from '../wire/notifications.js';
+import { relationManagerHtml } from '../wire/relation-manager.js';
+import { storeWireUpload } from '../wire/uploads.js';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { readFile } from 'node:fs/promises';
 
 export class AdminController {
   private readonly resources: ResourceController;
@@ -232,6 +238,7 @@ export class AdminController {
       authCtx,
       flash: readFlash(ctx),
       masquerade: isMasqueradeSession(ctx.session) ? { active: true } : undefined,
+      notifications: listNotifications(ctx.session),
       mediaNav: this.panel.media
         ? {
             label: this.panel.media.label,
@@ -280,9 +287,34 @@ export class AdminController {
   async wire(ctx: ShamarHttpContext) {
     const authResult = await this.ensureAuthenticated(ctx, true);
     if (!this.isAuthContext(authResult)) return authResult;
-    const body = ctx.request.body() as WireRequest;
-    const updated = await updateGlobalSearch(this.panel, this.authorizer, authResult, body);
-    return ctx.response.json(updated);
+    try {
+      const body = ctx.request.body() as WireRequest;
+      const updated = await handleWireRequest({
+        panel: this.panel,
+        authorizer: this.authorizer,
+        authCtx: authResult,
+        session: ctx.session,
+        request: body,
+      });
+      return ctx.response.json(updated);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Wire request failed';
+      return ctx.response.badRequest({ message });
+    }
+  }
+
+  async wireUpload(ctx: ShamarHttpContext) {
+    const authResult = await this.ensureAuthenticated(ctx, true);
+    if (!this.isAuthContext(authResult)) return authResult;
+    const uploaded = ctx.request.file('file', { size: '20mb' });
+    if (!uploaded) return ctx.response.badRequest({ message: 'No file uploaded' });
+    const name = String(uploaded.clientName || 'upload');
+    const contents = uploaded.tmpPath ? await readFile(uploaded.tmpPath) : Buffer.alloc(0);
+    const stored = await storeWireUpload(join(tmpdir(), 'shamar-wire-uploads'), {
+      name,
+      contents,
+    });
+    return ctx.response.json(stored);
   }
 
   async index(ctx: ShamarHttpContext, options?: { asJson?: boolean }) {
@@ -551,6 +583,13 @@ export class AdminController {
         : await this.resolveRecordPager(ctx, meta, String(record.id), 'show'),
       resolveGridItemStyle,
       recordActions: visibleRowActions(meta, policy, record),
+      relationManagersHtml: await relationManagerHtml(
+        this.basePath,
+        this.panel.adapter,
+        meta,
+        record,
+        this.registry,
+      ),
     });
   }
 
@@ -1002,6 +1041,7 @@ export class AdminController {
     }
 
     ctx.session.flash('success', `${meta.singularLabel} deleted`);
+    pushNotification(ctx.session, { title: `${meta.singularLabel} deleted` });
     return ctx.response.redirect(this.listRedirect(meta, ctx));
   }
 
@@ -1026,6 +1066,7 @@ export class AdminController {
     }
 
     ctx.session.flash('success', `${meta.singularLabel} restored`);
+    pushNotification(ctx.session, { title: `${meta.singularLabel} restored` });
     return ctx.response.redirect(this.listRedirect(meta, ctx));
   }
 
@@ -1050,6 +1091,7 @@ export class AdminController {
     }
 
     ctx.session.flash('success', `${meta.singularLabel} deleted permanently`);
+    pushNotification(ctx.session, { title: `${meta.singularLabel} deleted permanently` });
     return ctx.response.redirect(this.listRedirect(meta, ctx));
   }
 
@@ -1777,6 +1819,7 @@ export class AdminController {
       authCtx: authResult,
       flash: readFlash(ctx),
       masquerade: isMasqueradeSession(ctx.session) ? { active: true } : undefined,
+      notifications: listNotifications(ctx.session),
       mediaNav: this.panel.media
         ? {
             label: this.panel.media.label,
@@ -1839,6 +1882,7 @@ export class AdminController {
       authCtx: authResult,
       flash: readFlash(ctx),
       masquerade: isMasqueradeSession(ctx.session) ? { active: true } : undefined,
+      notifications: listNotifications(ctx.session),
       mediaNav: this.panel.media
         ? {
             label: this.panel.media.label,
@@ -1946,6 +1990,7 @@ export class AdminController {
       authCtx: authResult,
       flash: readFlash(ctx),
       masquerade: isMasqueradeSession(ctx.session) ? { active: true } : undefined,
+      notifications: listNotifications(ctx.session),
       mediaNav: this.panel.media
         ? {
             label: this.panel.media.label,
@@ -2301,6 +2346,7 @@ export class AdminController {
       authCtx: authResult,
       flash: readFlash(ctx),
       masquerade: isMasqueradeSession(ctx.session) ? { active: true } : undefined,
+      notifications: listNotifications(ctx.session),
       mediaNav: this.panel.media
         ? {
             label: this.panel.media.label,

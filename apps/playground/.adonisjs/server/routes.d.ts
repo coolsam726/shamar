@@ -7,6 +7,9 @@ export type ScannedRoutes = {
     'shamar.admin.assets.adminCss': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.brandingCss': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.shamarUi': { paramsTuple?: []; params?: {} }
+    'shamar.admin.assets.wireJs': { paramsTuple?: []; params?: {} }
+    'shamar.admin.wire': { paramsTuple?: []; params?: {} }
+    'shamar.admin.wire.upload': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.legacyUi': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.alpineJs': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.flowbiteDatepickerCss': { paramsTuple?: []; params?: {} }
@@ -56,6 +59,9 @@ export type ScannedRoutes = {
     'shamar.app.assets.adminCss': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.brandingCss': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.shamarUi': { paramsTuple?: []; params?: {} }
+    'shamar.app.assets.wireJs': { paramsTuple?: []; params?: {} }
+    'shamar.app.wire': { paramsTuple?: []; params?: {} }
+    'shamar.app.wire.upload': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.legacyUi': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.alpineJs': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.flowbiteDatepickerCss': { paramsTuple?: []; params?: {} }
@@ -123,6 +129,7 @@ export type ScannedRoutes = {
     'shamar.admin.assets.adminCss': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.brandingCss': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.shamarUi': { paramsTuple?: []; params?: {} }
+    'shamar.admin.assets.wireJs': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.legacyUi': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.alpineJs': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.flowbiteDatepickerCss': { paramsTuple?: []; params?: {} }
@@ -146,6 +153,7 @@ export type ScannedRoutes = {
     'shamar.app.assets.adminCss': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.brandingCss': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.shamarUi': { paramsTuple?: []; params?: {} }
+    'shamar.app.assets.wireJs': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.legacyUi': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.alpineJs': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.flowbiteDatepickerCss': { paramsTuple?: []; params?: {} }
@@ -179,6 +187,7 @@ export type ScannedRoutes = {
     'shamar.admin.assets.adminCss': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.brandingCss': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.shamarUi': { paramsTuple?: []; params?: {} }
+    'shamar.admin.assets.wireJs': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.legacyUi': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.alpineJs': { paramsTuple?: []; params?: {} }
     'shamar.admin.assets.flowbiteDatepickerCss': { paramsTuple?: []; params?: {} }
@@ -202,6 +211,7 @@ export type ScannedRoutes = {
     'shamar.app.assets.adminCss': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.brandingCss': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.shamarUi': { paramsTuple?: []; params?: {} }
+    'shamar.app.assets.wireJs': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.legacyUi': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.alpineJs': { paramsTuple?: []; params?: {} }
     'shamar.app.assets.flowbiteDatepickerCss': { paramsTuple?: []; params?: {} }
@@ -232,6 +242,8 @@ export type ScannedRoutes = {
     'session.create': { paramsTuple?: []; params?: {} }
   }
   POST: {
+    'shamar.admin.wire': { paramsTuple?: []; params?: {} }
+    'shamar.admin.wire.upload': { paramsTuple?: []; params?: {} }
     'shamar.admin.media.folders.create': { paramsTuple?: []; params?: {} }
     'shamar.admin.media.folders.rename': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'shamar.admin.media.folders.move': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -256,6 +268,8 @@ export type ScannedRoutes = {
     'shamar.admin.resources.forceDelete': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
     'shamar.admin.resources.destroy': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
     'shamar.admin.resources.update': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'id': ParamValue} }
+    'shamar.app.wire': { paramsTuple?: []; params?: {} }
+    'shamar.app.wire.upload': { paramsTuple?: []; params?: {} }
     'shamar.app.media.folders.create': { paramsTuple?: []; params?: {} }
     'shamar.app.media.folders.rename': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'shamar.app.media.folders.move': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }

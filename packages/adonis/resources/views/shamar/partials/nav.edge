@@ -38,6 +38,7 @@
     @each(root in menuRoots)
       <a
         href="{{ root.href }}"
+        wire:navigate
         class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md text-sm {{ root.active ? 'nav-active' : '' }}"
         @click="sidebarOpen = false"
       >

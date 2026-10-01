@@ -139,6 +139,7 @@ function registerPanelRoutes(
     router.get('/assets/shamar-ui.js', assetHandler('shamarUi')).as(`${routePrefix}.assets.shamarUi`);
     router.get('/assets/wire.js', assetHandler('wireJs')).as(`${routePrefix}.assets.wireJs`);
     router.post('/wire', handler('wire')).as(`${routePrefix}.wire`);
+    router.post('/wire/upload', handler('wireUpload')).as(`${routePrefix}.wire.upload`);
     router.get('/assets/loom-ui.js', assetHandler('shamarUi')).as(`${routePrefix}.assets.legacyUi`);
     router
       .get('/assets/alpine.min.js', assetHandler('alpineJs'))

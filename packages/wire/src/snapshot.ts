@@ -5,6 +5,8 @@ export interface WireSnapshot {
   name: string;
   data: Record<string, unknown>;
   checksum: string;
+  /** Stable child islands, keyed by slot name. Each child is signed on its own. */
+  children?: Record<string, WireSnapshot>;
 }
 
 export function newComponentId(): string {
@@ -24,7 +26,9 @@ export function signSnapshot(
   snapshot: Omit<WireSnapshot, 'checksum'>,
 ): WireSnapshot {
   const checksum = createHmac('sha256', secret)
-    .update(`${snapshot.id}:${snapshot.name}:${canonical(snapshot.data)}`)
+    .update(
+      `${snapshot.id}:${snapshot.name}:${canonical(snapshot.data)}:${canonical(snapshot.children ?? null)}`,
+    )
     .digest('hex');
   return { ...snapshot, checksum };
 }
@@ -34,6 +38,7 @@ export function verifySnapshot(secret: string, snapshot: WireSnapshot): boolean 
     id: snapshot.id,
     name: snapshot.name,
     data: snapshot.data,
+    children: snapshot.children,
   });
   const left = Buffer.from(expected.checksum);
   const right = Buffer.from(String(snapshot.checksum ?? ''));
