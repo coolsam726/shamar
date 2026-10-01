@@ -133,22 +133,30 @@ web: sessionGuard({
 
 Sign-in still hashes the password with Adonis `hash` and writes the session. Only the user row comes from MongoDB. The playground does this for the same `User` documents the panel edits.
 
-## 6. Then configure the panel
+## 6. Then add a panel class
 
-Only after the connection, models, and auth provider exist:
+Only after the connection, models, and auth provider exist, point a panel at `orm: 'mongoose'` from config and discover Mongoose models from the panel class:
 
 ```ts
-import { defineConfig, panel } from '@shamar/adonis'
-import ProductResource from '#resources/admin/product_resource'
+// config/shamar.ts
+import { defineConfig } from '@shamar/adonis'
 
 export default defineConfig({
   orm: 'mongoose',
-  panels: [
-    panel('admin')
-      .path('/admin')
-      .discoverResources('app/resources/admin'),
-  ],
 })
+```
+
+```ts
+// app/panels/admin/panel.ts
+import { PanelProvider, panel } from '@shamar/adonis'
+
+export default class AdminPanel extends PanelProvider {
+  panel() {
+    return panel('admin')
+      .path('/admin')
+      .discoverResources('app/panels/admin/resources')
+  }
+}
 ```
 
 ```ts

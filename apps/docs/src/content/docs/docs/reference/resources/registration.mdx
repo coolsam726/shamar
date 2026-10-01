@@ -3,22 +3,29 @@ title: Registering resources
 description: How a resource class becomes a set of routes.
 ---
 
-Registration is the step that connects a resource class to a panel. Writing `class ProductResource` does nothing until the panel knows the class exists. Discovery walks a directory and loads every class whose name ends in `Resource`. An explicit list is the alternative when you want to choose the classes by hand, or when they do not live in that folder.
+Registration is how a panel learns about a resource, and how the app learns about a panel.
 
-Either way, the result is the same: the host builds list, create, edit, and show routes for each class under the panel path.
+A panel is a class the provider discovers. `app/panels/admin/panel.ts` is the admin panel. `node ace make:panel billing` creates the next one. `config/shamar.ts` does not list them. It holds the database choice, sign-in, and branding that every panel shares. Putting `panel('admin')` inside that config still works, and a class with the same id replaces it.
+
+A resource is a class the panel discovers. Writing `class ProductResource` does nothing until it sits in the directory that panel names with `.discoverResources()`, or you pass the class to `.resources([...])`. Discovery loads every default export whose name ends in `Resource`.
 
 ```ts
-// config/shamar.ts
-panel('admin')
-  .path('/demo')
-  .discoverResources('app/resources/admin')
-  .resources([UserResource])
+// app/panels/admin/panel.ts
+import { PanelProvider, panel } from '@shamar/adonis'
+
+export default class AdminPanel extends PanelProvider {
+  panel() {
+    return panel('admin')
+      .path('/admin')
+      .discoverResources('app/panels/admin/resources')
+      .resources([UserResource])
+  }
+}
 ```
 
-Use `.discoverResources('app/resources/admin')` to auto-load classes ending in `Resource`, or pass explicit classes to `.resources([...])`.
-
-Generate a stub:
+Generate a resource stub:
 
 ```bash
 node ace shamar:make-resource Product --group Catalog
+node ace make:panel billing
 ```

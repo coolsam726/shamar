@@ -91,7 +91,7 @@ Nothing in that flow builds a separate single-page application by hand. Interact
 
 ## Panels
 
-A panel is one mounted admin area: its own URL prefix, its own set of resources, and its own branding. A simple app has one panel at `/admin`. The playground mounts more than one so a public demo can live next to another panel in the same process. Each panel is a `panel('name')` call in `config/shamar.ts`.
+A panel is one mounted admin area: its own URL prefix, its own resources, and its own branding. Each panel is a class in `app/panels/{id}/panel.ts`. The Shamar provider discovers those classes on boot. `config/shamar.ts` stays the place for the database, sign-in, and branding shared by every panel. `node ace make:panel billing` adds another panel. The playground uses this so `/demo` and `/app` are two classes, not two blocks in the config file.
 
 ## What is optional
 
