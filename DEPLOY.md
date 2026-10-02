@@ -143,6 +143,29 @@ Custom domains: `shamar.dev` and `www.shamar.dev`. The Worker is the origin for 
 
 Optional: add a Cloudflare Redirect Rule so `docs.shamar.dev/*` → `https://shamar.dev/docs/$1` (301).
 
+**www → apex:** Workers Assets `_redirects` only allows *relative* URLs, so host redirects cannot live in the static build. In the Cloudflare dashboard, add a **Redirect Rule** (or Bulk Redirect):
+
+| Field | Value |
+|-------|--------|
+| If | Hostname equals `www.shamar.dev` |
+| Then | Dynamic redirect to `concat("https://shamar.dev", http.request.uri.path)` (301) — preserve query string |
+
+The static build ships `robots.txt` (with a `Sitemap:` line) and `/og.png` for social/search previews.
+
+## Search engines (Google)
+
+1. Confirm production serves:
+   - `https://shamar.dev/robots.txt` (includes `Sitemap: https://shamar.dev/sitemap-index.xml`)
+   - `https://shamar.dev/sitemap-index.xml`
+   - Landing + docs HTML with `canonical`, `og:image`, and `twitter:card`
+2. In [Google Search Console](https://search.google.com/search-console), add the **URL prefix** `https://shamar.dev/` (or a Domain property covering apex + www).
+3. Verify ownership (DNS TXT on Cloudflare is simplest).
+4. **Sitemaps → Add sitemap** → `sitemap-index.xml`.
+5. Use **URL Inspection** on `https://shamar.dev/` and `https://shamar.dev/docs/` → Request indexing.
+6. Optional: [Bing Webmaster Tools](https://www.bing.com/webmasters) with the same sitemap.
+
+Do not set a custom domain for Worker **preview** URLs; leave PR previews on `*.workers.dev` so they stay out of the primary property.
+
 ## GitHub Pages (legacy redirect)
 
 `https://coolsam726.github.io/shamar/` still deploys from [`.github/workflows/pages.yml`](.github/workflows/pages.yml), but only as a client-side redirect to `https://shamar.dev/` (path under `/shamar` is preserved). Do **not** set a GitHub Pages custom domain to `shamar.dev` — Cloudflare already serves that hostname.

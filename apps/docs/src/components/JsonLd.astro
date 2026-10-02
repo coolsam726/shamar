@@ -1,0 +1,55 @@
+---
+/**
+ * JSON-LD for the marketing landing (Organization + WebSite + SoftwareApplication).
+ */
+const site = Astro.site ?? new URL('https://shamar.dev');
+const demo = import.meta.env.PUBLIC_DEMO_URL || 'https://demo.shamar.dev';
+
+const graph = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': `${site.origin}/#organization`,
+      name: 'Shamar',
+      url: site.origin,
+      logo: {
+        '@type': 'ImageObject',
+        url: new URL('/branding/shamar-logo.png', site).href,
+      },
+      sameAs: ['https://github.com/coolsam726/shamar'],
+    },
+    {
+      '@type': 'WebSite',
+      '@id': `${site.origin}/#website`,
+      url: site.origin,
+      name: 'Shamar',
+      description:
+        'Filament-inspired admin panel for AdonisJS — resources, forms, tables, pages, and REST.',
+      publisher: { '@id': `${site.origin}/#organization` },
+      inLanguage: 'en',
+    },
+    {
+      '@type': 'SoftwareApplication',
+      '@id': `${site.origin}/#software`,
+      name: 'Shamar',
+      applicationCategory: 'DeveloperApplication',
+      operatingSystem: 'Node.js',
+      url: site.origin,
+      downloadUrl: 'https://www.npmjs.com/package/@shamar/adonis',
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'USD',
+      },
+      description:
+        'Declarative admin panels for AdonisJS with resources, forms, tables, Wire, RBAC, and REST.',
+      author: { '@id': `${site.origin}/#organization` },
+      screenshot: new URL('/og.png', site).href,
+      sameAs: [demo, 'https://github.com/coolsam726/shamar'],
+    },
+  ],
+};
+---
+
+<script type="application/ld+json" set:html={JSON.stringify(graph)} />

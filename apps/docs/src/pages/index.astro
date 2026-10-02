@@ -2,6 +2,8 @@
 import SiteNav from '../components/SiteNav.astro';
 import DemoCredentials from '../components/DemoCredentials.astro';
 import Lightbox from '../components/Lightbox.astro';
+import SeoHead from '../components/SeoHead.astro';
+import JsonLd from '../components/JsonLd.astro';
 import { demoHref } from '../lib/demo-url';
 
 const demoHome = demoHref('/');
@@ -29,19 +31,17 @@ const gallery = [
     caption: 'Folders, uploads, visibility, and FilePicker integration.',
   },
 ];
+
+const pageTitle = 'Shamar — Admin panels for AdonisJS';
+const pageDescription =
+  'Filament-inspired admin panel for AdonisJS — declarative resources, forms, tables, pages, Wire, RBAC, and REST. Docs and live demo.';
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta
-      name="description"
-      content="Filament-inspired admin panel for AdonisJS — resources, forms, tables, and pages."
-    />
-    <meta name="theme-color" content="#f1511b" />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <SeoHead title={pageTitle} description={pageDescription} path="/" />
+    <JsonLd />
     <script is:inline>
       (function () {
         var stored = typeof localStorage !== 'undefined' && localStorage.getItem('starlight-theme');
@@ -60,7 +60,6 @@ const gallery = [
       href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Poppins:wght@700;800;900&display=swap"
       rel="stylesheet"
     />
-    <title>Shamar — Admin panels for AdonisJS</title>
   </head>
   <body class="landing">
     <div class="landing__atmosphere" aria-hidden="true">

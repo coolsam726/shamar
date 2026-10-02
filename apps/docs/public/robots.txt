@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Primary sitemap (also linked from HTML <head> on docs pages)
+Sitemap: https://shamar.dev/sitemap-index.xml
