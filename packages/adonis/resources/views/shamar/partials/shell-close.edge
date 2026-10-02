@@ -22,7 +22,6 @@
       }
       return {
         sidebarOpen: false,
-        themeOpen: false,
         themePref: readThemePref(),
         init() {
           applyTheme(this.themePref);
@@ -38,7 +37,11 @@
         setTheme(pref) {
           this.themePref = pref;
           applyTheme(pref);
-          this.themeOpen = false;
+        },
+        cycleTheme() {
+          const order = ['light', 'dark', 'system'];
+          const next = order[(order.indexOf(this.themePref) + 1) % order.length];
+          this.setTheme(next);
         },
       };
     }

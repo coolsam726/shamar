@@ -82,7 +82,7 @@ const BELL_ICON = `<svg class="shamar-notifications__bell-icon" fill="none" stro
 
 const ENVELOPE_CLOSED = `<svg class="shamar-notifications__envelope" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/></svg>`;
 
-const ENVELOPE_OPEN = `<svg class="shamar-notifications__envelope" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 9v.906a2.25 2.25 0 01-1.183 1.981l-6.478 3.488M2.25 9v.906a2.25 2.25 0 001.183 1.981l6.478 3.488m8.603L10.5 15.166m0 0l-6.478-3.488M10.5 15.166l6.478 3.488M3.433 7.669l6.478 3.489a2.25 2.25 0 002.178 0l6.478-3.489M3.433 7.669l-.682-.368A2.25 2.25 0 012.25 5.25h19.5a2.25 2.25 0 01.682 2.051l-.682.368"/></svg>`;
+const ENVELOPE_OPEN = `<svg class="shamar-notifications__envelope" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 9v.906a2.25 2.25 0 01-1.183 1.981l-6.478 3.488M2.25 9v.906a2.25 2.25 0 001.183 1.981l6.478 3.488m8.603 0L10.5 15.166m0 0L4.022 11.678M10.5 15.166l6.478 3.488M3.432 7.669l6.478 3.489a2.25 2.25 0 002.178 0l6.478-3.489M3.432 7.669A2.25 2.25 0 012.25 5.25h19.5a2.25 2.25 0 011.183 2.051l-.682.368m0 0V19.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V7.301l.682.368"/></svg>`;
 
 function formatWhen(iso: string): string {
   const date = new Date(iso);
@@ -190,8 +190,9 @@ function renderBell(component: WireComponent): string {
   const unreadItems = items.filter((item) => !item.readAt);
   const unreadCount = unreadItems.length;
   const detail = detailId ? items.find((item) => item.id === detailId) : undefined;
+  const rootClass = `shamar-notifications relative${detail ? ' is-detail-open' : ''}${aside ? ' is-aside-open' : ''}`;
 
-  return `<div class="shamar-notifications relative">
+  return `<div class="${rootClass}">
     <button type="button" wire:click="toggle" class="shamar-notifications__bell" aria-label="Notifications" aria-expanded="${open ? 'true' : 'false'}">
       ${BELL_ICON}
       ${unreadCount ? `<span class="shamar-notifications__badge">${unreadCount}</span>` : ''}
@@ -225,16 +226,18 @@ function bellComponent(items: PanelNotification[], session?: NotificationSession
       this.data.open = false;
       this.data.aside = true;
     },
-    closeAside() {
-      this.data.aside = false;
-    },
     openDetail(id: string) {
       if (session) markNotificationRead(session, id);
       this.data.items = reload();
       this.data.open = false;
+      // Keep the aside open when opening from "View all".
       this.data.detailId = id;
     },
     closeDetail() {
+      this.data.detailId = null;
+    },
+    closeAside() {
+      this.data.aside = false;
       this.data.detailId = null;
     },
     toggleRead(id: string) {

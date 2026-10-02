@@ -6198,6 +6198,7 @@
     bindListRowNavigation();
     bindMediaUploads();
     bindFormSaveShortcut();
+    bindGlobalSearchShortcut();
     bindFormAutosave();
     bindRecordPagerNav();
     bindStickyPageHeading();
@@ -6443,6 +6444,39 @@
         document.querySelector('[data-shamar-form-save]:not([disabled])') ||
         form.querySelector('button[type="submit"]:not([disabled])');
       if (btn) btn.click();
+    });
+  }
+
+  function bindGlobalSearchShortcut() {
+    document.addEventListener('keydown', (event) => {
+      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') return;
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.closest('[contenteditable="true"]') ||
+          target.closest('.cm-editor, .monaco-editor'))
+      ) {
+        return;
+      }
+      const root = document.querySelector('[data-shamar-global-search]');
+      if (!root) return;
+      event.preventDefault();
+      const input = root.querySelector('[data-shamar-search-input]');
+      const expandBtn = root.querySelector('.shamar-global-search__icon-btn');
+      const panel = root.querySelector('.shamar-global-search__panel');
+      const isDesktop = window.matchMedia('(min-width: 48rem)').matches;
+      if (!isDesktop && expandBtn instanceof HTMLElement && panel && !panel.classList.contains('is-expanded')) {
+        expandBtn.click();
+        window.setTimeout(() => {
+          const next = root.querySelector('[data-shamar-search-input]');
+          if (next instanceof HTMLInputElement) next.focus();
+        }, 50);
+        return;
+      }
+      if (input instanceof HTMLInputElement) {
+        input.focus();
+        input.select();
+      }
     });
   }
 

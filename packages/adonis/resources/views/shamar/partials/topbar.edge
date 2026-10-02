@@ -10,6 +10,30 @@
     </svg>
   </button>
 
+  <a
+    href="{{ basePath || '/' }}"
+    wire:navigate
+    class="shamar-topbar__brand md:hidden flex min-w-0 items-center gap-2 text-inherit no-underline"
+    aria-label="{{ panelTitle }}"
+  >
+    @if(branding.showLogo && branding.logoUrl)
+      <img
+        src="{{ branding.logoUrl }}"
+        alt=""
+        class="shamar-brand-logo shamar-brand-logo--light w-auto max-w-[7.5rem] object-contain"
+        style="height: calc(var(--shamar-logo-height, {{ branding.logoHeight }}) * 0.85)"
+      />
+      <img
+        src="{{ branding.logoDarkUrl ?? branding.logoUrl }}"
+        alt=""
+        class="shamar-brand-logo shamar-brand-logo--dark w-auto max-w-[7.5rem] object-contain"
+        style="height: calc(var(--shamar-logo-height, {{ branding.logoHeight }}) * 0.85)"
+      />
+    @elseif(branding.showBrandName)
+      <span class="truncate text-sm font-extrabold tracking-tight text-heading">{{ panelTitle }}</span>
+    @endif
+  </a>
+
   <div class="shamar-topbar__menu flex-1 min-w-0 overflow-hidden" data-wire-sync="topbar-menu">
     <nav
       class="shamar-app-menu flex-1 min-w-0"
@@ -60,72 +84,31 @@
     </nav>
   </div>
 
-  <div data-wire-sync="topbar-mobile-title" class="md:contents">
-    @if(menuActiveRoot && menuActiveRoot.label !== 'Dashboard')
-      <p class="md:hidden flex-1 min-w-0 text-sm font-semibold text-heading truncate px-0.5">{{ menuActiveRoot.label }}</p>
-    @else
-      <div class="md:hidden flex-1 min-w-0" aria-hidden="true"></div>
-    @endif
-  </div>
+  <div class="flex-1 min-w-0 md:hidden" aria-hidden="true"></div>
 
-  <div class="shamar-topbar__tools flex items-center gap-2 min-w-0">
+  <div class="shamar-topbar__tools flex items-center gap-1.5 sm:gap-2 min-w-0">
     {{{ globalSearchHtml }}}
     <div data-wire-sync="topbar-notifications" class="contents">
       {{{ notificationsHtml }}}
-    </div>    <div class="relative" @click.outside="themeOpen = false">
-      <button
-        type="button"
-        @click="themeOpen = !themeOpen"
-        class="shamar-theme-trigger p-1.5 rounded-md text-body hover:bg-surface-hover hover:text-heading"
-        :data-theme-pref="themePref"
-        :aria-label="themePref === 'system' ? 'Theme: System' : themePref === 'dark' ? 'Theme: Dark' : 'Theme: Light'"
-        :aria-expanded="themeOpen.toString()"
-        aria-haspopup="menu"
-      >
-        <svg class="w-4 h-4 shamar-theme-icon shamar-theme-icon--light" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>
-        </svg>
-        <svg class="w-4 h-4 shamar-theme-icon shamar-theme-icon--dark" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-        </svg>
-        <svg class="w-4 h-4 shamar-theme-icon shamar-theme-icon--system" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25H5.25A2.25 2.25 0 013 15V6.75A2.25 2.25 0 015.25 4.5h13.5A2.25 2.25 0 0121 6.75V15a2.25 2.25 0 01-2.25 2.25H15M9 17.25v1.5c0 .621.504 1.125 1.125 1.125h3.75c.621 0 1.125-.504 1.125-1.125v-1.5M9 17.25h6"/>
-        </svg>
-      </button>
-      <div
-        x-show="themeOpen"
-        x-cloak
-        x-transition
-        role="menu"
-        aria-label="Color theme"
-        class="absolute right-0 top-full mt-2 w-40 shamar-card rounded-xl shadow-lg overflow-hidden z-50 py-1 text-sm"
-      >
-        <button
-          type="button"
-          role="menuitemradio"
-          class="shamar-theme-menu-item w-full text-left px-3 py-1.5 text-body hover:bg-surface-hover hover:text-heading"
-          :class="themePref === 'light' && 'is-active'"
-          :aria-checked="(themePref === 'light').toString()"
-          @click="setTheme('light')"
-        >Light</button>
-        <button
-          type="button"
-          role="menuitemradio"
-          class="shamar-theme-menu-item w-full text-left px-3 py-1.5 text-body hover:bg-surface-hover hover:text-heading"
-          :class="themePref === 'dark' && 'is-active'"
-          :aria-checked="(themePref === 'dark').toString()"
-          @click="setTheme('dark')"
-        >Dark</button>
-        <button
-          type="button"
-          role="menuitemradio"
-          class="shamar-theme-menu-item w-full text-left px-3 py-1.5 text-body hover:bg-surface-hover hover:text-heading"
-          :class="themePref === 'system' && 'is-active'"
-          :aria-checked="(themePref === 'system').toString()"
-          @click="setTheme('system')"
-        >System</button>
-      </div>
     </div>
+    <button
+      type="button"
+      @click="cycleTheme()"
+      class="shamar-theme-trigger p-1.5 rounded-md text-body hover:bg-surface-hover hover:text-heading"
+      :data-theme-pref="themePref"
+      :aria-label="themePref === 'system' ? 'Theme: System — click for Light' : themePref === 'dark' ? 'Theme: Dark — click for System' : 'Theme: Light — click for Dark'"
+      title="Cycle theme"
+    >
+      <svg class="w-4 h-4 shamar-theme-icon shamar-theme-icon--light" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>
+      </svg>
+      <svg class="w-4 h-4 shamar-theme-icon shamar-theme-icon--dark" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+      </svg>
+      <svg class="w-4 h-4 shamar-theme-icon shamar-theme-icon--system" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25H5.25A2.25 2.25 0 013 15V6.75A2.25 2.25 0 015.25 4.5h13.5A2.25 2.25 0 0121 6.75V15a2.25 2.25 0 01-2.25 2.25H15M9 17.25v1.5c0 .621.504 1.125 1.125 1.125h3.75c.621 0 1.125-.504 1.125-1.125v-1.5M9 17.25h6"/>
+      </svg>
+    </button>
 
     <div class="relative" x-data="{ open: false }" @click.outside="open = false">
       <button

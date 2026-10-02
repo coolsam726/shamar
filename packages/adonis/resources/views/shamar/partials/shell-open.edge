@@ -69,6 +69,15 @@
 
       @include('shamar::partials/toast')
 
+      @if(menuActiveRoot && menuActiveRoot.label !== 'Dashboard')
+        <div
+          class="shamar-mobile-group md:hidden"
+          data-wire-sync="mobile-group"
+        >
+          <span class="shamar-mobile-group__label">{{ menuActiveRoot.label }}</span>
+        </div>
+      @endif
+
       @if(pageTitle)
         @include('shamar::partials/page-heading')
       @endif
