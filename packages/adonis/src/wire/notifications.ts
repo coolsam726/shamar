@@ -48,6 +48,22 @@ export function markNotificationRead(session: NotificationSession, id: string): 
   );
 }
 
+export function markNotificationUnread(session: NotificationSession, id: string): void {
+  session.put?.(
+    secretKey,
+    listNotifications(session).map((note) =>
+      note.id === id && note.readAt ? { ...note, readAt: null } : note,
+    ),
+  );
+}
+
+export function toggleNotificationRead(session: NotificationSession, id: string): void {
+  const note = listNotifications(session).find((item) => item.id === id);
+  if (!note) return;
+  if (note.readAt) markNotificationUnread(session, id);
+  else markNotificationRead(session, id);
+}
+
 export function markAllNotificationsRead(session: NotificationSession): void {
   const now = new Date().toISOString();
   session.put?.(
@@ -62,50 +78,172 @@ function isNotification(value: unknown): value is PanelNotification {
   return typeof note.id === 'string' && typeof note.title === 'string' && typeof note.createdAt === 'string';
 }
 
-function renderBell(component: WireComponent): string {
-  const open = component.data.open === true;
-  const items = Array.isArray(component.data.items)
+const BELL_ICON = `<svg class="shamar-notifications__bell-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>`;
+
+const ENVELOPE_CLOSED = `<svg class="shamar-notifications__envelope" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/></svg>`;
+
+const ENVELOPE_OPEN = `<svg class="shamar-notifications__envelope" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 9v.906a2.25 2.25 0 01-1.183 1.981l-6.478 3.488M2.25 9v.906a2.25 2.25 0 001.183 1.981l6.478 3.488m8.603L10.5 15.166m0 0l-6.478-3.488M10.5 15.166l6.478 3.488M3.433 7.669l6.478 3.489a2.25 2.25 0 002.178 0l6.478-3.489M3.433 7.669l-.682-.368A2.25 2.25 0 012.25 5.25h19.5a2.25 2.25 0 01.682 2.051l-.682.368"/></svg>`;
+
+function formatWhen(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+function asItems(component: WireComponent): PanelNotification[] {
+  return Array.isArray(component.data.items)
     ? (component.data.items as PanelNotification[])
     : [];
-  const unread = items.filter((item) => !item.readAt).length;
-  const rows = items
+}
+
+function renderDropdown(unread: PanelNotification[]): string {
+  const rows = unread
     .map((item) => {
-      const dim = item.readAt ? ' text-body-subtle' : '';
-      return `<button type="button" wire:click="read('${escapeHtml(item.id)}')" wire:key="${escapeHtml(item.id)}" class="block w-full text-left px-3 py-2 text-sm hover:bg-surface-hover${dim}"><span class="block text-heading">${escapeHtml(item.title)}</span>${item.body ? `<span class="block text-xs">${escapeHtml(item.body)}</span>` : ''}</button>`;
+      const when = formatWhen(item.createdAt);
+      return `<button type="button" wire:click="openDetail('${escapeHtml(item.id)}')" wire:key="drop-${escapeHtml(item.id)}" class="shamar-notifications__drop-item">
+        <span class="shamar-notifications__drop-title">${escapeHtml(item.title)}</span>
+        ${item.body ? `<span class="shamar-notifications__drop-body">${escapeHtml(item.body)}</span>` : ''}
+        ${when ? `<span class="shamar-notifications__drop-when">${escapeHtml(when)}</span>` : ''}
+      </button>`;
     })
     .join('');
-  const panel = open
-    ? `<div class="absolute right-0 z-50 mt-1 w-72 max-h-80 overflow-auto shamar-card rounded-xl py-1">
-        <div class="flex items-center justify-between px-3 py-2">
-          <span class="text-xs font-semibold uppercase tracking-wide text-body-subtle">Notifications</span>
-          <button type="button" wire:click="readAll" class="text-xs text-fg-brand">Mark all read</button>
-        </div>
-        ${rows || '<p class="px-3 py-2 text-sm text-body-subtle">No notifications</p>'}
-      </div>`
-    : '';
-  return `<div class="relative">
-    <button type="button" wire:click="toggle" class="relative p-1.5 rounded-md text-body hover:bg-surface-hover" aria-label="Notifications" aria-expanded="${open ? 'true' : 'false'}">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0a3 3 0 11-6 0"/></svg>
-      ${unread ? `<span class="absolute -top-0.5 -right-0.5 min-w-[1rem] rounded-full bg-fg-brand px-1 text-[10px] leading-4 text-white">${unread}</span>` : ''}
-    </button>
-    ${panel}
+
+  const empty = `<p class="shamar-notifications__empty">No unread notifications</p>`;
+
+  return `<div class="shamar-notifications__dropdown" role="menu">
+    <div class="shamar-notifications__dropdown-head">
+      <span class="shamar-notifications__dropdown-label">Unread</span>
+    </div>
+    <div class="shamar-notifications__dropdown-list">
+      ${rows || empty}
+    </div>
+    <div class="shamar-notifications__dropdown-foot">
+      <button type="button" wire:click="openAside" class="shamar-notifications__view-all">View all</button>
+    </div>
   </div>`;
 }
+
+function renderAside(items: PanelNotification[]): string {
+  const rows = items
+    .map((item) => {
+      const unread = !item.readAt;
+      const when = formatWhen(item.createdAt);
+      const envelope = unread ? ENVELOPE_CLOSED : ENVELOPE_OPEN;
+      const toggleLabel = unread ? 'Mark as read' : 'Mark as unread';
+      return `<div class="shamar-notifications__aside-row${unread ? ' is-unread' : ''}" wire:key="aside-${escapeHtml(item.id)}">
+        <button type="button" wire:click="openDetail('${escapeHtml(item.id)}')" class="shamar-notifications__aside-main">
+          <span class="shamar-notifications__aside-title">${escapeHtml(item.title)}</span>
+          ${item.body ? `<span class="shamar-notifications__aside-body">${escapeHtml(item.body)}</span>` : ''}
+          ${when ? `<span class="shamar-notifications__aside-when">${escapeHtml(when)}</span>` : ''}
+        </button>
+        <button type="button" wire:click="toggleRead('${escapeHtml(item.id)}')" class="shamar-notifications__toggle" aria-label="${toggleLabel}" title="${toggleLabel}">
+          ${envelope}
+        </button>
+      </div>`;
+    })
+    .join('');
+
+  return `<div class="shamar-notifications__aside-backdrop" wire:click="closeAside" aria-hidden="true"></div>
+    <aside class="shamar-notifications__aside" role="dialog" aria-label="All notifications">
+      <header class="shamar-notifications__aside-head">
+        <span class="shamar-notifications__aside-label">Notifications</span>
+        <div class="shamar-notifications__aside-actions">
+          <button type="button" wire:click="readAll" class="shamar-notifications__text-btn">Mark all read</button>
+          <button type="button" wire:click="closeAside" class="shamar-notifications__icon-btn" aria-label="Close">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" width="18" height="18" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </header>
+      <div class="shamar-notifications__aside-list">
+        ${rows || '<p class="shamar-notifications__empty">No notifications yet</p>'}
+      </div>
+    </aside>`;
+}
+
+function renderDetail(item: PanelNotification): string {
+  const when = formatWhen(item.createdAt);
+  return `<div class="shamar-notifications__detail-backdrop" wire:click="closeDetail" aria-hidden="true"></div>
+    <div class="shamar-notifications__detail" role="dialog" aria-modal="true" aria-label="${escapeHtml(item.title)}">
+      <header class="shamar-notifications__detail-head">
+        <h2 class="shamar-notifications__detail-title">${escapeHtml(item.title)}</h2>
+        <button type="button" wire:click="closeDetail" class="shamar-notifications__icon-btn" aria-label="Close">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" width="18" height="18" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </header>
+      <div class="shamar-notifications__detail-body">
+        ${item.body ? `<p class="shamar-notifications__detail-text">${escapeHtml(item.body)}</p>` : '<p class="shamar-notifications__detail-text is-muted">No additional details.</p>'}
+        ${when ? `<p class="shamar-notifications__detail-when">${escapeHtml(when)}</p>` : ''}
+      </div>
+    </div>`;
+}
+
+function renderBell(component: WireComponent): string {
+  const open = component.data.open === true;
+  const aside = component.data.aside === true;
+  const detailId = typeof component.data.detailId === 'string' ? component.data.detailId : null;
+  const items = asItems(component);
+  const unreadItems = items.filter((item) => !item.readAt);
+  const unreadCount = unreadItems.length;
+  const detail = detailId ? items.find((item) => item.id === detailId) : undefined;
+
+  return `<div class="shamar-notifications relative">
+    <button type="button" wire:click="toggle" class="shamar-notifications__bell" aria-label="Notifications" aria-expanded="${open ? 'true' : 'false'}">
+      ${BELL_ICON}
+      ${unreadCount ? `<span class="shamar-notifications__badge">${unreadCount}</span>` : ''}
+    </button>
+    ${open ? renderDropdown(unreadItems) : ''}
+    ${aside ? renderAside(items) : ''}
+    ${detail ? renderDetail(detail) : ''}
+  </div>`;
+}
+
+type BellData = {
+  open: boolean;
+  aside: boolean;
+  detailId: string | null;
+  items: PanelNotification[];
+};
 
 function bellComponent(items: PanelNotification[], session?: NotificationSession): WireComponent {
   const reload = () => (session ? listNotifications(session) : items);
   return {
-    data: { open: false, items: reload() },
-    async read(id: string) {
+    data: {
+      open: false,
+      aside: false,
+      detailId: null,
+      items: reload(),
+    } satisfies BellData,
+    toggle() {
+      this.data.open = this.data.open !== true;
+    },
+    openAside() {
+      this.data.open = false;
+      this.data.aside = true;
+    },
+    closeAside() {
+      this.data.aside = false;
+    },
+    openDetail(id: string) {
       if (session) markNotificationRead(session, id);
+      this.data.items = reload();
+      this.data.open = false;
+      this.data.detailId = id;
+    },
+    closeDetail() {
+      this.data.detailId = null;
+    },
+    toggleRead(id: string) {
+      if (session) toggleNotificationRead(session, id);
       this.data.items = reload();
     },
     async readAll() {
       if (session) markAllNotificationsRead(session);
       this.data.items = reload();
-    },
-    toggle() {
-      this.data.open = this.data.open !== true;
     },
   } as WireComponent;
 }
@@ -132,8 +270,13 @@ export function updateNotifications(
       create: () => bellComponent([], session),
       refresh(component) {
         const open = component.data.open === true;
+        const aside = component.data.aside === true;
+        const detailId =
+          typeof component.data.detailId === 'string' ? component.data.detailId : null;
         component.data.items = listNotifications(session);
         component.data.open = open;
+        component.data.aside = aside;
+        component.data.detailId = detailId;
       },
       render: renderBell,
     },

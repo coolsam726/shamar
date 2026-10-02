@@ -4,7 +4,9 @@ import {
   listNotifications,
   markAllNotificationsRead,
   markNotificationRead,
+  markNotificationUnread,
   pushNotification,
+  toggleNotificationRead,
   type NotificationSession,
 } from '../src/wire/notifications.js';
 import { isPanelWireComponent } from '../src/wire/handle.js';
@@ -50,6 +52,21 @@ describe('panel notifications', () => {
 
     markAllNotificationsRead(session);
     assert.equal(listNotifications(session).every((note) => note.readAt), true);
+  });
+
+  it('toggles a notification back to unread', () => {
+    const session = memorySession();
+    const note = pushNotification(session, { title: 'Hello', body: 'World' });
+    markNotificationRead(session, note.id);
+    assert.ok(listNotifications(session)[0]?.readAt);
+
+    markNotificationUnread(session, note.id);
+    assert.equal(listNotifications(session)[0]?.readAt, null);
+
+    toggleNotificationRead(session, note.id);
+    assert.ok(listNotifications(session)[0]?.readAt);
+    toggleNotificationRead(session, note.id);
+    assert.equal(listNotifications(session)[0]?.readAt, null);
   });
 });
 
