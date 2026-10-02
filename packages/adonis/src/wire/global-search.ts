@@ -28,11 +28,14 @@ function normalizeQuery(value: unknown): string | null {
   return text.length > 0 ? text : null;
 }
 
+const SEARCH_ICON = `<svg class="shamar-global-search__glyph" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>`;
+
 function renderSearch(component: WireComponent): string {
   const query = String(component.data.query ?? '');
   const results = Array.isArray(component.data.results)
     ? (component.data.results as GlobalSearchHit[])
     : [];
+  const expanded = component.data.expanded === true;
   const open = query.trim().length > 0;
   const rows = results
     .map(
@@ -44,16 +47,42 @@ function renderSearch(component: WireComponent): string {
     ? '<p class="px-3 py-2 text-sm text-body-subtle">No matching records</p>'
     : '';
   const panel = open
-    ? `<div class="absolute right-0 z-50 mt-1 w-full min-w-[16rem] max-h-80 overflow-auto shamar-card rounded-xl py-1">${rows}${empty}</div>`
+    ? `<div class="shamar-global-search__results">${rows}${empty}</div>`
     : '';
-  return `<div class="relative w-56 max-w-full min-w-[9rem]">
-    <input wire:model.debounce.250ms="query" type="search" value="${escapeHtml(query)}" placeholder="Search" aria-label="Search panel" class="w-full rounded-md border border-default bg-transparent px-2.5 py-1.5 text-sm text-body placeholder:text-body-subtle focus:outline-none focus:ring-2 focus:ring-fg-brand" />
-    ${panel}
+  const panelClass = `shamar-global-search__panel${expanded ? ' is-expanded' : ''}`;
+
+  return `<div class="shamar-global-search" data-shamar-global-search>
+    <button type="button" wire:click="expand" class="shamar-global-search__icon-btn" aria-label="Search (Ctrl+K)" title="Search (Ctrl+K)">
+      ${SEARCH_ICON}
+    </button>
+    <div class="${panelClass}">
+      <div class="shamar-global-search__field">
+        ${SEARCH_ICON}
+        <input
+          data-shamar-search-input
+          wire:model.debounce.250ms="query"
+          type="search"
+          value="${escapeHtml(query)}"
+          placeholder="Search"
+          aria-label="Search panel"
+          class="shamar-global-search__input"
+        />
+        <kbd class="shamar-global-search__kbd" aria-hidden="true">Ctrl K</kbd>
+        <button type="button" wire:click="collapse" class="shamar-global-search__close" aria-label="Close search">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" width="16" height="16" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      ${panel}
+    </div>
   </div>`;
 }
 
 function emptySearchData() {
-  return { query: null as string | null, results: [] as GlobalSearchHit[] };
+  return {
+    query: null as string | null,
+    results: [] as GlobalSearchHit[],
+    expanded: false,
+  };
 }
 
 export function globalSearchKernel(
@@ -63,11 +92,9 @@ export function globalSearchKernel(
 ): WireKernel {
   const definition = {
     create(): WireComponent {
-      const component: WireComponent & {
-        data: { query: string | null; results: GlobalSearchHit[] };
-      } = {
+      const component = {
         data: emptySearchData(),
-        async updated(key) {
+        async updated(key: string) {
           if (key !== 'query') return;
           component.data.query = normalizeQuery(component.data.query);
           component.data.results = await searchPanel(
@@ -77,8 +104,20 @@ export function globalSearchKernel(
             component.data.query ?? '',
           );
         },
+        expand() {
+          component.data.expanded = true;
+        },
+        collapse() {
+          component.data.expanded = false;
+          component.data.query = null;
+          component.data.results = [];
+        },
       };
-      return component;
+      return component as WireComponent;
+    },
+    refresh(component: WireComponent) {
+      const expanded = component.data.expanded === true;
+      component.data.expanded = expanded;
     },
     render: renderSearch,
   };
@@ -89,7 +128,18 @@ export function mountGlobalSearch(basePath: string): string {
   const endpoint = `${basePath.replace(/\/+$/, '')}/wire`;
   const kernel = new WireKernel(panelWireSecret(), {
     'global-search': {
-      create: () => ({ data: emptySearchData() }),
+      create: () =>
+        ({
+          data: emptySearchData(),
+          expand() {
+            this.data.expanded = true;
+          },
+          collapse() {
+            this.data.expanded = false;
+            this.data.query = null;
+            this.data.results = [];
+          },
+        }) as WireComponent,
       render: renderSearch,
     },
   });

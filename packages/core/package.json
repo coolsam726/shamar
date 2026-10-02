@@ -1,6 +1,6 @@
 {
   "name": "@shamar/core",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Filament-inspired resource DSL for Shamar admin (ORM-agnostic core).",
   "license": "MIT",
   "type": "module",
