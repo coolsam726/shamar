@@ -143,7 +143,14 @@ Custom domains: `shamar.dev` and `www.shamar.dev`. The Worker is the origin for 
 
 Optional: add a Cloudflare Redirect Rule so `docs.shamar.dev/*` → `https://shamar.dev/docs/$1` (301).
 
-The static build ships `robots.txt` (with a `Sitemap:` line), `/og.png` social card, and `_redirects` so `www.shamar.dev` 301s to the apex. Prefer enabling that www→apex rule in the Cloudflare dashboard too if `_redirects` is not applied on your Workers Assets setup.
+**www → apex:** Workers Assets `_redirects` only allows *relative* URLs, so host redirects cannot live in the static build. In the Cloudflare dashboard, add a **Redirect Rule** (or Bulk Redirect):
+
+| Field | Value |
+|-------|--------|
+| If | Hostname equals `www.shamar.dev` |
+| Then | Dynamic redirect to `concat("https://shamar.dev", http.request.uri.path)` (301) — preserve query string |
+
+The static build ships `robots.txt` (with a `Sitemap:` line) and `/og.png` for social/search previews.
 
 ## Search engines (Google)
 
