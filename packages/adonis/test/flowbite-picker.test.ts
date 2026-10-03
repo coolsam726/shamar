@@ -261,7 +261,9 @@ describe('flowbite picker options contract', () => {
     assert.match(nav, /menuRoots/);
     assert.doesNotMatch(nav, /@each\(group in navGroups\)/);
     assert.match(topbar, /shamar-topbar__menu/);
+    assert.match(topbar, /shamar-topbar__brand/);
     assert.doesNotMatch(topbar, /class="hidden md:flex/);
+    assert.doesNotMatch(topbar, /shamar-topbar__brand[^"]*(?:md:hidden|flex)/);
     assert.match(nav, /shamar-brand-logo--light/);
     assert.match(nav, /shamar-brand-logo--dark/);
     assert.doesNotMatch(nav, /dark:hidden|dark:block/);
