@@ -429,6 +429,13 @@ button:disabled,
   display: none;
   align-items: center;
 }
+/* Mobile-only brand: avoid md:hidden+flex (Tailwind .flex can win over .md:hidden). */
+.shamar-topbar__brand {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+}
 .shamar-app-menu {
   display: flex;
   flex-wrap: nowrap;
@@ -449,6 +456,9 @@ button:disabled,
   }
   .shamar-topbar__menu {
     display: flex;
+  }
+  .shamar-topbar__brand {
+    display: none;
   }
 }
 
