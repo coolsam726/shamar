@@ -62,11 +62,15 @@
     }
     left = Math.min(Math.max(pad, left), Math.max(pad, window.innerWidth - width - pad));
 
+    const widthPx = `${Math.round(width)}px`;
     return {
       position: 'fixed',
       top: `${Math.round(top)}px`,
       left: `${Math.round(left)}px`,
-      width: `${Math.round(width)}px`,
+      width: widthPx,
+      // Pin min/max so CSS min-width:100% (viewport for fixed) cannot stretch the panel.
+      minWidth: widthPx,
+      maxWidth: widthPx,
       right: 'auto',
       maxHeight: `${maxHeight}px`,
       zIndex: String(opts.zIndex ?? 1100),
@@ -724,7 +728,9 @@
       },
 
       repositionDropdown() {
-        this.dropdownStyle = fixedDropdownStyle(this.$el, this.$refs.dropdown, {
+        // Anchor to the search input (not the whole m2o root) so width matches the field.
+        const anchor = this.$refs.input || this.$el;
+        this.dropdownStyle = fixedDropdownStyle(anchor, this.$refs.dropdown, {
           maxHeight: 288,
           zIndex: 1100,
         });
@@ -986,7 +992,8 @@
       },
 
       repositionDropdown() {
-        this.dropdownStyle = fixedDropdownStyle(this.$el, this.$refs.dropdown, {
+        const anchor = this.$refs.input || this.$refs.box || this.$el;
+        this.dropdownStyle = fixedDropdownStyle(anchor, this.$refs.dropdown, {
           maxHeight: 288,
           zIndex: 1100,
         });
