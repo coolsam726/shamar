@@ -2696,7 +2696,12 @@ select.shamar-input option {
 }
 
 .shamar-m2o__dropdown {
-  min-width: 100%;
+  /*
+   * Width comes from fixedDropdownStyle (inline). Do not use min-width: 100% —
+   * for position:fixed that resolves against the viewport and blows past the input.
+   */
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .shamar-m2o__dropdown li[role="option"],
@@ -2746,7 +2751,9 @@ select.shamar-input option {
 }
 
 .shamar-m2m__dropdown {
-  min-width: 100%;
+  /* Same as .shamar-m2o__dropdown — width is set by fixedDropdownStyle. */
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .shamar-chip {
