@@ -1,6 +1,6 @@
 {
   "name": "@shamar/adonis",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "AdonisJS service provider for Shamar admin — routes, controllers, middleware, Edge views.",
   "license": "MIT",
   "type": "module",

@@ -5649,9 +5649,14 @@
 
       panelStyle() {
         if (this.fullscreen) {
-          return 'inset: 0.75rem; width: auto; height: auto; transform: none;';
+          return 'inset: 0.75rem; top: 0.75rem; left: 0.75rem; width: auto; height: auto; transform: none;';
         }
-        return `width: ${this.width}px; height: ${this.height}px; transform: translate(calc(-50% + ${this.x}px), calc(-50% + ${this.y}px));`;
+        // Center with top/left only — never transform. A CSS transform on the
+        // dialog makes position:fixed combobox/dropdown panels resolve against
+        // the dialog box instead of the viewport, so they jump downward.
+        const left = Math.round(window.innerWidth / 2 + this.x - this.width / 2);
+        const top = Math.round(window.innerHeight / 2 + this.y - this.height / 2);
+        return `width: ${this.width}px; height: ${this.height}px; top: ${top}px; left: ${left}px; transform: none;`;
       },
 
       /** Size record dialogs to at least max-w-6xl, clamped to the viewport. */
