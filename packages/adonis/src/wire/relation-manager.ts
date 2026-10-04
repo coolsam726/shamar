@@ -15,6 +15,8 @@ function relationsOf(meta: ResourceMeta): ManagedRelation[] {
   return meta.fields.flatMap((field) => {
     const relation = field.relation;
     if (!relation || relation.kind !== 'hasMany' || !relation.foreignKey) return [];
+    // RelationTable (form + readonly infolist) already owns these relations on show/edit.
+    if (field.type === 'relationTable' || relation.widget === 'table') return [];
     return [
       {
         field: field.name,
