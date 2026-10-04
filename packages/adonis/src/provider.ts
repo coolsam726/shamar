@@ -82,6 +82,8 @@ export default class ShamarProvider {
       edge.global('fieldChecked', fieldChecked);
       edge.global('formInputType', formInputType);
       edge.global('fieldInputAttrs', fieldInputAttrs);
+      const { htmlAttrs } = await import('./shamar/dashboard-widgets.js');
+      edge.global('htmlAttrs', htmlAttrs);
       edge.global('recordNavQuery', recordNavQuery);
       edge.global('relatedListLink', relatedListLink);
       edge.global('resolveGridItemStyle', resolveGridItemStyle);

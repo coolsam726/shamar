@@ -1,23 +1,44 @@
-<div class="shamar-stats-overview">
+@let(pollMs = widget.pollingIntervalMs)
+@let(lazy = widget.isLazy && widget.payload.deferred)
+@let(refreshUrl = widget.refreshUrl)
+
+<div
+  class="shamar-stats-overview"
+  data-shamar-dashboard-widget
+  data-widget-id="{{ widget.id }}"
+  @if(refreshUrl)
+    data-refresh-url="{{ refreshUrl }}"
+  @endif
+  @if(pollMs)
+    data-polling-interval="{{ pollMs }}"
+  @endif
+  @if(lazy)
+    data-lazy="1"
+  @endif
+  x-data="shamarDashboardWidget($el)"
+>
   @if(widget.heading)
-    <h3 class="mb-3 text-base font-bold tracking-tight text-heading">{{ widget.heading }}</h3>
+    <h3 class="{{ widget.description ? 'mb-1' : 'mb-3' }} text-base font-bold tracking-tight text-heading">{{ widget.heading }}</h3>
+  @endif
+  @if(widget.description)
+    <p class="mb-3 text-sm text-body-subtle">{{ widget.description }}</p>
   @endif
 
-  @if(widget.payload.gridStyle)
-    <div class="shamar-stats-overview__grid" style="{{ widget.payload.gridStyle }}">
+  <div
+    class="shamar-stats-overview__grid"
+    style="{{ widget.payload.gridStyle }}"
+    data-shamar-widget-body
+  >
+    @if(lazy)
+      <div class="shamar-stats-overview__placeholder col-span-full rounded-xl border border-dashed border-default px-4 py-8 text-center text-sm text-body-subtle">
+        Loading stats…
+      </div>
+    @else
       @each(stat in widget.payload.stats)
         @include('shamar::widgets/stat')
       @else
-        <p class="text-sm text-body-subtle">No stats configured.</p>
+        <p class="col-span-full text-sm text-body-subtle">No stats configured.</p>
       @endeach
-    </div>
-  @else
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-      @each(stat in widget.payload.stats)
-        @include('shamar::widgets/stat')
-      @else
-        <p class="text-sm text-body-subtle">No stats configured.</p>
-      @endeach
-    </div>
-  @endif
+    @endif
+  </div>
 </div>

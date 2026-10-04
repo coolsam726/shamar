@@ -7,10 +7,13 @@ import {
   StatsOverviewWidget,
   ChartWidget,
 } from '@shamar/core';
-import { resolveDashboardWidgets } from '../src/shamar/dashboard-widgets.js';
+import { resolveDashboardWidgets, htmlAttrs } from '../src/shamar/dashboard-widgets.js';
 
 class DemoStats extends StatsOverviewWidget {
   static override heading = 'KPIs';
+  static override description = 'Overview';
+  static override isLazy = false;
+  static override pollingInterval: string | null = null;
 
   static override stats() {
     return [Stat.make('Total', 3)];
@@ -19,6 +22,7 @@ class DemoStats extends StatsOverviewWidget {
 
 class DemoChart extends ChartWidget {
   static override heading = 'Trend';
+  static override isLazy = false;
 
   static override data() {
     return {
@@ -36,7 +40,9 @@ class DemoDashboard extends DashboardPage {
 
 describe('resolveDashboardWidgets', () => {
   it('resolves stats and chart widgets with metadata', async () => {
-    const result = await resolveDashboardWidgets(DemoDashboard, { user: null, basePath: '/demo' });
+    const result = await resolveDashboardWidgets(DemoDashboard, { user: null, basePath: '/demo' }, {
+      refreshUrlBase: '/demo',
+    });
 
     assert.equal(result.columns, 3);
     assert.equal(result.widgets.length, 2);
@@ -44,16 +50,49 @@ describe('resolveDashboardWidgets', () => {
     const stats = result.widgets[0]!;
     assert.equal(stats.kind, 'statsOverview');
     assert.equal(stats.heading, 'KPIs');
-    assert.deepEqual(stats.payload, {
-      stats: [{ label: 'Total', value: 3 }],
-      columns: null,
-      gridStyle: null,
-    });
+    assert.equal(stats.description, 'Overview');
+    assert.equal(stats.isLazy, false);
+    assert.equal(stats.pollingIntervalMs, null);
+    assert.equal(stats.refreshUrl, '/demo/widgets/DemoStats');
+    assert.equal(stats.payload.stats[0]!.label, 'Total');
+    assert.equal(stats.payload.stats[0]!.value, 3);
+    assert.ok(stats.payload.gridStyle.includes('--shamar-stats-cols'));
 
     const chart = result.widgets[1]!;
     assert.equal(chart.kind, 'chart');
     assert.equal(chart.payload.chartType, 'line');
     assert.equal(chart.payload.library, 'apex');
+  });
+
+  it('defers lazy stats until hydrate', async () => {
+    class LazyStats extends StatsOverviewWidget {
+      static override isLazy = true;
+      static override pollingInterval: string | null = '5s';
+      static override stats() {
+        return [Stat.make('X', 1)];
+      }
+    }
+    class LazyDash extends DashboardPage {
+      static override widgets() {
+        return [LazyStats];
+      }
+    }
+
+    const deferred = await resolveDashboardWidgets(LazyDash, { user: null }, {
+      refreshUrlBase: '/admin',
+    });
+    assert.equal(deferred.widgets[0]!.payload.deferred, true);
+    assert.equal(deferred.widgets[0]!.payload.stats.length, 0);
+    assert.equal(deferred.widgets[0]!.pollingIntervalMs, 5000);
+
+    const hydrated = await resolveDashboardWidgets(LazyDash, { user: null }, {
+      hydrate: true,
+      widgetId: 'LazyStats',
+      refreshUrlBase: '/admin',
+    });
+    assert.equal(hydrated.widgets.length, 1);
+    assert.equal(hydrated.widgets[0]!.payload.deferred, undefined);
+    assert.equal(hydrated.widgets[0]!.payload.stats[0]!.value, 1);
   });
 
   it('injects navigation cards from shell menu roots', async () => {
@@ -74,6 +113,8 @@ describe('resolveDashboardWidgets', () => {
   it('passes StatsOverviewWidget.columns into the payload grid style', async () => {
     class FourColStats extends StatsOverviewWidget {
       static override columns = 4;
+      static override isLazy = false;
+      static override pollingInterval: string | null = null;
 
       static override stats() {
         return [Stat.make('A', 1), Stat.make('B', 2), Stat.make('C', 3), Stat.make('D', 4)];
@@ -112,5 +153,9 @@ describe('resolveDashboardWidgets', () => {
 
     const result = await resolveDashboardWidgets(HiddenDashboard, { user: null });
     assert.equal(result.widgets.length, 0);
+  });
+
+  it('htmlAttrs escapes values', () => {
+    assert.equal(htmlAttrs({ class: 'a"b', 'data-x': '1' }), 'class="a&quot;b" data-x="1"');
   });
 });

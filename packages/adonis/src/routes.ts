@@ -177,6 +177,9 @@ function registerPanelRoutes(
       .as(`${routePrefix}.pages.sectionSave`);
     router.get('/', handler('dashboard')).as(`${routePrefix}.dashboard`);
     router
+      .get('/widgets/:widgetId', handler('dashboardWidget'))
+      .as(`${routePrefix}.dashboard.widget`);
+    router
       .post('/:slug/action/:action', handler('pageAction'))
       .where('slug', slugMatch)
       .as(`${routePrefix}.pages.action`);

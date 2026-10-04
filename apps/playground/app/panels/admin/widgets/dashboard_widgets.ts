@@ -28,6 +28,11 @@ async function loadDailyMetrics(days = 30) {
 export class ProductStatsWidget extends StatsOverviewWidget {
   static override sort = 10
   static override columnSpan = 'full' as const
+  static override heading = 'Catalog'
+  static override description = 'Live product and traffic KPIs.'
+  static override columns = 5
+  static override isLazy = false
+  static override pollingInterval: string | null = null
 
   static override async stats(ctx: WidgetRequestContext) {
     const [total, lowStock, featured, metrics] = await Promise.all([

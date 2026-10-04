@@ -1,0 +1,23 @@
+{{{
+  exports({
+    to: app.makePath(`app/widgets/${panel}/${fileName}`),
+  })
+}}}
+import { ListWidget, type WidgetRequestContext } from '@shamar/core'
+
+export class {{ className }} extends ListWidget {
+  static override sort = {{ sort }}
+  static override columnSpan = 1
+  static override heading = '{{ label }}'
+  static override limit = 5
+
+  static override columns() {
+    return [
+      { label: 'Name', attribute: 'name' },
+    ]
+  }
+
+  static override async records(_ctx: WidgetRequestContext) {
+    return []
+  }
+}

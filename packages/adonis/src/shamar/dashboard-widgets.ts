@@ -7,6 +7,7 @@ import {
   isListWidget,
   isNavigationCardsWidget,
   isStatsOverviewWidget,
+  parsePollingIntervalMs,
   resolveStatsOverviewColumns,
   statsOverviewGridStyle,
   type DashboardPageClass,
@@ -16,12 +17,28 @@ import {
 } from '@shamar/core';
 import type { MenuRoot } from './menu.js';
 
+export type ResolveDashboardWidgetsOptions = {
+  navigationCards?: MenuRoot[];
+  /** When true, resolve lazy widgets fully (used by the refresh endpoint). */
+  hydrate?: boolean;
+  /** Only resolve a single widget id (refresh endpoint). */
+  widgetId?: string;
+  /** Absolute or panel-relative base for refresh URLs. */
+  refreshUrlBase?: string;
+};
+
 function widgetId(WidgetClass: WidgetClass): string {
   return WidgetClass.id?.trim() || WidgetClass.name || 'widget';
 }
 
 function serializeStats(raw: Stat[] | ReturnType<Stat['toJSON']>[]): ReturnType<Stat['toJSON']>[] {
-  return raw.map((item) => (item instanceof Stat ? item.toJSON() : item));
+  return raw.map((item) => {
+    const data = item instanceof Stat ? item.toJSON() : { ...item };
+    if (data.extraAttributes) {
+      data.extraAttributesHtml = htmlAttrs(data.extraAttributes);
+    }
+    return data;
+  });
 }
 
 function getAtPath(record: Record<string, unknown>, path: string): unknown {
@@ -40,44 +57,97 @@ function formatCell(value: unknown): string {
   return String(value);
 }
 
+function widgetMeta(
+  WidgetClass: WidgetClass,
+  id: string,
+  refreshUrlBase?: string,
+): Pick<
+  ResolvedDashboardWidget,
+  | 'id'
+  | 'heading'
+  | 'description'
+  | 'columnSpan'
+  | 'sort'
+  | 'view'
+  | 'pollingIntervalMs'
+  | 'isLazy'
+  | 'refreshUrl'
+> {
+  const basePath = (refreshUrlBase ?? '').replace(/\/+$/, '');
+  return {
+    id,
+    heading: WidgetClass.heading,
+    description: WidgetClass.description,
+    columnSpan: WidgetClass.columnSpan ?? 1,
+    sort: WidgetClass.sort ?? 0,
+    view: WidgetClass.view,
+    pollingIntervalMs: parsePollingIntervalMs(WidgetClass.pollingInterval),
+    isLazy: WidgetClass.isLazy !== false,
+    refreshUrl: basePath ? `${basePath}/widgets/${encodeURIComponent(id)}` : undefined,
+  };
+}
+
 export async function resolveDashboardWidgets(
   DashboardClass: DashboardPageClass,
   ctx: WidgetRequestContext,
-  options: { navigationCards?: MenuRoot[] } = {},
+  options: ResolveDashboardWidgetsOptions = {},
 ): Promise<{ columns: number; widgets: ResolvedDashboardWidget[] }> {
   const widgetClasses = DashboardClass.widgets()
     .slice()
     .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
 
   const widgets: ResolvedDashboardWidget[] = [];
+  const hydrate = options.hydrate === true;
+  const onlyId = options.widgetId;
 
   for (const WidgetClass of widgetClasses) {
     if (!WidgetClass.canView(ctx.user)) continue;
+    const id = widgetId(WidgetClass);
+    if (onlyId && id !== onlyId) continue;
 
-    const base = {
-      id: widgetId(WidgetClass),
-      heading: WidgetClass.heading,
-      columnSpan: WidgetClass.columnSpan ?? 1,
-      sort: WidgetClass.sort ?? 0,
-      view: WidgetClass.view,
-    };
+    const base = widgetMeta(WidgetClass, id, options.refreshUrlBase);
+    const defer = base.isLazy && !hydrate;
 
     if (isStatsOverviewWidget(WidgetClass)) {
+      WidgetClass.applyConfigurators(WidgetClass);
+      if (defer) {
+        const columns = resolveStatsOverviewColumns(WidgetClass.columns, 0);
+        widgets.push({
+          ...base,
+          kind: 'statsOverview',
+          payload: {
+            stats: [],
+            columns,
+            gridStyle: statsOverviewGridStyle(WidgetClass.columns, 0),
+            deferred: true,
+          },
+        });
+        continue;
+      }
+
       const raw = await WidgetClass.stats(ctx);
-      const columns = resolveStatsOverviewColumns(WidgetClass.columns);
+      const stats = serializeStats(raw);
       widgets.push({
         ...base,
         kind: 'statsOverview',
         payload: {
-          stats: serializeStats(raw),
-          columns,
-          gridStyle: statsOverviewGridStyle(WidgetClass.columns),
+          stats,
+          columns: resolveStatsOverviewColumns(WidgetClass.columns, stats.length),
+          gridStyle: statsOverviewGridStyle(WidgetClass.columns, stats.length),
         },
       });
       continue;
     }
 
     if (isCardWidget(WidgetClass)) {
+      if (defer) {
+        widgets.push({
+          ...base,
+          kind: 'card',
+          payload: { content: { html: '' }, deferred: true },
+        });
+        continue;
+      }
       const content = await WidgetClass.content(ctx);
       widgets.push({
         ...base,
@@ -88,6 +158,14 @@ export async function resolveDashboardWidgets(
     }
 
     if (isListWidget(WidgetClass)) {
+      if (defer) {
+        widgets.push({
+          ...base,
+          kind: 'list',
+          payload: { columns: WidgetClass.columns(), records: [], limit: WidgetClass.limit ?? 5, deferred: true },
+        });
+        continue;
+      }
       const records = await WidgetClass.records(ctx);
       const limit = WidgetClass.limit ?? 5;
       widgets.push({
@@ -112,6 +190,19 @@ export async function resolveDashboardWidgets(
     }
 
     if (isChartWidget(WidgetClass)) {
+      if (defer) {
+        widgets.push({
+          ...base,
+          kind: 'chart',
+          payload: {
+            chartType: WidgetClass.type(),
+            library: WidgetClass.library(),
+            data: { labels: [], datasets: [] },
+            deferred: true,
+          },
+        });
+        continue;
+      }
       const data = await WidgetClass.data(ctx);
       widgets.push({
         ...base,
@@ -126,6 +217,7 @@ export async function resolveDashboardWidgets(
     }
 
     if (isNavigationCardsWidget(WidgetClass)) {
+      // Navigation cards are shell-derived — always hydrate (not expensive).
       const cards = (options.navigationCards ?? []).map((root) => ({
         label: root.label,
         href: root.href,
@@ -133,6 +225,8 @@ export async function resolveDashboardWidgets(
       }));
       widgets.push({
         ...base,
+        isLazy: false,
+        pollingIntervalMs: null,
         kind: 'navigationCards',
         payload: {
           cards,
@@ -155,4 +249,27 @@ export function resolveDashboardPageClass(
 
 export function filterDashboardFromPages<T extends { slug: string }>(pages: T[]): T[] {
   return pages.filter((page) => page.slug !== DASHBOARD_PAGE_SLUG);
+}
+
+/** Escape and join HTML attributes for Edge `{{{ htmlAttrs(attrs) }}}`. */
+export function htmlAttrs(attrs: Record<string, string> | null | undefined): string {
+  if (!attrs) return '';
+  const parts: string[] = [];
+  for (const [key, value] of Object.entries(attrs)) {
+    const safeKey = escapeAttr(key);
+    if (value == null || value === '') {
+      parts.push(safeKey);
+    } else {
+      parts.push(`${safeKey}="${escapeAttr(value)}"`);
+    }
+  }
+  return parts.join(' ');
+}
+
+function escapeAttr(value: string): string {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }

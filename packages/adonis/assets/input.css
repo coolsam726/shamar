@@ -749,6 +749,15 @@ button:disabled,
   gap: 1rem;
   grid-template-columns: repeat(var(--shamar-stats-cols, 1), minmax(0, 1fr));
 }
+.shamar-stat-card--span {
+  grid-column: span var(--shamar-stat-span, 1);
+}
+/* Filament-style sparkline theme knobs (read by shamarStatSparkline). */
+.fi-wi-stats-overview-stat {
+  --stat-chart-border-width: 2;
+  --stat-chart-line-tension: 0.4;
+  --stat-chart-fill: gradient;
+}
 @media (min-width: 40rem) {
   .shamar-stats-overview__grid {
     grid-template-columns: repeat(

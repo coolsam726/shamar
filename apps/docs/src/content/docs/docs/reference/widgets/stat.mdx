@@ -7,28 +7,46 @@ import DocScreenshot from '../../../../../components/DocScreenshot.astro';
 import DocApiTable from '../../../../../components/DocApiTable.astro';
 
 <DocScreenshot
-  src="/screenshots/components/widgets/stat.png"
-  darkSrc="/screenshots/components/widgets/stat-dark.png"
-  alt="Stat"
+  src="/screenshots/components/widgets/stats-overview.png"
+  darkSrc="/screenshots/components/widgets/stats-overview-dark.png"
+  alt="Stat cards"
   caption="From the /demo dashboard widget grid."
 />
 
 ```ts
-Stat.make('Total products', total)
-  .description('In catalog')
-  .color('primary')
-  .url('/demo/products')
-  .chart([12, 9, 11, 8, 10])
+import { Stat, html } from '@shamar/core'
+
+Stat.make('Unique views', '192.1k')
+  .description('32k increase')
+  .descriptionIcon('arrow-trending-up')
+  .descriptionColor('success')
+  .icon('eye')
+  .color('success')
+  .chart([7, 2, 10, 3, 15, 4, 17])
+  .chartColor('success')
+  .url('/admin/analytics')
+  .openUrlInNewTab()
+  .extraAttributes({ 'wire:click': '…' })
+  .columnSpan(2)
+
+Stat.make('Missing', null).placeholder('—')
+
+Stat.configureUsing((stat) => {
+  stat.placeholder('-')
+})
+
+Stat.make('Rich', html('<em>1.2k</em>'))
 ```
 
 <DocApiTable
   title="Methods"
   rows={[
-    { method: '.description(text)', description: 'Subtitle under the value.' },
-    { method: '.descriptionIcon(name)', description: 'Icon beside description.' },
-    { method: '.color(token)', description: 'primary / success / warning / danger / info / gray.' },
-    { method: '.url(href)', description: 'Make the stat clickable.' },
-    { method: '.chart([numbers])', description: 'Sparkline data.' },
+    { method: 'make(label, value)', description: 'Label/value; value may be null (uses placeholder).' },
+    { method: 'description / descriptionIcon / descriptionColor', description: 'Footer line + icon.' },
+    { method: 'icon / color / chart / chartColor', description: 'Card icon, accent, sparkline.' },
+    { method: 'url / openUrlInNewTab / extraAttributes', description: 'Clickable card.' },
+    { method: 'placeholder / columnSpan', description: 'Empty state and grid span.' },
+    { method: 'configureUsing', description: 'Global defaults for every Stat.make().' },
+    { method: 'html()', description: 'Trusted HTML helper for label/value/description.' },
   ]}
 />
-
