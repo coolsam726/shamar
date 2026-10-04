@@ -1,5 +1,5 @@
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { ApplicationService } from '@adonisjs/core/types';
 import type { ShamarConfig } from './config.js';
 import { createShamarRuntime } from './runtime.js';
@@ -7,6 +7,18 @@ import { registerShamarRoutes } from './routes.js';
 import { resolveGridItemStyle } from '@shamar/core';
 import type { WireDefinition } from '@shamar/wire';
 import './types.js';
+
+/**
+ * Resolve the host app's `edge.js` singleton (same instance Adonis's
+ * EdgeServiceProvider mounts). Bare `import('edge.js')` from a `link:`'d
+ * package can load a second copy and leave `shamar::` unmounted.
+ */
+async function hostEdge(app: ApplicationService) {
+  const parent = pathToFileURL(join(app.makePath(), 'package.json')).href;
+  const resolved = import.meta.resolve('edge.js', parent);
+  const { default: edge } = await import(resolved);
+  return edge;
+}
 
 export default class ShamarProvider {
   constructor(protected app: ApplicationService) {}
@@ -54,7 +66,7 @@ export default class ShamarProvider {
     const router = await this.app.container.make('router');
 
     if (this.app.usingEdgeJS) {
-      const { default: edge } = await import('edge.js');
+      const edge = await hostEdge(this.app);
       const viewsPath = join(
         dirname(fileURLToPath(import.meta.url)),
         '../resources/views/shamar',
@@ -136,7 +148,7 @@ export default class ShamarProvider {
 
     const discovered = await discoverWireComponents(this.app.makePath());
     const components: Record<string, WireDefinition> = {};
-    const edge = this.app.usingEdgeJS ? (await import('edge.js')).default : null;
+    const edge = this.app.usingEdgeJS ? await hostEdge(this.app) : null;
     if (edge) {
       try {
         edge.mount('wire', join(this.app.makePath(), 'resources/views/wire'));
