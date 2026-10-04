@@ -1,6 +1,6 @@
 ---
 title: StatsOverviewWidget
-description: Row of stat cards on the dashboard.
+description: Row of stat cards on the dashboard (Filament StatsOverviewWidget parity).
 ---
 
 import DocScreenshot from '../../../../../components/DocScreenshot.astro';
@@ -14,29 +14,86 @@ import DocApiTable from '../../../../../components/DocApiTable.astro';
 />
 
 ```ts
+import { StatsOverviewWidget, Stat, pageFilters, html } from '@shamar/core'
+
 export class ProductStatsWidget extends StatsOverviewWidget {
   static override sort = 10
   static override columnSpan = 'full'
-  /** Cards per row inside this widget (Filament `getColumns()`). */
+  static override heading = 'Analytics'
+  static override description = 'An overview of some analytics.'
+  /** Cards per row (Filament getColumns). null = auto from count. */
   static override columns = 4
-  // Or responsive: static override columns = { sm: 2, lg: 4 }
+  /** Filament defaults: lazy + poll every 5s. */
+  static override isLazy = false
+  static override pollingInterval: string | null = '5s'
 
   static override async stats(ctx) {
+    const filters = pageFilters(ctx) // dashboard filtersForm values
     return [
-      Stat.make('Total products', count).description('In catalog').color('primary'),
+      Stat.make('Total products', count)
+        .description('32k increase')
+        .descriptionIcon('arrow-trending-up')
+        .icon('cube')
+        .color('success')
+        .chart([7, 2, 10, 3, 15, 4, 17])
+        .url('/admin/products')
+        .openUrlInNewTab()
+        .extraAttributes({ class: 'cursor-pointer' })
+        .columnSpan(1),
+      Stat.make('Views', null).placeholder('—'),
+      Stat.make('Note', html('<strong>HTML</strong> value')),
     ]
   }
 }
 ```
 
-Leave `columns` unset (or `null`) for the legacy responsive default (`sm:2` / `lg:3` / `xl:5`).
+Scaffold with:
+
+```bash
+node ace shamar:make-widget ProductStats --type=stats
+```
+
+### Dashboard filters
+
+```ts
+class AdminDashboard extends DashboardPage {
+  static override filtersForm(form) {
+    return form.schema([
+      Select.make('period').options([
+        { label: 'Today', value: 'today' },
+        { label: 'MTD', value: 'mtd' },
+      ]),
+    ])
+  }
+  static override widgets() {
+    return [ProductStatsWidget]
+  }
+}
+```
 
 <DocApiTable
-  title="Methods"
+  title="Widget"
   rows={[
     { method: 'static sort', description: 'Grid order.' },
     { method: 'static columnSpan', description: '1–4 or full width on the dashboard grid.' },
-    { method: 'static columns', description: 'Cards per row inside this widget: number, or `{ default?, sm?, md?, lg?, xl?, 2xl? }`.' },
-    { method: 'static stats(ctx)', description: 'Returns Stat[] (async).' },
+    { method: 'static columns', description: 'Cards per row: number, responsive map, or null (auto 3/4).' },
+    { method: 'static heading / description', description: 'Title and subtitle above the cards.' },
+    { method: 'static pollingInterval', description: "'5s' default; null disables." },
+    { method: 'static isLazy', description: 'Defer stats until visible (default true).' },
+    { method: 'static stats(ctx)', description: 'Returns Stat[] (async). Read ctx.filters / pageFilters(ctx).' },
+    { method: 'StatsOverviewWidget.configureUsing', description: 'Global defaults for all stats widgets.' },
+  ]}
+/>
+
+<DocApiTable
+  title="Stat"
+  rows={[
+    { method: 'make / description / descriptionIcon / color / chart / url', description: 'Core card API.' },
+    { method: 'icon()', description: 'Leading card icon.' },
+    { method: 'descriptionColor() / chartColor()', description: 'Independent colors.' },
+    { method: 'placeholder() / configureUsing()', description: 'Blank value fallback.' },
+    { method: 'extraAttributes() / openUrlInNewTab()', description: 'HTML attrs and link target.' },
+    { method: 'columnSpan()', description: 'Span multiple columns in the stats grid.' },
+    { method: 'html()', description: 'Trusted HTML for label/value/description.' },
   ]}
 />

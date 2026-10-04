@@ -280,20 +280,77 @@ export class AdminController {
       pageTitle: DashboardClass.label ?? 'Dashboard',
     });
     const navigationCards = shell.menuRoots.filter((root) => root.label !== 'Dashboard');
+    const {
+      resolveDashboardFiltersForm,
+      pickDashboardFilters,
+    } = await import('@shamar/core');
+    const filtersSchema = resolveDashboardFiltersForm(DashboardClass);
+    const filterValues = pickDashboardFilters(
+      ctx.request.qs() as Record<string, unknown>,
+      filtersSchema,
+    );
     const widgetCtx = {
       user: authCtx.user ?? null,
       panelId: this.panel.id,
       basePath: this.basePath,
+      filters: filterValues,
     };
     const { columns, widgets } = await resolveDashboardWidgets(DashboardClass, widgetCtx, {
       navigationCards,
+      refreshUrlBase: this.basePath || '',
     });
 
     return ctx.view.render('shamar::dashboard', {
       ...shell,
       dashboardColumns: columns,
       dashboardWidgets: widgets,
+      dashboardFilters: filtersSchema ?? null,
+      dashboardFilterValues: filterValues,
       pageSubtitle: 'Jump into a resource to manage your data.',
+    });
+  }
+
+  /** HTML fragment for lazy-load / polling of a single dashboard widget. */
+  async dashboardWidget(ctx: ShamarHttpContext) {
+    const authResult = await this.ensureAuthenticated(ctx);
+    if (!this.isAuthContext(authResult)) return authResult;
+    const authCtx = authResult;
+
+    const widgetId = String(ctx.params.widgetId ?? '');
+    if (!widgetId) return ctx.response.badRequest({ message: 'Missing widget id' });
+
+    const DashboardClass = this.panel.dashboardPage;
+    const shell = await this.shellOpts(ctx, authCtx, {
+      pageTitle: DashboardClass.label ?? 'Dashboard',
+    });
+    const navigationCards = shell.menuRoots.filter((root) => root.label !== 'Dashboard');
+    const {
+      resolveDashboardFiltersForm,
+      pickDashboardFilters,
+    } = await import('@shamar/core');
+    const filtersSchema = resolveDashboardFiltersForm(DashboardClass);
+    const filterValues = pickDashboardFilters(
+      ctx.request.qs() as Record<string, unknown>,
+      filtersSchema,
+    );
+    const widgetCtx = {
+      user: authCtx.user ?? null,
+      panelId: this.panel.id,
+      basePath: this.basePath,
+      filters: filterValues,
+    };
+    const { widgets } = await resolveDashboardWidgets(DashboardClass, widgetCtx, {
+      navigationCards,
+      hydrate: true,
+      widgetId,
+      refreshUrlBase: this.basePath || '',
+    });
+    const widget = widgets[0];
+    if (!widget) return ctx.response.notFound({ message: 'Widget not found' });
+
+    return ctx.view.render('shamar::widgets/widget-fragment', {
+      ...shell,
+      widget,
     });
   }
 

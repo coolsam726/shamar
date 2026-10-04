@@ -1,4 +1,4 @@
-@let(colorClass = stat.color === 'success'
+@let(valueColor = stat.color === 'success'
   ? 'text-success'
   : stat.color === 'warning'
     ? 'text-warning'
@@ -10,21 +10,83 @@
           ? 'text-body-subtle'
           : 'text-fg-brand')
 
+@let(descColor = (stat.descriptionColor || stat.color) === 'success'
+  ? 'text-success'
+  : (stat.descriptionColor || stat.color) === 'warning'
+    ? 'text-warning'
+    : (stat.descriptionColor || stat.color) === 'danger'
+      ? 'text-danger'
+      : (stat.descriptionColor || stat.color) === 'info'
+        ? 'text-info'
+        : (stat.descriptionColor || stat.color) === 'gray'
+          ? 'text-body-subtle'
+          : 'text-fg-brand')
+
+@let(chartColor = stat.chartColor || stat.color || 'primary')
+@let(spanStyle = stat.columnSpan && stat.columnSpan > 1
+  ? `--shamar-stat-span: ${stat.columnSpan}`
+  : '')
+@let(extra = stat.extraAttributesHtml || '')
+
 @if(stat.url)
-  <a href="{{ stat.url }}" class="group shamar-card shamar-stat-card block rounded-xl h-full overflow-hidden transition hover:border-fg-brand/40">
+  <a
+    href="{{ stat.url }}"
+    @if(stat.openUrlInNewTab)
+      target="_blank" rel="noopener noreferrer"
+    @endif
+    class="group shamar-card shamar-stat-card fi-wi-stats-overview-stat block rounded-xl h-full overflow-hidden transition hover:border-fg-brand/40{{ stat.columnSpan && stat.columnSpan > 1 ? ' shamar-stat-card--span' : '' }}"
+    @if(spanStyle)
+      style="{{ spanStyle }}"
+    @endif
+    {{{ extra ? ' ' + extra : '' }}}
+  >
 @else
-  <div class="shamar-card shamar-stat-card rounded-xl h-full overflow-hidden">
+  <div
+    class="shamar-card shamar-stat-card fi-wi-stats-overview-stat rounded-xl h-full overflow-hidden{{ stat.columnSpan && stat.columnSpan > 1 ? ' shamar-stat-card--span' : '' }}"
+    @if(spanStyle)
+      style="{{ spanStyle }}"
+    @endif
+    {{{ extra ? ' ' + extra : '' }}}
+  >
 @endif
   <div class="{{ stat.chart && stat.chart.length ? 'p-5 pb-0' : 'p-5' }}">
-    <p class="text-xs font-medium uppercase tracking-wide text-body-subtle">{{ stat.label }}</p>
-    <p class="mt-1 text-2xl font-bold tracking-tight text-heading group-hover:text-fg-brand">{{ stat.value }}</p>
-    @if(stat.description)
-      <p class="mt-2 flex items-center gap-1 text-xs {{ colorClass }}">
+    <div class="flex items-start justify-between gap-3">
+      <div class="min-w-0 flex-1">
+        <p class="text-xs font-medium uppercase tracking-wide text-body-subtle">
+          @if(stat.labelHtml)
+            {{{ stat.labelHtml }}}
+          @else
+            {{ stat.label }}
+          @endif
+        </p>
+        <p class="mt-1 text-2xl font-bold tracking-tight text-heading group-hover:text-fg-brand {{ valueColor }}">
+          @if(stat.valueHtml)
+            {{{ stat.valueHtml }}}
+          @else
+            {{ stat.value !== '' && stat.value !== null && stat.value !== undefined ? stat.value : (stat.placeholder ?? '') }}
+          @endif
+        </p>
+      </div>
+      @if(stat.icon)
+        <span class="inline-flex shrink-0 rounded-lg bg-neutral-secondary p-2 {{ valueColor }}">
+          @let(root = { icon: stat.icon })
+          @include('shamar::partials/icon')
+        </span>
+      @endif
+    </div>
+    @if(stat.description || stat.descriptionHtml)
+      <p class="mt-2 flex items-center gap-1 text-xs {{ descColor }}">
         @if(stat.descriptionIcon && stat.descriptionIconPosition === 'before')
           @let(root = { icon: stat.descriptionIcon })
           <span class="inline-flex shrink-0">@include('shamar::partials/icon')</span>
         @endif
-        <span>{{ stat.description }}</span>
+        <span>
+          @if(stat.descriptionHtml)
+            {{{ stat.descriptionHtml }}}
+          @else
+            {{ stat.description }}
+          @endif
+        </span>
         @if(stat.descriptionIcon && stat.descriptionIconPosition !== 'before')
           @let(root = { icon: stat.descriptionIcon })
           <span class="inline-flex shrink-0">@include('shamar::partials/icon')</span>
@@ -34,8 +96,9 @@
   </div>
   @if(stat.chart && stat.chart.length)
     <div
-      class="mt-3 h-10"
-      x-data='shamarStatSparkline({{ jsonAttr(stat.chart) }})'
+      class="mt-3 h-10 fi-wi-stats-overview-stat-chart"
+      data-stat-chart-color="{{ chartColor }}"
+      x-data='shamarStatSparkline({{ jsonAttr(stat.chart) }}, {{ jsonAttr({ color: chartColor }) }})'
     >
       <div x-ref="sparkline" class="h-full w-full"></div>
     </div>

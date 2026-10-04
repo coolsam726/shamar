@@ -20,9 +20,16 @@ export interface ResolvedDashboardWidget {
   id: string;
   kind: DashboardWidgetKind;
   heading?: string;
+  description?: string;
   columnSpan: number | 'full';
   sort: number;
   view?: string;
+  /** Parsed polling interval in ms; `null` disables. */
+  pollingIntervalMs: number | null;
+  /** When true, payload may be deferred until the client loads the widget. */
+  isLazy: boolean;
+  /** Panel-relative URL to re-fetch this widget’s HTML fragment. */
+  refreshUrl?: string;
   payload: DashboardWidgetPayload;
 }
 
@@ -35,13 +42,12 @@ export type DashboardWidgetPayload =
 
 export interface StatsOverviewPayload {
   stats: StatData[];
-  /**
-   * Resolved cards-per-row config from {@link StatsOverviewWidget.columns}.
-   * `null` means the legacy default grid classes are used.
-   */
-  columns: number | Partial<Record<string, number>> | null;
-  /** Inline CSS vars for `.shamar-stats-overview__grid`, or `null` for the legacy classes. */
-  gridStyle: string | null;
+  /** Resolved cards-per-row config. */
+  columns: Partial<Record<string, number>>;
+  /** Inline CSS vars for `.shamar-stats-overview__grid`. */
+  gridStyle: string;
+  /** True when stats were not resolved yet (lazy placeholder). */
+  deferred?: boolean;
 }
 
 export interface CardPayload {
@@ -52,15 +58,18 @@ export interface ListPayload {
   columns: ListWidgetColumn[];
   records: ListWidgetRecord[];
   limit: number;
+  deferred?: boolean;
 }
 
 export interface ChartPayload {
   chartType: ChartType;
   library: ChartLibrary;
   data: ChartData;
+  deferred?: boolean;
 }
 
 export interface NavigationCardsPayload {
   cards: NavigationCardItem[];
   emptyMessage?: string;
+  deferred?: boolean;
 }

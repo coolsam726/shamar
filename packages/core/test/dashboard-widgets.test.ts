@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { describe, it, afterEach } from 'node:test';
 import {
   DashboardPage,
   NavigationCardsWidget,
@@ -7,6 +7,7 @@ import {
   StatsOverviewWidget,
   ChartWidget,
   ListWidget,
+  html,
   isChartWidget,
   isDashboardPage,
   isNavigationCardsWidget,
@@ -14,7 +15,18 @@ import {
   clampStatsOverviewColumns,
   resolveStatsOverviewColumns,
   statsOverviewGridStyle,
+  autoStatsOverviewColumns,
+  parsePollingIntervalMs,
+  pickDashboardFilters,
+  resolveDashboardFiltersForm,
+  FormBuilder,
+  Select,
 } from '../src/index.js';
+
+afterEach(() => {
+  Stat.clearConfigureUsing();
+  StatsOverviewWidget.clearConfigureUsing();
+});
 
 class DemoStats extends StatsOverviewWidget {
   static override stats() {
@@ -53,9 +65,16 @@ describe('Dashboard widgets', () => {
     const stat = Stat.make('Users', 10)
       .description('Active')
       .descriptionIcon('users', 'before')
-      .color('info')
+      .descriptionColor('info')
+      .color('success')
+      .icon('user-group')
       .url('/users')
-      .chart([1, 2, 3]);
+      .openUrlInNewTab()
+      .chart([1, 2, 3])
+      .chartColor('warning')
+      .placeholder('—')
+      .extraAttributes({ class: 'cursor-pointer', 'data-x': '1' })
+      .columnSpan(2);
 
     assert.deepEqual(stat.toJSON(), {
       label: 'Users',
@@ -63,10 +82,32 @@ describe('Dashboard widgets', () => {
       description: 'Active',
       descriptionIcon: 'users',
       descriptionIconPosition: 'before',
-      color: 'info',
+      descriptionColor: 'info',
+      color: 'success',
+      icon: 'user-group',
       url: '/users',
+      openUrlInNewTab: true,
       chart: [1, 2, 3],
+      chartColor: 'warning',
+      placeholder: '—',
+      extraAttributes: { class: 'cursor-pointer', 'data-x': '1' },
+      columnSpan: 2,
     });
+  });
+
+  it('Stat placeholder and HTML values', () => {
+    assert.equal(Stat.make('Empty', null).placeholder('-').toJSON().value, '-');
+    assert.equal(Stat.make('Zero', 0).placeholder('-').toJSON().value, 0);
+    const rich = Stat.make(html('<b>L</b>'), html('<em>1</em>')).toJSON();
+    assert.equal(rich.labelHtml, '<b>L</b>');
+    assert.equal(rich.valueHtml, '<em>1</em>');
+  });
+
+  it('Stat.configureUsing applies defaults', () => {
+    Stat.configureUsing((stat) => {
+      stat.placeholder('n/a');
+    });
+    assert.equal(Stat.make('X', null).toJSON().value, 'n/a');
   });
 
   it('DashboardPage defaults to navigation cards widget', () => {
@@ -96,18 +137,49 @@ describe('Dashboard widgets', () => {
 });
 
 describe('StatsOverviewWidget.columns', () => {
-  it('clamps and resolves number / responsive maps', () => {
+  it('clamps, auto-resolves, and builds grid styles', () => {
     assert.equal(clampStatsOverviewColumns(0), 1);
     assert.equal(clampStatsOverviewColumns(99), 12);
+    assert.equal(autoStatsOverviewColumns(2), 3);
+    assert.equal(autoStatsOverviewColumns(4), 4);
+    assert.equal(autoStatsOverviewColumns(3), 3);
     assert.deepEqual(resolveStatsOverviewColumns(4), { default: 1, sm: 4 });
+    assert.deepEqual(resolveStatsOverviewColumns(null, 4), { default: 1, sm: 4 });
     assert.deepEqual(resolveStatsOverviewColumns({ sm: 2, lg: 4 }), {
       default: 1,
       sm: 2,
       lg: 4,
     });
-    assert.equal(resolveStatsOverviewColumns(null), null);
     assert.equal(statsOverviewGridStyle(3), '--shamar-stats-cols: 1; --shamar-stats-cols-sm: 3');
-    assert.equal(statsOverviewGridStyle(null), null);
+    assert.match(statsOverviewGridStyle(null, 2), /--shamar-stats-cols-sm: 3/);
+  });
+
+  it('parses polling intervals', () => {
+    assert.equal(parsePollingIntervalMs('5s'), 5000);
+    assert.equal(parsePollingIntervalMs('500ms'), 500);
+    assert.equal(parsePollingIntervalMs(null), null);
+  });
+});
+
+describe('Dashboard filters', () => {
+  class FilteredDashboard extends DashboardPage {
+    static override filtersForm(form: FormBuilder) {
+      return form.schema([
+        Select.make('period').options([
+          { label: 'Today', value: 'today' },
+          { label: 'MTD', value: 'mtd' },
+        ]),
+      ]);
+    }
+  }
+
+  it('resolves filters form and picks query values', () => {
+    const schema = resolveDashboardFiltersForm(FilteredDashboard);
+    assert.ok(schema);
+    assert.equal(schema!.fields[0]!.name, 'period');
+    assert.deepEqual(pickDashboardFilters({ period: 'mtd', noise: 1 }, schema), {
+      period: 'mtd',
+    });
   });
 });
 

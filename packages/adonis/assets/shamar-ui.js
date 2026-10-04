@@ -7052,7 +7052,33 @@
     };
   };
 
-  window.shamarStatSparkline = function shamarStatSparkline(values) {
+  function readStatChartColor(host, preferred) {
+    const root = host?.closest?.('.fi-wi-stats-overview-stat') || host || document.documentElement;
+    const styles = getComputedStyle(root);
+    const map = {
+      primary: ['--color-primary-500', '--color-fg-brand'],
+      success: ['--color-success-500', '--color-fg-success'],
+      warning: ['--color-warning-500', '--color-fg-warning'],
+      danger: ['--color-danger-500', '--color-fg-danger'],
+      info: ['--color-info-500', '--color-fg-info'],
+      gray: ['--color-gray-400', '--color-body-subtle'],
+    };
+    const keys = map[preferred] || map.primary;
+    for (const key of keys) {
+      const value = styles.getPropertyValue(key).trim();
+      if (value) return value;
+    }
+    return readBrandColor();
+  }
+
+  function readStatChartOption(host, name, fallback) {
+    const root = host?.closest?.('.fi-wi-stats-overview-stat') || host;
+    if (!root) return fallback;
+    const raw = getComputedStyle(root).getPropertyValue(name).trim();
+    return raw || fallback;
+  }
+
+  window.shamarStatSparkline = function shamarStatSparkline(values, options = {}) {
     return {
       chart: null,
       async init() {
@@ -7060,6 +7086,19 @@
         if (!el || !Array.isArray(values) || !values.length) return;
         try {
           await loadApexCharts();
+          const host = this.$el;
+          const color = readStatChartColor(host, options.color || host?.dataset?.statChartColor);
+          const borderWidth = Number(readStatChartOption(host, '--stat-chart-border-width', '2')) || 2;
+          const tension = Number(readStatChartOption(host, '--stat-chart-line-tension', '0.4'));
+          const fillMode = readStatChartOption(host, '--stat-chart-fill', 'gradient');
+          const curve = tension <= 0 ? 'straight' : 'smooth';
+          const fill =
+            fillMode === 'none'
+              ? { type: 'solid', opacity: 0 }
+              : {
+                  type: 'gradient',
+                  gradient: { opacityFrom: 0.35, opacityTo: 0.05 },
+                };
           this.chart = new window.ApexCharts(el, {
             chart: {
               type: 'area',
@@ -7068,12 +7107,9 @@
               animations: { enabled: false },
             },
             series: [{ data: values }],
-            stroke: { curve: 'smooth', width: 2 },
-            fill: {
-              type: 'gradient',
-              gradient: { opacityFrom: 0.35, opacityTo: 0.05 },
-            },
-            colors: [readBrandColor()],
+            stroke: { curve, width: borderWidth },
+            fill,
+            colors: [color],
             tooltip: { enabled: false },
           });
           await this.chart.render();
@@ -7083,6 +7119,80 @@
       },
       destroy() {
         if (this.chart?.destroy) this.chart.destroy();
+      },
+    };
+  };
+
+  /**
+   * Lazy-load + polling island for dashboard widgets (Filament parity).
+   * Expects data-refresh-url, optional data-polling-interval (ms), data-lazy.
+   */
+  window.shamarDashboardWidget = function shamarDashboardWidget(el) {
+    return {
+      timer: null,
+      observer: null,
+      loaded: false,
+      async init() {
+        const node = el || this.$el;
+        const lazy = node?.dataset?.lazy === '1';
+        if (lazy && 'IntersectionObserver' in window) {
+          this.observer = new IntersectionObserver(
+            (entries) => {
+              if (entries.some((entry) => entry.isIntersecting)) {
+                this.observer?.disconnect();
+                this.observer = null;
+                this.load();
+              }
+            },
+            { rootMargin: '80px' },
+          );
+          this.observer.observe(node);
+        } else if (lazy) {
+          await this.load();
+        } else {
+          this.loaded = true;
+          this.startPolling();
+        }
+      },
+      async load() {
+        const node = el || this.$el;
+        const url = node?.dataset?.refreshUrl;
+        if (!url) return;
+        try {
+          const query = window.location.search || '';
+          const sep = url.includes('?') ? '&' : '?';
+          const res = await fetch(`${url}${query ? sep + query.slice(1) : ''}`, {
+            headers: { Accept: 'text/html', 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin',
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const html = await res.text();
+          const template = document.createElement('template');
+          template.innerHTML = html.trim();
+          const next = template.content.firstElementChild;
+          if (!next) return;
+          const parent = node.closest('[data-widget-shell]') || node;
+          parent.replaceWith(next);
+          if (window.Alpine?.initTree) window.Alpine.initTree(next);
+          this.loaded = true;
+        } catch (error) {
+          console.error('[shamar] dashboard widget refresh failed', error);
+          const body = node.querySelector('[data-shamar-widget-body]');
+          if (body) {
+            body.innerHTML =
+              '<p class="col-span-full text-sm text-fg-danger">Failed to load widget.</p>';
+          }
+        }
+      },
+      startPolling() {
+        const node = el || this.$el;
+        const ms = Number(node?.dataset?.pollingInterval || 0);
+        if (!ms || ms < 250) return;
+        this.timer = window.setInterval(() => this.load(), ms);
+      },
+      destroy() {
+        if (this.timer) window.clearInterval(this.timer);
+        this.observer?.disconnect();
       },
     };
   };

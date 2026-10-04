@@ -8,6 +8,30 @@
       ? 'shamar-dashboard-grid grid gap-4 sm:grid-cols-2 xl:grid-cols-4'
       : 'shamar-dashboard-grid grid gap-4 sm:grid-cols-2 xl:grid-cols-3')
 
+@if(dashboardFilters && dashboardFilters.fields && dashboardFilters.fields.length)
+  <form
+    method="get"
+    action="{{ basePath || '/' }}"
+    class="shamar-card shamar-dashboard-filters mb-4 rounded-xl p-4"
+  >
+    <div class="flex flex-wrap items-end gap-3">
+      @each(field in dashboardFilters.fields)
+        @let(record = dashboardFilterValues || {})
+        @let(mode = 'create')
+        @let(formErrors = {})
+        @let(relationUi = {})
+        <div class="min-w-[10rem] flex-1">
+          @include('shamar::partials/field-input')
+        </div>
+      @endeach
+      <button
+        type="submit"
+        class="inline-flex items-center rounded-md bg-fg-brand px-3 py-2 text-sm font-medium text-white hover:opacity-90"
+      >Apply</button>
+    </div>
+  </form>
+@endif
+
 <div class="{{ gridClass }}">
   @each(widget in dashboardWidgets)
     @include('shamar::widgets/shell')

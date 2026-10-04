@@ -1,0 +1,23 @@
+{{{
+  exports({
+    to: app.makePath(`app/widgets/${panel}/${fileName}`),
+  })
+}}}
+import { ChartWidget, type WidgetRequestContext } from '@shamar/core'
+
+export class {{ className }} extends ChartWidget {
+  static override sort = {{ sort }}
+  static override columnSpan = 'full' as const
+  static override heading = '{{ label }}'
+
+  static override type() {
+    return 'line' as const
+  }
+
+  static override async data(_ctx: WidgetRequestContext) {
+    return {
+      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+      datasets: [{ label: 'Series', data: [3, 5, 4, 7, 6] }],
+    }
+  }
+}
