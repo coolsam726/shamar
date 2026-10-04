@@ -743,6 +743,83 @@ button:disabled,
   }
 }
 
+/* StatsOverviewWidget cards-per-row — set via --shamar-stats-cols* CSS vars. */
+.shamar-stats-overview__grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(var(--shamar-stats-cols, 1), minmax(0, 1fr));
+}
+@media (min-width: 40rem) {
+  .shamar-stats-overview__grid {
+    grid-template-columns: repeat(
+      var(--shamar-stats-cols-sm, var(--shamar-stats-cols, 1)),
+      minmax(0, 1fr)
+    );
+  }
+}
+@media (min-width: 48rem) {
+  .shamar-stats-overview__grid {
+    grid-template-columns: repeat(
+      var(
+        --shamar-stats-cols-md,
+        var(--shamar-stats-cols-sm, var(--shamar-stats-cols, 1))
+      ),
+      minmax(0, 1fr)
+    );
+  }
+}
+@media (min-width: 64rem) {
+  .shamar-stats-overview__grid {
+    grid-template-columns: repeat(
+      var(
+        --shamar-stats-cols-lg,
+        var(
+          --shamar-stats-cols-md,
+          var(--shamar-stats-cols-sm, var(--shamar-stats-cols, 1))
+        )
+      ),
+      minmax(0, 1fr)
+    );
+  }
+}
+@media (min-width: 80rem) {
+  .shamar-stats-overview__grid {
+    grid-template-columns: repeat(
+      var(
+        --shamar-stats-cols-xl,
+        var(
+          --shamar-stats-cols-lg,
+          var(
+            --shamar-stats-cols-md,
+            var(--shamar-stats-cols-sm, var(--shamar-stats-cols, 1))
+          )
+        )
+      ),
+      minmax(0, 1fr)
+    );
+  }
+}
+@media (min-width: 96rem) {
+  .shamar-stats-overview__grid {
+    grid-template-columns: repeat(
+      var(
+        --shamar-stats-cols-2xl,
+        var(
+          --shamar-stats-cols-xl,
+          var(
+            --shamar-stats-cols-lg,
+            var(
+              --shamar-stats-cols-md,
+              var(--shamar-stats-cols-sm, var(--shamar-stats-cols, 1))
+            )
+          )
+        )
+      ),
+      minmax(0, 1fr)
+    );
+  }
+}
+
 @utility shamar-card {
   border-radius: 0.75rem;
   border: 1px solid var(--color-card-border);

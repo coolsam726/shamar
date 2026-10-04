@@ -35,6 +35,13 @@ export type DashboardWidgetPayload =
 
 export interface StatsOverviewPayload {
   stats: StatData[];
+  /**
+   * Resolved cards-per-row config from {@link StatsOverviewWidget.columns}.
+   * `null` means the legacy default grid classes are used.
+   */
+  columns: number | Partial<Record<string, number>> | null;
+  /** Inline CSS vars for `.shamar-stats-overview__grid`, or `null` for the legacy classes. */
+  gridStyle: string | null;
 }
 
 export interface CardPayload {

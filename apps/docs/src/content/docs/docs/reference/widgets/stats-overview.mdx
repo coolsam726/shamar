@@ -17,6 +17,9 @@ import DocApiTable from '../../../../../components/DocApiTable.astro';
 export class ProductStatsWidget extends StatsOverviewWidget {
   static override sort = 10
   static override columnSpan = 'full'
+  /** Cards per row inside this widget (Filament `getColumns()`). */
+  static override columns = 4
+  // Or responsive: static override columns = { sm: 2, lg: 4 }
 
   static override async stats(ctx) {
     return [
@@ -26,12 +29,14 @@ export class ProductStatsWidget extends StatsOverviewWidget {
 }
 ```
 
+Leave `columns` unset (or `null`) for the legacy responsive default (`sm:2` / `lg:3` / `xl:5`).
+
 <DocApiTable
   title="Methods"
   rows={[
     { method: 'static sort', description: 'Grid order.' },
-    { method: 'static columnSpan', description: '1–4 or full width.' },
+    { method: 'static columnSpan', description: '1–4 or full width on the dashboard grid.' },
+    { method: 'static columns', description: 'Cards per row inside this widget: number, or `{ default?, sm?, md?, lg?, xl?, 2xl? }`.' },
     { method: 'static stats(ctx)', description: 'Returns Stat[] (async).' },
   ]}
 />
-

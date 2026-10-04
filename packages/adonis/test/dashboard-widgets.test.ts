@@ -44,7 +44,11 @@ describe('resolveDashboardWidgets', () => {
     const stats = result.widgets[0]!;
     assert.equal(stats.kind, 'statsOverview');
     assert.equal(stats.heading, 'KPIs');
-    assert.deepEqual(stats.payload, { stats: [{ label: 'Total', value: 3 }] });
+    assert.deepEqual(stats.payload, {
+      stats: [{ label: 'Total', value: 3 }],
+      columns: null,
+      gridStyle: null,
+    });
 
     const chart = result.widgets[1]!;
     assert.equal(chart.kind, 'chart');
@@ -65,6 +69,28 @@ describe('resolveDashboardWidgets', () => {
       cards: [{ label: 'Catalog', href: '/demo/products', icon: 'squares-2x2' }],
       emptyMessage: 'No resources registered yet.',
     });
+  });
+
+  it('passes StatsOverviewWidget.columns into the payload grid style', async () => {
+    class FourColStats extends StatsOverviewWidget {
+      static override columns = 4;
+
+      static override stats() {
+        return [Stat.make('A', 1), Stat.make('B', 2), Stat.make('C', 3), Stat.make('D', 4)];
+      }
+    }
+
+    class FourColDashboard extends DashboardPage {
+      static override widgets() {
+        return [FourColStats];
+      }
+    }
+
+    const result = await resolveDashboardWidgets(FourColDashboard, { user: null });
+    const stats = result.widgets[0]!;
+    assert.equal(stats.kind, 'statsOverview');
+    assert.deepEqual(stats.payload.columns, { default: 1, sm: 4 });
+    assert.equal(stats.payload.gridStyle, '--shamar-stats-cols: 1; --shamar-stats-cols-sm: 4');
   });
 
   it('skips widgets when canView returns false', async () => {
