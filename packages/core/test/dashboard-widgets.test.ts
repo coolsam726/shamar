@@ -11,6 +11,9 @@ import {
   isDashboardPage,
   isNavigationCardsWidget,
   isStatsOverviewWidget,
+  clampStatsOverviewColumns,
+  resolveStatsOverviewColumns,
+  statsOverviewGridStyle,
 } from '../src/index.js';
 
 class DemoStats extends StatsOverviewWidget {
@@ -89,6 +92,22 @@ describe('Dashboard widgets', () => {
     assert.equal(widgets.length, 3);
     assert.equal(widgets[0], DemoStats);
     assert.equal(widgets[2], NavigationCardsWidget);
+  });
+});
+
+describe('StatsOverviewWidget.columns', () => {
+  it('clamps and resolves number / responsive maps', () => {
+    assert.equal(clampStatsOverviewColumns(0), 1);
+    assert.equal(clampStatsOverviewColumns(99), 12);
+    assert.deepEqual(resolveStatsOverviewColumns(4), { default: 1, sm: 4 });
+    assert.deepEqual(resolveStatsOverviewColumns({ sm: 2, lg: 4 }), {
+      default: 1,
+      sm: 2,
+      lg: 4,
+    });
+    assert.equal(resolveStatsOverviewColumns(null), null);
+    assert.equal(statsOverviewGridStyle(3), '--shamar-stats-cols: 1; --shamar-stats-cols-sm: 3');
+    assert.equal(statsOverviewGridStyle(null), null);
   });
 });
 

@@ -7,6 +7,8 @@ import {
   isListWidget,
   isNavigationCardsWidget,
   isStatsOverviewWidget,
+  resolveStatsOverviewColumns,
+  statsOverviewGridStyle,
   type DashboardPageClass,
   type ResolvedDashboardWidget,
   type WidgetClass,
@@ -62,10 +64,15 @@ export async function resolveDashboardWidgets(
 
     if (isStatsOverviewWidget(WidgetClass)) {
       const raw = await WidgetClass.stats(ctx);
+      const columns = resolveStatsOverviewColumns(WidgetClass.columns);
       widgets.push({
         ...base,
         kind: 'statsOverview',
-        payload: { stats: serializeStats(raw) },
+        payload: {
+          stats: serializeStats(raw),
+          columns,
+          gridStyle: statsOverviewGridStyle(WidgetClass.columns),
+        },
       });
       continue;
     }
