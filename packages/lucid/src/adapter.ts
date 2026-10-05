@@ -16,6 +16,9 @@ interface LucidModelLike {
   query(options?: { connection?: string }): LucidQueryBuilder;
   create(data: Record<string, unknown>, options?: { connection?: string }): Promise<unknown>;
   findOrFail(id: unknown, options?: { connection?: string }): Promise<LucidRow>;
+  /** Lucid maps attribute names → DB columns; used when SQL must use real column ids. */
+  $keys?: { attributesToColumns?: { resolve?(key: string): string; get?(key: string, fallback?: string): string } };
+  $getColumn?(name: string): { columnName?: string } | undefined;
 }
 
 interface LucidQueryBuilder {
@@ -78,6 +81,19 @@ function resolveModel(meta: ResourceMeta): LucidModelLike {
   );
 }
 
+/**
+ * Map a Lucid attribute (camelCase) to its database column for whereRaw/`??` bindings.
+ * Normal qb.where/orderBy already resolve via Lucid's query builder; whereRaw does not.
+ */
+function resolveDbColumn(Model: LucidModelLike, attribute: string): string {
+  if (!attribute || attribute.includes('.')) return attribute;
+  const fromKeys = Model.$keys?.attributesToColumns?.resolve?.(attribute)
+    ?? Model.$keys?.attributesToColumns?.get?.(attribute);
+  if (fromKeys) return fromKeys;
+  const col = Model.$getColumn?.(attribute)?.columnName;
+  return col || attribute;
+}
+
 function toRecord(row: LucidRow): Record<string, unknown> {
   return typeof row.serialize === 'function' ? row.serialize() : row.toJSON();
 }
@@ -131,9 +147,9 @@ async function listLucid(
   if (query.search && meta.searchableFields.length > 0) {
     const [first, ...rest] = meta.searchableFields;
     if (first) {
-      whereContains(qb, first, query.search);
+      whereContains(qb, resolveDbColumn(Model, first), query.search);
       for (const field of rest) {
-        whereContains(qb, field, query.search, true);
+        whereContains(qb, resolveDbColumn(Model, field), query.search, true);
       }
     }
   }
@@ -152,7 +168,7 @@ async function listLucid(
       if (!field || field.includes('.')) continue;
       const op = filter.op ?? '=';
       if (op === 'ilike') {
-        whereContains(qb, field, String(filter.value ?? ''));
+        whereContains(qb, resolveDbColumn(Model, field), String(filter.value ?? ''));
       } else if (op === '!=') {
         if (typeof qb.whereNot === 'function') {
           qb.whereNot(field, filter.value);
@@ -298,7 +314,7 @@ async function searchLucid(
       }
     }
   } else if (query.q?.trim()) {
-    whereContains(qb, titleAttribute, query.q.trim());
+    whereContains(qb, resolveDbColumn(Model, titleAttribute), query.q.trim());
   }
 
   if (query.scope) {

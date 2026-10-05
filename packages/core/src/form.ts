@@ -19,6 +19,7 @@ import {
   isLayoutComponent,
   type SchemaItem,
 } from './schemas.js';
+import { groupRelationTablesIntoTabs } from './relation-tabs.js';
 import {
   currencySymbol,
   normalizeCurrencyOptions,
@@ -824,6 +825,20 @@ export class RelationTable extends FormComponent {
     this.setCreateAndEditOption(value);
     return this;
   }
+
+  /**
+   * Open related records in an edit modal even when the parent page is show/view.
+   * Useful for data-entry tables (e.g. enter meter readings from a billing cycle).
+   */
+  editOnView(value = true): this {
+    if (!this.config.relation) {
+      throw new Error(
+        `Call .relationship() before .editOnView() on field "${this.config.name}"`,
+      );
+    }
+    this.config.relation.editOnView = value;
+    return this;
+  }
 }
 
 /** Filament `Hidden::make()`. */
@@ -1058,9 +1073,20 @@ export type FormSchemaItem = SchemaItem;
 export class FormBuilder {
   private rootColumns: 1 | 2 | 3 | 4 = 2;
   private children: FormSchemaItem[] = [];
+  /** When true (default), consecutive RelationTables become Tabs. */
+  private groupRelationTables = true;
 
   columns(value: 1 | 2 | 3 | 4): this {
     this.rootColumns = value;
+    return this;
+  }
+
+  /**
+   * Group consecutive RelationTable sections into Tabs (Filament relation-manager style).
+   * Default: `true`. Pass `false` to keep stacked sections.
+   */
+  relationTablesAsTabs(value = true): this {
+    this.groupRelationTables = value;
     return this;
   }
 
@@ -1085,6 +1111,10 @@ export class FormBuilder {
           children: schema.filter((n) => n.kind === 'field'),
         },
       ];
+    }
+
+    if (this.groupRelationTables) {
+      schema = groupRelationTablesIntoTabs(schema);
     }
 
     const fields = collectFields(schema);

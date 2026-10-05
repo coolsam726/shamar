@@ -97,10 +97,25 @@ export default class ShamarProvider {
       const { htmlAttrs } = await import('./shamar/dashboard-widgets.js');
       edge.global('htmlAttrs', htmlAttrs);
       edge.global('recordNavQuery', recordNavQuery);
+      edge.global(
+        'resolveActionUrl',
+        (template: string, record?: Record<string, unknown> | null) => {
+          const id = record?.id ?? record?._id ?? '';
+          return String(template || '').replaceAll('{id}', String(id));
+        },
+      );
       edge.global('relatedListLink', relatedListLink);
       edge.global('resolveGridItemStyle', resolveGridItemStyle);
-      const { partitionRowActions } = await import('./shamar/resource-actions.js');
+      const { partitionRowActions, actionIsVisible } = await import('./shamar/resource-actions.js');
       edge.global('partitionRowActions', partitionRowActions);
+      edge.global('actionIsVisible', actionIsVisible);
+      edge.global(
+        'filterVisibleRowActions',
+        (actions: unknown, record?: Record<string, unknown> | null) => {
+          if (!Array.isArray(actions)) return [];
+          return actions.filter((action) => actionIsVisible(action as never, record));
+        },
+      );
       const { humanizeLabel, resolveAlignmentClass, alignmentTextClass, emptyRepeaterItem, repeaterSchema } = await import('@shamar/core');
       edge.global('humanizeLabel', humanizeLabel);
       edge.global('resolveAlignmentClass', resolveAlignmentClass);

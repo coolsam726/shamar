@@ -694,6 +694,7 @@
       createUrl: cfg.createUrl,
       detailUrlBase: cfg.detailUrlBase,
       readonly: !!cfg.readonly,
+      openEdit: cfg.openEdit !== undefined ? !!cfg.openEdit : !cfg.readonly,
       required: !!cfg.required,
 
       value: cfg.initialId != null && cfg.initialId !== '' ? String(cfg.initialId) : null,
@@ -863,12 +864,12 @@
 
       openRecord() {
         if (!this.value || !this.detailUrlBase) return;
-        const url = this.readonly
-          ? `${this.detailUrlBase}/${this.value}`
-          : `${this.detailUrlBase}/${this.value}/edit`;
+        const url = this.openEdit
+          ? `${this.detailUrlBase}/${this.value}/edit`
+          : `${this.detailUrlBase}/${this.value}`;
         window.ShamarUI.openDialog({
           url,
-          title: this.label || (this.readonly ? 'View record' : 'Edit record'),
+          title: this.label || (this.openEdit ? 'Edit record' : 'View record'),
           slug: this.relatedResource,
         });
       },
@@ -953,6 +954,7 @@
       foreignKey: cfg.foreignKey || null,
       parentId: cfg.parentId != null && cfg.parentId !== '' ? String(cfg.parentId) : null,
       readonly: !!cfg.readonly,
+      openEdit: cfg.openEdit !== undefined ? !!cfg.openEdit : !cfg.readonly,
       required: !!cfg.required,
 
       selected: Array.isArray(cfg.initialItems)
@@ -1184,12 +1186,12 @@
 
       openRecord(item) {
         if (!item?.id || !this.detailUrlBase) return;
-        const url = this.readonly
-          ? `${this.detailUrlBase}/${item.id}`
-          : `${this.detailUrlBase}/${item.id}/edit`;
+        const url = this.openEdit
+          ? `${this.detailUrlBase}/${item.id}/edit`
+          : `${this.detailUrlBase}/${item.id}`;
         window.ShamarUI.openDialog({
           url,
-          title: item.label || (this.readonly ? 'View record' : 'Edit record'),
+          title: item.label || (this.openEdit ? 'Edit record' : 'View record'),
           slug: this.relatedResource,
         });
       },
@@ -1788,12 +1790,12 @@
 
     self.openRecord = function openRecordTable(item) {
       if (!item?.id || !this.detailUrlBase) return;
-      const url = this.readonly
-        ? `${this.detailUrlBase}/${item.id}`
-        : `${this.detailUrlBase}/${item.id}/edit`;
+      const url = this.openEdit
+        ? `${this.detailUrlBase}/${item.id}/edit`
+        : `${this.detailUrlBase}/${item.id}`;
       window.ShamarUI.openDialog({
         url,
-        title: item.label || (this.readonly ? 'View record' : 'Edit record'),
+        title: item.label || (this.openEdit ? 'Edit record' : 'View record'),
         slug: this.relatedResource,
         onResult: () => {
           if (this.listUrl) this.loadList();
@@ -2005,6 +2007,26 @@
         // Never overwrite `changed` — bodyparsers often trim strings, which
         // would steal trailing spaces mid-typing.
         const sent = { ...this.state };
+        // Pull latest BelongsTo values from m2o widgets (not always mirrored in state).
+        try {
+          const form = this.$el?.tagName === 'FORM' ? this.$el : this.$el?.closest?.('form');
+          form?.querySelectorAll?.('[data-shamar-m2o-config]')?.forEach((el) => {
+            let cfg;
+            try {
+              cfg = JSON.parse(el.getAttribute('data-shamar-m2o-config') || '{}');
+            } catch {
+              return;
+            }
+            if (!cfg.name) return;
+            const component = window.Alpine?.$data?.(el);
+            if (!component || !('value' in component)) return;
+            sent[cfg.name] =
+              component.value != null && component.value !== '' ? String(component.value) : null;
+            this.state[cfg.name] = sent[cfg.name];
+          });
+        } catch {
+          /* ignore */
+        }
         try {
           const res = await fetch(this.endpoint, {
             method: 'POST',
@@ -5532,9 +5554,13 @@
 
       focusDialog() {
         this.$nextTick(() => {
+          const body = this.bodyEl();
           const items = this.focusables();
           const preferred =
-            this.bodyEl()?.querySelector('input,select,textarea,button') ||
+            body?.querySelector('[autofocus]') ||
+            body?.querySelector(
+              'input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled])',
+            ) ||
             this.$refs.closeBtn ||
             items[0];
           preferred?.focus?.();
@@ -5608,6 +5634,15 @@
         const body = this.bodyEl();
         if (!body) return false;
         body.innerHTML = typeof html === 'string' ? html : '';
+        // innerHTML does not execute <script>; re-insert so embed pages can register helpers.
+        body.querySelectorAll('script').forEach((old) => {
+          const script = document.createElement('script');
+          for (const attr of old.attributes) {
+            script.setAttribute(attr.name, attr.value);
+          }
+          script.textContent = old.textContent;
+          old.replaceWith(script);
+        });
         try {
           if (typeof Alpine !== 'undefined' && Alpine.initTree) {
             Alpine.initTree(body);
@@ -5715,6 +5750,44 @@
         this.fitRecordDialogSize();
         if (!replace) {
           _dialogOnResult = typeof detail.onResult === 'function' ? detail.onResult : null;
+        }
+
+        // PDF / external document preview — mount an iframe instead of fetching HTML.
+        if (detail.iframe) {
+          const src = withoutEmbed(detail.url || '');
+          this.currentEmbedUrl = src;
+          this.loading = false;
+          await this.$nextTick();
+          const safeSrc = String(src)
+            .replaceAll('&', '&amp;')
+            .replaceAll('"', '&quot;')
+            .replaceAll('<', '&lt;');
+          const downloadHref = safeSrc.includes('?')
+            ? `${safeSrc}&amp;download=1`
+            : `${safeSrc}?download=1`;
+          await this.mountBodyWhenReady(`
+            <div class="flex h-full min-h-[65vh] flex-col gap-3">
+              <iframe
+                src="${safeSrc}"
+                title="${String(detail.title || 'Preview').replaceAll('"', '&quot;')}"
+                class="w-full flex-1 rounded-lg border border-default bg-neutral-secondary"
+                style="min-height: 65vh"
+              ></iframe>
+              <div data-shamar-dialog-actions class="flex flex-wrap items-center justify-end gap-2">
+                <a
+                  href="${downloadHref}"
+                  download
+                  class="inline-flex items-center gap-1.5 rounded-md border border-default px-3 py-1.5 text-sm font-medium text-body hover:bg-surface-hover"
+                >Download</a>
+                <button
+                  type="button"
+                  data-shamar-dialog-close
+                  class="inline-flex items-center gap-1.5 rounded-md border border-default px-3 py-1.5 text-sm font-medium text-body hover:bg-surface-hover"
+                >Close</button>
+              </div>
+            </div>
+          `);
+          return;
         }
 
         const embedUrl = withEmbed(detail.url);
@@ -6306,6 +6379,18 @@
     queueMicrotask(() => {
       try {
         const alpine = window.Alpine?.$data?.(form);
+        const component = window.Alpine?.$data?.(componentEl);
+        // Relation widgets keep value outside form.state — sync so live()/afterStateUpdated see it.
+        if (alpine?.state && fieldName && component) {
+          if ('value' in component) {
+            alpine.state[fieldName] =
+              component.value != null && component.value !== '' ? String(component.value) : null;
+          } else if (Array.isArray(component.selected)) {
+            alpine.state[fieldName] = component.selected
+              .map((item) => (item?.id != null ? String(item.id) : ''))
+              .filter(Boolean);
+          }
+        }
         if (typeof alpine?.onFieldChange === 'function') {
           alpine.onFieldChange(fieldName);
         }

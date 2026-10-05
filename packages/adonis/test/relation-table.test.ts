@@ -116,6 +116,37 @@ describe('relation table list helpers', () => {
     assert.equal(ui.columns?.some((column) => column.name === 'company.name'), false);
     assert.equal(ui.defaultSort, 'name');
     assert.equal(ui.perPage, 10);
+    assert.equal(ui.openEdit, true);
+    assert.equal(ui.readonly, false);
+  });
+
+  it('opens edit from show when editOnView is set', () => {
+    const field = RelationTable.make('products')
+      .relationship('products', 'name', { foreignKey: 'companyId' })
+      .editOnView()
+      .build();
+
+    const ui = buildRelationUiConfig({
+      field,
+      parentMeta: {
+        slug: 'companies',
+        singularLabel: 'Company',
+        label: 'Companies',
+        model: 'Company',
+        fields: [field],
+        columns: [],
+        searchableFields: [],
+        actions: [],
+      } as never,
+      relatedMeta,
+      basePath: '/admin',
+      record: { id: 'c1' },
+      operation: 'show',
+    });
+
+    assert.equal(ui.readonly, true);
+    assert.equal(ui.openEdit, true);
+    assert.equal(field.relation?.editOnView, true);
   });
 
   it('omits listUrl when RelationTable is simple()', () => {

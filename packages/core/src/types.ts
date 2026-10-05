@@ -123,6 +123,11 @@ export interface RelationConfig {
   createOption?: boolean;
   /** Open related create form in a dialog, then pick (Create & Edit). */
   createAndEditOption?: boolean;
+  /**
+   * When the parent page is show/view, still open related rows in an edit dialog
+   * (RelationTable list). Attach/Add stay disabled while the parent is readonly.
+   */
+  editOnView?: boolean;
   /** Optional create modal schema override (falls back to related resource create URL). */
   createOptionForm?: FieldConfig[];
   /** Initial option load size for radio / checkbox list. */
@@ -291,6 +296,16 @@ export interface ColumnConfig {
   verticalAlignment?: VerticalAlignment;
 }
 
+/** How a URL action opens in the admin UI. */
+/**
+ * How a URL action opens:
+ * - `modal` — dialog with iframe (PDFs / external docs)
+ * - `embed` — dialog that fetches HTML into the panel (interactive pages)
+ * - `newTab` — browser tab
+ * - `download` — download attribute
+ */
+export type ActionOpenIn = 'modal' | 'embed' | 'newTab' | 'download';
+
 export interface ActionConfig {
   name: string;
   label: string;
@@ -304,6 +319,18 @@ export interface ActionConfig {
    * Default / omitted: grouped under the row actions menu.
    */
   grouped?: boolean;
+  /**
+   * Hide this row/header action for a record. Evaluated server-side when rendering lists/show.
+   * Default / omitted: visible.
+   */
+  visible?: boolean | ((record: Record<string, unknown>) => boolean);
+  /**
+   * When set, the action opens this URL instead of POSTing to `/action/:name`.
+   * Use `{id}` as a placeholder for the current record id.
+   */
+  url?: string;
+  /** How {@link url} opens. Default: `newTab`. Use `modal` for PDF/HTML previews. */
+  openIn?: ActionOpenIn;
 }
 
 export interface FormSection {

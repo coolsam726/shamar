@@ -147,7 +147,7 @@ describe('relationship builders', () => {
     const entry = schema.entries.find((e) => e.name === 'products');
     assert.ok(entry);
     assert.equal(entry!.columnSpan, 'full');
-    assert.equal(entry!.type, 'text');
+    assert.equal(entry!.type, 'relationTable');
   });
 
   it('maps default widgets by kind', () => {

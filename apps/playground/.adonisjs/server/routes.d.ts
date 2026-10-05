@@ -35,6 +35,7 @@ export type ScannedRoutes = {
     'shamar.admin.pages.sectionFormState': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'section': ParamValue} }
     'shamar.admin.pages.sectionSave': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'section': ParamValue} }
     'shamar.admin.dashboard': { paramsTuple?: []; params?: {} }
+    'shamar.admin.dashboard.widget': { paramsTuple: [ParamValue]; params: {'widgetId': ParamValue} }
     'shamar.admin.pages.action': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'action': ParamValue} }
     'shamar.admin.resources.create': { paramsTuple: [ParamValue]; params: {'slug': ParamValue} }
     'shamar.admin.resources.formState': { paramsTuple: [ParamValue]; params: {'slug': ParamValue} }
@@ -87,6 +88,7 @@ export type ScannedRoutes = {
     'shamar.app.pages.sectionFormState': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'section': ParamValue} }
     'shamar.app.pages.sectionSave': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'section': ParamValue} }
     'shamar.app.dashboard': { paramsTuple?: []; params?: {} }
+    'shamar.app.dashboard.widget': { paramsTuple: [ParamValue]; params: {'widgetId': ParamValue} }
     'shamar.app.pages.action': { paramsTuple: [ParamValue,ParamValue]; params: {'slug': ParamValue,'action': ParamValue} }
     'shamar.app.resources.create': { paramsTuple: [ParamValue]; params: {'slug': ParamValue} }
     'shamar.app.resources.formState': { paramsTuple: [ParamValue]; params: {'slug': ParamValue} }
@@ -143,6 +145,7 @@ export type ScannedRoutes = {
     'shamar.admin.media.files.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'shamar.admin.media.files.raw': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'shamar.admin.dashboard': { paramsTuple?: []; params?: {} }
+    'shamar.admin.dashboard.widget': { paramsTuple: [ParamValue]; params: {'widgetId': ParamValue} }
     'shamar.admin.resources.create': { paramsTuple: [ParamValue]; params: {'slug': ParamValue} }
     'shamar.admin.resources.relationSearch': { paramsTuple: [ParamValue]; params: {'slug': ParamValue} }
     'shamar.admin.resources.relationTable': { paramsTuple: [ParamValue]; params: {'slug': ParamValue} }
@@ -167,6 +170,7 @@ export type ScannedRoutes = {
     'shamar.app.media.files.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'shamar.app.media.files.raw': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'shamar.app.dashboard': { paramsTuple?: []; params?: {} }
+    'shamar.app.dashboard.widget': { paramsTuple: [ParamValue]; params: {'widgetId': ParamValue} }
     'shamar.app.resources.create': { paramsTuple: [ParamValue]; params: {'slug': ParamValue} }
     'shamar.app.resources.relationSearch': { paramsTuple: [ParamValue]; params: {'slug': ParamValue} }
     'shamar.app.resources.relationTable': { paramsTuple: [ParamValue]; params: {'slug': ParamValue} }
@@ -201,6 +205,7 @@ export type ScannedRoutes = {
     'shamar.admin.media.files.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'shamar.admin.media.files.raw': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'shamar.admin.dashboard': { paramsTuple?: []; params?: {} }
+    'shamar.admin.dashboard.widget': { paramsTuple: [ParamValue]; params: {'widgetId': ParamValue} }
     'shamar.admin.resources.create': { paramsTuple: [ParamValue]; params: {'slug': ParamValue} }
     'shamar.admin.resources.relationSearch': { paramsTuple: [ParamValue]; params: {'slug': ParamValue} }
     'shamar.admin.resources.relationTable': { paramsTuple: [ParamValue]; params: {'slug': ParamValue} }
@@ -225,6 +230,7 @@ export type ScannedRoutes = {
     'shamar.app.media.files.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'shamar.app.media.files.raw': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'shamar.app.dashboard': { paramsTuple?: []; params?: {} }
+    'shamar.app.dashboard.widget': { paramsTuple: [ParamValue]; params: {'widgetId': ParamValue} }
     'shamar.app.resources.create': { paramsTuple: [ParamValue]; params: {'slug': ParamValue} }
     'shamar.app.resources.relationSearch': { paramsTuple: [ParamValue]; params: {'slug': ParamValue} }
     'shamar.app.resources.relationTable': { paramsTuple: [ParamValue]; params: {'slug': ParamValue} }

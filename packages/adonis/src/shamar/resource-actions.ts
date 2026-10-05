@@ -22,6 +22,20 @@ export function resourceActionsFor(
   )
 }
 
+/** Whether a single action should render for this record. */
+export function actionIsVisible(
+  action: ActionConfig,
+  record?: Record<string, unknown> | null,
+): boolean {
+  if (typeof action.visible === 'function') {
+    return action.visible(record ?? {})
+  }
+  if (action.visible === false) return false
+  if (action.name === 'revoke' && record?.revokedAt) return false
+  if (action.name === 'reactivate' && !record?.revokedAt) return false
+  return true
+}
+
 /** Row actions visible for a specific record (e.g. revoke vs reactivate). */
 export function visibleRowActions(
   meta: ResourceMeta,
@@ -31,9 +45,7 @@ export function visibleRowActions(
   return resourceActionsFor(meta, 'row', policy).filter((action) => {
     if (action.name === 'edit' && !policy.update) return false
     if (action.name === 'delete' && !policy.delete) return false
-    if (action.name === 'revoke' && record?.revokedAt) return false
-    if (action.name === 'reactivate' && !record?.revokedAt) return false
-    return true
+    return actionIsVisible(action, record)
   })
 }
 
