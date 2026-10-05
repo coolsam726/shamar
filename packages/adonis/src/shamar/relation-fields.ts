@@ -5,7 +5,7 @@ import type {
   ResourceMeta,
   ResourceRegistry,
 } from '@shamar/core';
-import { relationTitleAttribute, relationUsesListTable } from '@shamar/core';
+import { relationTitleAttribute, relationUsesListTable, resolveClosure } from '@shamar/core';
 import { sanitizeStringIds } from '@shamar/cherubim';
 import type { ListHeader } from './list-headers.js';
 import type { RelationTableColumn } from './relation-table.js';
@@ -22,6 +22,11 @@ export interface RelationUiConfig {
   attachUrl?: string | null;
   detachUrl?: string | null;
   readonly: boolean;
+  /**
+   * When true, row click / Open opens the related edit form (modal).
+   * Independent of `readonly` so show pages can still enter data.
+   */
+  openEdit: boolean;
   required: boolean;
   kind: RelationConfig['kind'];
   widget: NonNullable<RelationConfig['widget']>;
@@ -123,6 +128,20 @@ export function buildRelationUiConfig(options: {
   const listParams = new URLSearchParams({ field: field.name });
   if (parentId) listParams.set('parentId', parentId);
 
+  const fieldOperation = operation === 'show' ? 'view' : operation;
+  const fieldReadonly =
+    resolveClosure(
+      field.readonly,
+      {
+        state: record ?? {},
+        record,
+        operation: fieldOperation,
+        get: (name: string) => record?.[name],
+        set: () => undefined,
+      },
+      false,
+    ) ?? false;
+
   return {
     name: field.name,
     relatedResource: relatedMeta.slug,
@@ -133,7 +152,8 @@ export function buildRelationUiConfig(options: {
     detailUrlBase: `${basePath}/${relatedMeta.slug}`,
     attachUrl,
     detachUrl,
-    readonly: options.operation === 'show' || !!field.readonly,
+    readonly: options.operation === 'show' || !!fieldReadonly,
+    openEdit: options.operation !== 'show' || !!relation.editOnView,
     required: !!field.required,
     kind: relation.kind,
     widget,

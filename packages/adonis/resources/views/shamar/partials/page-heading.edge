@@ -169,21 +169,59 @@
         @if(recordActions)
           @each(action in recordActions)
             @if(action.name !== 'view' && action.name !== 'edit' && action.name !== 'delete')
-              <button
-                type="button"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border rounded-md transition
-                  {{ action.color === 'danger'
-                    ? 'border-default text-fg-danger hover:bg-danger-soft'
-                    : action.color === 'primary' || action.color === 'accent'
-                      ? 'border-transparent bg-fg-brand text-white hover:opacity-90'
-                      : 'border-default text-body hover:bg-surface-hover' }}"
-                @click="$dispatch('shamar-open-confirm', { variant: {{ jsonAttr(action.color === 'danger' ? 'danger' : 'primary') }}, mode: 'confirm', title: {{ jsonAttr(action.label) }}, message: {{ jsonAttr(action.confirm || 'Are you sure?') }}, confirmLabel: {{ jsonAttr(action.label) }}, action: '{{ basePath }}/{{ resource.slug }}/{{ record.id }}/action/{{ action.name }}' })"
-              >
-                @if(action.icon)
-                  @!component('shamar::partials/action-icon', { icon: action.icon })
+              @if(action.url)
+                @let(actionHref = resolveActionUrl(action.url, record))
+                @if(action.openIn === 'modal' || action.openIn === 'embed')
+                  <button
+                    type="button"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-default text-body rounded-md hover:bg-surface-hover transition
+                      {{ action.color === 'primary' || action.color === 'accent' ? 'border-transparent bg-fg-brand text-white hover:opacity-90' : '' }}"
+                    @click="$dispatch('shamar-open-dialog', {
+                      url: {{ jsonAttr(actionHref) }},
+                      title: {{ jsonAttr(action.label) }},
+                      iframe: {{ action.openIn === 'modal' ? 'true' : 'false' }},
+                    })"
+                  >
+                    @if(action.icon)
+                      @!component('shamar::partials/action-icon', { icon: action.icon })
+                    @endif
+                    {{ action.label }}
+                  </button>
+                @else
+                  <a
+                    href="{{ actionHref }}"
+                    @if(action.openIn === 'download')
+                      download
+                    @else
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    @endif
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-default text-body rounded-md hover:bg-surface-hover transition
+                      {{ action.color === 'primary' || action.color === 'accent' ? 'border-transparent bg-fg-brand text-white hover:opacity-90' : '' }}"
+                  >
+                    @if(action.icon)
+                      @!component('shamar::partials/action-icon', { icon: action.icon })
+                    @endif
+                    {{ action.label }}
+                  </a>
                 @endif
-                {{ action.label }}
-              </button>
+              @else
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border rounded-md transition
+                    {{ action.color === 'danger'
+                      ? 'border-default text-fg-danger hover:bg-danger-soft'
+                      : action.color === 'primary' || action.color === 'accent'
+                        ? 'border-transparent bg-fg-brand text-white hover:opacity-90'
+                        : 'border-default text-body hover:bg-surface-hover' }}"
+                  @click="$dispatch('shamar-open-confirm', { variant: {{ jsonAttr(action.color === 'danger' ? 'danger' : 'primary') }}, mode: 'confirm', title: {{ jsonAttr(action.label) }}, message: {{ jsonAttr(action.confirm || 'Are you sure?') }}, confirmLabel: {{ jsonAttr(action.label) }}, action: '{{ basePath }}/{{ resource.slug }}/{{ record.id }}/action/{{ action.name }}' })"
+                >
+                  @if(action.icon)
+                    @!component('shamar::partials/action-icon', { icon: action.icon })
+                  @endif
+                  {{ action.label }}
+                </button>
+              @endif
             @endif
           @endeach
         @endif

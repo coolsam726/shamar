@@ -73,7 +73,12 @@
         —
       @endif
     @else
-      {{ detailValue(record, field) }}
+      @let(relatedHref = (resource && basePath) ? relatedListLink(resource, record, field, basePath) : null)
+      @if(relatedHref && detailValue(record, field) !== '—')
+        <a href="{{ relatedHref }}" class="text-fg-brand hover:underline">{{ detailValue(record, field) }}</a>
+      @else
+        {{ detailValue(record, field) }}
+      @endif
     @endif
   </div>
   @if(field.help)

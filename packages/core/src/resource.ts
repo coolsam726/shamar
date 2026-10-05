@@ -96,6 +96,11 @@ export abstract class Resource {
   static viewMode?: ResourcePageMode;
   /** Optional record-level policy (Loom / Laravel style). */
   static policy?: PolicyClass;
+  /**
+   * When true (default), consecutive RelationTable sections on form/infolist
+   * schemas are rendered as Tabs (Filament relation-manager style).
+   */
+  static relationTablesAsTabs = true;
 
   /**
    * Create/edit fields. Chain on the builder Filament passes in:
@@ -200,16 +205,17 @@ export abstract class Resource {
   }
 
   static configure(): ResourceMeta {
-    const formBuilder = new FormBuilder();
+    const asTabs = this.relationTablesAsTabs !== false;
+    const formBuilder = new FormBuilder().relationTablesAsTabs(asTabs);
     const formSchema = acceptForm(this.form(formBuilder), formBuilder);
     const tableBuilder = new TableBuilder();
     const tableSchema = acceptTable(this.table(tableBuilder), tableBuilder);
     const actionBuilder = new ActionBuilder();
     const actionList = acceptActions(this.resourceActions(actionBuilder), actionBuilder);
-    const infolistBuilder = new InfolistBuilder();
+    const infolistBuilder = new InfolistBuilder().relationTablesAsTabs(asTabs);
     let explicitInfolist = acceptInfolist(this.infolist(infolistBuilder));
     if (!explicitInfolist) {
-      const detailBuilder = new InfolistBuilder();
+      const detailBuilder = new InfolistBuilder().relationTablesAsTabs(asTabs);
       explicitInfolist = acceptInfolist(this.detail(detailBuilder));
     }
     const hasExplicitInfolist = explicitInfolist !== undefined;

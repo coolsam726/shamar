@@ -1,4 +1,4 @@
-import type { ActionConfig } from './types.js';
+import type { ActionConfig, ActionOpenIn } from './types.js';
 
 abstract class ActionBase<T extends ActionConfig> {
   protected config: T;
@@ -33,6 +33,36 @@ abstract class ActionBase<T extends ActionConfig> {
   }
 
   /**
+   * Open a URL instead of POSTing a custom action.
+   * Use `{id}` for the current record id (e.g. `/print/invoices/{id}/pdf`).
+   */
+  url(value: string): this {
+    this.config.url = value;
+    return this;
+  }
+
+  /** How {@link url} opens — `modal` (iframe), `embed` (fetched HTML), `newTab`, or `download`. */
+  openIn(value: ActionOpenIn): this {
+    this.config.openIn = value;
+    return this;
+  }
+
+  /** Shorthand: open {@link url} in the Shamar dialog as an iframe (PDFs). */
+  openInModal(): this {
+    return this.openIn('modal');
+  }
+
+  /** Shorthand: open {@link url} in the Shamar dialog as fetched HTML (interactive pages). */
+  openInEmbed(): this {
+    return this.openIn('embed');
+  }
+
+  /** Shorthand: open {@link url} in a new browser tab. */
+  openInNewTab(): this {
+    return this.openIn('newTab');
+  }
+
+  /**
    * Row actions: include in the ⋮ menu (default) or show inline.
    * Pass `false` (or use {@link ungrouped}) for a visible toolbar button.
    */
@@ -44,6 +74,12 @@ abstract class ActionBase<T extends ActionConfig> {
   /** Shorthand: show this row action outside the ⋮ menu. */
   ungrouped(): this {
     return this.grouped(false);
+  }
+
+  /** Show/hide this action for a given record (server-side). */
+  visible(value: boolean | ((record: Record<string, unknown>) => boolean)): this {
+    this.config.visible = value;
+    return this;
   }
 
   build(): T {

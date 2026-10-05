@@ -131,5 +131,9 @@ describe('display relation hydration', () => {
       relatedListLink(meta, { id: 'p2', companyId: null }, { name: 'company.name' }, '/admin'),
       null,
     );
+    assert.equal(
+      relatedListLink(undefined, record, { name: 'company.name' }, '/admin'),
+      null,
+    );
   });
 });

@@ -39,7 +39,7 @@
           —
         @endif
       @else
-        @let(relatedHref = relatedListLink(resource, record, column, basePath))
+        @let(relatedHref = (resource && basePath) ? relatedListLink(resource, record, column, basePath) : null)
         @if(relatedHref)
           <a
             href="{{ relatedHref }}"
@@ -54,7 +54,7 @@
   @endeach
   <td class="px-4 py-3 text-right shamar-list-row__actions" data-shamar-stop-row-nav>
     @if(rowActions && rowActions.length)
-      @let(rowActionParts = partitionRowActions(rowActions))
+      @let(rowActionParts = partitionRowActions(filterVisibleRowActions(rowActions, record)))
       <div class="shamar-row-actions">
         @each(action in rowActionParts.inline)
           @!component('shamar::partials/list-row-action', {

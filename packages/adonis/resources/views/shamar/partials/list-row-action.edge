@@ -122,6 +122,52 @@
     @!component('shamar::partials/action-icon', { icon: action.icon })
     <span>{{ action.label }}</span>
   </button>
+@elseif(action.url)
+  @let(actionHref = resolveActionUrl(action.url, record))
+  @if(action.openIn === 'modal' || action.openIn === 'embed')
+    <button
+      type="button"
+      @if(menuItem)
+        role="menuitem"
+        class="shamar-row-actions__item"
+        @click="open = false; $dispatch('shamar-open-dialog', {
+          url: {{ jsonAttr(actionHref) }},
+          title: {{ jsonAttr(action.label) }},
+          iframe: {{ action.openIn === 'modal' ? 'true' : 'false' }},
+        })"
+      @else
+        class="shamar-row-actions__inline"
+        @click="$dispatch('shamar-open-dialog', {
+          url: {{ jsonAttr(actionHref) }},
+          title: {{ jsonAttr(action.label) }},
+          iframe: {{ action.openIn === 'modal' ? 'true' : 'false' }},
+        })"
+      @endif
+    >
+      @!component('shamar::partials/action-icon', { icon: action.icon })
+      <span>{{ action.label }}</span>
+    </button>
+  @else
+    <a
+      href="{{ actionHref }}"
+      @if(action.openIn === 'download')
+        download
+      @else
+        target="_blank"
+        rel="noopener noreferrer"
+      @endif
+      @if(menuItem)
+        role="menuitem"
+        class="shamar-row-actions__item"
+        @click="open = false"
+      @else
+        class="shamar-row-actions__inline"
+      @endif
+    >
+      @!component('shamar::partials/action-icon', { icon: action.icon })
+      <span>{{ action.label }}</span>
+    </a>
+  @endif
 @elseif(action.name !== 'view' && action.name !== 'edit' && action.name !== 'delete' && action.name !== 'revoke' && action.name !== 'reactivate')
   <button
     type="button"

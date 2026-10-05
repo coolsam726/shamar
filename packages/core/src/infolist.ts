@@ -15,6 +15,9 @@ import {
   Section,
   type SchemaItem,
 } from './schemas.js';
+import { groupRelationTablesIntoTabs } from './relation-tabs.js';
+import { relationTitleAttribute } from './relation.js';
+import { humanizeLabel } from './labels.js';
 import {
   normalizeCurrencyOptions,
   type CurrencyInput,
@@ -263,9 +266,20 @@ export const InfolistSection = Section;
 export class InfolistBuilder {
   private rootColumns: 1 | 2 | 3 | 4 = 2;
   private children: InfolistSchemaItem[] = [];
+  /** When true (default), consecutive RelationTables become Tabs. */
+  private groupRelationTables = true;
 
   columns(value: 1 | 2 | 3 | 4): this {
     this.rootColumns = value;
+    return this;
+  }
+
+  /**
+   * Group consecutive RelationTable sections into Tabs.
+   * Default: `true`. Pass `false` to keep stacked sections.
+   */
+  relationTablesAsTabs(value = true): this {
+    this.groupRelationTables = value;
     return this;
   }
 
@@ -291,6 +305,10 @@ export class InfolistBuilder {
           children: schema.filter((n) => n.kind === 'entry'),
         },
       ];
+    }
+
+    if (this.groupRelationTables) {
+      schema = groupRelationTablesIntoTabs(schema);
     }
 
     const entries = collectEntries(schema);
@@ -373,6 +391,22 @@ function isInfolistSchema(value: unknown): value is InfolistSchema {
  * Map a form field to an infolist entry (shared heuristics for derived show schemas).
  */
 export function fieldConfigToEntry(field: FieldConfig): InfolistEntryConfig {
+  // BelongsTo → relation display path so show pages hydrate labels + links
+  // (`partnerId` + relationship('customers','name') → `partner.name`).
+  if (field.relation?.kind === 'belongsTo') {
+    const root = field.name.replace(/Id$/, '');
+    const attr = relationTitleAttribute(field.relation);
+    const entry = TextEntry.make(`${root}.${attr}`).label(
+      String(field.label ?? humanizeLabel(root)),
+    );
+    if (typeof field.help === 'string') entry.help(field.help);
+    if (typeof field.hint === 'string') entry.hint(field.hint);
+    if (field.columnSpan != null) entry.columnSpan(field.columnSpan);
+    if (field.columnStart != null) entry.columnStart(field.columnStart);
+    if (field.alignment) entry.alignment(field.alignment);
+    return entry.build();
+  }
+
   const entry = TextEntry.make(field.name).label(String(field.label ?? field.name));
   if (typeof field.help === 'string') entry.help(field.help);
   if (typeof field.hint === 'string') entry.hint(field.hint);
@@ -383,6 +417,9 @@ export function fieldConfigToEntry(field: FieldConfig): InfolistEntryConfig {
   const type = field.type as FieldType;
   if (type === 'relationTable' || field.relation?.kind === 'hasMany') {
     entry.columnSpanFull();
+    // Preserve RelationTable identity so show pages / tab grouping keep working.
+    const built = entry.build();
+    return { ...built, type: 'relationTable' };
   } else if (
     type === 'checkboxList' ||
     field.relation?.widget === 'checkboxList' ||

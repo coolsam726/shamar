@@ -295,11 +295,12 @@ export function buildRecordPager(options: {
  * Returns null for non-relation columns or when the FK is empty.
  */
 export function relatedListLink(
-  meta: ResourceMeta,
+  meta: ResourceMeta | null | undefined,
   record: Record<string, unknown>,
   column: { name: string },
   basePath: string,
 ): string | null {
+  if (!meta?.fields || !basePath) return null;
   const binding = resolveRelationDisplayBinding(meta, column.name);
   if (!binding || binding.relation.kind !== 'belongsTo') return null;
 

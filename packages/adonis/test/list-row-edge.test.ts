@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import edge from 'edge.js';
 import { defaultActions, resolveAlignmentClass } from '@shamar/core';
-import { partitionRowActions } from '../src/shamar/resource-actions.js';
+import { actionIsVisible, partitionRowActions } from '../src/shamar/resource-actions.js';
 import { recordNavQuery } from '../src/shamar/list-query.js';
 
 const viewsPath = join(dirname(fileURLToPath(import.meta.url)), '../resources/views/shamar');
@@ -12,6 +12,14 @@ const viewsPath = join(dirname(fileURLToPath(import.meta.url)), '../resources/vi
 function mountShamarEdge() {
   edge.mount('shamar', viewsPath);
   edge.global('partitionRowActions', partitionRowActions);
+  edge.global('actionIsVisible', actionIsVisible);
+  edge.global(
+    'filterVisibleRowActions',
+    (actions: unknown, record?: Record<string, unknown> | null) => {
+      if (!Array.isArray(actions)) return [];
+      return actions.filter((action) => actionIsVisible(action as never, record));
+    },
+  );
   edge.global('recordNavQuery', recordNavQuery);
   edge.global('resolveAlignmentClass', resolveAlignmentClass);
   edge.global('cellValue', (record: Record<string, unknown>, column: { name: string }) =>

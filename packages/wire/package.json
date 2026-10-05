@@ -1,6 +1,6 @@
 {
   "name": "@shamar/wire",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Server-driven reactive components. Usable on its own or inside a Shamar admin panel.",
   "license": "MIT",
   "type": "module",
