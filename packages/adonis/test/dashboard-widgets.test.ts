@@ -64,6 +64,25 @@ describe('resolveDashboardWidgets', () => {
     assert.equal(chart.payload.library, 'apex');
   });
 
+  it('emits root-relative refreshUrl when the panel is mounted at /', async () => {
+    class LazyStats extends StatsOverviewWidget {
+      static override isLazy = true;
+      static override stats() {
+        return [Stat.make('X', 1)];
+      }
+    }
+    class RootDash extends DashboardPage {
+      static override widgets() {
+        return [LazyStats];
+      }
+    }
+
+    const result = await resolveDashboardWidgets(RootDash, { user: null }, {
+      refreshUrlBase: '',
+    });
+    assert.equal(result.widgets[0]!.refreshUrl, '/widgets/LazyStats');
+  });
+
   it('defers lazy stats until hydrate', async () => {
     class LazyStats extends StatsOverviewWidget {
       static override isLazy = true;

@@ -5504,14 +5504,18 @@
       confirmMessage: '',
       secretText: '',
       secretCopied: false,
+      /** User-toggled fullscreen overlay (modal presentation only). */
       fullscreen: false,
+      /** `modal` | `sidebar` | `fullscreen` */
+      presentation: 'modal',
       x: 0,
       y: 0,
       /** Default record dialog ≈ Tailwind max-w-6xl (72rem). */
       width: 1152,
-      height: 720,
+      /** Used when the user resizes; default dialogs use height:auto. */
+      height: 0,
       minWidth: 560,
-      minHeight: 320,
+      minHeight: 240,
       dragging: false,
       resizing: false,
       dragOffsetX: 0,
@@ -5690,26 +5694,53 @@
       },
 
       panelStyle() {
-        if (this.fullscreen) {
-          return 'inset: 0.75rem; top: 0.75rem; left: 0.75rem; width: auto; height: auto; transform: none;';
+        const isFullscreen = this.presentation === 'fullscreen' || this.fullscreen;
+        if (isFullscreen) {
+          return 'inset: 0.75rem; top: 0.75rem; left: 0.75rem; right: 0.75rem; bottom: 0.75rem; width: auto; height: auto; transform: none;';
         }
-        // Center with top/left only — never transform. A CSS transform on the
-        // dialog makes position:fixed combobox/dropdown panels resolve against
-        // the dialog box instead of the viewport, so they jump downward.
+        if (this.presentation === 'sidebar') {
+          const width = Math.min(this.width || 512, window.innerWidth);
+          return `width: ${width}px; height: 100%; top: 0; right: 0; left: auto; bottom: 0; transform: none;`;
+        }
+        // Top-anchored modal — never use CSS transform for positioning (breaks
+        // position:fixed dropdowns inside the dialog). Height fits content;
+        // max-height + body overflow handles tall forms.
+        const margin = 24;
         const left = Math.round(window.innerWidth / 2 + this.x - this.width / 2);
-        const top = Math.round(window.innerHeight / 2 + this.y - this.height / 2);
-        return `width: ${this.width}px; height: ${this.height}px; top: ${top}px; left: ${left}px; transform: none;`;
+        const top = Math.round(margin + this.y);
+        const maxH = Math.max(240, window.innerHeight - margin * 2);
+        const heightRule = this.height > 0 ? `height: ${this.height}px;` : 'height: auto;';
+        return `width: ${this.width}px; ${heightRule} max-height: ${maxH}px; top: ${top}px; left: ${left}px; transform: none;`;
       },
 
-      /** Size record dialogs to at least max-w-6xl, clamped to the viewport. */
+      normalizePresentation(value) {
+        if (value === 'sidebar' || value === 'fullscreen' || value === 'modal') return value;
+        return 'modal';
+      },
+
+      /** Size record dialogs: prefer max-w-6xl width; height fits content. */
       fitRecordDialogSize() {
         const margin = 24;
+        if (this.presentation === 'sidebar') {
+          this.minWidth = 320;
+          this.minHeight = 240;
+          this.width = Math.min(512, Math.max(this.minWidth, window.innerWidth));
+          this.height = 0;
+          this.x = 0;
+          this.y = 0;
+          return;
+        }
+        if (this.presentation === 'fullscreen') {
+          this.x = 0;
+          this.y = 0;
+          this.height = 0;
+          return;
+        }
         const preferW = 1152;
-        const preferH = 720;
         this.minWidth = 560;
-        this.minHeight = 320;
+        this.minHeight = 240;
         this.width = Math.min(preferW, Math.max(this.minWidth, window.innerWidth - margin));
-        this.height = Math.min(preferH, Math.max(this.minHeight, window.innerHeight - margin));
+        this.height = 0;
         this.x = 0;
         this.y = 0;
       },
@@ -5735,6 +5766,7 @@
             fullPageUrl: this.fullPageUrl,
             resourceSlug: this.resourceSlug,
             url: this.currentEmbedUrl,
+            presentation: this.presentation,
             onResult: _dialogOnResult,
           });
         } else if (!this.open) {
@@ -5747,6 +5779,7 @@
         this.fullPageUrl = withoutEmbed(detail.url);
         this.resourceSlug = nextSlug;
         this.fullscreen = false;
+        this.presentation = this.normalizePresentation(detail.presentation);
         this.fitRecordDialogSize();
         if (!replace) {
           _dialogOnResult = typeof detail.onResult === 'function' ? detail.onResult : null;
@@ -5819,6 +5852,9 @@
         this.fullPageUrl = stackItem.fullPageUrl;
         this.resourceSlug = stackItem.resourceSlug;
         this.currentEmbedUrl = stackItem.url;
+        this.presentation = this.normalizePresentation(stackItem.presentation);
+        this.fullscreen = false;
+        this.fitRecordDialogSize();
         _dialogOnResult = stackItem.onResult || null;
         this.confirmMode = false;
         this.loading = true;
@@ -5889,8 +5925,9 @@
         this.cancelLabel = detail.cancelLabel || 'Cancel';
         this.fullPageUrl = '';
         this.fullscreen = false;
+        this.presentation = 'modal';
         this.width = this.promptMode === 'secret' ? 560 : 420;
-        this.height = this.promptMode === 'secret' ? 360 : 240;
+        this.height = 0;
         this.x = 0;
         this.y = 0;
         document.body.classList.add('overflow-hidden');
@@ -5926,6 +5963,8 @@
         this.open = false;
         this.confirmMode = false;
         this.fullscreen = false;
+        this.presentation = 'modal';
+        this.height = 0;
         this.dialogStack = [];
         this._confirmCallback = null;
         this.secretText = '';
@@ -5971,6 +6010,13 @@
       },
 
       toggleFullscreen() {
+        if (this.presentation === 'sidebar') return;
+        if (this.presentation === 'fullscreen') {
+          this.presentation = 'modal';
+          this.fullscreen = false;
+          this.fitRecordDialogSize();
+          return;
+        }
         this.fullscreen = !this.fullscreen;
         if (this.fullscreen) {
           this.x = 0;
@@ -5979,7 +6025,7 @@
       },
 
       startDrag(event) {
-        if (this.fullscreen || this.confirmMode) return;
+        if (this.fullscreen || this.confirmMode || this.presentation !== 'modal') return;
         this.dragging = true;
         this.dragOffsetX = event.clientX - this.x;
         this.dragOffsetY = event.clientY - this.y;
@@ -5992,13 +6038,14 @@
       },
 
       startResize(event) {
-        if (this.fullscreen || this.confirmMode) return;
+        if (this.fullscreen || this.confirmMode || this.presentation !== 'modal') return;
         event.preventDefault();
         this.resizing = true;
         this.resizeStartX = event.clientX;
         this.resizeStartY = event.clientY;
         this.resizeStartW = this.width;
-        this.resizeStartH = this.height;
+        const panel = this.panelEl();
+        this.resizeStartH = panel ? panel.getBoundingClientRect().height : this.minHeight;
       },
 
       onResize(event) {
@@ -6343,6 +6390,7 @@
           url,
           title: dialogRow.getAttribute('data-shamar-row-dialog-title') || '',
           slug: dialogRow.getAttribute('data-shamar-row-dialog-slug') || '',
+          presentation: dialogRow.getAttribute('data-shamar-row-dialog-presentation') || 'modal',
         });
         return;
       }

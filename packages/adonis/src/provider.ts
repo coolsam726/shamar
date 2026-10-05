@@ -116,10 +116,20 @@ export default class ShamarProvider {
           return actions.filter((action) => actionIsVisible(action as never, record));
         },
       );
-      const { humanizeLabel, resolveAlignmentClass, alignmentTextClass, emptyRepeaterItem, repeaterSchema } = await import('@shamar/core');
+      const {
+        humanizeLabel,
+        resolveAlignmentClass,
+        alignmentTextClass,
+        emptyRepeaterItem,
+        repeaterSchema,
+        isDialogPageMode,
+        dialogPresentation,
+      } = await import('@shamar/core');
       edge.global('humanizeLabel', humanizeLabel);
       edge.global('resolveAlignmentClass', resolveAlignmentClass);
       edge.global('alignmentTextClass', alignmentTextClass);
+      edge.global('isDialogPageMode', isDialogPageMode);
+      edge.global('dialogPresentation', dialogPresentation);
       const { fieldView } = await import('./shamar/field-views.js');
       const { fieldStateRef } = await import('./shamar/field-payload.js');
       edge.global('fieldView', fieldView);

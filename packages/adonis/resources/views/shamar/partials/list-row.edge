@@ -1,10 +1,11 @@
 <tr
   class="shamar-list-row hover:bg-surface-row-hover transition-colors cursor-pointer"
   data-shamar-record-id="{{ record.id }}"
-  @if(resource.viewMode === 'modal')
+  @if(isDialogPageMode(resource.viewMode))
     data-shamar-row-dialog-url="{{ basePath }}/{{ resource.slug }}/{{ record.id }}{{ recordNavQuery(query) }}"
     data-shamar-row-dialog-title="{{ record[resource.recordTitleField] || resource.singularLabel }}"
     data-shamar-row-dialog-slug="{{ resource.slug }}"
+    data-shamar-row-dialog-presentation="{{ dialogPresentation(resource.viewMode) }}"
   @else
     data-shamar-row-href="{{ basePath }}/{{ resource.slug }}/{{ record.id }}{{ recordNavQuery(query) }}"
   @endif

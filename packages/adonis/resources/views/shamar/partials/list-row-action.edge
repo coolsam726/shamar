@@ -1,6 +1,6 @@
 {{-- Single list-row action control. Expects: action, record, resource, basePath, query, showEditButton, showDeleteButton, menuItem (bool) --}}
 @if(action.name === 'view')
-  @if(resource.viewMode === 'modal')
+  @if(isDialogPageMode(resource.viewMode))
     <button
       type="button"
       @if(menuItem)
@@ -10,6 +10,7 @@
           url: {{ jsonAttr(`${basePath}/${resource.slug}/${record.id}${recordNavQuery(query)}`) }},
           title: {{ jsonAttr(String(record[resource.recordTitleField] || resource.singularLabel)) }},
           slug: {{ jsonAttr(resource.slug) }},
+          presentation: {{ jsonAttr(dialogPresentation(resource.viewMode)) }},
         })"
       @else
         class="shamar-row-actions__inline"
@@ -17,6 +18,7 @@
           url: {{ jsonAttr(`${basePath}/${resource.slug}/${record.id}${recordNavQuery(query)}`) }},
           title: {{ jsonAttr(String(record[resource.recordTitleField] || resource.singularLabel)) }},
           slug: {{ jsonAttr(resource.slug) }},
+          presentation: {{ jsonAttr(dialogPresentation(resource.viewMode)) }},
         })"
       @endif
     >
@@ -39,7 +41,7 @@
     </a>
   @endif
 @elseif(action.name === 'edit' && showEditButton !== false)
-  @if(resource.editMode === 'modal')
+  @if(isDialogPageMode(resource.editMode))
     <button
       type="button"
       @if(menuItem)
@@ -49,6 +51,7 @@
           url: {{ jsonAttr(`${basePath}/${resource.slug}/${record.id}/edit${recordNavQuery(query)}`) }},
           title: {{ jsonAttr(`Edit ${record[resource.recordTitleField] || resource.singularLabel}`) }},
           slug: {{ jsonAttr(resource.slug) }},
+          presentation: {{ jsonAttr(dialogPresentation(resource.editMode)) }},
         })"
       @else
         class="shamar-row-actions__inline"
@@ -56,6 +59,7 @@
           url: {{ jsonAttr(`${basePath}/${resource.slug}/${record.id}/edit${recordNavQuery(query)}`) }},
           title: {{ jsonAttr(`Edit ${record[resource.recordTitleField] || resource.singularLabel}`) }},
           slug: {{ jsonAttr(resource.slug) }},
+          presentation: {{ jsonAttr(dialogPresentation(resource.editMode)) }},
         })"
       @endif
     >
@@ -134,6 +138,7 @@
           url: {{ jsonAttr(actionHref) }},
           title: {{ jsonAttr(action.label) }},
           iframe: {{ action.openIn === 'modal' ? 'true' : 'false' }},
+          presentation: {{ jsonAttr(dialogPresentation(action.presentation)) }},
         })"
       @else
         class="shamar-row-actions__inline"
@@ -141,6 +146,7 @@
           url: {{ jsonAttr(actionHref) }},
           title: {{ jsonAttr(action.label) }},
           iframe: {{ action.openIn === 'modal' ? 'true' : 'false' }},
+          presentation: {{ jsonAttr(dialogPresentation(action.presentation)) }},
         })"
       @endif
     >

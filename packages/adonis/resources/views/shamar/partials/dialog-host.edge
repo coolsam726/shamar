@@ -4,20 +4,47 @@
   @shamar-open-confirm.window="openConfirm($event.detail)"
   @keydown.escape.window="if (open && !confirmMode) dismissDialog()"
 >
-  <div x-show="open" x-cloak style="display: none;">
-    <div class="shamar-dialog-backdrop" @click="dismissDialog()"></div>
+  <div class="shamar-dialog-layer">
+    <div
+      class="shamar-dialog-backdrop"
+      x-show="open"
+      x-cloak
+      x-transition:enter="shamar-dialog-fade-enter"
+      x-transition:enter-start="shamar-dialog-fade-enter-start"
+      x-transition:enter-end="shamar-dialog-fade-enter-end"
+      x-transition:leave="shamar-dialog-fade-leave"
+      x-transition:leave-start="shamar-dialog-fade-leave-start"
+      x-transition:leave-end="shamar-dialog-fade-leave-end"
+      @click="dismissDialog()"
+    ></div>
 
     <div
       class="shamar-dialog-panel"
       role="dialog"
       aria-modal="true"
       :aria-label="title"
-      :class="{ 'is-fullscreen': fullscreen, 'is-prompt': confirmMode }"
+      :class="{
+        'is-fullscreen': presentation === 'fullscreen' || fullscreen,
+        'is-sidebar': presentation === 'sidebar',
+        'is-prompt': confirmMode,
+        'is-dragging': dragging,
+      }"
       :style="panelStyle()"
+      x-show="open"
+      x-cloak
+      x-transition:enter="shamar-dialog-panel-enter"
+      x-transition:enter-start="shamar-dialog-panel-enter-start"
+      x-transition:enter-end="shamar-dialog-panel-enter-end"
+      x-transition:leave="shamar-dialog-panel-leave"
+      x-transition:leave-start="shamar-dialog-panel-leave-start"
+      x-transition:leave-end="shamar-dialog-panel-leave-end"
       @keydown.tab="trapFocus($event)"
       x-ref="panel"
     >
-      <div class="shamar-dialog-header" @mousedown="startDrag($event)">
+      <div
+        class="shamar-dialog-header"
+        @mousedown="startDrag($event)"
+      >
         <h2 class="min-w-0 flex-1 truncate text-sm font-semibold text-heading" id="shamar-dialog-title" x-text="title"></h2>
         <div class="flex shrink-0 items-center gap-1">
           <a
@@ -28,9 +55,9 @@
           <button
             type="button"
             class="rounded-md p-1.5 text-body-subtle hover:bg-surface-hover hover:text-heading"
-            x-show="!confirmMode"
+            x-show="!confirmMode && presentation !== 'sidebar'"
             @click="toggleFullscreen()"
-            :title="fullscreen ? 'Exit full screen' : 'Full screen'"
+            :title="(presentation === 'fullscreen' || fullscreen) ? 'Exit full screen' : 'Full screen'"
           >
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"/>
@@ -117,7 +144,7 @@
 
       <div
         class="shamar-dialog-resize-handle"
-        x-show="!confirmMode && !fullscreen"
+        x-show="!confirmMode && presentation === 'modal' && !fullscreen"
         @mousedown="startResize($event)"
       ></div>
     </div>

@@ -31,6 +31,7 @@ export * from './labels.js';
 export * from './numbers.js';
 export * from './currency.js';
 export * from './alignment.js';
+export * from './dialog.js';
 export * from './relation.js';
 export * from './relation-tabs.js';
 export * from './record-value.js';

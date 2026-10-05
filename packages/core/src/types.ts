@@ -74,11 +74,21 @@ export type LiveMode = boolean | LiveOptions;
 export type FormOperation = 'create' | 'edit' | 'view';
 
 /**
+ * How a Shamar dialog is presented.
+ * - `modal` — top-anchored floating panel (default)
+ * - `sidebar` — right-edge drawer
+ * - `fullscreen` — nearly full viewport
+ */
+export type DialogPresentation = 'modal' | 'sidebar' | 'fullscreen';
+
+/**
  * How create / edit / view open from the resource list.
  * - `page` — navigate to a full create/edit/show route (default)
- * - `modal` — open the same route in a dialog over the list (quick actions)
+ * - `modal` — open the same route in a top-anchored dialog
+ * - `sidebar` — open in a right-edge drawer
+ * - `fullscreen` — open in a nearly full-viewport dialog
  */
-export type ResourcePageMode = 'page' | 'modal';
+export type ResourcePageMode = 'page' | DialogPresentation;
 
 export interface FieldOption {
   label: string;
@@ -331,6 +341,11 @@ export interface ActionConfig {
   url?: string;
   /** How {@link url} opens. Default: `newTab`. Use `modal` for PDF/HTML previews. */
   openIn?: ActionOpenIn;
+  /**
+   * When {@link openIn} is `modal` or `embed`, how the dialog is presented.
+   * Default: `modal` (top-anchored). Use `sidebar` or `fullscreen` for drawers / full view.
+   */
+  presentation?: DialogPresentation;
 }
 
 export interface FormSection {
