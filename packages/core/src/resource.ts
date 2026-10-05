@@ -84,15 +84,16 @@ export abstract class Resource {
    */
   static defaultPerPage?: number;
   /**
-   * When true, create / edit / view open in a modal over the list (quick actions).
-   * Override individual operations with `createMode` / `editMode` / `viewMode`.
+   * When true, create / edit / view open in a dialog over the list (quick actions).
+   * Override individual operations with `createMode` / `editMode` / `viewMode`
+   * (`modal` | `sidebar` | `fullscreen`).
    */
   static quickActions?: boolean;
-  /** Create from the list: full page (default) or modal. */
+  /** Create from the list: full page (default) or dialog (`modal` / `sidebar` / `fullscreen`). */
   static createMode?: ResourcePageMode;
-  /** Edit from the list / show: full page (default) or modal. */
+  /** Edit from the list / show: full page (default) or dialog. */
   static editMode?: ResourcePageMode;
-  /** View / row click: full page (default) or modal. */
+  /** View / row click: full page (default) or dialog. */
   static viewMode?: ResourcePageMode;
   /** Optional record-level policy (Loom / Laravel style). */
   static policy?: PolicyClass;

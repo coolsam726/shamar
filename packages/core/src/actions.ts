@@ -1,4 +1,4 @@
-import type { ActionConfig, ActionOpenIn } from './types.js';
+import type { ActionConfig, ActionOpenIn, DialogPresentation } from './types.js';
 
 abstract class ActionBase<T extends ActionConfig> {
   protected config: T;
@@ -60,6 +60,22 @@ abstract class ActionBase<T extends ActionConfig> {
   /** Shorthand: open {@link url} in a new browser tab. */
   openInNewTab(): this {
     return this.openIn('newTab');
+  }
+
+  /** Dialog layout when {@link openIn} is `modal` or `embed`. */
+  presentation(value: DialogPresentation): this {
+    this.config.presentation = value;
+    return this;
+  }
+
+  /** Shorthand: open the dialog as a right-edge sidebar. */
+  asSidebar(): this {
+    return this.presentation('sidebar');
+  }
+
+  /** Shorthand: open the dialog nearly full-viewport. */
+  asFullscreen(): this {
+    return this.presentation('fullscreen');
   }
 
   /**

@@ -73,6 +73,7 @@ function widgetMeta(
   | 'isLazy'
   | 'refreshUrl'
 > {
+  // Root-mounted panels use '' as prefix — still emit `/widgets/:id`.
   const basePath = (refreshUrlBase ?? '').replace(/\/+$/, '');
   return {
     id,
@@ -83,7 +84,7 @@ function widgetMeta(
     view: WidgetClass.view,
     pollingIntervalMs: parsePollingIntervalMs(WidgetClass.pollingInterval),
     isLazy: WidgetClass.isLazy !== false,
-    refreshUrl: basePath ? `${basePath}/widgets/${encodeURIComponent(id)}` : undefined,
+    refreshUrl: `${basePath}/widgets/${encodeURIComponent(id)}`,
   };
 }
 

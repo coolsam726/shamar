@@ -319,21 +319,21 @@
         <span class="text-body-subtle">·</span>
         <span x-text="total"></span> total
       </p>
-      <div class="inline-flex items-center gap-1">
+      <div class="inline-flex shrink-0 items-center gap-1">
         <button
           type="button"
-          class="rounded-md border border-default px-2 py-1 hover:bg-surface-hover disabled:opacity-40"
+          class="shrink-0 whitespace-nowrap rounded-md border border-default px-2 py-1 hover:bg-surface-hover disabled:opacity-40"
           :disabled="page <= 1 || listLoading"
           @click="setListPage(page - 1)"
         >Prev</button>
         <button
           type="button"
-          class="rounded-md border border-default px-2 py-1 hover:bg-surface-hover disabled:opacity-40"
+          class="shrink-0 whitespace-nowrap rounded-md border border-default px-2 py-1 hover:bg-surface-hover disabled:opacity-40"
           :disabled="page >= pageCount || listLoading"
           @click="setListPage(page + 1)"
         >Next</button>
         <select
-          class="shamar-input py-1 text-xs"
+          class="shamar-select w-auto shrink-0 py-1 text-xs"
           x-model="perPage"
           @change="setListPage(1)"
         >

@@ -75,7 +75,7 @@
       @endif
 
       @if(showCreateButton)
-        @if(resource.createMode === 'modal')
+        @if(isDialogPageMode(resource.createMode))
           <button
             type="button"
             class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-md bg-fg-brand hover:opacity-90 transition-opacity"
@@ -83,6 +83,7 @@
               url: {{ jsonAttr(`${basePath}/${resource.slug}/create`) }},
               title: {{ jsonAttr(`New ${resource.singularLabel}`) }},
               slug: {{ jsonAttr(resource.slug) }},
+              presentation: {{ jsonAttr(dialogPresentation(resource.createMode)) }},
             })"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
@@ -152,7 +153,7 @@
         @endif
       @elseif(mode === 'show')
         @if(showEditButton !== false && showEditButton)
-          @if(resource.editMode === 'modal')
+          @if(isDialogPageMode(resource.editMode))
             <button
               type="button"
               class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-md bg-fg-brand hover:opacity-90 transition"
@@ -160,6 +161,7 @@
                 url: {{ jsonAttr(`${basePath}/${resource.slug}/${record.id}/edit${recordPager ? recordPager.navQuery : ''}`) }},
                 title: {{ jsonAttr(`Edit ${pageTitle}`) }},
                 slug: {{ jsonAttr(resource.slug) }},
+                presentation: {{ jsonAttr(dialogPresentation(resource.editMode)) }},
               })"
             >Edit</button>
           @else
@@ -180,6 +182,7 @@
                       url: {{ jsonAttr(actionHref) }},
                       title: {{ jsonAttr(action.label) }},
                       iframe: {{ action.openIn === 'modal' ? 'true' : 'false' }},
+                      presentation: {{ jsonAttr(dialogPresentation(action.presentation)) }},
                     })"
                   >
                     @if(action.icon)

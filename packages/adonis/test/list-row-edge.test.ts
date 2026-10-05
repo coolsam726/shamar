@@ -3,7 +3,12 @@ import { describe, it } from 'node:test';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import edge from 'edge.js';
-import { defaultActions, resolveAlignmentClass } from '@shamar/core';
+import {
+  defaultActions,
+  dialogPresentation,
+  isDialogPageMode,
+  resolveAlignmentClass,
+} from '@shamar/core';
 import { actionIsVisible, partitionRowActions } from '../src/shamar/resource-actions.js';
 import { recordNavQuery } from '../src/shamar/list-query.js';
 
@@ -22,6 +27,8 @@ function mountShamarEdge() {
   );
   edge.global('recordNavQuery', recordNavQuery);
   edge.global('resolveAlignmentClass', resolveAlignmentClass);
+  edge.global('isDialogPageMode', isDialogPageMode);
+  edge.global('dialogPresentation', dialogPresentation);
   edge.global('cellValue', (record: Record<string, unknown>, column: { name: string }) =>
     String(record[column.name] ?? ''),
   );
