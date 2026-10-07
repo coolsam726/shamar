@@ -1,7 +1,8 @@
 @if(embed)
   <form
-    id="shamar-form"
+    id="shamar-form-embed"
     data-shamar-embed-form
+    data-shamar-save-mode="{{ mode }}"
     method="post"
     action="{{ mode === 'create' ? `${basePath}/${resource.slug}` : `${basePath}/${resource.slug}/${record.id}` }}"
     class="space-y-0"
@@ -36,7 +37,7 @@
       >Cancel</button>
       <button
         type="submit"
-        form="shamar-form"
+        form="shamar-form-embed"
         data-shamar-form-save
         class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-md bg-fg-brand hover:opacity-90 transition"
       >
