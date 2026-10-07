@@ -6069,18 +6069,20 @@
             form.querySelector('[type="submit"]');
           if (submitBtn) submitBtn.disabled = true;
           try {
-            const body = new URLSearchParams(new FormData(form));
+            const body = formDataFrom(form);
             if (!body.has('_csrf')) {
               const token = csrfToken();
               if (token) body.set('_csrf', token);
             }
+            if (!body.has('_shamar_embed')) body.set('_shamar_embed', '1');
             const res = await fetch(form.action, {
               method: 'POST',
               headers: csrfHeaders({
-                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
                 Accept: 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
               }),
               body,
+              credentials: 'same-origin',
               redirect: 'follow',
             });
             if (res.redirected) {
@@ -6108,28 +6110,42 @@
             } catch {
               /* ignore */
             }
-            if (payload?.id != null || payload?._id != null) {
-              const base = (
-                form.getAttribute('data-shamar-after-create') ||
-                form.action.replace(/\/$/, '')
-              ).replace(/\/$/, '');
-              const id = payload.id ?? payload._id;
-              const view =
-                form.getAttribute('data-shamar-after-create-view') ||
-                (payload.plainText ? 'show' : 'edit');
-              const next =
-                view === 'show' ? `${base}/${id}` : `${base}/${id}/edit`;
-              if (payload.plainText) {
-                revealOneTimeSecret({
-                  secret: payload.plainText,
-                  title: 'Copy your API key',
-                  message:
-                    'This secret will only be shown once. Copy it now and store it somewhere safe before continuing.',
-                  onConfirm: () => this.handleRedirect(next),
-                });
-              } else {
-                this.handleRedirect(next);
-              }
+            if (payload?.id == null && payload?._id == null) return;
+
+            const id = payload.id ?? payload._id;
+            const mode = form.getAttribute('data-shamar-save-mode') || 'edit';
+            const actionPath = new URL(form.action, window.location.origin).pathname.replace(
+              /\/$/,
+              '',
+            );
+            const isUpdate = mode === 'edit' || /\/\d+$/.test(actionPath);
+
+            if (isUpdate) {
+              // Signal update so handleRedirect closes/reloads instead of treating as create.
+              this.handleRedirect(`${actionPath}?success=updated&embed=1`);
+              return;
+            }
+
+            const base = (
+              form.getAttribute('data-shamar-after-create') || actionPath
+            ).replace(/\/$/, '');
+            const view =
+              form.getAttribute('data-shamar-after-create-view') ||
+              (payload.plainText ? 'show' : 'edit');
+            const next =
+              view === 'show'
+                ? `${base}/${id}?success=created&embed=1`
+                : `${base}/${id}/edit?success=created&embed=1`;
+            if (payload.plainText) {
+              revealOneTimeSecret({
+                secret: payload.plainText,
+                title: 'Copy your API key',
+                message:
+                  'This secret will only be shown once. Copy it now and store it somewhere safe before continuing.',
+                onConfirm: () => this.handleRedirect(next),
+              });
+            } else {
+              this.handleRedirect(next);
             }
           } catch {
             showToast('error', {
@@ -6243,15 +6259,19 @@
 
         if (isEmbed && this.open) {
           if (success === 'updated' || (success === 'created' && !_dialogOnResult)) {
+            const resultCallback = _dialogOnResult;
+            _dialogOnResult = null;
             // Nested embed dialog: restore the parent dialog form.
             if (this.dialogStack.length > 0) {
               if (flash) showToast(flash);
               await this.restoreDialog(this.dialogStack.pop());
+              if (typeof resultCallback === 'function') resultCallback({ updated: true });
               return;
             }
             // Top-level embed: close and refresh the page that opened the dialog.
             this.dialogStack = [];
             this.close();
+            if (typeof resultCallback === 'function') resultCallback({ updated: true });
             reloadParentView({ success: success || undefined, error: error || undefined });
             return;
           }
@@ -6567,6 +6587,38 @@
     data.set(key, value == null ? '' : String(value));
   }
 
+  /**
+   * Resolve the form a Save button belongs to.
+   * Prefer `button.form` / `form="…"` over `querySelector('#shamar-form')` so
+   * relation-table dialogs (embed form) are not hijacked by the parent page form.
+   */
+  function formForSaveControl(el) {
+    if (!el) return null;
+    if (el instanceof HTMLButtonElement || el instanceof HTMLInputElement) {
+      if (el.form) return el.form;
+    }
+    const formId = el.getAttribute?.('form');
+    if (formId) {
+      const byId = document.getElementById(formId);
+      if (byId instanceof HTMLFormElement) return byId;
+    }
+    const closest = el.closest?.('form');
+    if (closest instanceof HTMLFormElement) return closest;
+    return (
+      document.querySelector('form[data-shamar-embed-form]') ||
+      document.querySelector('#shamar-form[data-shamar-autosave]') ||
+      document.querySelector('#shamar-form')
+    );
+  }
+
+  function activeShamarForm() {
+    return (
+      document.querySelector('form[data-shamar-embed-form]') ||
+      document.querySelector('#shamar-form[data-shamar-autosave]') ||
+      document.querySelector('#shamar-form')
+    );
+  }
+
   function bindFormSaveShortcut() {
     document.addEventListener('keydown', (event) => {
       if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 's') return;
@@ -6578,14 +6630,15 @@
       ) {
         return;
       }
-      const form = document.querySelector('#shamar-form');
+      const form = activeShamarForm();
       if (!form) return;
       event.preventDefault();
       if (typeof window.shamarSave === 'function') {
-        window.shamarSave();
+        window.shamarSave(form);
         return;
       }
       const btn =
+        document.querySelector('[data-shamar-dialog-footer] [data-shamar-form-save]:not([disabled])') ||
         document.querySelector('[data-shamar-form-save]:not([disabled])') ||
         form.querySelector('button[type="submit"]:not([disabled])');
       if (btn) btn.click();
@@ -6627,6 +6680,7 @@
 
   function bindFormAutosave() {
     function getForm() {
+      // Never prefer an embed dialog form for page autosave — those submit via bindForm.
       return document.querySelector('#shamar-form[data-shamar-autosave]');
     }
 
@@ -6786,14 +6840,22 @@
       return true;
     }
 
-    async function runSave() {
-      const form = getForm() || document.querySelector('#shamar-form');
+    async function runSave(preferredForm) {
+      const form =
+        (preferredForm instanceof HTMLFormElement && preferredForm) ||
+        getForm() ||
+        document.querySelector('#shamar-form[data-shamar-autosave]');
       if (!form || savingInPlace) return false;
+      // Embed dialogs must not use page autosave — they POST via bindForm.
+      if (form.hasAttribute('data-shamar-embed-form')) return false;
       if (!form.hasAttribute('data-shamar-autosave') && !form.getAttribute('action')) {
         return false;
       }
       savingInPlace = true;
-      const btn = document.querySelector('[data-shamar-form-save]');
+      const btn =
+        document.querySelector(`[form="${form.id}"][data-shamar-form-save]`) ||
+        form.querySelector('[data-shamar-form-save]') ||
+        document.querySelector('[data-shamar-form-save]');
       if (btn instanceof HTMLButtonElement) btn.disabled = true;
       try {
         return await saveFormInPlace(form);
@@ -6818,11 +6880,12 @@
       (event) => {
         const btn = event.target?.closest?.('[data-shamar-form-save]');
         if (!btn) return;
-        // Embed dialog keep native submit unless autosave is present.
-        const form = document.querySelector('#shamar-form');
-        if (!form?.hasAttribute('data-shamar-autosave')) return;
+        const form = formForSaveControl(btn);
+        // Embed dialog: let the form's own submit handler (bindForm) run.
+        if (!form || form.hasAttribute('data-shamar-embed-form')) return;
+        if (!form.hasAttribute('data-shamar-autosave')) return;
         event.preventDefault();
-        runSave();
+        runSave(form);
       },
       true,
     );
@@ -6832,9 +6895,11 @@
       (event) => {
         const form = event.target;
         if (!(form instanceof HTMLFormElement)) return;
-        if (form.id !== 'shamar-form' || !form.hasAttribute('data-shamar-autosave')) return;
+        if (form.hasAttribute('data-shamar-embed-form')) return;
+        if (!form.hasAttribute('data-shamar-autosave')) return;
+        if (form.id !== 'shamar-form' && form.id !== 'shamar-form-embed') return;
         event.preventDefault();
-        runSave();
+        runSave(form);
       },
       true,
     );
