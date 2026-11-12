@@ -5,8 +5,13 @@ import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it } from 'node:test';
 import edge from 'edge.js';
+import { iconSvg } from '../src/shamar/icons.js';
 
 const viewsRoot = join(dirname(fileURLToPath(import.meta.url)), '../resources/views/shamar');
+
+function registerIconGlobals() {
+  edge.global('iconSvg', iconSvg);
+}
 
 const INCLUDE_RE =
   /@(?:include|!component)\(\s*['"]shamar::([^'"]+)['"]/g;
@@ -56,6 +61,7 @@ describe('shamar edge templates', () => {
 
   it('smoke-renders the media manager page', async () => {
     edge.mount('shamar', viewsRoot);
+    registerIconGlobals();
     edge.global('jsonAttr', (value: unknown) =>
       JSON.stringify(value ?? null).replace(/</g, '\\u003c'),
     );
@@ -149,6 +155,7 @@ describe('shamar edge templates', () => {
 
   it('smoke-renders the dashboard widget grid', async () => {
     edge.mount('shamar', viewsRoot);
+    registerIconGlobals();
 
     const html = await edge.render('shamar::dashboard', {
       pageTitle: 'Dashboard',
