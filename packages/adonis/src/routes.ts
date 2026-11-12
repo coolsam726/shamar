@@ -340,6 +340,8 @@ function registerMediaRoutes(
               navigationIcon: media.navigationIcon,
             },
             userMenuLinks: panel.config.userMenuLinks,
+            navigationType: panel.config.navigationType,
+            sideNavMode: panel.config.sideNavMode,
           });
           const folderId = (ctx.request.qs().folderId as string | undefined) || null;
           const browse = await media.adapter.browse({

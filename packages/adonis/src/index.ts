@@ -78,6 +78,28 @@ export {
   type AdminShellContext,
 } from './shamar/view-context.js';
 export {
+  Icons,
+  NavIcons,
+  Svg,
+  iconSvg,
+  IconNotFoundError,
+  CannotRegisterIconSetError,
+  type IconsApi,
+  type IconSet,
+  type IconSetOptions,
+} from './shamar/icons.js';
+export {
+  menuLayoutContext,
+  buildMenuSecondary,
+  buildTopTree,
+  mergeNavigationGroups,
+  type MenuLayoutContext,
+  type MenuRoot,
+  type MenuSecondaryItem,
+  type NavigationGroup,
+  type NavItem,
+} from './shamar/menu.js';
+export {
   createLocalMediaStorage,
   mediaObjectKey,
   sanitizeFilename,

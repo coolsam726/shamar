@@ -126,6 +126,10 @@ export default class ShamarProvider {
         dialogPresentation,
       } = await import('@shamar/core');
       edge.global('humanizeLabel', humanizeLabel);
+      const { iconSvg, Icons, NavIcons } = await import('./shamar/icons.js');
+      Icons.ensureDefaults();
+      edge.global('iconSvg', iconSvg);
+      edge.global('NavIcons', NavIcons);
       edge.global('resolveAlignmentClass', resolveAlignmentClass);
       edge.global('alignmentTextClass', alignmentTextClass);
       edge.global('isDialogPageMode', isDialogPageMode);

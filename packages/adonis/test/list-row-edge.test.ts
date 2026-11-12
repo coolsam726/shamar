@@ -9,6 +9,7 @@ import {
   isDialogPageMode,
   resolveAlignmentClass,
 } from '@shamar/core';
+import { iconSvg } from '../src/shamar/icons.js';
 import { actionIsVisible, partitionRowActions } from '../src/shamar/resource-actions.js';
 import { recordNavQuery } from '../src/shamar/list-query.js';
 
@@ -29,6 +30,7 @@ function mountShamarEdge() {
   edge.global('resolveAlignmentClass', resolveAlignmentClass);
   edge.global('isDialogPageMode', isDialogPageMode);
   edge.global('dialogPresentation', dialogPresentation);
+  edge.global('iconSvg', iconSvg);
   edge.global('cellValue', (record: Record<string, unknown>, column: { name: string }) =>
     String(record[column.name] ?? ''),
   );

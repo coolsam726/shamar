@@ -2,6 +2,12 @@ import type { BrandDisplay, PanelBranding, PanelConfig, PanelOrm } from './types
 import type { Page } from './page.js';
 import type { DashboardPage } from './dashboard-page.js';
 import type { Resource } from './resource.js';
+import {
+  normalizeNavigationType,
+  normalizeSideNavMode,
+  type NavigationTypeInput,
+  type SideNavModeInput,
+} from './navigation.js';
 
 /**
  * Filament-style panel builder.
@@ -158,6 +164,43 @@ export class PanelBuilder {
     return this;
   }
 
+  /**
+   * Where panel navigation links sit (Firefly parity).
+   *
+   * @example panel('admin').navigationType('side')
+   * @example panel('admin').navigation('top')
+   * @example panel('admin').navigationType('app_inverse')
+   */
+  navigationType(type: NavigationTypeInput): this {
+    this.config.navigationType = normalizeNavigationType(type);
+    return this;
+  }
+
+  /** Alias of {@link navigationType}. */
+  navigation(type: NavigationTypeInput): this {
+    return this.navigationType(type);
+  }
+
+  /** Shorthand: `.navigationType('top')`. */
+  topNavigation(): this {
+    return this.navigationType('top');
+  }
+
+  /**
+   * How SIDE groups render. Default `static`. APP / INVERSE / TOP ignore this.
+   *
+   * @example panel('admin').navigationType('side').sideNavMode('accordion')
+   */
+  sideNavMode(mode: SideNavModeInput): this {
+    this.config.sideNavMode = normalizeSideNavMode(mode);
+    return this;
+  }
+
+  /** Selects accordion SIDE groups when `on` is true (default true). */
+  navigationAccordion(on = true): this {
+    return this.sideNavMode(on ? 'accordion' : 'static');
+  }
+
   build(): PanelConfig {
     return {
       ...this.config,
@@ -165,6 +208,12 @@ export class PanelBuilder {
       pages: [...(this.config.pages ?? [])],
       userMenuLinks: this.config.userMenuLinks
         ? [...this.config.userMenuLinks]
+        : undefined,
+      navigationType: this.config.navigationType
+        ? normalizeNavigationType(this.config.navigationType)
+        : undefined,
+      sideNavMode: this.config.sideNavMode
+        ? normalizeSideNavMode(this.config.sideNavMode)
         : undefined,
     };
   }
