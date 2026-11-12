@@ -759,4 +759,14 @@ export interface PanelConfig {
     /** Open in a new tab (also skips `wire:navigate`). */
     external?: boolean;
   }>;
+  /**
+   * Where navigation sits (Firefly parity): `app` (default), `inverse`, `side`, `top`.
+   * Alias `app_inverse` → `inverse`.
+   */
+  navigationType?: import('./navigation.js').NavigationType;
+  /**
+   * How SIDE groups render: `static` (default) or `accordion`.
+   * Ignored for APP / INVERSE / TOP.
+   */
+  sideNavMode?: import('./navigation.js').SideNavMode;
 }

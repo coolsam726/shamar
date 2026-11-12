@@ -1,3 +1,12 @@
+import {
+  normalizeNavigationType,
+  normalizeSideNavMode,
+  type NavigationType,
+  type NavigationTypeInput,
+  type SideNavMode,
+  type SideNavModeInput,
+} from '@shamar/core';
+
 /** Shared nav shape for resources and pages. */
 export interface NavItem {
   slug: string;
@@ -14,6 +23,9 @@ export interface MenuRoot {
   href: string;
   rootIndex: number;
   active: boolean;
+  /** When true, this root is a cluster (group) with no dedicated page of its own. */
+  cluster?: boolean;
+  children?: MenuSecondaryItem[];
 }
 
 export interface MenuSecondaryChild {
@@ -37,6 +49,10 @@ export interface Breadcrumb {
 }
 
 export interface MenuLayoutContext {
+  navigationType: NavigationType;
+  sideNavMode: SideNavMode;
+  /** Hide the desktop sidebar column (TOP). Mobile drawer still works. */
+  sidebarOffcanvas: boolean;
   menuRoots: MenuRoot[];
   menuActiveRoot: MenuRoot | null;
   menuActiveRootIndex: number | null;
@@ -58,6 +74,11 @@ export interface RecordBreadcrumbOptions {
   recordTitle?: string;
   /** Show/detail URL — linked from the record crumb on edit. */
   recordHref?: string;
+}
+
+export interface MenuLayoutOptions {
+  navigationType?: NavigationTypeInput;
+  sideNavMode?: SideNavModeInput;
 }
 
 const GROUP_ICONS: Record<string, string> = {
@@ -137,53 +158,51 @@ export function buildMenuSecondary(
   return entries.sort((a, b) => a.sort - b.sort).map((entry) => entry.item);
 }
 
-export function menuLayoutContext(
+/** TOP / SIDE full tree: each group is a cluster with its secondary children. */
+export function buildTopTree(
   groups: NavigationGroup[],
   basePath: string,
   currentSlug?: string,
-  pageTitle?: string,
-  record?: RecordBreadcrumbOptions,
-): MenuLayoutContext {
-  const menuRoots: MenuRoot[] = [
+): MenuRoot[] {
+  const roots: MenuRoot[] = [
     {
       label: 'Dashboard',
       icon: 'home',
       href: basePath || '/',
       rootIndex: 0,
       active: !currentSlug,
+      cluster: false,
     },
-    ...groups.map((group, index) => {
-      const href = firstGroupHref(group, basePath);
-      const active = Boolean(
-        currentSlug && group.items.some((item) => item.slug === currentSlug),
-      );
-      return {
-        label: group.name,
-        icon: group.icon ?? GROUP_ICONS[group.name] ?? 'squares-2x2',
-        href,
-        rootIndex: index + 1,
-        active,
-      };
-    }),
   ];
 
-  const menuActiveRootIndex = currentSlug
-    ? (menuRoots.find((root) => root.active)?.rootIndex ?? null)
-    : 0;
+  groups.forEach((group, index) => {
+    const children = buildMenuSecondary(group.items, basePath, currentSlug);
+    const active = Boolean(
+      currentSlug && group.items.some((item) => item.slug === currentSlug),
+    );
+    roots.push({
+      label: group.name,
+      icon: group.icon ?? GROUP_ICONS[group.name] ?? 'squares-2x2',
+      href: firstGroupHref(group, basePath),
+      rootIndex: index + 1,
+      active,
+      cluster: true,
+      children,
+    });
+  });
 
-  const menuActiveRoot =
-    menuActiveRootIndex !== null
-      ? (menuRoots.find((root) => root.rootIndex === menuActiveRootIndex) ?? null)
-      : null;
+  return roots;
+}
 
-  const activeGroup = currentSlug
-    ? groups.find((group) => group.items.some((item) => item.slug === currentSlug))
-    : undefined;
-
-  const menuSecondary = activeGroup
-    ? buildMenuSecondary(activeGroup.items, basePath, currentSlug)
-    : [];
-
+function buildBreadcrumbs(options: {
+  basePath: string;
+  menuActiveRoot: MenuRoot | null;
+  currentSlug?: string;
+  activeGroup?: NavigationGroup;
+  pageTitle?: string;
+  record?: RecordBreadcrumbOptions;
+}): Breadcrumb[] {
+  const { basePath, menuActiveRoot, currentSlug, activeGroup, pageTitle, record } = options;
   const breadcrumbs: Breadcrumb[] = [{ label: 'Home', href: basePath || '/' }];
 
   if (menuActiveRoot && menuActiveRoot.label !== 'Dashboard') {
@@ -215,10 +234,107 @@ export function menuLayoutContext(
     breadcrumbs.push({ label: pageTitle });
   }
 
+  return breadcrumbs;
+}
+
+export function menuLayoutContext(
+  groups: NavigationGroup[],
+  basePath: string,
+  currentSlug?: string,
+  pageTitle?: string,
+  record?: RecordBreadcrumbOptions,
+  options?: MenuLayoutOptions,
+): MenuLayoutContext {
+  const navigationType = normalizeNavigationType(options?.navigationType, 'app');
+  const sideNavMode = normalizeSideNavMode(options?.sideNavMode, 'static');
+
+  const appRoots: MenuRoot[] = [
+    {
+      label: 'Dashboard',
+      icon: 'home',
+      href: basePath || '/',
+      rootIndex: 0,
+      active: !currentSlug,
+      cluster: false,
+    },
+    ...groups.map((group, index) => {
+      const href = firstGroupHref(group, basePath);
+      const active = Boolean(
+        currentSlug && group.items.some((item) => item.slug === currentSlug),
+      );
+      return {
+        label: group.name,
+        icon: group.icon ?? GROUP_ICONS[group.name] ?? 'squares-2x2',
+        href,
+        rootIndex: index + 1,
+        active,
+        cluster: true,
+        children: buildMenuSecondary(group.items, basePath, currentSlug),
+      };
+    }),
+  ];
+
+  const menuActiveRootIndex = currentSlug
+    ? (appRoots.find((root) => root.active)?.rootIndex ?? null)
+    : 0;
+
+  const menuActiveRoot =
+    menuActiveRootIndex !== null
+      ? (appRoots.find((root) => root.rootIndex === menuActiveRootIndex) ?? null)
+      : null;
+
+  const activeGroup = currentSlug
+    ? groups.find((group) => group.items.some((item) => item.slug === currentSlug))
+    : undefined;
+
+  let menuRoots = appRoots;
+  let menuSecondary: MenuSecondaryItem[] = [];
+
+  if (navigationType === 'app') {
+    // L1 roots in sidebar; active group's children in top bar.
+    menuSecondary = activeGroup
+      ? buildMenuSecondary(activeGroup.items, basePath, currentSlug)
+      : [];
+  } else if (navigationType === 'inverse') {
+    // L1 roots in top bar; active group's children in sidebar (rendered from menuSecondary).
+    menuRoots = appRoots;
+    menuSecondary = activeGroup
+      ? buildMenuSecondary(activeGroup.items, basePath, currentSlug)
+      : [];
+  } else if (navigationType === 'top') {
+    menuRoots = buildTopTree(groups, basePath, currentSlug);
+    menuSecondary = [];
+  } else {
+    // SIDE: full tree in sidebar; no top-bar item row.
+    menuRoots = buildTopTree(groups, basePath, currentSlug);
+    menuSecondary = [];
+  }
+
+  const breadcrumbs = buildBreadcrumbs({
+    basePath,
+    menuActiveRoot:
+      navigationType === 'top' || navigationType === 'side'
+        ? (menuRoots.find((root) => root.active) ?? menuRoots[0] ?? null)
+        : menuActiveRoot,
+    currentSlug,
+    activeGroup,
+    pageTitle,
+    record,
+  });
+
   return {
+    navigationType,
+    sideNavMode,
+    sidebarOffcanvas: navigationType === 'top',
     menuRoots,
-    menuActiveRoot,
-    menuActiveRootIndex,
+    menuActiveRoot:
+      navigationType === 'top' || navigationType === 'side'
+        ? (menuRoots.find((root) => root.active) ?? menuRoots[0] ?? null)
+        : menuActiveRoot,
+    menuActiveRootIndex:
+      navigationType === 'top' || navigationType === 'side'
+        ? (menuRoots.find((root) => root.active)?.rootIndex ?? 0)
+        : menuActiveRootIndex,
     menuSecondary,
     breadcrumbs,
   };

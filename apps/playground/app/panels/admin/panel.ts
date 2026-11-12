@@ -18,6 +18,7 @@ export default class AdminPanel extends PanelProvider {
         logoHeight: 60,
       })
       .brandDisplay('logo')
+      // Firefly parity: .navigationType('app'|'inverse'|'side'|'top') / .navigationAccordion()
       .contentMaxWidth('screen-2xl')
       .defaultPerPage(10)
       .dashboardPage(AdminDashboard)

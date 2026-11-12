@@ -249,6 +249,8 @@ export class AdminController {
           }
         : undefined,
       userMenuLinks: this.panel.config.userMenuLinks,
+      navigationType: this.panel.config.navigationType,
+      sideNavMode: this.panel.config.sideNavMode,
       showCreateButton:
         showCreateButton === true ? policy?.create ?? true : showCreateButton,
       showEditButton:
@@ -1925,6 +1927,8 @@ export class AdminController {
           }
         : undefined,
       userMenuLinks: this.panel.config.userMenuLinks,
+      navigationType: this.panel.config.navigationType,
+      sideNavMode: this.panel.config.sideNavMode,
     });
 
     const view = page.view ?? 'shamar::page';
@@ -1990,6 +1994,8 @@ export class AdminController {
           }
         : undefined,
       userMenuLinks: this.panel.config.userMenuLinks,
+      navigationType: this.panel.config.navigationType,
+      sideNavMode: this.panel.config.sideNavMode,
     });
 
     const view = page.view ?? 'shamar::page-form';
@@ -2101,6 +2107,8 @@ export class AdminController {
           }
         : undefined,
       userMenuLinks: this.panel.config.userMenuLinks,
+      navigationType: this.panel.config.navigationType,
+      sideNavMode: this.panel.config.sideNavMode,
       showCreateButton: false,
     });
 
@@ -2458,6 +2466,8 @@ export class AdminController {
           }
         : undefined,
       userMenuLinks: this.panel.config.userMenuLinks,
+      navigationType: this.panel.config.navigationType,
+      sideNavMode: this.panel.config.sideNavMode,
     });
 
     const view = page.view ?? 'shamar::page-sections';
@@ -2634,6 +2644,8 @@ export class AdminController {
             }
           : undefined,
         userMenuLinks: this.panel.config.userMenuLinks,
+        navigationType: this.panel.config.navigationType,
+        sideNavMode: this.panel.config.sideNavMode,
       });
 
       return ctx.view.render(page.view ?? 'shamar::page-form', {

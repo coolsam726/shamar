@@ -5,15 +5,13 @@
     aria-label="Open menu"
     class="md:hidden p-1.5 -ml-1.5 rounded-md text-body hover:bg-surface-hover"
   >
-    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
-    </svg>
+    {{{ iconSvg('bars-3', 'w-5 h-5') }}}
   </button>
 
   <a
     href="{{ basePath || '/' }}"
     wire:navigate
-    class="shamar-topbar__brand text-inherit no-underline"
+    class="shamar-topbar__brand text-inherit no-underline{{ navigationType === 'top' ? ' shamar-topbar__brand--always' : '' }}"
     aria-label="{{ panelTitle }}"
   >
     @if(branding.showLogo && branding.logoUrl)
@@ -35,53 +33,112 @@
   </a>
 
   <div class="shamar-topbar__menu flex-1 min-w-0 overflow-hidden" data-wire-sync="topbar-menu">
-    <nav
-      class="shamar-app-menu flex-1 min-w-0"
-      aria-label="{{ menuActiveRoot ? `${menuActiveRoot.label} menu` : 'App menu' }}"
-    >
-      @if(menuActiveRoot && menuActiveRoot.label !== 'Dashboard')
-        @if(!menuSecondary.length)
-          <span class="shrink-0 text-sm font-semibold text-heading truncate max-w-[12rem]">{{ menuActiveRoot.label }}</span>
+    @if(navigationType === 'app')
+      <nav
+        class="shamar-app-menu flex-1 min-w-0"
+        aria-label="{{ menuActiveRoot ? `${menuActiveRoot.label} menu` : 'App menu' }}"
+      >
+        @if(menuActiveRoot && menuActiveRoot.label !== 'Dashboard')
+          @if(!menuSecondary.length)
+            <span class="shrink-0 text-sm font-semibold text-heading truncate max-w-[12rem]">{{ menuActiveRoot.label }}</span>
+          @endif
         @endif
-      @endif
 
-      @each(item in menuSecondary)
-        @if(item.children && item.children.length)
-          <div
-            class="relative shrink-0"
-            x-data="shamarFloatingMenu()"
-            @click.outside="close()"
-            @keydown.escape.window="close()"
-          >
-            <button
-              type="button"
-              x-ref="trigger"
-              @click="toggle()"
-              class="shamar-topbar-link flex items-center gap-1 px-2.5 py-1.5 rounded-md text-sm whitespace-nowrap {{ item.active ? 'is-active' : '' }}"
-              :aria-expanded="open.toString()"
-            >
-              {{ item.label }}
-              <svg class="w-3 h-3 text-body-subtle transition-transform" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
-              </svg>
-            </button>
+        @each(item in menuSecondary)
+          @if(item.children && item.children.length)
             <div
-              x-show="open"
-              x-cloak
-              x-ref="panel"
-              x-bind:style="panelStyle"
-              class="min-w-[10rem] shamar-card rounded-xl shadow-lg py-1"
+              class="relative shrink-0"
+              x-data="shamarFloatingMenu()"
+              @click.outside="close()"
+              @keydown.escape.window="close()"
             >
-              @each(child in item.children)
-                <a href="{{ child.href }}" wire:navigate class="shamar-topbar-menu-item block px-3 py-1.5 text-sm whitespace-nowrap {{ child.active ? 'is-active' : '' }}">{{ child.label }}</a>
-              @endeach
+              <button
+                type="button"
+                x-ref="trigger"
+                @click="toggle()"
+                class="shamar-topbar-link flex items-center gap-1 px-2.5 py-1.5 rounded-md text-sm whitespace-nowrap {{ item.active ? 'is-active' : '' }}"
+                :aria-expanded="open.toString()"
+              >
+                {{ item.label }}
+                {{{ iconSvg('chevron-down', 'w-3 h-3 text-body-subtle') }}}
+              </button>
+              <div
+                x-show="open"
+                x-cloak
+                x-ref="panel"
+                x-bind:style="panelStyle"
+                class="min-w-[10rem] shamar-card rounded-xl shadow-lg py-1"
+              >
+                @each(child in item.children)
+                  <a href="{{ child.href }}" wire:navigate class="shamar-topbar-menu-item block px-3 py-1.5 text-sm whitespace-nowrap {{ child.active ? 'is-active' : '' }}">{{ child.label }}</a>
+                @endeach
+              </div>
             </div>
-          </div>
-        @else
-          <a href="{{ item.href }}" wire:navigate class="shamar-topbar-link shrink-0 px-2.5 py-1.5 rounded-md text-sm whitespace-nowrap {{ item.active ? 'is-active' : '' }}">{{ item.label }}</a>
-        @endif
-      @endeach
-    </nav>
+          @else
+            <a href="{{ item.href }}" wire:navigate class="shamar-topbar-link shrink-0 px-2.5 py-1.5 rounded-md text-sm whitespace-nowrap {{ item.active ? 'is-active' : '' }}">{{ item.label }}</a>
+          @endif
+        @endeach
+      </nav>
+    @elseif(navigationType === 'inverse')
+      <nav class="shamar-app-menu shamar-nav-top flex-1 min-w-0" aria-label="Applications" data-shamar-nav-top>
+        <ul class="shamar-nav-list shamar-nav-list--top">
+          @each(root in menuRoots)
+            <li class="shamar-nav-item {{ root.active ? 'is-active' : '' }}">
+              <a href="{{ root.href }}" wire:navigate class="shamar-topbar-link shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm whitespace-nowrap {{ root.active ? 'is-active' : '' }}">
+                <span class="shrink-0 w-4 h-4">@include('shamar::partials/icon')</span>
+                {{ root.label }}
+              </a>
+            </li>
+          @endeach
+        </ul>
+      </nav>
+    @elseif(navigationType === 'top')
+      <nav class="shamar-app-menu shamar-nav-top flex-1 min-w-0" aria-label="Navigation" data-shamar-nav-top>
+        <ul class="shamar-nav-list shamar-nav-list--top">
+          @each(root in menuRoots)
+            @if(root.children && root.children.length)
+              <li class="shamar-nav-item shamar-nav-dropdown {{ root.active ? 'is-active' : '' }}">
+                <button type="button" class="shamar-topbar-link shamar-nav-dropdown-trigger flex items-center gap-1 px-2.5 py-1.5 rounded-md text-sm whitespace-nowrap {{ root.active ? 'is-active' : '' }}" aria-haspopup="menu" aria-expanded="false">
+                  <span class="shrink-0 w-4 h-4">@include('shamar::partials/icon')</span>
+                  {{ root.label }}
+                  {{{ iconSvg('chevron-down', 'w-3 h-3 text-body-subtle') }}}
+                </button>
+                <ul class="shamar-nav-list shamar-nav-dropdown-panel" role="menu">
+                  @each(item in root.children)
+                    @if(item.children && item.children.length)
+                      <li class="shamar-nav-item shamar-nav-dropdown {{ item.active ? 'is-active' : '' }}">
+                        <button type="button" class="shamar-topbar-menu-item shamar-nav-dropdown-trigger w-full text-left px-3 py-1.5 text-sm flex items-center justify-between gap-2 {{ item.active ? 'is-active' : '' }}" aria-haspopup="menu" aria-expanded="false">
+                          {{ item.label }}
+                          {{{ iconSvg('chevron-right', 'w-3 h-3 text-body-subtle') }}}
+                        </button>
+                        <ul class="shamar-nav-list shamar-nav-dropdown-panel" role="menu">
+                          @each(child in item.children)
+                            <li class="shamar-nav-item {{ child.active ? 'is-active' : '' }}">
+                              <a href="{{ child.href }}" wire:navigate class="shamar-topbar-menu-item block px-3 py-1.5 text-sm whitespace-nowrap {{ child.active ? 'is-active' : '' }}">{{ child.label }}</a>
+                            </li>
+                          @endeach
+                        </ul>
+                      </li>
+                    @else
+                      <li class="shamar-nav-item {{ item.active ? 'is-active' : '' }}">
+                        <a href="{{ item.href }}" wire:navigate class="shamar-topbar-menu-item block px-3 py-1.5 text-sm whitespace-nowrap {{ item.active ? 'is-active' : '' }}">{{ item.label }}</a>
+                      </li>
+                    @endif
+                  @endeach
+                </ul>
+              </li>
+            @else
+              <li class="shamar-nav-item {{ root.active ? 'is-active' : '' }}">
+                <a href="{{ root.href }}" wire:navigate class="shamar-topbar-link shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm whitespace-nowrap {{ root.active ? 'is-active' : '' }}">
+                  <span class="shrink-0 w-4 h-4">@include('shamar::partials/icon')</span>
+                  {{ root.label }}
+                </a>
+              </li>
+            @endif
+          @endeach
+        </ul>
+      </nav>
+    @endif
   </div>
 
   <div class="flex-1 min-w-0 md:hidden" aria-hidden="true"></div>
@@ -99,15 +156,9 @@
       :aria-label="themePref === 'system' ? 'Theme: System — click for Light' : themePref === 'dark' ? 'Theme: Dark — click for System' : 'Theme: Light — click for Dark'"
       title="Cycle theme"
     >
-      <svg class="w-4 h-4 shamar-theme-icon shamar-theme-icon--light" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>
-      </svg>
-      <svg class="w-4 h-4 shamar-theme-icon shamar-theme-icon--dark" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-      </svg>
-      <svg class="w-4 h-4 shamar-theme-icon shamar-theme-icon--system" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25H5.25A2.25 2.25 0 013 15V6.75A2.25 2.25 0 015.25 4.5h13.5A2.25 2.25 0 0121 6.75V15a2.25 2.25 0 01-2.25 2.25H15M9 17.25v1.5c0 .621.504 1.125 1.125 1.125h3.75c.621 0 1.125-.504 1.125-1.125v-1.5M9 17.25h6"/>
-      </svg>
+      {{{ iconSvg('sun', 'w-4 h-4 shamar-theme-icon shamar-theme-icon--light') }}}
+      {{{ iconSvg('moon', 'w-4 h-4 shamar-theme-icon shamar-theme-icon--dark') }}}
+      {{{ iconSvg('computer-desktop', 'w-4 h-4 shamar-theme-icon shamar-theme-icon--system') }}}
     </button>
 
     <div class="relative" x-data="{ open: false }" @click.outside="open = false">
@@ -120,9 +171,7 @@
       >
         <span class="w-7 h-7 rounded-full bg-fg-brand text-white text-xs font-semibold flex items-center justify-center shrink-0">{{ userInitial }}</span>
         <span class="hidden sm:inline text-sm font-medium text-body max-w-[120px] truncate">{{ user.name }}</span>
-        <svg class="w-3 h-3 text-body-subtle hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
-        </svg>
+        {{{ iconSvg('chevron-down', 'w-3 h-3 text-body-subtle hidden sm:block') }}}
       </button>
       <div x-show="open" x-cloak x-transition class="absolute right-0 top-full mt-2 w-56 shamar-card rounded-xl shadow-lg overflow-hidden z-50">
         <div class="px-4 py-3 border-b border-default">

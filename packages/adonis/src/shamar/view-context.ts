@@ -32,6 +32,9 @@ export interface AdminShellContext {
   pageTitle: string;
   branding: ShamarBranding;
   navGroups: NavigationGroup[];
+  navigationType: ReturnType<typeof menuLayoutContext>['navigationType'];
+  sideNavMode: ReturnType<typeof menuLayoutContext>['sideNavMode'];
+  sidebarOffcanvas: boolean;
   menuRoots: ReturnType<typeof menuLayoutContext>['menuRoots'];
   menuActiveRoot: ReturnType<typeof menuLayoutContext>['menuActiveRoot'];
   menuSecondary: ReturnType<typeof menuLayoutContext>['menuSecondary'];
@@ -164,6 +167,10 @@ export async function buildShellContext(options: {
   };
   /** Extra links for the user avatar dropdown. */
   userMenuLinks?: Array<{ label: string; href: string; external?: boolean }>;
+  /** Firefly-parity navigation layout (default `app`). */
+  navigationType?: import('@shamar/core').NavigationTypeInput;
+  /** SIDE group mode (default `static`). */
+  sideNavMode?: import('@shamar/core').SideNavModeInput;
 }): Promise<AdminShellContext> {
   const basePath = panelPathPrefix(options.basePath ?? options.config.path ?? '/admin');
   const groups = navigationGroups(options.registry, {
@@ -179,6 +186,10 @@ export async function buildShellContext(options: {
     currentSlug,
     options.pageTitle,
     options.recordBreadcrumb,
+    {
+      navigationType: options.navigationType,
+      sideNavMode: options.sideNavMode,
+    },
   );
   const brandingInput = options.branding ?? options.config.branding;
   const branding =
@@ -206,6 +217,9 @@ export async function buildShellContext(options: {
     pageTitle: options.pageTitle,
     branding,
     navGroups: groups,
+    navigationType: menu.navigationType,
+    sideNavMode: menu.sideNavMode,
+    sidebarOffcanvas: menu.sidebarOffcanvas,
     menuRoots: menu.menuRoots,
     menuActiveRoot: menu.menuActiveRoot,
     menuSecondary: menu.menuSecondary,

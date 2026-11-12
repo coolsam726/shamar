@@ -7325,6 +7325,342 @@
    * Lazy-load + polling island for dashboard widgets (Filament parity).
    * Expects data-refresh-url, optional data-polling-interval (ms), data-lazy.
    */
+  /**
+   * TOP/INVERSE top-bar overflow: pack trailing whole menus into More.
+   * Adapted from Kona Firefly nav-dropdown.js (class names → shamar-*).
+   */
+  (function shamarNavTopPack() {
+    var SEQ = 0;
+    var packing = false;
+    var frame = 0;
+    var closeTimer = 0;
+
+    function topNavs() {
+      return document.querySelectorAll('[data-shamar-nav-top]');
+    }
+
+    function triggerOf(item) {
+      return (
+        item.querySelector(':scope > .shamar-nav-dropdown-trigger') ||
+        item.querySelector(':scope > a') ||
+        item
+      );
+    }
+
+    function menuOf(item) {
+      return item.querySelector(':scope > .shamar-nav-dropdown-panel');
+    }
+
+    function directItem(item) {
+      var list = item.parentElement;
+      var nav = item.closest('[data-shamar-nav-top]');
+      if (!nav || !list) return false;
+      return list.parentElement === nav;
+    }
+
+    function setExpanded(item, open) {
+      var button = triggerOf(item);
+      if (button && button.tagName === 'BUTTON') {
+        button.setAttribute('aria-expanded', open ? 'true' : 'false');
+      }
+    }
+
+    function closeItem(item) {
+      item.classList.remove('shamar-nav-open');
+      setExpanded(item, false);
+      item.querySelectorAll('.shamar-nav-dropdown.shamar-nav-open').forEach(function (nested) {
+        nested.classList.remove('shamar-nav-open');
+        setExpanded(nested, false);
+      });
+    }
+
+    function closeOthers(item) {
+      var nav = item.closest('[data-shamar-nav-top]');
+      if (!nav) return;
+      nav.querySelectorAll('.shamar-nav-dropdown.shamar-nav-open').forEach(function (open) {
+        if (open === item || open.contains(item) || item.contains(open)) return;
+        closeItem(open);
+      });
+    }
+
+    function place(item) {
+      var menu = menuOf(item);
+      if (!menu || item.closest('[data-shamar-nav-more]')) return;
+      var anchor = triggerOf(item);
+      var rect = anchor.getBoundingClientRect();
+      var flyout = !directItem(item);
+      menu.style.position = 'fixed';
+      menu.style.zIndex = '40';
+      menu.style.top = Math.round(flyout ? rect.top : rect.bottom + 4) + 'px';
+      menu.style.left = Math.round(flyout ? rect.right - 4 : rect.left) + 'px';
+      var box = menu.getBoundingClientRect();
+      var pad = 8;
+      if (box.right > window.innerWidth - pad) {
+        var left = flyout ? rect.left - box.width + 4 : window.innerWidth - box.width - pad;
+        menu.style.left = Math.round(Math.max(pad, left)) + 'px';
+      }
+    }
+
+    function openItem(item) {
+      if (!item || !item.classList.contains('shamar-nav-dropdown')) return;
+      if (item.closest('[data-shamar-nav-more]')) return;
+      closeOthers(item);
+      item.classList.add('shamar-nav-open');
+      setExpanded(item, true);
+      place(item);
+    }
+
+    function remember(node) {
+      if (node.getAttribute('data-shamar-nav-slot')) return;
+      var marker = document.createComment('shamar-nav-slot');
+      node.parentNode.insertBefore(marker, node);
+      node._shamarNavMarker = marker;
+      node.setAttribute('data-shamar-nav-slot', '1');
+    }
+
+    function restoreNode(node) {
+      var marker = node._shamarNavMarker;
+      node.removeAttribute('data-shamar-nav-slot');
+      if (!marker || !marker.parentNode) {
+        node._shamarNavMarker = null;
+        return;
+      }
+      marker.parentNode.insertBefore(node, marker);
+      marker.parentNode.removeChild(marker);
+      node._shamarNavMarker = null;
+    }
+
+    function ensureMore(nav) {
+      var more = nav.querySelector('[data-shamar-nav-more]');
+      if (more) return more;
+      SEQ += 1;
+      var id = 'shamar-nav-more-' + SEQ;
+      more = document.createElement('div');
+      more.className = 'shamar-nav-more';
+      more.setAttribute('data-shamar-nav-more', '');
+      more.hidden = true;
+      more.innerHTML =
+        '<button type="button" class="shamar-nav-more-trigger" data-shamar-menu-trigger ' +
+        'aria-haspopup="menu" aria-expanded="false" aria-controls="' +
+        id +
+        '">More</button>' +
+        '<div class="shamar-nav-more-panel" id="' +
+        id +
+        '" data-shamar-menu-panel role="menu" hidden></div>';
+      nav.appendChild(more);
+      more.querySelector('[data-shamar-menu-trigger]').addEventListener('click', function (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        var panel = more.querySelector('[data-shamar-menu-panel]');
+        var open = panel.hasAttribute('hidden');
+        panel.toggleAttribute('hidden', !open);
+        more.querySelector('[data-shamar-menu-trigger]').setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+      return more;
+    }
+
+    function restore(nav) {
+      var more = nav.querySelector('[data-shamar-nav-more]');
+      if (!more) return;
+      var panel = more.querySelector('[data-shamar-menu-panel]');
+      if (!panel) return;
+      var parked = Array.prototype.slice.call(panel.querySelectorAll('[data-shamar-nav-slot]'));
+      for (var i = parked.length - 1; i >= 0; i--) restoreNode(parked[i]);
+      panel.innerHTML = '';
+    }
+
+    function barList(nav) {
+      return nav.querySelector(':scope > .shamar-nav-list');
+    }
+
+    function pack(nav) {
+      var list = barList(nav);
+      if (!list) return;
+      restore(nav);
+      var more = ensureMore(nav);
+      more.hidden = true;
+      var morePanel = more.querySelector('[data-shamar-menu-panel]');
+      if (morePanel) morePanel.hidden = true;
+      if (list.clientWidth <= 0) return;
+      if (list.scrollWidth <= list.clientWidth + 1) return;
+      more.hidden = false;
+      var bucket = document.createElement('ul');
+      bucket.className = 'shamar-nav-list';
+      morePanel.appendChild(bucket);
+      var guard = 0;
+      while (list.scrollWidth > list.clientWidth + 1 && guard < 40) {
+        guard += 1;
+        var items = Array.prototype.filter.call(list.children, function (el) {
+          return el.tagName === 'LI';
+        });
+        if (!items.length) break;
+        var last = items[items.length - 1];
+        remember(last);
+        bucket.insertBefore(last, bucket.firstChild);
+      }
+      var button = more.querySelector('[data-shamar-menu-trigger]');
+      if (button) button.classList.toggle('is-active', !!morePanel.querySelector('.is-active'));
+    }
+
+    function packAll() {
+      if (packing) return;
+      packing = true;
+      try {
+        topNavs().forEach(pack);
+      } finally {
+        packing = false;
+      }
+    }
+
+    function schedule() {
+      if (packing || frame) return;
+      frame = 1;
+      window.requestAnimationFrame(function () {
+        frame = 0;
+        packAll();
+      });
+    }
+
+    function onClick(ev) {
+      var target = ev.target;
+      if (!target || !target.closest) return;
+      var button = target.closest('.shamar-nav-dropdown-trigger');
+      if (!button || !button.closest('[data-shamar-nav-top]')) return;
+      var item = button.closest('.shamar-nav-dropdown');
+      if (!item || item.closest('[data-shamar-nav-more]')) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      if (item.classList.contains('shamar-nav-open')) closeItem(item);
+      else openItem(item);
+    }
+
+    function onEnter(ev) {
+      var item = ev.target && ev.target.closest ? ev.target.closest('[data-shamar-nav-top] .shamar-nav-dropdown') : null;
+      if (!item || item.closest('[data-shamar-nav-more]')) return;
+      if (closeTimer) {
+        clearTimeout(closeTimer);
+        closeTimer = 0;
+      }
+      openItem(item);
+    }
+
+    function onLeave(ev) {
+      var item = ev.target && ev.target.closest ? ev.target.closest('[data-shamar-nav-top] .shamar-nav-dropdown') : null;
+      if (!item || !directItem(item)) return;
+      var next = ev.relatedTarget;
+      if (next && item.contains(next)) return;
+      if (closeTimer) clearTimeout(closeTimer);
+      closeTimer = setTimeout(function () {
+        closeTimer = 0;
+        if (!item.contains(document.activeElement)) closeItem(item);
+      }, 140);
+    }
+
+    function onDocClick(ev) {
+      var target = ev.target;
+      if (target && target.closest && target.closest('[data-shamar-nav-top] .shamar-nav-dropdown')) return;
+      if (target && target.closest && target.closest('[data-shamar-nav-more]')) return;
+      document.querySelectorAll('[data-shamar-nav-top] .shamar-nav-dropdown.shamar-nav-open').forEach(closeItem);
+      document.querySelectorAll('[data-shamar-nav-more] [data-shamar-menu-panel]').forEach(function (panel) {
+        panel.hidden = true;
+      });
+    }
+
+    function boot() {
+      document.addEventListener('click', onClick);
+      document.addEventListener('click', onDocClick);
+      document.addEventListener('mouseover', onEnter);
+      document.addEventListener('mouseout', onLeave);
+      window.addEventListener('resize', schedule);
+      document.addEventListener('navigated', schedule);
+      document.addEventListener('livewire:navigated', schedule);
+      schedule();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', boot);
+    } else {
+      boot();
+    }
+  })();
+
+  /** SIDE exclusive accordion for collapsible nav groups. */
+  (function shamarNavAccordion() {
+    var ATTR = 'data-shamar-nav-accordion-armed';
+    var armTimer = 0;
+
+    function collapseSiblings(openDetails) {
+      var nav = openDetails.closest('nav[data-shamar-nav-accordion]');
+      if (!nav) return;
+      nav.querySelectorAll('details.shamar-nav-group-collapsible').forEach(function (other) {
+        if (other !== openDetails && other.open) other.open = false;
+      });
+    }
+
+    function onToggle(ev) {
+      var d = ev.currentTarget || ev.target;
+      if (!d || !d.open) return;
+      collapseSiblings(d);
+    }
+
+    function onSummaryClick(ev) {
+      var t = ev.target;
+      if (!t || !t.closest) return;
+      var summary = t.closest('summary');
+      if (!summary) return;
+      var details = summary.parentElement;
+      if (!details || !details.matches || !details.matches('details.shamar-nav-group-collapsible')) return;
+      if (!details.closest('nav[data-shamar-nav-accordion]')) return;
+      if (details.open) return;
+      collapseSiblings(details);
+    }
+
+    function normalizeOpenGroups(nav) {
+      var opens = nav.querySelectorAll('details.shamar-nav-group-collapsible[open]');
+      if (opens.length <= 1) return;
+      var keep = null;
+      opens.forEach(function (d) {
+        if (d.querySelector('.nav-active, a.nav-active, .is-active')) keep = d;
+      });
+      if (!keep) keep = opens[0];
+      opens.forEach(function (d) {
+        if (d !== keep) d.open = false;
+      });
+    }
+
+    function arm() {
+      document.querySelectorAll('nav[data-shamar-nav-accordion]').forEach(function (nav) {
+        normalizeOpenGroups(nav);
+        nav.querySelectorAll('details.shamar-nav-group-collapsible').forEach(function (d) {
+          if (d.getAttribute(ATTR) === 'true') return;
+          d.setAttribute(ATTR, 'true');
+          d.addEventListener('toggle', onToggle);
+        });
+      });
+    }
+
+    function scheduleArm() {
+      if (armTimer) return;
+      armTimer = setTimeout(function () {
+        armTimer = 0;
+        arm();
+      }, 0);
+    }
+
+    function boot() {
+      arm();
+      document.addEventListener('click', onSummaryClick, true);
+      document.addEventListener('navigated', scheduleArm);
+      document.addEventListener('livewire:navigated', scheduleArm);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', boot);
+    } else {
+      boot();
+    }
+  })();
+
   window.shamarDashboardWidget = function shamarDashboardWidget(el) {
     return {
       timer: null,
