@@ -100,6 +100,14 @@ export {
   type NavItem,
 } from './shamar/menu.js';
 export {
+  NavigationType,
+  normalizeNavigationType,
+  normalizeSideNavMode,
+  type NavigationTypeInput,
+  type SideNavMode,
+  type SideNavModeInput,
+} from '@shamar/core';
+export {
   createLocalMediaStorage,
   mediaObjectKey,
   sanitizeFilename,

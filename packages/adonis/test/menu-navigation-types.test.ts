@@ -74,4 +74,17 @@ describe('menuLayoutContext navigation types', () => {
     const attendance = menu.menuRoots.find((r) => r.label === 'Attendance')
     assert.ok(attendance?.children?.some((c) => c.label === 'Catalog' && c.children?.length === 2))
   })
+
+  it('every navigationType keeps a full menuRoots tree for the mobile accordion drawer', () => {
+    for (const navigationType of ['app', 'inverse', 'side', 'top', 'sidebar'] as const) {
+      const menu = menuLayoutContext(groups, '/admin', 'students', 'Students', undefined, {
+        navigationType,
+      })
+      assert.ok(
+        menu.menuRoots.some((r) => r.label === 'Attendance' && (r.children?.length ?? 0) > 0),
+        `expected full tree children for ${navigationType}`,
+      )
+      assert.ok(menu.menuRoots.some((r) => r.label === 'Dashboard'))
+    }
+  })
 })
