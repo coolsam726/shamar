@@ -228,17 +228,6 @@ export class AdminController {
       ...rest
     } = extras;
 
-    let notifications = listNotifications(ctx.session);
-    const welcomed = Boolean(ctx.session.get?.('shamar.notifications.welcomed'));
-    if (!welcomed && notifications.length === 0 && authCtx.user) {
-      pushNotification(ctx.session, {
-        title: 'Welcome to Shamar',
-        body: 'Open Ops → Tickets and click Test notification (or Escalate / Mark resolved) to push more here.',
-      });
-      ctx.session.put?.('shamar.notifications.welcomed', true);
-      notifications = listNotifications(ctx.session);
-    }
-
     return buildShellContext({
       config: this.config,
       registry: this.registry,
@@ -250,7 +239,7 @@ export class AdminController {
       authCtx,
       flash: readFlash(ctx),
       masquerade: isMasqueradeSession(ctx.session) ? { active: true } : undefined,
-      notifications,
+      notifications: listNotifications(ctx.session),
       mediaNav: this.panel.media
         ? {
             label: this.panel.media.label,
