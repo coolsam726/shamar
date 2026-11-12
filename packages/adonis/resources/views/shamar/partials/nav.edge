@@ -37,6 +37,7 @@
     </button>
   </div>
 
+  {{-- Desktop chrome by navigationType. Mobile always uses .shamar-sidebar__mobile (accordion drawer). --}}
   {{-- APP: L1 roots only. INVERSE: active group's children. SIDE: full accordion/static tree. TOP: empty on desktop. --}}
   @if(navigationType === 'app')
     <nav

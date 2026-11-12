@@ -51,8 +51,12 @@ export interface Breadcrumb {
 export interface MenuLayoutContext {
   navigationType: NavigationType;
   sideNavMode: SideNavMode;
-  /** Hide the desktop sidebar column (TOP). Mobile drawer still works. */
+  /**
+   * Hide the desktop sidebar column (TOP). Mobile always keeps the drawer
+   * (accordion full tree via `menuRoots`), regardless of {@link navigationType}.
+   */
   sidebarOffcanvas: boolean;
+  /** Desktop L1 / full tree roots; also drives the mobile accordion drawer. */
   menuRoots: MenuRoot[];
   menuActiveRoot: MenuRoot | null;
   menuActiveRootIndex: number | null;

@@ -21,21 +21,27 @@ Icons resolve through Shamar’s Blade Icons–style registry (Heroicons by defa
 
 ## Panel navigation type (Firefly parity)
 
+Prefer the `NavigationType` const for IDE autocomplete. String literals remain accepted for backward compatibility.
+
 ```ts
-import { panel } from '@shamar/adonis'
+import { panel, NavigationType } from '@shamar/adonis'
 
 panel('admin')
-  .navigationType('app') // default: L1 groups in sidebar; active children in top bar
-  // .navigationType('inverse') // or 'app_inverse' — L1 on top; children in sidebar
-  // .navigationType('side').navigationAccordion() // full tree in sidebar (accordion)
-  // .topNavigation() // full tree in top bar; More packs overflow; no desktop sidebar
+  .navigationType(NavigationType.APP) // default: L1 groups in sidebar; active children in top bar
+  // .navigationType(NavigationType.APP_INVERSE) // or NavigationType.INVERSE / 'app_inverse'
+  // .navigationType(NavigationType.SIDE).navigationAccordion() // or NavigationType.SIDEBAR
+  // .navigationType(NavigationType.TOP) // or .topNavigation()
 ```
 
-| Type | Level 1 | Levels 2–3 |
-|------|---------|------------|
-| `app` (default) | Sidebar | Top bar (active L1 children; nested = dropdowns) |
-| `inverse` / `app_inverse` | Top bar | Sidebar |
-| `side` | Sidebar (groups as headings; optional accordion) | Sidebar |
-| `top` | Top bar (groups as nested dropdowns) | Top bar |
+| Const / value | Level 1 | Levels 2–3 |
+|---------------|---------|------------|
+| `NavigationType.APP` (`'app'`, default) | Sidebar | Top bar (active L1 children; nested = dropdowns) |
+| `NavigationType.APP_INVERSE` / `INVERSE` (`'inverse'` / `'app_inverse'`) | Top bar | Sidebar |
+| `NavigationType.SIDE` / `SIDEBAR` (`'side'` / `'sidebar'`) | Sidebar (groups as headings; optional accordion) | Sidebar |
+| `NavigationType.TOP` (`'top'`) | Top bar (groups as nested dropdowns) | Top bar |
 
-On narrow screens the top item row is hidden and the hamburger opens a drawer with the full tree. When the top-bar row overflows, trailing menus move under **More**.
+### Desktop vs mobile
+
+Desktop keeps the Firefly layout from `navigationType` (including TOP’s offcanvas sidebar and **More** overflow when the top-bar row overflows).
+
+On narrow viewports the top item row is hidden and the hamburger always opens a **sidebar drawer** with the **full tree as accordion groups**, regardless of desktop `APP` / `TOP` / `SIDE` / `INVERSE`. Desktop `sideNavMode` (static vs accordion) does not change that mobile drawer.

@@ -166,10 +166,13 @@ export class PanelBuilder {
 
   /**
    * Where panel navigation links sit (Firefly parity).
+   * Prefer {@link NavigationType} const keys for IDE autocomplete.
+   * Mobile always uses a sidebar drawer + accordion regardless of this value.
    *
-   * @example panel('admin').navigationType('side')
-   * @example panel('admin').navigation('top')
-   * @example panel('admin').navigationType('app_inverse')
+   * @example panel('admin').navigationType(NavigationType.SIDE)
+   * @example panel('admin').navigation(NavigationType.TOP)
+   * @example panel('admin').navigationType(NavigationType.APP_INVERSE)
+   * @example panel('admin').navigationType('side') // string literals still accepted
    */
   navigationType(type: NavigationTypeInput): this {
     this.config.navigationType = normalizeNavigationType(type);
@@ -181,15 +184,16 @@ export class PanelBuilder {
     return this.navigationType(type);
   }
 
-  /** Shorthand: `.navigationType('top')`. */
+  /** Shorthand: `.navigationType(NavigationType.TOP)`. */
   topNavigation(): this {
     return this.navigationType('top');
   }
 
   /**
-   * How SIDE groups render. Default `static`. APP / INVERSE / TOP ignore this.
+   * How SIDE groups render on desktop. Default `static`. APP / INVERSE / TOP ignore this.
+   * Mobile always uses accordion.
    *
-   * @example panel('admin').navigationType('side').sideNavMode('accordion')
+   * @example panel('admin').navigationType(NavigationType.SIDE).sideNavMode('accordion')
    */
   sideNavMode(mode: SideNavModeInput): this {
     this.config.sideNavMode = normalizeSideNavMode(mode);
