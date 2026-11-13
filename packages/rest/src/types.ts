@@ -104,6 +104,15 @@ export interface ShamarRestDocsConfig {
   path?: string;
   /** Docs UI engine (default `scalar`). */
   ui?: 'scalar';
+  /**
+   * When `true`, the docs UI **and** OpenAPI JSON require authentication via
+   * panel session (same guard as the admin panel) **or** machine API key
+   * (`X-Api-Key` via `@shamar/adonis` `RequireDocsAuthMiddleware`).
+   * HTML → login redirect; OpenAPI JSON → 401.
+   *
+   * Default `false` — docs stay public (backwards compatible).
+   */
+  requireAuth?: boolean;
 }
 
 export interface ShamarRestOpenApiConfig {

@@ -8,6 +8,12 @@
       ? 'shamar-dashboard-grid grid gap-4 sm:grid-cols-2 xl:grid-cols-4'
       : 'shamar-dashboard-grid grid gap-4 sm:grid-cols-2 xl:grid-cols-3')
 
+{{-- Width also applied on <main> in shell-open; keep an explicit wrapper so the
+     widgets grid never stretches past panel maxContentWidth if chrome changes. --}}
+<div
+  class="mx-auto space-y-4 {{ contentMaxWidthClass || 'w-full max-w-screen-xl' }}"
+  style="{{ contentMaxWidthStyle || 'max-width: 80rem' }}"
+>
 @if(dashboardFilters && dashboardFilters.fields && dashboardFilters.fields.length)
   <form
     method="get"
@@ -40,6 +46,7 @@
       <p class="text-sm text-body-subtle">No dashboard widgets configured.</p>
     </div>
   @endeach
+</div>
 </div>
 
 @include('shamar::partials/shell-close')

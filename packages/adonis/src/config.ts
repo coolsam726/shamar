@@ -194,6 +194,13 @@ export interface ShamarConfig {
       enabled?: boolean;
       path?: string;
       ui?: 'scalar';
+      /**
+       * When `true`, docs UI + OpenAPI JSON require auth via panel session
+       * (same guard / `resolveUser` as the admin panel) **or** machine API key
+       * (`X-Api-Key`). HTML docs redirect to login; OpenAPI JSON returns 401.
+       * Default `false` (public docs).
+       */
+      requireAuth?: boolean;
     };
     openapi?: {
       title?: string;

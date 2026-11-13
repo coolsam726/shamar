@@ -1,7 +1,8 @@
 @include('shamar::partials/shell-open')
 
 <section
-  class="space-y-4"
+  class="mx-auto space-y-4 {{ contentMaxWidthClass || 'w-full max-w-screen-xl' }}"
+  style="{{ contentMaxWidthStyle || 'max-width: 80rem' }}"
   x-data="shamarListSelection()"
   data-shamar-list-root="{{ resource.slug }}"
   data-shamar-base-path="{{ basePath }}"

@@ -4,16 +4,25 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{{ pageTitle }} · {{ panelTitle }}</title>
-  @if(branding.fontPreconnect)
+  @if(branding.fontPreconnect || (themeHead && themeHead.fontPreconnect))
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  @endif
+  @if(themeHead && themeHead.runtimeHeadHtml)
+    {{{ themeHead.runtimeHeadHtml }}}
   @endif
   @if(branding.fontUrl)
     <link rel="stylesheet" href="{{ branding.fontUrl }}" />
   @endif
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Carlito:ital,wght@0,400;0,700;1,400;1,700&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" />
+  @if(themeHead && themeHead.fontUrl)
+    <link rel="stylesheet" href="{{ themeHead.fontUrl }}" />
+  @endif
+  {{-- Fonts: branding.fontUrl + theme.googleFonts() --}}
   <link rel="stylesheet" href="{{ basePath }}/assets/admin.css" />
   <link rel="stylesheet" href="{{ basePath }}/assets/branding.css" />
+  @if(themeHead && themeHead.stylesheetHref)
+    <link rel="stylesheet" href="{{ themeHead.stylesheetHref }}" />
+  @endif
   <style>:root { --shamar-logo-height: {{ branding.logoHeight }}; }</style>
   <meta name="csrf-token" content="{{ csrfToken }}" />
   <script>
@@ -31,9 +40,11 @@
   <style>[x-cloak] { display: none !important; }</style>
 </head>
 <body
-  class="h-dvh overflow-hidden bg-shamar-shell text-body antialiased flex md:flex-row"
+  class="shamar-panel h-dvh overflow-hidden bg-shamar-shell text-body antialiased flex md:flex-row{{ themeChrome && themeChrome.panel ? ` ${themeChrome.panel}` : '' }}"
+  data-shamar-theme="{{ themeId || 'shamar' }}"
   x-data="shamarShell()"
   data-shamar-base-path="{{ basePath }}"
+  data-shamar-sidebar-offcanvas="{{ sidebarOffcanvas ? 'true' : 'false' }}"
 >
   <div
     x-show="sidebarOpen"
@@ -43,28 +54,43 @@
     @click="sidebarOpen = false"
   ></div>
 
-  @include('shamar::partials/nav')
+  @if(themePartials && themePartials.sidebar)
+    {{{ themePartials.sidebar }}}
+  @else
+    @include('shamar::partials/nav')
+  @endif
 
   <div class="flex min-w-0 flex-1 flex-col h-full min-h-0 overflow-hidden">
-    @include('shamar::partials/topbar')
+    @if(themePartials && themePartials.topbar)
+      {{{ themePartials.topbar }}}
+    @else
+      @include('shamar::partials/topbar')
+    @endif
 
     @if(masquerade && masquerade.active)
       <div
-        class="shrink-0 px-4 md:px-6 py-2.5 text-sm bg-warning-soft text-warning-strong border-b border-toast-warning-border z-20"
+        data-shamar-masquerade-banner
+        class="shamar-masquerade-banner shrink-0 z-20"
         role="status"
       >
-        <span class="font-semibold">Masquerade</span>
-        — signed in as {{ user.name }}
-        @if(user.email)
-          ({{ user.email }})
-        @endif
-        . Not a real credential login.
+        <div class="shamar-masquerade-banner__clip">
+          <div
+            class="shamar-masquerade-banner__body px-4 md:px-6 py-2.5 text-sm bg-warning-soft text-warning-strong border-b border-toast-warning-border"
+          >
+            <span class="font-semibold">Masquerade</span>
+            — signed in as {{ user.name }}
+            @if(user.email)
+              ({{ user.email }})
+            @endif
+            . Not a real credential login.
+          </div>
+        </div>
       </div>
     @endif
 
     <div
       data-shamar-scroll-root
-      class="shamar-scroll-root flex-1 min-h-0 overflow-x-hidden overflow-y-auto px-3 md:px-4"
+      class="shamar-scroll-root flex-1 min-h-0 overflow-x-hidden overflow-y-auto px-3 md:px-4{{ themeChrome && themeChrome.scroll ? ` ${themeChrome.scroll}` : '' }}{{ themeChrome && themeChrome.content ? ` ${themeChrome.content}` : '' }}"
     >
 
       @include('shamar::partials/toast')
@@ -82,4 +108,7 @@
         @include('shamar::partials/page-heading')
       @endif
 
-      <main>
+      <main
+        class="mx-auto {{ contentMaxWidthClass || 'w-full max-w-screen-xl' }}"
+        style="{{ contentMaxWidthStyle || 'max-width: 80rem' }}"
+      >

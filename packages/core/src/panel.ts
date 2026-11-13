@@ -2,12 +2,14 @@ import type { BrandDisplay, PanelBranding, PanelConfig, PanelOrm } from './types
 import type { Page } from './page.js';
 import type { DashboardPage } from './dashboard-page.js';
 import type { Resource } from './resource.js';
+import type { MaxWidthInput } from './content-max-width.js';
 import {
   normalizeNavigationType,
   normalizeSideNavMode,
   type NavigationTypeInput,
   type SideNavModeInput,
 } from './navigation.js';
+import type { ShamarTheme } from './theme.js';
 
 /**
  * Filament-style panel builder.
@@ -49,6 +51,37 @@ export class PanelBuilder {
   branding(value: PanelBranding): this {
     this.config.branding = { ...this.config.branding, ...value };
     return this;
+  }
+
+  /**
+   * Panel chrome theme (Kona Firefly `theme(...)` parity).
+   * Pass a {@link ShamarTheme} subclass. Default is {@link import('./theme.js').DefaultTheme}.
+   *
+   * @example panel('admin').theme(new HarborTheme())
+   */
+  theme(value: ShamarTheme): this {
+    this.config.theme = value;
+    return this;
+  }
+
+  /** Brand primary. Dark mode uses a shade unless {@link PanelBranding.darkPrimaryColor} is set. */
+  primary(color: string): this {
+    return this.branding({ primaryColor: color });
+  }
+
+  /** Brand accent. Dark mode uses a shade unless {@link PanelBranding.darkAccentColor} is set. */
+  accent(color: string): this {
+    return this.branding({ accentColor: color });
+  }
+
+  /** Explicit dark primary (Firefly `darkPrimary(...)`). */
+  darkPrimary(color: string): this {
+    return this.branding({ darkPrimaryColor: color });
+  }
+
+  /** Explicit dark accent (Firefly `darkAccent(...)`). */
+  darkAccent(color: string): this {
+    return this.branding({ darkAccentColor: color });
   }
 
   /**
@@ -109,13 +142,31 @@ export class PanelBuilder {
 
   /**
    * Default max width for create/edit and show/infolist pages.
-   * Prefer screen tokens for a container feel (`screen-lg`, `screen-xl`, `screen-2xl`),
-   * or a scale token / CSS length (`7xl`, `80rem`, `full`, `none`).
+   * Prefer {@link import('./content-max-width.js').MaxWidth} for IDE autocomplete,
+   * Tailwind tokens (`sm`/`md`/`lg`, `7xl`, `screen-lg`, `container`, `prose`, `[1200px]`),
+   * or a CSS length (`80rem`, `1200px`). Filament short aliases (`s`/`screen-l`) and
+   * full `max-w-*` classes remain accepted.
    * Omit to use the built-in default (`screen-xl`).
+   *
+   * @example panel('admin').contentMaxWidth(MaxWidth.Screen2Xl)
+   * @example panel('admin').contentMaxWidth(MaxWidth.Lg)
+   * @example panel('admin').contentMaxWidth('[80rem]')
    */
-  contentMaxWidth(value: string): this {
+  contentMaxWidth(value: MaxWidthInput): this {
     this.config.contentMaxWidth = value;
     return this;
+  }
+
+  /**
+   * Filament / Kona alias of {@link contentMaxWidth}.
+   *
+   * @example panel('admin').maxContentWidth(MaxWidth.ScreenLg)
+   * @example panel('admin').maxContentWidth('screen-2xl')
+   * @example panel('admin').maxContentWidth('container')
+   * @example panel('admin').maxContentWidth('[1200px]')
+   */
+  maxContentWidth(value: MaxWidthInput): this {
+    return this.contentMaxWidth(value);
   }
 
   /**

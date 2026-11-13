@@ -1,0 +1,8 @@
+{
+  "name": "@shamar/theme-css",
+  "private": true,
+  "description": "Tailwind CLI 4.3.5 for node ace theme:css. Same version as the Shamar browser runtime.",
+  "dependencies": {
+    "@tailwindcss/cli": "4.3.5"
+  }
+}

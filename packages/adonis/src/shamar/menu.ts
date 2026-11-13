@@ -52,7 +52,9 @@ export interface MenuLayoutContext {
   navigationType: NavigationType;
   sideNavMode: SideNavMode;
   /**
-   * Hide the desktop sidebar column (TOP). Mobile always keeps the drawer
+   * Hide the desktop sidebar column. Always true for TOP; also true for
+   * INVERSE / APP_INVERSE when the active top group has no side children
+   * (Firefly: main content uses full width). Mobile always keeps the drawer
    * (accordion full tree via `menuRoots`), regardless of {@link navigationType}.
    */
   sidebarOffcanvas: boolean;
@@ -326,10 +328,18 @@ export function menuLayoutContext(
     record,
   });
 
+  // TOP always collapses the desktop column. INVERSE collapses only when the
+  // active top group has no side children (empty menuSecondary) — Wire SPA must
+  // sync body[data-shamar-sidebar-offcanvas] / .shamar-sidebar--offcanvas so a
+  // Dashboard→resource visit can reveal the sidebar again.
+  const sidebarOffcanvas =
+    navigationType === 'top' ||
+    (navigationType === 'inverse' && menuSecondary.length === 0);
+
   return {
     navigationType,
     sideNavMode,
-    sidebarOffcanvas: navigationType === 'top',
+    sidebarOffcanvas,
     menuRoots,
     menuActiveRoot:
       navigationType === 'top' || navigationType === 'side'

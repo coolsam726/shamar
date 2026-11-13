@@ -78,7 +78,9 @@
       <p class="mt-2 flex items-center gap-1 text-xs {{ descColor }}">
         @if(stat.descriptionIcon && stat.descriptionIconPosition === 'before')
           @let(root = { icon: stat.descriptionIcon })
-          <span class="inline-flex shrink-0">@include('shamar::partials/icon')</span>
+          <span class="inline-flex shrink-0">
+            @include('shamar::partials/icon')
+          </span>
         @endif
         <span>
           @if(stat.descriptionHtml)
@@ -89,7 +91,9 @@
         </span>
         @if(stat.descriptionIcon && stat.descriptionIconPosition !== 'before')
           @let(root = { icon: stat.descriptionIcon })
-          <span class="inline-flex shrink-0">@include('shamar::partials/icon')</span>
+          <span class="inline-flex shrink-0">
+            @include('shamar::partials/icon')
+          </span>
         @endif
       </p>
     @endif

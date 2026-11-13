@@ -173,8 +173,19 @@ Widget kinds: `StatsOverviewWidget`, `CardWidget`, `ListWidget`, `ChartWidget` (
 
 Default for form and detail pages: `screen-xl` (1280px) — fills the column up to that cap.
 
-- Panel: `panel('admin').contentMaxWidth('screen-2xl')` (or `'screen-lg'`, `'7xl'`, `'full'`, …)
+- Panel: `panel('admin').maxContentWidth(MaxWidth.Screen2Xl)` (also `.contentMaxWidth(…)`)
+  - Tailwind tokens: `sm` / `md` / `lg`, `xs`…`7xl`, `full`, `none`, `min`, `max`, `fit`, `prose`,
+    `container`, `screen-sm`…`screen-2xl`, bare arbitrary `[800px]` / `[1200px]`
+  - Prefer `MaxWidth.Sm` / `MaxWidth.ScreenLg` / `MaxWidth.Prose` for IDE autocomplete
+  - Filament short aliases (`s`/`m`/`l`, `screen-s`…`screen-l`) and full `max-w-*` remain BC
 - Resource: `static contentMaxWidth = 'screen-lg'` (overrides the panel)
+
+```ts
+import { panel, MaxWidth } from '@shamar/adonis'
+
+panel('admin')
+  .maxContentWidth(MaxWidth.ScreenLg) // or 'screen-lg' / 'lg' / '[1200px]'
+```
 
 ## Common modifiers
 

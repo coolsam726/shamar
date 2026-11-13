@@ -534,8 +534,10 @@ export interface ResourceMeta {
   customPermissions?: Array<{ name: string; label?: string }>;
   /**
    * Max width of create/edit and show/infolist content cards.
-   * Prefer screen tokens (`screen-lg`, `screen-xl`, `screen-2xl`) or a scale/CSS length.
-   * Overrides panel `contentMaxWidth` when set.
+   * Prefer {@link import('./content-max-width.js').MaxWidth} tokens / Tailwind tokens
+   * (`sm`, `screen-lg`, `container`, `prose`, `[1200px]`). Filament short aliases
+   * (`s`, `screen-l`) and full `max-w-*` remain OK.
+   * Overrides panel `contentMaxWidth` / `maxContentWidth` when set.
    */
   contentMaxWidth?: string;
   /**
@@ -704,6 +706,17 @@ export interface PanelBranding {
   primaryColor?: string;
   /** Theme accent (hex). Used in brand gradients alongside primary. */
   accentColor?: string;
+  /**
+   * Explicit dark-mode primary (hex). Null/omitted derives a shade of
+   * {@link primaryColor}, or the theme token fallback when primary is unset
+   * (Firefly / Kona parity).
+   */
+  darkPrimaryColor?: string;
+  /**
+   * Explicit dark-mode accent (hex). Null/omitted derives a shade of
+   * {@link accentColor}, or keeps the light accent when accent is unset.
+   */
+  darkAccentColor?: string;
 }
 
 /** Options for {@link PanelBranding.googleFont}. */
@@ -723,6 +736,11 @@ export interface PanelConfig {
   id: string;
   path: string;
   branding?: PanelBranding;
+  /**
+   * Panel chrome theme (Firefly `theme(...)` parity).
+   * Prefer {@link import('./theme.js').ShamarTheme} subclasses.
+   */
+  theme?: import('./theme.js').ShamarTheme;
   orm?: PanelOrm;
   resources: Array<typeof import('./resource.js').Resource>;
   /** Explicit page classes (merged with discovered pages). */
@@ -732,8 +750,10 @@ export interface PanelConfig {
   discoverPages?: string;
   /**
    * Default max width for create/edit and show/infolist pages in this panel.
-   * Prefer screen tokens (`screen-lg`, `screen-xl`, `screen-2xl`) for a container feel,
-   * or a scale token / CSS length (`7xl`, `80rem`, `full`, `none`).
+   * Set via {@link import('./panel.js').PanelBuilder.maxContentWidth} (Filament alias)
+   * or `.contentMaxWidth()`. Accepts {@link import('./content-max-width.js').MaxWidth}
+   * tokens / Tailwind tokens (`sm`, `screen-lg`, `container`, `prose`, `[1200px]`),
+   * or CSS lengths. Full `max-w-*` remains accepted.
    * Default when omitted: `screen-xl` (1280px).
    */
   contentMaxWidth?: string;

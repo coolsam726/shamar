@@ -128,7 +128,12 @@ You can also pass:
 rest: {
   enabled: true,
   openapiPath: '/openapi.json',
-  docs: { path: '/docs' },
+  docs: {
+    path: '/docs',
+    // When true, /docs and /openapi.json require panel session OR X-Api-Key.
+    // Default false (public).
+    requireAuth: false,
+  },
   discover: {
     prefixes: ['/api'],
     exclude: ['/api/internal'],
@@ -140,6 +145,31 @@ rest: {
   },
 }
 ```
+
+### Private docs
+
+Docs and the OpenAPI JSON are **public by default**. To require auth:
+
+```ts
+rest: {
+  docs: { requireAuth: true },
+},
+auth: {
+  guard: 'web', // panel session (browser) — same as admin
+  loginPath: '/login',
+  apiKeys: {
+    resolve: /* … */, // optional; keeps X-Api-Key for non-browser clients
+    protectApi: true, // optional; docs auth is independent of protectApi
+  },
+},
+```
+
+Access is granted when **either** is present:
+
+- Logged-in admin/panel session (cookie), or
+- Valid machine key via `X-Api-Key`
+
+Unauthenticated browser requests to `/api/shamar/docs` redirect to `auth.loginPath`. Unauthenticated `/api/shamar/openapi.json` (and other JSON Accept requests) return `401`.
 
 ## CSRF
 

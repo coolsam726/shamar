@@ -303,6 +303,78 @@
     localStorage.setItem(listViewKey(slug), view);
   }
 
+  /** Per panel+resource Rows preference (Filament/Kona-like). */
+  const LIST_PER_PAGE_MAX_AGE = 60 * 60 * 24 * 365;
+
+  function listPerPageCookieSafe(value) {
+    return String(value || 'default')
+      .replace(/[^a-zA-Z0-9_-]/g, '_')
+      .slice(0, 48);
+  }
+
+  function listPerPageStorageKey(panelId, slug) {
+    return `shamar-list-per-page:${panelId || 'default'}:${slug || 'list'}`;
+  }
+
+  function listPerPageCookieName(panelId, slug) {
+    return `shamar_pp_${listPerPageCookieSafe(panelId)}_${listPerPageCookieSafe(slug)}`;
+  }
+
+  function parseStoredListPerPage(raw) {
+    if (raw == null) return null;
+    const s = String(raw).trim();
+    if (!s) return null;
+    if (s.toLowerCase() === 'all') return 'all';
+    const n = Number(s);
+    if (!Number.isFinite(n)) return null;
+    const rounded = Math.round(n);
+    if (rounded < 5) return null;
+    if (rounded >= 1000) return 'all';
+    return String(rounded);
+  }
+
+  function readListPerPageCookie(name) {
+    if (typeof document === 'undefined') return null;
+    const parts = String(document.cookie || '').split(';');
+    for (const part of parts) {
+      const idx = part.indexOf('=');
+      if (idx === -1) continue;
+      const key = part.slice(0, idx).trim();
+      if (key !== name) continue;
+      try {
+        return decodeURIComponent(part.slice(idx + 1).trim());
+      } catch {
+        return part.slice(idx + 1).trim();
+      }
+    }
+    return null;
+  }
+
+  function getStoredListPerPage(panelId, slug) {
+    const key = listPerPageStorageKey(panelId, slug);
+    try {
+      const fromLocal = parseStoredListPerPage(localStorage.getItem(key));
+      if (fromLocal) return fromLocal;
+    } catch {
+      /* private mode */
+    }
+    return parseStoredListPerPage(readListPerPageCookie(listPerPageCookieName(panelId, slug)));
+  }
+
+  function setStoredListPerPage(panelId, slug, perPage) {
+    const value = parseStoredListPerPage(perPage);
+    if (!value) return;
+    const key = listPerPageStorageKey(panelId, slug);
+    try {
+      localStorage.setItem(key, value);
+    } catch {
+      /* private mode */
+    }
+    if (typeof document === 'undefined') return;
+    const name = listPerPageCookieName(panelId, slug);
+    document.cookie = `${name}=${encodeURIComponent(value)};path=/;max-age=${LIST_PER_PAGE_MAX_AGE};SameSite=Lax`;
+  }
+
   function listPath(basePath, slug, view) {
     return view === 'kanban' ? `${basePath}/${slug}/kanban` : `${basePath}/${slug}`;
   }
@@ -5078,7 +5150,9 @@
       trashed: cfg.trashed === 'with' || cfg.trashed === 'only' ? cfg.trashed : '',
       headers: Array.isArray(cfg.headers) ? cfg.headers : [],
       basePath: cfg.basePath || '',
+      panelId: cfg.panelId || '',
       slug: cfg.slug || '',
+      persistSlug: cfg.persistSlug || cfg.slug || '',
       queryPrefix: cfg.queryPrefix || '',
       view: cfg.view || 'table',
       allPerPage: cfg.allPerPage || 1000,
@@ -5099,6 +5173,31 @@
           if (chip && chip.field) chips.push(chip);
         }
         this.chips = chips;
+
+        const prefix = this.queryPrefix || '';
+        const params =
+          typeof window !== 'undefined'
+            ? new URLSearchParams(window.location.search)
+            : new URLSearchParams();
+        const hasQueryPerPage = params.has(`${prefix}perPage`);
+        if (hasQueryPerPage) {
+          this.persistPerPage();
+          return;
+        }
+        const stored = getStoredListPerPage(this.panelId, this.persistSlug);
+        if (!stored) return;
+        // Cookie/SSR usually already applied; only navigate when localStorage is ahead.
+        if (stored === String(this.perPage)) {
+          this.persistPerPage();
+          return;
+        }
+        this.perPage = stored;
+        this.persistPerPage();
+        window.location.replace(this.buildUrl());
+      },
+      persistPerPage() {
+        if (!this.persistSlug) return;
+        setStoredListPerPage(this.panelId, this.persistSlug, this.perPage);
       },
       buildUrl() {
         const fieldChips = this.chips.filter((c) => c.field !== null);
@@ -5145,6 +5244,7 @@
         return qs ? `${path}?${qs}` : path;
       },
       reload() {
+        this.persistPerPage();
         window.location.assign(this.buildUrl());
       },
       applyFilters() {
@@ -6354,11 +6454,13 @@
     bindFormAutosave();
     bindRecordPagerNav();
     bindStickyPageHeading();
+    bindMasqueradeBannerScroll();
   });
 
   document.addEventListener('wire:navigated', () => {
     applyListHrefs();
     bindStickyPageHeading();
+    bindMasqueradeBannerScroll();
     // Teleported media menus live on <body>; destroyTree on the scroll root
     // leaves orphans that break Alpine re-init of the media manager.
     document.querySelectorAll('body > .shamar-media__menu').forEach((el) => el.remove());
@@ -6377,15 +6479,132 @@
     }
   });
 
+  /**
+   * Affix the page heading only while scrolling down the main column.
+   * Release on scroll up (and near the top) so crumbs / prior content can
+   * return — same scroll-delta helper pattern as the masquerade banner.
+   */
   function bindStickyPageHeading() {
     const root = document.querySelector('[data-shamar-scroll-root]');
     const heading = document.querySelector('.shamar-page-heading');
     if (!(root instanceof HTMLElement) || !(heading instanceof HTMLElement)) return;
-    const sync = () => {
-      heading.dataset.stuck = root.scrollTop > 4 ? 'true' : 'false';
+
+    const prior = root._shamarStickyHeadingAbort;
+    if (prior instanceof AbortController) prior.abort();
+
+    const abort = new AbortController();
+    root._shamarStickyHeadingAbort = abort;
+
+    const NEAR_TOP_PX = 12;
+    const DELTA_PX = 8;
+    let lastTop = root.scrollTop;
+    /** @type {boolean | null} */
+    let affixed = null;
+    let ticking = false;
+
+    const setAffixed = (next) => {
+      if (affixed === next) return;
+      affixed = next;
+      heading.dataset.affixed = next ? 'true' : 'false';
+      if (!next) heading.dataset.stuck = 'false';
     };
-    root.addEventListener('scroll', sync, { passive: true });
-    sync();
+
+    const sync = () => {
+      ticking = false;
+      const top = root.scrollTop;
+      const delta = top - lastTop;
+      lastTop = top;
+
+      if (top <= NEAR_TOP_PX) {
+        setAffixed(false);
+        return;
+      }
+      if (delta > DELTA_PX) {
+        setAffixed(true);
+        heading.dataset.stuck = 'true';
+      } else if (delta < -DELTA_PX) {
+        setAffixed(false);
+      } else if (affixed) {
+        heading.dataset.stuck = 'true';
+      }
+    };
+
+    root.addEventListener(
+      'scroll',
+      () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(sync);
+      },
+      { passive: true, signal: abort.signal },
+    );
+
+    // Restored mid-page scroll: keep the heading affixed until the user scrolls up.
+    if (root.scrollTop > NEAR_TOP_PX) {
+      setAffixed(true);
+      heading.dataset.stuck = 'true';
+    } else {
+      setAffixed(false);
+    }
+  }
+
+  /**
+   * Collapse the masquerade banner while scrolling down the main column so
+   * content gains height; expand again near the top or when scrolling up.
+   */
+  function bindMasqueradeBannerScroll() {
+    const root = document.querySelector('[data-shamar-scroll-root]');
+    const banner = document.querySelector('[data-shamar-masquerade-banner]');
+    if (!(root instanceof HTMLElement) || !(banner instanceof HTMLElement)) return;
+
+    const prior = root._shamarMasqueradeScrollAbort;
+    if (prior instanceof AbortController) prior.abort();
+
+    const abort = new AbortController();
+    root._shamarMasqueradeScrollAbort = abort;
+
+    const NEAR_TOP_PX = 12;
+    const DELTA_PX = 8;
+    let lastTop = root.scrollTop;
+    /** @type {boolean | null} */
+    let collapsed = null;
+    let ticking = false;
+
+    const setCollapsed = (next) => {
+      if (collapsed === next) return;
+      collapsed = next;
+      banner.dataset.collapsed = next ? 'true' : 'false';
+      banner.setAttribute('aria-hidden', next ? 'true' : 'false');
+    };
+
+    const sync = () => {
+      ticking = false;
+      const top = root.scrollTop;
+      const delta = top - lastTop;
+      lastTop = top;
+
+      if (top <= NEAR_TOP_PX) {
+        setCollapsed(false);
+        return;
+      }
+      if (delta > DELTA_PX) {
+        setCollapsed(true);
+      } else if (delta < -DELTA_PX) {
+        setCollapsed(false);
+      }
+    };
+
+    root.addEventListener(
+      'scroll',
+      () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(sync);
+      },
+      { passive: true, signal: abort.signal },
+    );
+
+    setCollapsed(root.scrollTop > NEAR_TOP_PX);
   }
   function bindListRowNavigation() {
     document.addEventListener('click', (event) => {
@@ -7574,6 +7793,7 @@
       window.addEventListener('resize', schedule);
       document.addEventListener('navigated', schedule);
       document.addEventListener('livewire:navigated', schedule);
+      document.addEventListener('wire:navigated', schedule);
       schedule();
     }
 
@@ -7584,13 +7804,29 @@
     }
   })();
 
-  /** SIDE exclusive accordion for collapsible nav groups. */
+  /**
+   * Exclusive accordion: when a collapsible group opens, close siblings.
+   *
+   * Gate (Firefly/Kona parity): ONLY inside `nav[data-shamar-nav-accordion]`.
+   * - Desktop SIDE: attribute set iff `sideNavMode === 'accordion'` / `.navigationAccordion()`.
+   * - Mobile drawer: always accordion (attribute always present).
+   * - Collapse off / always-expanded (`sideNavMode` static): attribute absent — do NOT
+   *   force exclusive expand; groups stay independently open (static SIDE uses non-details trees).
+   *
+   * Binds `toggle` on each <details> (toggle does not bubble) and re-arms after Wire
+   * soft-nav / sidebar morphs so exclusivity works on live click, not only reload.
+   */
   (function shamarNavAccordion() {
     var ATTR = 'data-shamar-nav-accordion-armed';
+    var SELECTOR = 'nav[data-shamar-nav-accordion]';
     var armTimer = 0;
 
+    function accordionNav(el) {
+      return el && el.closest ? el.closest(SELECTOR) : null;
+    }
+
     function collapseSiblings(openDetails) {
-      var nav = openDetails.closest('nav[data-shamar-nav-accordion]');
+      var nav = accordionNav(openDetails);
       if (!nav) return;
       nav.querySelectorAll('details.shamar-nav-group-collapsible').forEach(function (other) {
         if (other !== openDetails && other.open) other.open = false;
@@ -7600,9 +7836,14 @@
     function onToggle(ev) {
       var d = ev.currentTarget || ev.target;
       if (!d || !d.open) return;
+      // No-op when collapse/accordion mode is off (no data-shamar-nav-accordion ancestor).
       collapseSiblings(d);
     }
 
+    /**
+     * Click on <summary> fires before the open state flips. If the group is about to open,
+     * close siblings immediately so two groups never paint open together — gated to accordion navs.
+     */
     function onSummaryClick(ev) {
       var t = ev.target;
       if (!t || !t.closest) return;
@@ -7610,7 +7851,7 @@
       if (!summary) return;
       var details = summary.parentElement;
       if (!details || !details.matches || !details.matches('details.shamar-nav-group-collapsible')) return;
-      if (!details.closest('nav[data-shamar-nav-accordion]')) return;
+      if (!accordionNav(details)) return;
       if (details.open) return;
       collapseSiblings(details);
     }
@@ -7629,7 +7870,8 @@
     }
 
     function arm() {
-      document.querySelectorAll('nav[data-shamar-nav-accordion]').forEach(function (nav) {
+      // Accordion-gated navs only — never static always-expanded SIDE trees.
+      document.querySelectorAll(SELECTOR).forEach(function (nav) {
         normalizeOpenGroups(nav);
         nav.querySelectorAll('details.shamar-nav-group-collapsible').forEach(function (d) {
           if (d.getAttribute(ATTR) === 'true') return;
@@ -7652,6 +7894,12 @@
       document.addEventListener('click', onSummaryClick, true);
       document.addEventListener('navigated', scheduleArm);
       document.addEventListener('livewire:navigated', scheduleArm);
+      // Wire SPA swaps [data-wire-sync] nav islands via replaceWith — re-bind toggle.
+      document.addEventListener('wire:navigated', scheduleArm);
+      if (typeof MutationObserver === 'function') {
+        var obs = new MutationObserver(scheduleArm);
+        obs.observe(document.documentElement, { childList: true, subtree: true });
+      }
     }
 
     if (document.readyState === 'loading') {

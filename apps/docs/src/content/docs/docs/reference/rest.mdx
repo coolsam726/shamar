@@ -18,6 +18,8 @@ Open (paths are configurable; playground uses):
 - `/api/docs` — Scalar UI
 - OpenAPI JSON beside that path (see `@shamar/rest` config)
 
+Both are **public by default**. Set `rest.docs.requireAuth: true` to require the machine API key (`X-Api-Key`), same stack as `auth.apiKeys.protectApi`.
+
 Annotate custom routes:
 
 ```ts

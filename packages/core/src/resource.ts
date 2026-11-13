@@ -74,7 +74,7 @@ export abstract class Resource {
   static softDelete?: boolean | { field?: string };
   /**
    * Max width of create/edit and show/infolist content.
-   * Overrides panel `contentMaxWidth` when set.
+   * Overrides panel `contentMaxWidth` / `maxContentWidth` when set.
    * Prefer screen tokens (`screen-lg`, `screen-xl`, `screen-2xl`) or a scale/CSS length.
    */
   static contentMaxWidth?: string;

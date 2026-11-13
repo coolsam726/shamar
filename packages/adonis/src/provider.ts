@@ -1,21 +1,26 @@
+import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { ApplicationService } from '@adonisjs/core/types';
 import type { ShamarConfig } from './config.js';
 import { createShamarRuntime } from './runtime.js';
 import { registerShamarRoutes } from './routes.js';
-import { resolveGridItemStyle } from '@shamar/core';
+import { resolveGridItemStyle, setThemeAssetsRoot } from '@shamar/core';
 import type { WireDefinition } from '@shamar/wire';
 import './types.js';
 
 /**
  * Resolve the host app's `edge.js` singleton (same instance Adonis's
  * EdgeServiceProvider mounts). Bare `import('edge.js')` from a `link:`'d
- * package can load a second copy and leave `shamar::` unmounted.
+ * package resolves the package's own copy and leaves `shamar::` unmounted.
+ *
+ * Do not use `import.meta.resolve(specifier, parent)` — current Node ignores
+ * the parent URL for the sync resolve API, so linked packages still get their
+ * own edge.js. `createRequire(hostPackageJson).resolve` follows the host tree.
  */
 async function hostEdge(app: ApplicationService) {
-  const parent = pathToFileURL(join(app.makePath(), 'package.json')).href;
-  const resolved = import.meta.resolve('edge.js', parent);
+  const require = createRequire(join(app.makePath(), 'package.json'));
+  const resolved = pathToFileURL(require.resolve('edge.js')).href;
   const { default: edge } = await import(resolved);
   return edge;
 }
@@ -62,6 +67,7 @@ export default class ShamarProvider {
     const configured = this.app.config.get<ShamarConfig | null>('shamar', null);
     if (!configured) return;
 
+    setThemeAssetsRoot(this.app.makePath());
     const runtime = await this.app.container.make('shamar.runtime');
     const router = await this.app.container.make('router');
 

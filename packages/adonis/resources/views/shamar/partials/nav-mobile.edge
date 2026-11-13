@@ -1,4 +1,5 @@
-{{-- Mobile drawer: full tree with accordion groups (all desktop navigationType values). --}}
+{{-- Mobile drawer: always accordion (exclusive expand via data-shamar-nav-accordion),
+     regardless of desktop sideNavMode / navigationType. --}}
 <nav
   class="flex-1 px-2 py-3 overflow-y-auto"
   aria-label="Navigation"
@@ -8,8 +9,10 @@
   @each(root in menuRoots)
     @if(root.children && root.children.length)
       <details class="shamar-nav-group-collapsible" {{ root.active ? 'open' : '' }}>
-        <summary class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md text-sm cursor-pointer list-none {{ root.active ? 'nav-active' : '' }}">
-          <span class="shrink-0 w-4 h-4">@include('shamar::partials/icon')</span>
+        <summary class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md text-sm cursor-pointer list-none {{ root.active ? 'nav-active' : '' }}{{ root.active && themeChrome && themeChrome.navigationItemActive ? ` ${themeChrome.navigationItemActive}` : '' }}">
+          <span class="shrink-0 w-4 h-4">
+            @include('shamar::partials/icon')
+          </span>
           <span class="truncate flex-1">{{ root.label }}</span>
           {{{ iconSvg('chevron-down', 'w-3 h-3 text-body-subtle shamar-nav-chevron') }}}
         </summary>
@@ -18,14 +21,16 @@
             @if(item.children && item.children.length)
               <p class="px-3 pt-1 text-[11px] font-semibold uppercase tracking-wider text-body-subtle">{{ item.label }}</p>
               @each(child in item.children)
-                <a href="{{ child.href }}" wire:navigate class="nav-item flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm {{ child.active ? 'nav-active' : '' }}" @click="sidebarOpen = false">
+                <a href="{{ child.href }}" wire:navigate class="nav-item flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm {{ child.active ? 'nav-active' : '' }}{{ child.active && themeChrome && themeChrome.navigationItemActive ? ` ${themeChrome.navigationItemActive}` : '' }}" @click="sidebarOpen = false">
                   <span class="truncate">{{ child.label }}</span>
                 </a>
               @endeach
             @else
-              <a href="{{ item.href }}" wire:navigate class="nav-item flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm {{ item.active ? 'nav-active' : '' }}" @click="sidebarOpen = false">
+              <a href="{{ item.href }}" wire:navigate class="nav-item flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm {{ item.active ? 'nav-active' : '' }}{{ item.active && themeChrome && themeChrome.navigationItemActive ? ` ${themeChrome.navigationItemActive}` : '' }}" @click="sidebarOpen = false">
                 @if(item.icon)
-                  <span class="shrink-0 w-4 h-4">@include('shamar::partials/icon')</span>
+                  <span class="shrink-0 w-4 h-4">
+                    @include('shamar::partials/icon')
+                  </span>
                 @endif
                 <span class="truncate">{{ item.label }}</span>
               </a>
@@ -37,10 +42,12 @@
       <a
         href="{{ root.href }}"
         wire:navigate
-        class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md text-sm {{ root.active ? 'nav-active' : '' }}"
+        class="nav-item flex items-center gap-2.5 px-3 py-2 rounded-md text-sm {{ root.active ? 'nav-active' : '' }}{{ root.active && themeChrome && themeChrome.navigationItemActive ? ` ${themeChrome.navigationItemActive}` : '' }}"
         @click="sidebarOpen = false"
       >
-        <span class="shrink-0 w-4 h-4">@include('shamar::partials/icon')</span>
+        <span class="shrink-0 w-4 h-4">
+          @include('shamar::partials/icon')
+        </span>
         <span class="truncate">{{ root.label }}</span>
       </a>
     @endif

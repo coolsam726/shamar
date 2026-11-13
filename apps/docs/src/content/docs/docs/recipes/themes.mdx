@@ -1,0 +1,89 @@
+---
+title: Themes
+description: Custom panel themes with Firefly / Kona parity — tokens, chrome hooks, stylesheets, Tailwind runtime, and partials.
+---
+
+Shamar themes mirror [Kona Firefly themes](https://konaframework.org): subclass `ShamarTheme` (alias `FireflyTheme`), override palette tokens and chrome class hooks, then register with `panel(...).theme(...)`.
+
+Branding (`primaryColor` / `accentColor`) still wins for brand colors. Dark mode derives a shade of the panel primary unless you set `darkPrimaryColor` / `darkAccent(...)`, matching Firefly.
+
+## Create a theme
+
+```bash
+node ace make:theme MidnightTheme
+# optional: --panel=staff
+```
+
+That writes:
+
+- `app/panels/admin/themes/MidnightTheme.ts`
+- `resources/css/midnighttheme.css`
+
+## Register
+
+```ts
+import MidnightTheme from './themes/MidnightTheme.js'
+
+panel('admin').theme(new MidnightTheme())
+```
+
+Or use the sample Harbor palette:
+
+```ts
+import { HarborTheme } from '@shamar/core'
+
+panel('admin').theme(new HarborTheme())
+```
+
+## Hooks
+
+Hooks return space-separated class names appended onto shell chrome (`.shamar-sidebar`, `.shamar-topbar`, brand marks, scroll/content, auth card, …). Empty strings leave the stock look. Put CSS in the theme stylesheet (or `extraCss()` scoped under `.shamar-panel`).
+
+Token CSS variables are emitted on `.shamar-panel` / `.shamar-auth` as `--shamar-*` with `--ff-*` aliases for Firefly stylesheets.
+
+## Stylesheet + Tailwind
+
+`stylesheet()` may return a public URL (`/css/midnight.css`) or a `themeAsset('css/midnight.css')` token (uncompiled `resources/css/…`).
+
+### Ahead-of-time compile (preferred)
+
+```bash
+node ace theme:css
+# or one file:
+node ace theme:css midnighttheme
+# Harbor sample:
+node ace theme:css harbortheme
+```
+
+Writes `public/css/*.css` with `@apply` expanded (Firefly `./grind firefly:theme-css`). Hook classes under `app/panels/**/themes` are scanned via Tailwind `@source`. Production **requires** this file for `themeAsset()` themes.
+
+### Missing compile → CDN (development only)
+
+If `public/css/{slug}.css` is absent and `NODE_ENV !== 'production'`, the panel loads [`@tailwindcss/browser@4.3.5`](https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.5/dist/index.global.js) from the CDN, inlines `resources/css/{slug}.css`, and keeps the document hidden until compile lands in the CSSOM. Production throws a clear error instead of silently using the CDN — run `node ace theme:css` before deploy.
+
+### Explicit browser runtime (`useTailwind`)
+
+```ts
+override useTailwind() {
+  return true
+}
+```
+
+Loads the **local** `{basePath}/assets/tailwind.js` (Firefly `/_firefly/tailwind.js`) even when a compiled file exists, for hook utilities / `@apply` against a plain stylesheet URL. Prefer AOT compile for production themes.
+
+## Chrome partials
+
+Override `partial(slot)` to replace shell HTML for `sidebar`, `topbar`, `footer`, or auth `body`. Markers are required (Firefly identical):
+
+```ts
+override partial(slot: string) {
+  if (slot !== 'sidebar') return null
+  return `<aside class="shamar-sidebar"><!-- ff-hook:sidebar.start --><!-- ff-hook:sidebar.end --></aside>`
+}
+```
+
+Edge shells inject via `{{{ themePartials.sidebar }}}` (etc.). Unlike Firefly’s string-assembled Blade chrome, Shamar keeps Edge includes for the stock layout and only swaps when a partial is set. Hook markers are stripped (Shamar has no `Panel.hook` chrome fillers yet). App-level Edge view overrides still win when you replace a whole template.
+
+## Persistence
+
+The shell theme toggle still uses `localStorage['shamar-theme']` with values `light` | `dark` | `system` (Firefly uses `ff-theme` with the same three states).

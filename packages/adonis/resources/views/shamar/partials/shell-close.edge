@@ -2,6 +2,10 @@
     </div>
   </div>
 
+  @if(themePartials && themePartials.footer)
+    {{{ themePartials.footer }}}
+  @endif
+
   @include('shamar::partials/dialog-host')
 
   <script>
@@ -46,5 +50,8 @@
       };
     }
   </script>
+  @if(themeHead && themeHead.revealHtml)
+    {{{ themeHead.revealHtml }}}
+  @endif
 </body>
 </html>

@@ -115,6 +115,39 @@ describe('wire:navigate', () => {
     assert.equal(window.document.querySelector('[data-wire-sync="sidebar-roots"] a')?.getAttribute('href'), '/two');
   });
 
+  it('syncs sidebar offcanvas layout flags that sit outside the morph root', async () => {
+    const window = boot(
+      documentOf(
+        'Group',
+        '<aside class="shamar-sidebar"><nav data-wire-sync="sidebar-roots"><a href="/group/a">A</a></nav></aside><a class="shamar-topbar__brand" href="/">Brand</a><main data-shamar-scroll-root><p id="page">group</p></main><a id="go" href="/dash" wire:navigate.no-prefetch>Dash</a>',
+      ),
+    );
+    window.document.body.setAttribute('data-shamar-sidebar-offcanvas', 'false');
+    window.fetch = async () =>
+      htmlResponse(
+        `<!doctype html><html><head><title>Dash</title></head><body data-shamar-sidebar-offcanvas="true"><aside class="shamar-sidebar shamar-sidebar--offcanvas"><nav data-wire-sync="sidebar-roots"></nav></aside><a class="shamar-topbar__brand shamar-topbar__brand--always" href="/">Brand</a><main data-shamar-scroll-root><p id="page">dash</p></main></body></html>`,
+      );
+    const done = navigated(window);
+    click(window, window.document.getElementById('go')!);
+    await done;
+    assert.equal(window.document.body.getAttribute('data-shamar-sidebar-offcanvas'), 'true');
+    assert.ok(window.document.querySelector('.shamar-sidebar')?.classList.contains('shamar-sidebar--offcanvas'));
+    assert.ok(window.document.querySelector('.shamar-topbar__brand')?.classList.contains('shamar-topbar__brand--always'));
+    assert.equal(window.document.querySelector('#page')?.textContent, 'dash');
+
+    window.fetch = async () =>
+      htmlResponse(
+        `<!doctype html><html><head><title>Group</title></head><body data-shamar-sidebar-offcanvas="false"><aside class="shamar-sidebar"><nav data-wire-sync="sidebar-roots"><a href="/group/a">A</a></nav></aside><a class="shamar-topbar__brand" href="/">Brand</a><main data-shamar-scroll-root><p id="page">group2</p></main></body></html>`,
+      );
+    const back = navigated(window);
+    await window.Wire.navigate('/group');
+    await back;
+    assert.equal(window.document.body.getAttribute('data-shamar-sidebar-offcanvas'), 'false');
+    assert.equal(window.document.querySelector('.shamar-sidebar')?.classList.contains('shamar-sidebar--offcanvas'), false);
+    assert.equal(window.document.querySelector('.shamar-topbar__brand')?.classList.contains('shamar-topbar__brand--always'), false);
+    assert.equal(window.document.querySelector('[data-wire-sync="sidebar-roots"] a')?.textContent, 'A');
+  });
+
   it('destroys Alpine on the scroll region before morphing so UI state does not leak', async () => {
     const window = boot(
       documentOf(

@@ -149,7 +149,11 @@ async function resolveHeaderCredentials(
   return { gateway, bearer: bearerUser, bearerInvalid };
 }
 
-async function resolveSessionUser(
+/**
+ * Resolve the panel session user (`auth.resolveUser` or Adonis guard).
+ * Used by panel auth and docs dual-auth (session OR API key).
+ */
+export async function resolveSessionUser(
   ctx: ShamarHttpContext,
   config: ShamarConfig,
 ): Promise<CherubimUser | null> {

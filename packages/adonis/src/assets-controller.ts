@@ -1,5 +1,6 @@
 import type { HttpContext } from '@adonisjs/core/http';
 import { readFileSync } from 'node:fs';
+import type { ShamarTheme } from '@shamar/core';
 import { buildBrandingCss, resolveEffectiveBranding } from './shamar/branding.js';
 import {
   shamarAdminCssPath,
@@ -9,6 +10,7 @@ import {
   shamarFlowbiteDatepickerCssPath,
   shamarFlowbiteDatepickerJsPath,
   shamarRichEditorAssetPath,
+  shamarTailwindJsPath,
   shamarUiJsPath,
   shamarWireJsPath,
 } from './shamar/paths.js';
@@ -37,6 +39,7 @@ export class AssetsController {
   constructor(
     private readonly config: ShamarConfig,
     private readonly panelBranding?: ShamarConfig['branding'],
+    private readonly panelTheme?: ShamarTheme | null,
   ) {}
 
   adminCss({ response }: HttpContext) {
@@ -63,6 +66,13 @@ export class AssetsController {
     return response.send(readFileSync(shamarAlpineJsPath(), 'utf8'));
   }
 
+  /** Firefly `/_firefly/tailwind.js` — served under `{panel}/assets/tailwind.js`. */
+  tailwindJs({ response }: HttpContext) {
+    response.header('Content-Type', 'application/javascript; charset=utf-8');
+    response.header('Cache-Control', 'public, max-age=3600');
+    return response.send(readFileSync(shamarTailwindJsPath(), 'utf8'));
+  }
+
   brandingCss({ response }: HttpContext) {
     response.header('Content-Type', 'text/css; charset=utf-8');
     response.header('Cache-Control', 'no-cache');
@@ -74,7 +84,7 @@ export class AssetsController {
       this.panelBranding ?? this.config.branding,
       this.config.resolveBrandingOverrides,
     );
-    return buildBrandingCss(branding);
+    return buildBrandingCss(branding, this.panelTheme);
   }
 
   flowbiteDatepickerCss({ response }: HttpContext) {
