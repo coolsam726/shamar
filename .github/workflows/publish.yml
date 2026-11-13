@@ -52,36 +52,71 @@ jobs:
         run: pnpm --dir packages/core pack --pack-destination /tmp/npm-pack
 
       - name: Publish @shamar/core
-        run: pnpm --filter @shamar/core publish $PUBLISH_FLAGS $DRY_RUN
+        run: |
+          set -euo pipefail
+          pnpm --filter @shamar/core publish $PUBLISH_FLAGS $DRY_RUN
+          if [ -z "${DRY_RUN}" ]; then
+            bash scripts/npm-wait-version.sh @shamar/core "$(node -p "require('./packages/core/package.json').version")"
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @shamar/cherubim
-        run: pnpm --filter @shamar/cherubim publish $PUBLISH_FLAGS $DRY_RUN
+        run: |
+          set -euo pipefail
+          pnpm --filter @shamar/cherubim publish $PUBLISH_FLAGS $DRY_RUN
+          if [ -z "${DRY_RUN}" ]; then
+            bash scripts/npm-wait-version.sh @shamar/cherubim "$(node -p "require('./packages/cherubim/package.json').version")"
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @shamar/lucid
-        run: pnpm --filter @shamar/lucid publish $PUBLISH_FLAGS $DRY_RUN
+        run: |
+          set -euo pipefail
+          pnpm --filter @shamar/lucid publish $PUBLISH_FLAGS $DRY_RUN
+          if [ -z "${DRY_RUN}" ]; then
+            bash scripts/npm-wait-version.sh @shamar/lucid "$(node -p "require('./packages/lucid/package.json').version")"
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @shamar/mongoose
-        run: pnpm --filter @shamar/mongoose publish $PUBLISH_FLAGS $DRY_RUN
+        run: |
+          set -euo pipefail
+          pnpm --filter @shamar/mongoose publish $PUBLISH_FLAGS $DRY_RUN
+          if [ -z "${DRY_RUN}" ]; then
+            bash scripts/npm-wait-version.sh @shamar/mongoose "$(node -p "require('./packages/mongoose/package.json').version")"
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @shamar/rest
-        run: pnpm --filter @shamar/rest publish $PUBLISH_FLAGS $DRY_RUN
+        run: |
+          set -euo pipefail
+          pnpm --filter @shamar/rest publish $PUBLISH_FLAGS $DRY_RUN
+          if [ -z "${DRY_RUN}" ]; then
+            bash scripts/npm-wait-version.sh @shamar/rest "$(node -p "require('./packages/rest/package.json').version")"
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @shamar/wire
-        run: pnpm --filter @shamar/wire publish $PUBLISH_FLAGS $DRY_RUN
+        run: |
+          set -euo pipefail
+          pnpm --filter @shamar/wire publish $PUBLISH_FLAGS $DRY_RUN
+          if [ -z "${DRY_RUN}" ]; then
+            bash scripts/npm-wait-version.sh @shamar/wire "$(node -p "require('./packages/wire/package.json').version")"
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @shamar/adonis
-        run: pnpm --filter @shamar/adonis publish $PUBLISH_FLAGS $DRY_RUN
+        run: |
+          set -euo pipefail
+          pnpm --filter @shamar/adonis publish $PUBLISH_FLAGS $DRY_RUN
+          if [ -z "${DRY_RUN}" ]; then
+            bash scripts/npm-wait-version.sh @shamar/adonis "$(node -p "require('./packages/adonis/package.json').version")"
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
