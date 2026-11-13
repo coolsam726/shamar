@@ -132,10 +132,11 @@ Install [`@shamar/rest`](../rest) and register its provider after Shamar:
 // config/shamar.ts
 rest: {
   openapi: { title: 'My API', version: '1.0.0' },
+  // docs: { requireAuth: true }, // optional: gate /docs + /openapi.json (session OR X-Api-Key)
 },
 ```
 
-Then open `/api/shamar/docs` (Scalar) and `/api/shamar/openapi.json`.
+Then open `/api/shamar/docs` (Scalar) and `/api/shamar/openapi.json`. Docs are public by default; set `rest.docs.requireAuth: true` to require a logged-in panel session **or** machine `X-Api-Key` (HTML redirects to login; OpenAPI JSON returns 401).
 
 ## Config reference
 
@@ -196,6 +197,16 @@ export default class BrandingSettingsPage extends SettingsPage {
 ```
 
 `SettingsPage` extends `FormPage` and defaults to `contentMaxWidth: '7xl'` plus the shared `shamar::page-form` view (Save lives in the sticky page actions). Use plain `FormPage` for other one-off forms when you do not want the settings defaults.
+
+Panel / page content width uses Tailwind-aligned tokens or `MaxWidth` for IDE autocomplete (Filament short aliases + full `max-w-*` still work):
+
+```ts
+import { panel, MaxWidth } from '@shamar/adonis'
+
+panel('admin').maxContentWidth(MaxWidth.ScreenLg)
+// or: 'screen-lg' | 'lg' | '7xl' | 'prose' | 'container' | '[1200px]'
+// BC: 'screen-l' | 'l' | MaxWidth.ScreenL
+```
 
 **Composite `Page`** — multiple forms, tables, infolists, and Edge blocks on one screen via `content()` / `pageContent()`:
 

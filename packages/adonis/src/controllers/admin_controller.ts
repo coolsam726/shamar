@@ -68,6 +68,12 @@ import {
   type ListViewQuery,
   type RecordPager,
 } from '../shamar/list-query.js';
+import {
+  LIST_PER_PAGE_MAX_AGE_SECONDS,
+  listPerPageCookieName,
+  parseStoredPerPage,
+  resolvePerPageFromQueryAndCookie,
+} from '../shamar/list-per-page-persist.js';
 import { evaluateFormState, formClientFields } from '../form-state.js';
 import {
   buildRelationUiConfig,
@@ -233,6 +239,7 @@ export class AdminController {
       registry: this.registry,
       pages: this.pages,
       basePath: this.basePath,
+      panelId: this.panel.id,
       branding: this.panelBranding,
       panelContentMaxWidth: this.panelContentMaxWidth,
       authorizer: this.authorizer,
@@ -251,6 +258,7 @@ export class AdminController {
       userMenuLinks: this.panel.config.userMenuLinks,
       navigationType: this.panel.config.navigationType,
       sideNavMode: this.panel.config.sideNavMode,
+      theme: this.panel.config.theme,
       showCreateButton:
         showCreateButton === true ? policy?.create ?? true : showCreateButton,
       showEditButton:
@@ -402,7 +410,7 @@ export class AdminController {
     if (!this.isAuthContext(authResult)) return authResult;
     const authCtx = authResult;
 
-    const rawQuery = this.listQuery(ctx);
+    const rawQuery = this.listQuery(ctx, meta.slug);
     const listHeaders = buildListHeaders(meta);
     const filtersParam = ctx.request.input('filters');
     const groupByParam = ctx.request.input('groupBy');
@@ -1445,10 +1453,19 @@ export class AdminController {
     };
   }
 
-  private listQuery(ctx: ShamarHttpContext): ListViewQuery {
+  private listQuery(ctx: ShamarHttpContext, persistSlug?: string): ListViewQuery {
+    const queryPerPage = ctx.request.input('perPage');
+    let cookieRaw: unknown;
+    if (persistSlug) {
+      cookieRaw = ctx.request.plainCookie(listPerPageCookieName(this.panel.id, persistSlug));
+      const parsedQuery = parseStoredPerPage(queryPerPage);
+      if (parsedQuery != null) {
+        this.rememberListPerPage(ctx, persistSlug, parsedQuery);
+      }
+    }
     return {
       page: ctx.request.input('page'),
-      perPage: ctx.request.input('perPage'),
+      perPage: resolvePerPageFromQueryAndCookie(queryPerPage, cookieRaw) as ListViewQuery['perPage'],
       search: ctx.request.input('search'),
       sort: ctx.request.input('sort'),
       direction: ctx.request.input('direction'),
@@ -1456,6 +1473,16 @@ export class AdminController {
       groupBy: ctx.request.input('groupBy'),
       trashed: ctx.request.input('trashed'),
     };
+  }
+
+  /** Persist Rows choice for SSR on the next visit (plain cookie, JS-readable). */
+  private rememberListPerPage(ctx: ShamarHttpContext, slug: string, perPage: string) {
+    ctx.response.plainCookie(listPerPageCookieName(this.panel.id, slug), perPage, {
+      path: '/',
+      maxAge: LIST_PER_PAGE_MAX_AGE_SECONDS,
+      sameSite: 'lax',
+      httpOnly: false,
+    });
   }
 
   private wantsJson(ctx: ShamarHttpContext, force = false) {
@@ -1929,6 +1956,7 @@ export class AdminController {
       userMenuLinks: this.panel.config.userMenuLinks,
       navigationType: this.panel.config.navigationType,
       sideNavMode: this.panel.config.sideNavMode,
+      theme: this.panel.config.theme,
     });
 
     const view = page.view ?? 'shamar::page';
@@ -1996,6 +2024,7 @@ export class AdminController {
       userMenuLinks: this.panel.config.userMenuLinks,
       navigationType: this.panel.config.navigationType,
       sideNavMode: this.panel.config.sideNavMode,
+      theme: this.panel.config.theme,
     });
 
     const view = page.view ?? 'shamar::page-form';
@@ -2038,7 +2067,7 @@ export class AdminController {
       return ctx.response.badRequest({ message: 'List page is missing table meta' });
     }
 
-    const rawQuery = this.listQuery(ctx);
+    const rawQuery = this.listQuery(ctx, meta.slug);
     const listHeaders = buildListHeaders(meta);
     const filtersParam = ctx.request.input('filters');
     const groupByParam = ctx.request.input('groupBy');
@@ -2091,6 +2120,7 @@ export class AdminController {
       currentSlug: page.slug,
       pageTitle: page.label,
       basePath: this.basePath,
+      panelId: this.panel.id,
       branding: this.panelBranding,
       panelContentMaxWidth: this.panelContentMaxWidth,
       authorizer: this.authorizer,
@@ -2109,6 +2139,7 @@ export class AdminController {
       userMenuLinks: this.panel.config.userMenuLinks,
       navigationType: this.panel.config.navigationType,
       sideNavMode: this.panel.config.sideNavMode,
+      theme: this.panel.config.theme,
       showCreateButton: false,
     });
 
@@ -2314,6 +2345,17 @@ export class AdminController {
           ctx.request.all() as Record<string, unknown>,
           meta.key,
         );
+        const cookieRaw = ctx.request.plainCookie(
+          listPerPageCookieName(this.panel.id, listMeta.slug),
+        );
+        const parsedSectionPerPage = parseStoredPerPage(rawQuery.perPage);
+        if (parsedSectionPerPage != null) {
+          this.rememberListPerPage(ctx, listMeta.slug, parsedSectionPerPage);
+        }
+        rawQuery.perPage = resolvePerPageFromQueryAndCookie(
+          rawQuery.perPage,
+          cookieRaw,
+        ) as ListViewQuery['perPage'];
         const listHeaders = buildListHeaders(listMeta);
         const prefix = sectionQueryPrefix(meta.key);
         const filtersParam = ctx.request.input(`${prefix}filters`);
@@ -2468,6 +2510,7 @@ export class AdminController {
       userMenuLinks: this.panel.config.userMenuLinks,
       navigationType: this.panel.config.navigationType,
       sideNavMode: this.panel.config.sideNavMode,
+      theme: this.panel.config.theme,
     });
 
     const view = page.view ?? 'shamar::page-sections';
@@ -2646,6 +2689,7 @@ export class AdminController {
         userMenuLinks: this.panel.config.userMenuLinks,
         navigationType: this.panel.config.navigationType,
         sideNavMode: this.panel.config.sideNavMode,
+        theme: this.panel.config.theme,
       });
 
       return ctx.view.render(page.view ?? 'shamar::page-form', {

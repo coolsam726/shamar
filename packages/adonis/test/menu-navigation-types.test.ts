@@ -47,8 +47,18 @@ describe('menuLayoutContext navigation types', () => {
       navigationType: 'app_inverse',
     })
     assert.equal(menu.navigationType, 'inverse')
+    assert.equal(menu.sidebarOffcanvas, false)
     assert.ok(menu.menuRoots.some((r) => r.label === 'System' && r.active))
     assert.ok(menu.menuSecondary.some((i) => i.href === '/admin/users'))
+  })
+
+  it('INVERSE: collapses desktop sidebar when active top selection has no side children', () => {
+    const menu = menuLayoutContext(groups, '/admin', undefined, 'Dashboard', undefined, {
+      navigationType: 'inverse',
+    })
+    assert.equal(menu.navigationType, 'inverse')
+    assert.equal(menu.menuSecondary.length, 0)
+    assert.equal(menu.sidebarOffcanvas, true)
   })
 
   it('SIDE: full tree on roots; no top secondary; accordion mode flag', () => {
@@ -62,6 +72,18 @@ describe('menuLayoutContext navigation types', () => {
     const attendance = menu.menuRoots.find((r) => r.label === 'Attendance')
     assert.ok(attendance?.children?.length)
     assert.equal(attendance?.active, true)
+  })
+
+  it('SIDE: static mode keeps groups always expanded (no exclusive accordion)', () => {
+    const menu = menuLayoutContext(groups, '/admin', 'units', 'Units', undefined, {
+      navigationType: 'side',
+      sideNavMode: 'static',
+    })
+    assert.equal(menu.navigationType, 'side')
+    assert.equal(menu.sideNavMode, 'static')
+    // Exclusive JS only binds nav[data-shamar-nav-accordion]; static leaves that attribute off
+    // (see nav.edge). Multiple groups stay expanded — do not force exclusive expand.
+    assert.notEqual(menu.sideNavMode, 'accordion')
   })
 
   it('TOP: full tree on roots; offcanvas sidebar; nested Catalog dropdown', () => {

@@ -1,7 +1,7 @@
 {
   "name": "@shamar/adonis",
-  "version": "1.0.15",
-  "description": "AdonisJS service provider for Shamar admin \u2014 routes, controllers, middleware, Edge views.",
+  "version": "1.0.16",
+  "description": "AdonisJS service provider for Shamar admin — routes, controllers, middleware, Edge views.",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -24,6 +24,10 @@
       "types": "./dist/middleware/require_api_key_middleware.d.ts",
       "import": "./dist/middleware/require_api_key_middleware.js"
     },
+    "./docs_auth_middleware": {
+      "types": "./dist/middleware/docs_auth_middleware.d.ts",
+      "import": "./dist/middleware/docs_auth_middleware.js"
+    },
     "./commands": {
       "import": "./dist/commands/main.js"
     },
@@ -36,7 +40,8 @@
     "dist",
     "resources",
     "assets",
-    "stubs"
+    "stubs",
+    "tailwind"
   ],
   "scripts": {
     "build": "pnpm copy:vendor && tsc && node -e \"const fs=require('fs'); for (const f of ['main.js','main.d.ts','commands.json']) try { fs.unlinkSync('dist/commands/'+f) } catch {}\" && pnpm index:commands",

@@ -21,8 +21,8 @@
  */
 @source "../../../apps/**/*.{ts,js,edge}";
 
-/* Panel/resource contentMaxWidth tokens resolved at runtime. */
-@source inline("max-w-xs max-w-sm max-w-md max-w-lg max-w-xl max-w-2xl max-w-3xl max-w-4xl max-w-5xl max-w-6xl max-w-7xl max-w-full max-w-none max-w-prose max-w-screen-sm max-w-screen-md max-w-screen-lg max-w-screen-xl max-w-screen-2xl");
+/* Panel/resource maxContentWidth tokens resolved at runtime (Filament aliases + scale). */
+@source inline("container max-w-xs max-w-sm max-w-md max-w-lg max-w-xl max-w-2xl max-w-3xl max-w-4xl max-w-5xl max-w-6xl max-w-7xl max-w-full max-w-none max-w-min max-w-max max-w-fit max-w-prose max-w-screen max-w-screen-sm max-w-screen-md max-w-screen-lg max-w-screen-xl max-w-screen-2xl");
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -233,7 +233,8 @@
   padding-top: 0.5rem;
 }
 
-/* Title + actions only (breadcrumbs scroll away). Flush under topbar. */
+/* Title + actions only (breadcrumbs scroll away). Flush under topbar.
+ * Default sticky (no-JS). JS sets data-affixed=false on scroll-up to release. */
 .shamar-page-heading {
   position: sticky;
   top: 0;
@@ -245,6 +246,10 @@
   background-color: var(--color-shamar-shell);
   border-bottom: 1px solid transparent;
   transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.shamar-page-heading[data-affixed='false'] {
+  position: relative;
 }
 
 @media (min-width: 768px) {
@@ -263,6 +268,42 @@
 
 :where(.dark, .dark *) .shamar-page-heading[data-stuck='true'] {
   box-shadow: 0 8px 16px -12px rgb(0 0 0 / 0.45);
+}
+
+/*
+ * Masquerade / impersonation banner — hide on scroll down (Filament/Kona-like),
+ * restore near top or when scrolling up. Animate grid rows so body height grows
+ * smoothly instead of jumping.
+ */
+.shamar-masquerade-banner {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 220ms ease;
+}
+
+.shamar-masquerade-banner[data-collapsed='true'] {
+  grid-template-rows: 0fr;
+  pointer-events: none;
+}
+
+.shamar-masquerade-banner__clip {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.shamar-masquerade-banner__body {
+  transition: opacity 180ms ease;
+}
+
+.shamar-masquerade-banner[data-collapsed='true'] .shamar-masquerade-banner__body {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shamar-masquerade-banner,
+  .shamar-masquerade-banner__body {
+    transition: none;
+  }
 }
 
 /* All native controls follow brand + light/dark tokens (including future inputs). */
@@ -445,14 +486,17 @@ button:disabled,
   overflow-x: auto;
 }
 
-/* Navigation types (Firefly parity): TOP offcanvas sidebar, nested top menus, More. */
+/* Navigation types (Firefly parity): TOP (and INVERSE with empty side children) offcanvas sidebar, nested top menus, More.
+   Prefer body[data-shamar-sidebar-offcanvas] so Wire navigate can flip layout without remounting the aside. */
 .shamar-sidebar--offcanvas {
-  /* marker class; desktop hide below */
+  /* marker class; kept in sync with body attr for older selectors */
 }
 @media (width >= 48rem) {
+  body[data-shamar-sidebar-offcanvas='true'] .shamar-sidebar,
   body:has(.shamar-sidebar--offcanvas) .shamar-sidebar {
     display: none;
   }
+  body[data-shamar-sidebar-offcanvas='true'] .shamar-topbar__brand,
   .shamar-topbar__brand--always {
     display: flex !important;
   }

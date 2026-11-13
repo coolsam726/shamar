@@ -7,6 +7,7 @@ const DEFAULTS = {
     enabled: true,
     path: '/docs',
     ui: 'scalar' as const,
+    requireAuth: false,
   },
   openapi: {
     title: 'Shamar API',
@@ -27,6 +28,7 @@ export function defineRestConfig(config: ShamarRestConfig = {}): ShamarRestConfi
       enabled: config.docs?.enabled ?? DEFAULTS.docs.enabled,
       path: config.docs?.path ?? DEFAULTS.docs.path,
       ui: config.docs?.ui ?? DEFAULTS.docs.ui,
+      requireAuth: config.docs?.requireAuth ?? DEFAULTS.docs.requireAuth,
     },
     openapi: {
       title: config.openapi?.title ?? DEFAULTS.openapi.title,

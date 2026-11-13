@@ -14,6 +14,7 @@ export * from './page-content.js';
 export * from './page-registry.js';
 export * from './registry.js';
 export * from './panel.js';
+export * from './theme.js';
 export * from './navigation.js';
 export * from './widget.js';
 export * from './widgets/stat.js';

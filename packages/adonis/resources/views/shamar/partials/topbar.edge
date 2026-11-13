@@ -1,4 +1,4 @@
-<header class="shamar-topbar flex items-center gap-3 px-4 md:px-6 min-h-[60px] shrink-0 sticky top-0 z-30 overflow-visible bg-neutral-primary border-b border-card-border">
+<header class="shamar-topbar flex items-center gap-3 px-4 md:px-6 min-h-[60px] shrink-0 sticky top-0 z-30 overflow-visible bg-neutral-primary border-b border-card-border{{ themeChrome && themeChrome.topbar ? ` ${themeChrome.topbar}` : '' }}">
   <button
     type="button"
     @click="sidebarOpen = true"
@@ -11,24 +11,26 @@
   <a
     href="{{ basePath || '/' }}"
     wire:navigate
-    class="shamar-topbar__brand text-inherit no-underline{{ navigationType === 'top' ? ' shamar-topbar__brand--always' : '' }}"
+    class="shamar-topbar__brand text-inherit no-underline{{ sidebarOffcanvas ? ' shamar-topbar__brand--always' : '' }}{{ themeChrome && themeChrome.brand ? ` ${themeChrome.brand}` : '' }}"
     aria-label="{{ panelTitle }}"
   >
+    {{-- Independent flags (same as sidebar): logo-only / name-only / both from branding.show* --}}
     @if(branding.showLogo && branding.logoUrl)
       <img
         src="{{ branding.logoUrl }}"
         alt=""
-        class="shamar-brand-logo shamar-brand-logo--light w-auto max-w-[7.5rem] object-contain"
-        style="height: calc(var(--shamar-logo-height, {{ branding.logoHeight }}) * 0.85)"
+        class="shamar-brand-logo shamar-brand-logo--light w-auto max-w-[9rem] object-contain"
+        style="height: var(--shamar-logo-height, {{ branding.logoHeight }})"
       />
       <img
         src="{{ branding.logoDarkUrl ?? branding.logoUrl }}"
         alt=""
-        class="shamar-brand-logo shamar-brand-logo--dark w-auto max-w-[7.5rem] object-contain"
-        style="height: calc(var(--shamar-logo-height, {{ branding.logoHeight }}) * 0.85)"
+        class="shamar-brand-logo shamar-brand-logo--dark w-auto max-w-[9rem] object-contain"
+        style="height: var(--shamar-logo-height, {{ branding.logoHeight }})"
       />
-    @elseif(branding.showBrandName)
-      <span class="truncate text-sm font-extrabold tracking-tight text-heading">{{ panelTitle }}</span>
+    @endif
+    @if(branding.showBrandName)
+      <span class="shamar-brand-name truncate text-sm font-extrabold tracking-tight text-heading">{{ panelTitle }}</span>
     @endif
   </a>
 
@@ -85,7 +87,9 @@
           @each(root in menuRoots)
             <li class="shamar-nav-item {{ root.active ? 'is-active' : '' }}">
               <a href="{{ root.href }}" wire:navigate class="shamar-topbar-link shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm whitespace-nowrap {{ root.active ? 'is-active' : '' }}">
-                <span class="shrink-0 w-4 h-4">@include('shamar::partials/icon')</span>
+                <span class="shrink-0 w-4 h-4">
+                  @include('shamar::partials/icon')
+                </span>
                 {{ root.label }}
               </a>
             </li>
@@ -99,7 +103,9 @@
             @if(root.children && root.children.length)
               <li class="shamar-nav-item shamar-nav-dropdown {{ root.active ? 'is-active' : '' }}">
                 <button type="button" class="shamar-topbar-link shamar-nav-dropdown-trigger flex items-center gap-1 px-2.5 py-1.5 rounded-md text-sm whitespace-nowrap {{ root.active ? 'is-active' : '' }}" aria-haspopup="menu" aria-expanded="false">
-                  <span class="shrink-0 w-4 h-4">@include('shamar::partials/icon')</span>
+                  <span class="shrink-0 w-4 h-4">
+                    @include('shamar::partials/icon')
+                  </span>
                   {{ root.label }}
                   {{{ iconSvg('chevron-down', 'w-3 h-3 text-body-subtle') }}}
                 </button>
@@ -130,7 +136,9 @@
             @else
               <li class="shamar-nav-item {{ root.active ? 'is-active' : '' }}">
                 <a href="{{ root.href }}" wire:navigate class="shamar-topbar-link shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm whitespace-nowrap {{ root.active ? 'is-active' : '' }}">
-                  <span class="shrink-0 w-4 h-4">@include('shamar::partials/icon')</span>
+                  <span class="shrink-0 w-4 h-4">
+                    @include('shamar::partials/icon')
+                  </span>
                   {{ root.label }}
                 </a>
               </li>
@@ -161,7 +169,7 @@
       {{{ iconSvg('computer-desktop', 'w-4 h-4 shamar-theme-icon shamar-theme-icon--system') }}}
     </button>
 
-    <div class="relative" x-data="{ open: false }" @click.outside="open = false">
+    <div class="relative{{ themeChrome && themeChrome.userMenu ? ` ${themeChrome.userMenu}` : '' }}" x-data="{ open: false }" @click.outside="open = false">
       <button
         type="button"
         @click="open = !open"

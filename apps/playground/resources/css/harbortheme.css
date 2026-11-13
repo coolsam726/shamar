@@ -1,0 +1,16 @@
+/* shamar-theme: harbortheme */
+/* Compile with: node ace theme:css harbortheme → public/css/harbortheme.css */
+/* Dev only: if public/ is missing, the panel loads Tailwind from the CDN. */
+
+.shamar-panel .shamar-sidebar.harbor-sidebar {
+  /* Harbor sample chrome — tokens still come from HarborTheme.tokens(). */
+}
+
+.shamar-panel .harbor-brand .shamar-brand-name,
+.shamar-auth .harbor-brand .shamar-brand-name {
+  /* @apply text-lg font-semibold; */
+}
+
+.harbor-mark {
+  color: #0f6e6e;
+}

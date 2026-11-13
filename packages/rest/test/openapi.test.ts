@@ -76,6 +76,7 @@ describe('@shamar/rest OpenAPI', () => {
     const config = defineRestConfig({});
     assert.equal(config.enabled, true);
     assert.equal(config.docs?.path, '/docs');
+    assert.equal(config.docs?.requireAuth, false);
     assert.equal(config.openapiPath, '/openapi.json');
     assert.deepEqual((config.discover as { prefixes: string[] }).prefixes, ['/api']);
   });

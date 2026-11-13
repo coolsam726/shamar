@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { HarborTheme } from '@shamar/core';
 import { buildAuthLoginViewData } from '../src/auth_login_view.js';
 import {
   buildBrandingCss,
@@ -132,6 +133,52 @@ describe('mergePanelBranding', () => {
   });
 });
 
+describe('buildBrandingCss theme tokens', () => {
+  it('emits Firefly token aliases and Harbor dark surface', () => {
+    const branding = resolveBranding({ name: 'Harbor', primaryColor: '#0F6E6E' });
+    const css = buildBrandingCss(branding, new HarborTheme());
+    assert.match(css, /--shamar-primary:/);
+    assert.match(css, /--ff-primary:/);
+    assert.match(css, /--shamar-surface:\s*#F3F7F7/i);
+    assert.match(css, /\.dark[\s\S]*--shamar-surface:\s*#102422/i);
+  });
+
+  it('falls back to theme tokens when panel did not set primary/accent', () => {
+    const branding = resolveBranding({ name: 'Admin' });
+    assert.equal(branding.panelPrimary, null);
+    assert.equal(branding.panelAccent, null);
+    const css = buildBrandingCss(branding, new HarborTheme());
+    assert.match(css, /--shamar-primary:\s*#0F6E6E/i);
+    assert.match(css, /--shamar-accent:\s*#74453F/i);
+    assert.match(css, /--ff-primary:\s*var\(--shamar-primary\)/);
+  });
+
+  it('lets panel primary/accent win over theme tokens', () => {
+    const branding = resolveBranding({
+      name: 'Admin',
+      primaryColor: '#286291',
+      accentColor: '#F1511B',
+    });
+    const css = buildBrandingCss(branding, new HarborTheme());
+    assert.match(css, /--shamar-primary:\s*#286291/i);
+    assert.match(css, /--shamar-accent:\s*#F1511B/i);
+  });
+
+  it('lets DB/runtime overrides win via panelPrimary', () => {
+    const branding = mergeBranding(
+      resolveBranding({ name: 'Admin' }),
+      brandingOverrideToPartial({
+        primaryColor: '#112233',
+        accentColor: '#abcdef',
+      }),
+    );
+    assert.equal(branding.panelPrimary, '#112233');
+    const css = buildBrandingCss(branding, new HarborTheme());
+    assert.match(css, /--shamar-primary:\s*#112233/i);
+    assert.match(css, /--shamar-accent:\s*#abcdef/i);
+  });
+});
+
 describe('buildAuthLoginViewData', () => {
   it('mirrors admin branding tokens for the login view', async () => {
     const data = await buildAuthLoginViewData({
@@ -151,6 +198,10 @@ describe('buildAuthLoginViewData', () => {
     assert.match(data.brandingCss, /--shamar-font-family:/);
     assert.match(data.loginSubtitle, /directory or local/i);
     assert.equal(data.loginFooter, '');
+    assert.equal(data.themeId, 'shamar');
+    assert.ok(data.themeChrome);
+    assert.equal(data.themeHead.runtime, false);
+    assert.ok(data.themePartials);
   });
 
   it('uses configured login subtitle and footer', async () => {

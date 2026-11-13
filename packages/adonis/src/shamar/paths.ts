@@ -44,6 +44,11 @@ export function shamarUiJsPath(): string {
   return join(shamarAssetsDir(), 'shamar-ui.js');
 }
 
+/** Tailwind browser runtime (`@tailwindcss/browser` 4.3.5) for `useTailwind()`. */
+export function shamarTailwindJsPath(): string {
+  return join(shamarAssetsDir(), 'tailwind.js');
+}
+
 export function shamarWireJsPath(): string {
   return wireClientPath();
 }

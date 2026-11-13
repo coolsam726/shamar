@@ -9,7 +9,12 @@ export {
 } from './openapi/schemas.js';
 export { resourcePaths } from './openapi/paths.js';
 export { renderScalarHtml } from './docs/scalar-html.js';
-export { registerRestRoutes } from './routes.js';
+export {
+  registerRestRoutes,
+  docsRequireAuth,
+  type RegisterRestRoutesOptions,
+  type RestDocsAuthMiddleware,
+} from './routes.js';
 export { rest } from './rest.js';
 export { installRestRouteMacros } from './macros.js';
 export {

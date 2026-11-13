@@ -1,5 +1,19 @@
-import type { PageMeta, PageRegistry, ResourceMeta, ResourceRegistry } from '@shamar/core';
-import { DEFAULT_LIST_PER_PAGE, resolveContentMaxWidth } from '@shamar/core';
+import type {
+  PageMeta,
+  PageRegistry,
+  ResourceMeta,
+  ResourceRegistry,
+  ShamarTheme,
+  ThemeChromeClasses,
+} from '@shamar/core';
+import {
+  DEFAULT_LIST_PER_PAGE,
+  resolveContentMaxWidth,
+  resolvePanelTheme,
+  resolveThemeChrome,
+  resolveThemePartials,
+  type ThemePartials,
+} from '@shamar/core';
 import type { AuthorizationContext } from '@shamar/cherubim';
 import type { Authorizer } from '@shamar/cherubim';
 import type { ShamarConfig } from '../config.js';
@@ -9,6 +23,7 @@ import {
   resolveEffectiveBranding,
   type ShamarBranding,
 } from './branding.js';
+import { resolveThemeHead, type ThemeHeadLinks } from './theme-head.js';
 import { mountGlobalSearch } from '../wire/global-search.js';
 import { mountNotifications, type PanelNotification } from '../wire/notifications.js';
 import {
@@ -28,6 +43,8 @@ import type { PaginatedResult } from '@shamar/core';
 
 export interface AdminShellContext {
   basePath: string;
+  /** Panel id — used for per-panel list preference keys (e.g. perPage cookie). */
+  panelId: string;
   panelTitle: string;
   pageTitle: string;
   branding: ShamarBranding;
@@ -62,6 +79,17 @@ export interface AdminShellContext {
   notificationsHtml: string;
   /** Extra user-dropdown links from panel config. */
   userMenuLinks?: Array<{ label: string; href: string; external?: boolean }>;
+  /** Firefly-parity theme chrome classes for Edge hooks. */
+  themeChrome: ThemeChromeClasses;
+  /** Theme head links (stylesheet / google fonts / Tailwind runtime). */
+  themeHead: ThemeHeadLinks;
+  /**
+   * HTML chrome replacements from `theme.partial(slot)` (Firefly parity).
+   * Edge: `{{{ themePartials.sidebar }}}` etc. when set.
+   */
+  themePartials: ThemePartials;
+  /** Active panel theme id. */
+  themeId: string;
 }
 
 export function navigationGroups(
@@ -171,6 +199,10 @@ export async function buildShellContext(options: {
   navigationType?: import('@shamar/core').NavigationTypeInput;
   /** SIDE group mode (default `static`). */
   sideNavMode?: import('@shamar/core').SideNavModeInput;
+  /** Panel chrome theme (Firefly `theme(...)`). */
+  theme?: ShamarTheme | null;
+  /** Explicit panel id; falls back to `authCtx.panelId`. */
+  panelId?: string;
 }): Promise<AdminShellContext> {
   const basePath = panelPathPrefix(options.basePath ?? options.config.path ?? '/admin');
   const groups = navigationGroups(options.registry, {
@@ -210,9 +242,17 @@ export async function buildShellContext(options: {
   const contentMaxWidth = resolveContentMaxWidth(
     options.meta?.contentMaxWidth ?? options.panelContentMaxWidth,
   );
+  const theme = resolvePanelTheme(options.theme);
+  const themeChrome = resolveThemeChrome(theme);
+  const themeHead = resolveThemeHead(theme, {
+    basePath,
+    authDocument: false,
+  });
+  const themePartials = resolveThemePartials(theme);
 
   return {
     basePath,
+    panelId: options.panelId || options.authCtx?.panelId || 'admin',
     panelTitle: branding.brandName,
     pageTitle: options.pageTitle,
     branding,
@@ -243,6 +283,10 @@ export async function buildShellContext(options: {
     globalSearchHtml: mountGlobalSearch(basePath),
     notificationsHtml: mountNotifications(basePath, options.notifications ?? []),
     userMenuLinks: options.userMenuLinks?.length ? options.userMenuLinks : undefined,
+    themeChrome,
+    themeHead,
+    themePartials,
+    themeId: theme.id(),
   };
 }
 

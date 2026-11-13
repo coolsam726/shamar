@@ -12,6 +12,28 @@ export {
   type ShamarBranding,
 } from './shamar/branding.js';
 export {
+  resolveThemeHead,
+  type ThemeHeadLinks,
+  type ThemeHeadOptions,
+} from './shamar/theme-head.js';
+export {
+  DefaultTheme,
+  HarborTheme,
+  ShamarTheme,
+  FireflyTheme,
+  TAILWIND_CDN_SCRIPT,
+  THEME_CSS_COMMAND,
+  THEME_CSS_MARKER,
+  assertCompiledThemeOrDevFallback,
+  themeAsset,
+  resolveThemeChrome,
+  resolveThemeTailwindSource,
+  deriveDarkColor,
+  type ThemeTokens,
+  type ThemeChromeClasses,
+  type ThemeTailwindSource,
+} from '@shamar/core';
+export {
   defineConfig,
   panel,
   type ShamarConfig,
@@ -107,6 +129,21 @@ export {
   type SideNavMode,
   type SideNavModeInput,
 } from './navigation.js';
+export {
+  MaxWidth,
+  MaxContentWidth,
+  normalizeMaxContentWidth,
+  normalizeMaxWidth,
+  resolveContentMaxWidth,
+  resolveMaxWidth,
+  DEFAULT_CONTENT_MAX_WIDTH,
+  MAX_CONTENT_WIDTH_ALIASES,
+  type MaxWidthToken,
+  type MaxWidthInput,
+  type MaxContentWidthToken,
+  type MaxContentWidthInput,
+  type ContentMaxWidthResolved,
+} from './max-content-width.js';
 export {
   createLocalMediaStorage,
   mediaObjectKey,

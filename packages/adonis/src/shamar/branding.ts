@@ -1,4 +1,11 @@
-import type { BrandDisplay, GoogleFontOptions, PanelBranding } from '@shamar/core';
+import type { BrandDisplay, GoogleFontOptions, PanelBranding, ShamarTheme } from '@shamar/core';
+import {
+  normalizeHexColor,
+  resolveDarkBrandColor,
+  resolvePanelTheme,
+  themeDarkOrFallback,
+  type ThemeTokens,
+} from '@shamar/core';
 import type { CherubimUser } from '@shamar/cherubim';
 
 /**
@@ -15,6 +22,8 @@ export type BrandingOverride = Pick<
   | 'copyright'
   | 'primaryColor'
   | 'accentColor'
+  | 'darkPrimaryColor'
+  | 'darkAccentColor'
 >;
 
 export interface BrandingOverrideContext {
@@ -45,6 +54,17 @@ export interface ShamarBranding {
   fontPreconnect?: boolean;
   primaryColor: string;
   accentColor: string;
+  /**
+   * Primary the panel set, or null when unset.
+   * Selects the theme dark-primary fallback when null (Firefly parity).
+   */
+  panelPrimary?: string | null;
+  /** Accent the panel set, or null when unset. */
+  panelAccent?: string | null;
+  /** Explicit dark primary from panel branding. */
+  panelDarkPrimary?: string | null;
+  /** Explicit dark accent from panel branding. */
+  panelDarkAccent?: string | null;
 }
 
 export const DEFAULT_SHAMAR_BRANDING: ShamarBranding = {
@@ -158,6 +178,10 @@ export function resolveBranding(config?: PanelBranding): ShamarBranding {
     ),
     primaryColor: config?.primaryColor,
     accentColor: config?.accentColor,
+    panelPrimary: normalizeHexColor(config?.primaryColor ?? '') ?? null,
+    panelAccent: normalizeHexColor(config?.accentColor ?? '') ?? null,
+    panelDarkPrimary: normalizeHexColor(config?.darkPrimaryColor ?? '') ?? null,
+    panelDarkAccent: normalizeHexColor(config?.darkAccentColor ?? '') ?? null,
   });
 }
 
@@ -179,6 +203,18 @@ export function brandingOverrideToPartial(
     copyrightText: override.copyright,
     primaryColor: override.primaryColor,
     accentColor: override.accentColor,
+    ...(override.darkPrimaryColor
+      ? { panelDarkPrimary: normalizeHexColor(override.darkPrimaryColor) ?? null }
+      : {}),
+    ...(override.darkAccentColor
+      ? { panelDarkAccent: normalizeHexColor(override.darkAccentColor) ?? null }
+      : {}),
+    ...(override.primaryColor
+      ? { panelPrimary: normalizeHexColor(override.primaryColor) ?? null }
+      : {}),
+    ...(override.accentColor
+      ? { panelAccent: normalizeHexColor(override.accentColor) ?? null }
+      : {}),
   };
 }
 
@@ -253,10 +289,49 @@ export function normalizeLogoHeight(value?: number | string | null): string {
   return raw;
 }
 
-export function buildBrandingCss(branding: ShamarBranding): string {
-  const primary = normalizeHexColor(branding.primaryColor) ?? DEFAULT_SHAMAR_BRANDING.primaryColor;
-  const accent = normalizeHexColor(branding.accentColor) ?? DEFAULT_SHAMAR_BRANDING.accentColor;
-  const fontFamily = branding.fontFamily;
+export function buildBrandingCss(
+  branding: ShamarBranding,
+  themeInput?: ShamarTheme | null,
+): string {
+  const theme = resolvePanelTheme(themeInput);
+  const tokens = theme.tokens();
+  // Firefly / Kona parity: panel (and DB override) colors win; theme tokens are
+  // fallbacks when the panel did not set primary/accent. Do not use
+  // branding.primaryColor here — resolveBranding fills that from DEFAULT even
+  // when the panel omitted colors, which would skip theme tokens.
+  const suppliedPrimary = branding.panelPrimary ?? null;
+  const suppliedAccent = branding.panelAccent ?? null;
+  const primary =
+    normalizeHexColor(suppliedPrimary ?? '') ??
+    normalizeHexColor(tokens.primary) ??
+    DEFAULT_SHAMAR_BRANDING.primaryColor;
+  const accent =
+    normalizeHexColor(suppliedAccent ?? '') ??
+    normalizeHexColor(tokens.accent) ??
+    DEFAULT_SHAMAR_BRANDING.accentColor;
+  const fontFamily = branding.fontFamily || tokens.font;
+  const darkPrimary = resolveDarkBrandColor(
+    branding.panelDarkPrimary,
+    theme.darkPrimary(),
+    suppliedPrimary,
+    tokens.darkPrimary,
+  );
+  const darkAccent =
+    resolveDarkBrandColor(
+      branding.panelDarkAccent,
+      theme.darkAccent(),
+      suppliedAccent,
+      accent,
+    ) ?? accent;
+  const darkSurface = themeDarkOrFallback(theme.darkSurface(), tokens.darkSurface);
+  const darkHeading = themeDarkOrFallback(theme.darkHeading(), tokens.darkHeading);
+  const tokenBlock = themeTokenCss(tokens, primary, accent, fontFamily, branding.logoHeight);
+  const darkTokenBlock = themeDarkTokenCss(darkPrimary, darkAccent, darkSurface, darkHeading);
+  const extra = theme.extraCss().trim();
+  if (extra && /^\s*body\s*\{/m.test(extra)) {
+    throw new Error(`Theme [${theme.id()}] CSS must stay under .shamar-panel`);
+  }
+  const extraBlock = extra ? `\n.shamar-panel {\n${extra}\n}\n` : '';
 
   return `/* Shamar admin branding — generated at runtime */
 :root {
@@ -294,24 +369,29 @@ export function buildBrandingCss(branding: ShamarBranding): string {
   --color-shamar-top-accent: ${primary};
   accent-color: var(--color-fg-brand);
 }
+${tokenBlock}
 
 .dark {
-  --color-fg-brand: ${primary};
-  --color-fg-brand-strong: color-mix(in srgb, ${primary} 78%, white);
-  --color-brand-soft: color-mix(in srgb, ${primary} 42%, black);
-  --color-brand-softer: color-mix(in srgb, ${primary} 28%, black);
-  --color-shamar-shell: var(--color-gray-800);
+  --color-fg-brand: ${darkPrimary};
+  --color-fg-brand-strong: color-mix(in srgb, ${darkPrimary} 78%, white);
+  --color-brand-soft: color-mix(in srgb, ${darkPrimary} 42%, black);
+  --color-brand-softer: color-mix(in srgb, ${darkPrimary} 28%, black);
+  --color-shamar-shell: ${darkSurface};
   --color-neutral-primary: var(--color-gray-900);
   --color-neutral-secondary: var(--color-gray-800);
   --color-neutral-tertiary: #151c28;
   --color-default: var(--color-gray-700);
-  --color-shamar-brand-panel: linear-gradient(135deg, color-mix(in srgb, ${primary} 82%, black) 0%, color-mix(in srgb, ${accent} 70%, black) 100%);
-  --color-shamar-brand-panel-solid: color-mix(in srgb, ${primary} 78%, black);
+  --color-shamar-brand-panel: linear-gradient(135deg, color-mix(in srgb, ${darkPrimary} 82%, black) 0%, color-mix(in srgb, ${darkAccent} 70%, black) 100%);
+  --color-shamar-brand-panel-solid: color-mix(in srgb, ${darkPrimary} 78%, black);
   --color-shamar-brand-panel-fg: #ffffff;
   --color-shamar-brand-panel-muted: rgb(255 255 255 / 70%);
-  --color-shamar-top-accent: ${primary};
+  --color-shamar-top-accent: ${darkPrimary};
+  --color-primary-500: ${darkPrimary};
+  --color-shamar-primary: ${darkPrimary};
+  --color-shamar-accent: ${darkAccent};
   accent-color: var(--color-fg-brand);
 }
+${darkTokenBlock}
 
 body {
   font-family: var(--shamar-font-family);
@@ -322,19 +402,66 @@ h1, h2, h3, .shamar-brand-name, .text-heading {
   font-family: var(--shamar-font-family);
   letter-spacing: -0.015em;
 }
+${extraBlock}`;
+}
+
+function themeTokenCss(
+  tokens: ThemeTokens,
+  primary: string,
+  accent: string,
+  fontFamily: string,
+  logoHeight: string,
+): string {
+  return `
+.shamar-panel,
+.shamar-auth {
+  --shamar-primary: ${primary};
+  --shamar-accent: ${accent};
+  --shamar-surface: ${tokens.surface};
+  --shamar-heading: ${tokens.heading};
+  --shamar-font: ${fontFamily};
+  --shamar-radius: ${tokens.radius};
+  --shamar-sidebar-width: ${tokens.sidebarWidth};
+  --shamar-topbar-height: ${tokens.topbarHeight};
+  --shamar-body: ${tokens.bodyBackground};
+  --shamar-logo-height: ${logoHeight};
+  /* Firefly / Kona CSS var aliases */
+  --ff-primary: var(--shamar-primary);
+  --ff-accent: var(--shamar-accent);
+  --ff-surface: var(--shamar-surface);
+  --ff-heading: var(--shamar-heading);
+  --ff-font: var(--shamar-font);
+  --ff-radius: var(--shamar-radius);
+  --ff-sidebar-width: var(--shamar-sidebar-width);
+  --ff-topbar-height: var(--shamar-topbar-height);
+  --ff-body: var(--shamar-body);
+  --ff-logo-height: var(--shamar-logo-height);
+}
 `;
 }
 
-function normalizeHexColor(value: string): string | undefined {
-  const trimmed = value.trim();
-  const match = trimmed.match(/^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
-  if (!match) return undefined;
-  const hex = match[1]!;
-  if (hex.length === 3) {
-    return `#${hex
-      .split('')
-      .map((char) => char + char)
-      .join('')}`;
-  }
-  return `#${hex.toLowerCase()}`;
+function themeDarkTokenCss(
+  darkPrimary: string,
+  darkAccent: string,
+  darkSurface: string,
+  darkHeading: string,
+): string {
+  return `
+.dark .shamar-panel,
+.dark .shamar-auth,
+.shamar-panel.dark,
+.shamar-auth.dark {
+  --shamar-primary: ${darkPrimary};
+  --shamar-accent: ${darkAccent};
+  --shamar-surface: ${darkSurface};
+  --shamar-heading: ${darkHeading};
+  --shamar-body: ${darkSurface};
+  --ff-primary: var(--shamar-primary);
+  --ff-accent: var(--shamar-accent);
+  --ff-surface: var(--shamar-surface);
+  --ff-heading: var(--shamar-heading);
+  --ff-body: var(--shamar-body);
 }
+`;
+}
+

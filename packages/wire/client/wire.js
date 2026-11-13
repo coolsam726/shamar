@@ -639,6 +639,43 @@
     return updated;
   }
 
+  /**
+   * Layout flags live on body / sidebar chrome outside data-wire-sync islands
+   * (e.g. APP_INVERSE sidebarOffcanvas). Sync them so desktop show/hide and
+   * topbar brand visibility match a full reload without remounting the shell.
+   */
+  function syncShellLayout(nextDoc) {
+    const nextBody = nextDoc.body;
+    if (!(nextBody instanceof HTMLElement)) return;
+
+    const layoutAttrs = ['data-shamar-sidebar-offcanvas'];
+    for (const name of layoutAttrs) {
+      if (nextBody.hasAttribute(name)) {
+        document.body.setAttribute(name, nextBody.getAttribute(name) || '');
+      } else {
+        document.body.removeAttribute(name);
+      }
+    }
+
+    const currentSidebar = document.querySelector('.shamar-sidebar');
+    const nextSidebar = nextDoc.querySelector('.shamar-sidebar');
+    if (currentSidebar instanceof HTMLElement && nextSidebar instanceof HTMLElement) {
+      currentSidebar.classList.toggle(
+        'shamar-sidebar--offcanvas',
+        nextSidebar.classList.contains('shamar-sidebar--offcanvas'),
+      );
+    }
+
+    const currentBrand = document.querySelector('.shamar-topbar__brand');
+    const nextBrand = nextDoc.querySelector('.shamar-topbar__brand');
+    if (currentBrand instanceof HTMLElement && nextBrand instanceof HTMLElement) {
+      currentBrand.classList.toggle(
+        'shamar-topbar__brand--always',
+        nextBrand.classList.contains('shamar-topbar__brand--always'),
+      );
+    }
+  }
+
   function reviveAlpine(roots) {
     if (!window.Alpine?.initTree) return;
     for (const root of roots) {
@@ -714,6 +751,7 @@
       }
       mergeHead(doc);
       const synced = syncNavigateRegions(doc);
+      syncShellLayout(doc);
       const region = sharedRoot(doc);
       const from = region ? region.current : document.body;
       const to = region ? region.next : doc.body;

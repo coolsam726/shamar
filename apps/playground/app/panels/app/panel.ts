@@ -1,4 +1,4 @@
-import { PanelProvider, panel } from '@shamar/adonis'
+import { PanelProvider, panel, MaxWidth } from '@shamar/adonis'
 import AppWelcomePage from '#pages/app/welcome_page'
 
 /**
@@ -17,7 +17,7 @@ export default class AppPanel extends PanelProvider {
         logoHeight: 60,
       })
       .brandDisplay('logo')
-      .contentMaxWidth('screen-xl')
+      .maxContentWidth(MaxWidth.ScreenXl)
       .dashboardPage(AppWelcomePage)
       .discoverResources('app/panels/app/resources')
       .discoverPages('app/panels/app/pages')

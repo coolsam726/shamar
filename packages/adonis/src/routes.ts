@@ -125,7 +125,11 @@ function registerPanelRoutes(
     };
   };
 
-  const assets = new AssetsController(runtime.config, panel.config.branding);
+  const assets = new AssetsController(
+    runtime.config,
+    panel.config.branding,
+    panel.config.theme,
+  );
 
   const assetHandler = (action: AssetAction) => {
     return async (ctx: HttpContext) => {
@@ -147,6 +151,9 @@ function registerPanelRoutes(
     router
       .get('/assets/alpine.min.js', assetHandler('alpineJs'))
       .as(`${routePrefix}.assets.alpineJs`);
+    router
+      .get('/assets/tailwind.js', assetHandler('tailwindJs'))
+      .as(`${routePrefix}.assets.tailwindJs`);
     router
       .get('/assets/vendor/flowbite-datepicker.min.css', assetHandler('flowbiteDatepickerCss'))
       .as(`${routePrefix}.assets.flowbiteDatepickerCss`);
@@ -342,6 +349,7 @@ function registerMediaRoutes(
             userMenuLinks: panel.config.userMenuLinks,
             navigationType: panel.config.navigationType,
             sideNavMode: panel.config.sideNavMode,
+            theme: panel.config.theme,
           });
           const folderId = (ctx.request.qs().folderId as string | undefined) || null;
           const browse = await media.adapter.browse({

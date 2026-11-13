@@ -13,12 +13,21 @@
       if (dark) document.documentElement.classList.add('dark');
     })();
   </script>
-  @if(branding.fontPreconnect)
+  @if(themeHead && themeHead.runtimeHeadHtml)
+    {{{ themeHead.runtimeHeadHtml }}}
+  @endif
+  @if(branding.fontPreconnect || (themeHead && themeHead.fontPreconnect))
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   @endif
   @if(branding.fontUrl)
     <link rel="stylesheet" href="{{ branding.fontUrl }}" />
+  @endif
+  @if(themeHead && themeHead.fontUrl)
+    <link rel="stylesheet" href="{{ themeHead.fontUrl }}" />
+  @endif
+  @if(themeHead && themeHead.stylesheetHref)
+    <link rel="stylesheet" href="{{ themeHead.stylesheetHref }}" />
   @endif
   <style>
 {{{ brandingCss }}}
@@ -320,33 +329,37 @@
     }
   </style>
 </head>
-<body>
-  <div class="auth-shell">
-    <button
-      type="button"
-      class="auth-theme-toggle"
-      data-auth-theme-toggle
-      data-theme-pref="system"
-      aria-label="Theme: System"
-    >
-      <svg class="auth-theme-icon auth-theme-icon--light" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>
-      </svg>
-      <svg class="auth-theme-icon auth-theme-icon--dark" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-      </svg>
-      <svg class="auth-theme-icon auth-theme-icon--system" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25H5.25A2.25 2.25 0 013 15V6.75A2.25 2.25 0 015.25 4.5h13.5A2.25 2.25 0 0121 6.75V15a2.25 2.25 0 01-2.25 2.25H15M9 17.25v1.5c0 .621.504 1.125 1.125 1.125h3.75c.621 0 1.125-.504 1.125-1.125v-1.5M9 17.25h6"/>
-      </svg>
-    </button>
-    <div class="auth-atmosphere" aria-hidden="true"></div>
-    <div class="auth-frame">
-      {{{ await $slots.main() }}}
-      @if(branding.copyrightText)
-        <p class="auth-footer">{{ branding.copyrightText }}</p>
-      @endif
+<body class="shamar-auth{{ themeChrome && themeChrome.auth ? ` ${themeChrome.auth}` : '' }}" data-shamar-theme="{{ themeId || 'shamar' }}">
+  @if(themePartials && themePartials.body)
+    {{{ themePartials.body }}}
+  @else
+    <div class="auth-shell">
+      <button
+        type="button"
+        class="auth-theme-toggle"
+        data-auth-theme-toggle
+        data-theme-pref="system"
+        aria-label="Theme: System"
+      >
+        <svg class="auth-theme-icon auth-theme-icon--light" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"/>
+        </svg>
+        <svg class="auth-theme-icon auth-theme-icon--dark" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+        </svg>
+        <svg class="auth-theme-icon auth-theme-icon--system" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25H5.25A2.25 2.25 0 013 15V6.75A2.25 2.25 0 015.25 4.5h13.5A2.25 2.25 0 0121 6.75V15a2.25 2.25 0 01-2.25 2.25H15M9 17.25v1.5c0 .621.504 1.125 1.125 1.125h3.75c.621 0 1.125-.504 1.125-1.125v-1.5M9 17.25h6"/>
+        </svg>
+      </button>
+      <div class="auth-atmosphere" aria-hidden="true"></div>
+      <div class="auth-frame{{ themeChrome && themeChrome.authCard ? ` ${themeChrome.authCard}` : '' }}">
+        {{{ await $slots.main() }}}
+        @if(branding.copyrightText)
+          <p class="auth-footer">{{ branding.copyrightText }}</p>
+        @endif
+      </div>
     </div>
-  </div>
+  @endif
   <script>
     (function () {
       var btn = document.querySelector('[data-auth-theme-toggle]');
@@ -384,5 +397,8 @@
       else if (typeof media.addListener === 'function') media.addListener(onSchemeChange);
     })();
   </script>
+  @if(themeHead && themeHead.revealHtml)
+    {{{ themeHead.revealHtml }}}
+  @endif
 </body>
 </html>

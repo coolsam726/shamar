@@ -1,5 +1,15 @@
 import type { AuthLoginMode, CherubimUser } from '@shamar/cherubim';
-import type { PanelBranding } from '@shamar/core';
+import type {
+  PanelBranding,
+  ShamarTheme,
+  ThemeChromeClasses,
+  ThemePartials,
+} from '@shamar/core';
+import {
+  resolvePanelTheme,
+  resolveThemeChrome,
+  resolveThemePartials,
+} from '@shamar/core';
 import { isMasqueradeEnabled } from './auth/masquerade.js';
 import {
   buildBrandingCss,
@@ -8,6 +18,8 @@ import {
   type BrandingOverrideContext,
   type ShamarBranding,
 } from './shamar/branding.js';
+import { resolveThemeHead, type ThemeHeadLinks } from './shamar/theme-head.js';
+import { panelPathPrefix } from './shamar/paths.js';
 
 export interface AuthLoginCopy {
   /** Subtitle under the brand name. */
@@ -22,6 +34,10 @@ export interface AuthLoginCopy {
 
 export interface AuthLoginViewConfig {
   branding?: PanelBranding;
+  /** Panel theme (same instance as `panel.theme(...)`). */
+  theme?: ShamarTheme | null;
+  /** Panel path for Tailwind runtime asset URL (e.g. `/admin`). */
+  path?: string;
   resolveBrandingOverrides?: (
     ctx: BrandingOverrideContext,
   ) => BrandingOverride | null | undefined | Promise<BrandingOverride | null | undefined>;
@@ -50,6 +66,10 @@ export interface AuthLoginViewData {
   loginUsernamePlaceholder: string;
   /** True when non-production masquerade login is available. */
   masqueradeEnabled: boolean;
+  themeChrome: ThemeChromeClasses;
+  themeHead: ThemeHeadLinks;
+  themePartials: ThemePartials;
+  themeId: string;
 }
 
 const DEFAULT_SUBTITLES: Record<string, string> = {
@@ -123,15 +143,21 @@ export async function buildAuthLoginViewData(
     loginMode,
     config.auth?.login,
   );
+  const theme = resolvePanelTheme(config.theme);
+  const basePath = panelPathPrefix(config.path ?? '/admin');
   return {
     loginMode,
     branding,
-    brandingCss: buildBrandingCss(branding),
+    brandingCss: buildBrandingCss(branding, theme),
     brandName: branding.brandName,
     loginSubtitle: subtitle,
     loginFooter: footer,
     loginUsernameLabel: usernameLabel,
     loginUsernamePlaceholder: usernamePlaceholder,
     masqueradeEnabled: isMasqueradeEnabled(config),
+    themeChrome: resolveThemeChrome(theme),
+    themeHead: resolveThemeHead(theme, { basePath, authDocument: true }),
+    themePartials: resolveThemePartials(theme),
+    themeId: theme.id(),
   };
 }

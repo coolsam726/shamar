@@ -1,4 +1,4 @@
-import { PanelProvider, panel, NavigationType } from '@shamar/adonis'
+import { PanelProvider, panel, NavigationType, MaxWidth } from '@shamar/adonis'
 import AdminDashboard from '#pages/admin/dashboard_page'
 
 /**
@@ -20,7 +20,7 @@ export default class AdminPanel extends PanelProvider {
       .brandDisplay('logo')
       // Firefly parity: NavigationType.APP | APP_INVERSE | SIDE | SIDEBAR | TOP
       .navigationType(NavigationType.APP)
-      .contentMaxWidth('screen-2xl')
+      .maxContentWidth(MaxWidth.Screen2Xl)
       .defaultPerPage(10)
       .dashboardPage(AdminDashboard)
       .discoverResources('app/panels/admin/resources')
