@@ -106,7 +106,7 @@ export {
   type NavigationTypeInput,
   type SideNavMode,
   type SideNavModeInput,
-} from '@shamar/core';
+} from './navigation.js';
 export {
   createLocalMediaStorage,
   mediaObjectKey,

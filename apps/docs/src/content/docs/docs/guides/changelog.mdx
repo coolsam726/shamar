@@ -9,6 +9,7 @@ GitHub releases track the monorepo tags.
 
 | Version | Notes |
 |---------|--------|
+| **1.0.15** | Align all `@shamar/*` packages to **1.0.15** (siblings were stuck at 1.0.10 after the 1.0.14 tag). `@shamar/adonis` re-exports `NavigationType` via a local const so JetBrains IDEs resolve `NavigationType.APP` / `.SIDE` / … autocomplete |
 | **1.0.14** | `NavigationType` const (`APP`, `APP_INVERSE`, `SIDE`/`SIDEBAR`, `TOP`) for IDE autocomplete from `@shamar/adonis` / `@shamar/core`; string literals still accepted. Mobile always uses a sidebar drawer with accordion groups regardless of desktop navigation type. See [Resource navigation](/docs/reference/resources/navigation/) |
 | **1.0.13** | Blade Icons–style Heroicons registry (`heroicon-o/s/m-…`, short names → outline) with extensible `Icons.add` prefixes; stock Edge partials use `iconSvg()`. Firefly-parity panel `navigationType`: `app` / `inverse` / `side` (+ accordion) / `top` (desktop offcanvas + **More** overflow). See [Resource navigation](/docs/reference/resources/navigation/) |
 | **1.0.12** | Stop auto-seeding the demo “Welcome to Shamar” topbar notification on every authenticated panel load |
