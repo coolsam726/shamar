@@ -1,7 +1,7 @@
 {
   "name": "@shamar/mongoose",
   "version": "1.0.15",
-  "description": "Mongoose DataAdapter for Shamar admin \u2014 list, CRUD, soft-delete, MongoDB models.",
+  "description": "Mongoose DataAdapter for Shamar admin — list, CRUD, soft-delete, MongoDB models.",
   "license": "MIT",
   "type": "module",
   "repository": {
