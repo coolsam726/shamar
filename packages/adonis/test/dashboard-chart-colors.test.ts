@@ -72,6 +72,23 @@ describe('dashboard chart pie/donut colors', () => {
     )
     assert.deepEqual(fromDatasetArray, ['#111', '#222'])
 
+    const fromColorsProp = asStrings(
+      resolve(
+        {
+          data: {
+            labels: ['Yes', 'No'],
+            datasets: [{ label: 'Mix', data: [8, 2], colors: ['#0369a1', '#64748b'] }],
+          },
+        },
+        {
+          isRadial: true,
+          labels: ['Yes', 'No'],
+          datasets: [{ label: 'Mix', data: [8, 2], colors: ['#0369a1', '#64748b'] }],
+        },
+      ),
+    )
+    assert.deepEqual(fromColorsProp, ['#0369a1', '#64748b'])
+
     const lineColors = asStrings(
       resolve(
         {
