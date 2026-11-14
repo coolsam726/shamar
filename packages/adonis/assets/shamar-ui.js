@@ -7311,6 +7311,60 @@
     return Array.from({ length: count }, (_, index) => palette[index % palette.length]);
   }
 
+  /**
+   * Resolve chart colors for Apex / Chart.js.
+   * Keep in sync with `@shamar/core` `resolveChartSeriesColors`.
+   * Pie/donut: top-level `data.colors` → `datasets[0].colors` →
+   * `datasets[0].color` as string[] → per-dataset `color` → brand palette.
+   * Other charts: one color per dataset (`dataset.color` string or first of array).
+   */
+  function resolveChartColors(config, { isRadial, labels, datasets }) {
+    const colorCount = isRadial
+      ? Math.max(labels.length, datasets[0]?.data?.length || 0, 1)
+      : Math.max(datasets.length, 1);
+    const palette = defaultSeriesColors(colorCount);
+    const topLevel = Array.isArray(config.data?.colors)
+      ? config.data.colors.filter((c) => typeof c === 'string' && c.trim())
+      : [];
+    const asList = (value) =>
+      Array.isArray(value) ? value.filter((c) => typeof c === 'string' && c.trim()) : [];
+    const firstColor = (value) => {
+      if (typeof value === 'string' && value.trim()) return value.trim();
+      const list = asList(value);
+      return list[0] || null;
+    };
+
+    if (!isRadial) {
+      return Array.from({ length: Math.max(datasets.length, 1) }, (_, index) => {
+        return firstColor(datasets[index]?.color) || topLevel[index] || palette[index];
+      });
+    }
+
+    if (topLevel.length) {
+      return Array.from({ length: colorCount }, (_, index) => topLevel[index] || palette[index]);
+    }
+
+    const fromColorsProp = asList(datasets[0]?.colors);
+    const fromColorArray = asList(datasets[0]?.color);
+    const datasetColorList = fromColorsProp.length ? fromColorsProp : fromColorArray;
+    if (datasetColorList.length) {
+      return Array.from({ length: colorCount }, (_, index) => datasetColorList[index] || palette[index]);
+    }
+
+    if (datasets.length > 1) {
+      return Array.from({ length: colorCount }, (_, index) => {
+        return firstColor(datasets[index]?.color) || palette[index];
+      });
+    }
+
+    if (datasets.length === 1 && colorCount === 1) {
+      const only = firstColor(datasets[0]?.color);
+      if (only) return [only];
+    }
+
+    return Array.from({ length: colorCount }, (_, index) => palette[index]);
+  }
+
   function createApexChart(el, config) {
     const labels = Array.isArray(config.data?.labels) ? config.data.labels : [];
     const datasets = Array.isArray(config.data?.datasets) ? config.data.datasets : [];
@@ -7328,11 +7382,7 @@
     }));
     // Pie/donut: one color per slice. Other charts: one color per dataset.
     const isRadial = apexType === 'donut' || apexType === 'pie';
-    const colorCount = isRadial ? Math.max(labels.length, 1) : Math.max(datasets.length, 1);
-    const palette = defaultSeriesColors(colorCount);
-    const chartColors = isRadial
-      ? labels.map((_, index) => palette[index])
-      : datasets.map((dataset, index) => dataset.color || palette[index]);
+    const chartColors = resolveChartColors(config, { isRadial, labels, datasets });
 
     const options = {
       chart: {
@@ -7398,22 +7448,20 @@
           ? 'line'
           : config.type || 'line';
     const isRadial = chartType === 'doughnut' || chartType === 'pie';
-    const palette = defaultSeriesColors(
-      isRadial ? Math.max(labels.length, 1) : Math.max(datasets.length, 1),
-    );
+    const chartColors = resolveChartColors(config, { isRadial, labels, datasets });
 
     return new window.Chart(ctx, {
       type: chartType,
       data: {
         labels,
         datasets: datasets.map((dataset, index) => {
-          const color = dataset.color || palette[index];
+          const color = chartColors[index] || chartColors[0];
           return {
             label: dataset.label,
             data: dataset.data,
-            borderColor: isRadial ? palette : color,
+            borderColor: isRadial ? chartColors : color,
             backgroundColor: isRadial
-              ? palette
+              ? chartColors
               : config.type === 'area' || config.type === 'line'
                 ? `${color}33`
                 : color,

@@ -152,6 +152,7 @@ export class FeaturedMixDonutChartWidget extends ChartWidget {
     return {
       labels: ['Featured', 'Low stock', 'Standard'],
       datasets: [{ label: 'Products', data: [featured, lowStock, standard] }],
+      colors: ['#16a34a', '#ca8a04', '#286291'],
     }
   }
 }
@@ -225,6 +226,7 @@ export class TrafficSourcesPieChartWidget extends ChartWidget {
 
   static override async data(_ctx: WidgetRequestContext) {
     const sources = await TrafficSource.find().sort({ sort: 1 }).lean()
+    const sliceColors = ['#286291', '#16a34a', '#ca8a04', '#dc2626', '#7c3aed', '#0ea5e9']
     return {
       labels: sources.map((source) => source.name),
       datasets: [
@@ -233,6 +235,7 @@ export class TrafficSourcesPieChartWidget extends ChartWidget {
           data: sources.map((source) => Number(source.sessions ?? 0)),
         },
       ],
+      colors: sources.map((_, index) => sliceColors[index % sliceColors.length]),
     }
   }
 }
