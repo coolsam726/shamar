@@ -20,18 +20,34 @@ export class VisitsChartWidget extends ChartWidget {
   static override library = 'apex'
 
   static override async data(ctx) {
-    return { labels: ['Mon', 'Tue'], series: [{ name: 'Visits', data: [12, 19] }] }
+    return {
+      labels: ['Mon', 'Tue'],
+      datasets: [{ label: 'Visits', data: [12, 19], color: '#286291' }],
+    }
   }
 }
 ```
+
+### Pie / donut slice colors
+
+Pass a top-level `colors` array aligned with `labels` (preferred). Apex and Chart.js both honor it — no host `updateOptions` patch required.
+
+```ts
+return {
+  labels: ['Present · 12 (80%)', 'Absent · 3 (20%)'],
+  datasets: [{ label: 'Roll', data: [12, 3] }],
+  colors: ['#2E7D32', '#B3261E'],
+}
+```
+
+Alternatively set `datasets[0].colors` (or `datasets[0].color` as a `string[]`) to the same length, or one `color` string per dataset when each slice is its own dataset.
 
 <DocApiTable
   title="Methods"
   rows={[
     { method: 'static type', description: 'line | bar | area | pie | donut.' },
     { method: 'static library', description: 'apex (default) or chartjs.' },
-    { method: 'static data(ctx)', description: 'Chart payload (async).' },
+    { method: 'static data(ctx)', description: 'Chart payload (async). Prefer `colors` for pie/donut slices; `datasets[].color` for series.' },
     { method: 'static columnSpan / heading', description: 'Layout.' },
   ]}
 />
-

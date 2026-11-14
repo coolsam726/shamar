@@ -54,6 +54,20 @@ class DemoChart extends ChartWidget {
   }
 }
 
+class DemoPieChart extends ChartWidget {
+  static override type() {
+    return 'pie' as const;
+  }
+
+  static override data() {
+    return {
+      labels: ['Present', 'Absent'],
+      datasets: [{ label: 'Roll', data: [12, 3] }],
+      colors: ['#2E7D32', '#B3261E'],
+    };
+  }
+}
+
 class DemoDashboard extends DashboardPage {
   static override widgets() {
     return [DemoStats, DemoChart, ...super.widgets()];
@@ -126,6 +140,12 @@ describe('Dashboard widgets', () => {
     assert.equal(isChartWidget(DemoChart), true);
     assert.equal(isNavigationCardsWidget(NavigationCardsWidget), true);
     assert.equal(isStatsOverviewWidget(ListWidget as never), false);
+  });
+
+  it('ChartData accepts top-level pie/donut colors', async () => {
+    const data = await DemoPieChart.data({} as never);
+    assert.deepEqual(data.colors, ['#2E7D32', '#B3261E']);
+    assert.equal(DemoPieChart.type(), 'pie');
   });
 
   it('custom dashboard can extend default widgets', () => {
