@@ -1,11 +1,13 @@
 @include('shamar::partials/shell-open')
 
 <div
+  wire:key="shamar-page-form-{{ page.slug }}"
   class="mx-auto space-y-6 {{ contentMaxWidthClass || 'w-full max-w-screen-xl' }}"
     style="{{ contentMaxWidthStyle || 'max-width: 80rem' }}"
 >
   <form
     id="shamar-form"
+    wire:key="shamar-form-{{ page.slug }}"
     method="post"
     action="{{ basePath }}/{{ page.slug }}"
     class="space-y-6"

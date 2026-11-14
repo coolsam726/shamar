@@ -5086,6 +5086,9 @@
     // Alpine.data registration races; Alpine.data still preferred when available.
     window.shamarForm = createShamarForm;
     Alpine.data('shamarForm', (cfg) => createShamarForm(cfg));
+    Alpine.data('shamarDashboardChart', (cfg) => window.shamarDashboardChart(cfg));
+    Alpine.data('shamarDashboardWidget', (el) => window.shamarDashboardWidget(el));
+    Alpine.data('shamarStatSparkline', (values, options) => window.shamarStatSparkline(values, options));
     Alpine.data('shamarCombobox', (cfg) => createShamarCombobox(cfg));
     Alpine.data('shamarFlowbitePicker', (cfg) => createShamarFlowbitePicker(cfg));
     Alpine.data('shamarDatePicker', (cfg) => createShamarFlowbitePicker(cfg));

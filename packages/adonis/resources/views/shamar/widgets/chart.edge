@@ -1,3 +1,6 @@
+@let(pollMs = widget.pollingIntervalMs)
+@let(lazy = widget.isLazy && widget.payload.deferred)
+@let(refreshUrl = widget.refreshUrl)
 @let(chartConfig = {
   id: widget.id,
   type: widget.payload.chartType,
@@ -5,15 +8,40 @@
   data: widget.payload.data,
 })
 
-<div class="shamar-card shamar-dashboard-widget__card rounded-xl p-5 h-full">
+<div
+  class="shamar-card shamar-dashboard-widget__card rounded-xl p-5 h-full"
+  data-shamar-dashboard-widget
+  data-widget-id="{{ widget.id }}"
+  @if(refreshUrl)
+    data-refresh-url="{{ refreshUrl }}"
+  @endif
+  @if(pollMs)
+    data-polling-interval="{{ pollMs }}"
+  @endif
+  @if(lazy)
+    data-lazy="1"
+  @endif
+  x-data="shamarDashboardWidget($el)"
+>
   @if(widget.heading)
     <h3 class="mb-4 text-base font-bold tracking-tight text-heading">{{ widget.heading }}</h3>
   @endif
+  @if(widget.description)
+    <p class="mb-3 text-sm text-body-subtle">{{ widget.description }}</p>
+  @endif
 
-  <div
-    class="shamar-dashboard-chart min-h-[220px]"
-    x-data='shamarDashboardChart({{ jsonAttr(chartConfig) }})'
-  >
-    <div x-ref="chart" class="h-[220px] w-full"></div>
+  <div data-shamar-widget-body>
+    @if(lazy)
+      <div class="min-h-[220px] rounded-xl border border-dashed border-default px-4 py-8 text-center text-sm text-body-subtle">
+        Loading chart…
+      </div>
+    @else
+      <div
+        class="shamar-dashboard-chart min-h-[220px]"
+        x-data='shamarDashboardChart({{ jsonAttr(chartConfig) }})'
+      >
+        <div x-ref="chart" class="h-[220px] w-full"></div>
+      </div>
+    @endif
   </div>
 </div>

@@ -83,6 +83,41 @@ describe('resolveDashboardWidgets', () => {
     assert.equal(result.widgets[0]!.refreshUrl, '/widgets/LazyStats');
   });
 
+  it('defers lazy charts until hydrate', async () => {
+    class LazyChart extends ChartWidget {
+      static override id = 'lazy-chart';
+      static override isLazy = true;
+
+      static override data() {
+        return {
+          labels: ['A'],
+          datasets: [{ label: 'Count', data: [4] }],
+        };
+      }
+    }
+    class LazyChartDash extends DashboardPage {
+      static override widgets() {
+        return [LazyChart];
+      }
+    }
+
+    const deferred = await resolveDashboardWidgets(LazyChartDash, { user: null }, {
+      refreshUrlBase: '/admin',
+    });
+    assert.equal(deferred.widgets[0]!.payload.deferred, true);
+    assert.deepEqual(deferred.widgets[0]!.payload.data, { labels: [], datasets: [] });
+    assert.equal(deferred.widgets[0]!.refreshUrl, '/admin/widgets/lazy-chart');
+
+    const hydrated = await resolveDashboardWidgets(LazyChartDash, { user: null }, {
+      hydrate: true,
+      widgetId: 'lazy-chart',
+      refreshUrlBase: '/admin',
+    });
+    assert.equal(hydrated.widgets.length, 1);
+    assert.equal(hydrated.widgets[0]!.payload.deferred, undefined);
+    assert.deepEqual(hydrated.widgets[0]!.payload.data.labels, ['A']);
+  });
+
   it('defers lazy stats until hydrate', async () => {
     class LazyStats extends StatsOverviewWidget {
       static override isLazy = true;
