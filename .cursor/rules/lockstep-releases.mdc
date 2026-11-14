@@ -1,0 +1,43 @@
+---
+description: Lockstep version bumps for all @shamar/* packages on every release
+alwaysApply: true
+---
+
+# Lockstep releases
+
+ALL `@shamar/*` packages in `packages/*/package.json` ship the **same version**. Never cut a release that bumps only `@shamar/adonis` (or any single package).
+
+## Packages (keep in sync)
+
+`@shamar/core`, `@shamar/cherubim`, `@shamar/mongoose`, `@shamar/rest`, `@shamar/lucid`, `@shamar/wire`, `@shamar/adonis`
+
+## Required when releasing
+
+1. Bump **every** `packages/*/package.json` `version` to the same semver (e.g. `1.0.17`).
+2. Publish **all** `@shamar/*` together (CI Publish workflow or equivalent) — do not publish only `@shamar/adonis`.
+3. Update changelog / release notes for the monorepo release, not a single package.
+
+## Forbidden
+
+- Releasing only `@shamar/adonis` while siblings stay on an older version.
+- Mixed versions across packages (e.g. adonis `1.0.17` + core `1.0.16`).
+- Host apps resolving a mix of `@shamar/*` versions after a release.
+
+## Example
+
+```json
+// ❌ BAD — only adonis bumped
+"@shamar/adonis": "1.0.17"
+"@shamar/core": "1.0.16"
+
+// ✅ GOOD — lockstep
+"@shamar/adonis": "1.0.17"
+"@shamar/core": "1.0.17"
+"@shamar/cherubim": "1.0.17"
+"@shamar/mongoose": "1.0.17"
+"@shamar/rest": "1.0.17"
+"@shamar/lucid": "1.0.17"
+"@shamar/wire": "1.0.17"
+```
+
+Hosts (e.g. class-attendance) must consume the same caret range for every direct `@shamar/*` dep after the release is on npm.
