@@ -1,13 +1,40 @@
-<div class="shamar-card shamar-dashboard-widget__card rounded-xl p-5 h-full">
+@let(pollMs = widget.pollingIntervalMs)
+@let(lazy = widget.isLazy && widget.payload.deferred)
+@let(refreshUrl = widget.refreshUrl)
+
+<div
+  class="shamar-card shamar-dashboard-widget__card rounded-xl p-5 h-full"
+  data-shamar-dashboard-widget
+  data-widget-id="{{ widget.id }}"
+  @if(refreshUrl)
+    data-refresh-url="{{ refreshUrl }}"
+  @endif
+  @if(pollMs)
+    data-polling-interval="{{ pollMs }}"
+  @endif
+  @if(lazy)
+    data-lazy="1"
+  @endif
+  x-data="shamarDashboardWidget($el)"
+>
   @if(widget.heading)
     <h3 class="mb-4 text-base font-bold tracking-tight text-heading">{{ widget.heading }}</h3>
   @endif
-
-  @if(widget.payload.content.view)
-    @!component(widget.payload.content.view, widget.payload.content.data ?? {})
-  @elseif(widget.payload.content.html)
-    <div class="prose prose-sm max-w-none text-body">{{{ widget.payload.content.html }}}</div>
-  @else
-    <p class="text-sm text-body-subtle">No card content configured.</p>
+  @if(widget.description)
+    <p class="mb-3 text-sm text-body-subtle">{{ widget.description }}</p>
   @endif
+
+  <div data-shamar-widget-body>
+    @if(lazy)
+      <div class="rounded-xl border border-dashed border-default px-4 py-8 text-center text-sm text-body-subtle">
+        Loading…
+      </div>
+    @elseif(widget.payload.content.view)
+      @!component(widget.payload.content.view, widget.payload.content.data ?? {})
+    @elseif(widget.payload.content.html)
+      <div class="prose prose-sm max-w-none text-body">{{{ widget.payload.content.html }}}</div>
+    @else
+      <p class="text-sm text-body-subtle">No card content configured.</p>
+    @endif
+  </div>
 </div>
