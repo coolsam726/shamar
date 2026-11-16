@@ -43,7 +43,7 @@ export type NavigationTypeInput =
 
 /**
  * How {@link NavigationType} `side` draws navigation groups on desktop.
- * `static` (default) keeps headings open. `accordion` collapses inactive groups.
+ * `accordion` (default) collapses inactive groups. `static` keeps headings open.
  * APP, INVERSE, and TOP ignore this mode on desktop. Mobile always uses accordion.
  */
 export type SideNavMode = 'static' | 'accordion';
@@ -70,7 +70,7 @@ export function normalizeNavigationType(
 
 export function normalizeSideNavMode(
   value: SideNavModeInput | string | undefined | null,
-  fallback: SideNavMode = 'static',
+  fallback: SideNavMode = 'accordion',
 ): SideNavMode {
   if (value == null || !String(value).trim()) return fallback;
   const key = String(value).trim().toLowerCase();
