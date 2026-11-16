@@ -102,7 +102,7 @@
       @endeach
     </nav>
   @elseif(navigationType === 'side')
-    {{-- SIDE desktop: exclusive expand only when sideNavMode is accordion (data-shamar-nav-accordion).
+    {{-- SIDE desktop: accordion unless sideNavMode is static (data-shamar-nav-accordion).
          Static mode keeps groups always expanded — no details, no exclusive JS. --}}
     <nav
       class="shamar-sidebar__roots shamar-sidebar__side flex-1 px-2 py-3 overflow-y-auto"

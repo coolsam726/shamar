@@ -241,17 +241,20 @@ export class PanelBuilder {
   }
 
   /**
-   * How SIDE groups render on desktop. Default `static`. APP / INVERSE / TOP ignore this.
-   * Mobile always uses accordion.
+   * How SIDE groups render on desktop. Default `accordion`. Pass `'static'` to keep
+   * every group open. APP / INVERSE / TOP ignore this. Mobile always uses accordion.
    *
-   * @example panel('admin').navigationType(NavigationType.SIDE).sideNavMode('accordion')
+   * @example panel('admin').navigationType(NavigationType.SIDE).sideNavMode('static')
    */
   sideNavMode(mode: SideNavModeInput): this {
     this.config.sideNavMode = normalizeSideNavMode(mode);
     return this;
   }
 
-  /** Selects accordion SIDE groups when `on` is true (default true). */
+  /**
+   * SIDE accordion. On by default; pass `false` for always-open groups.
+   * Same as `.sideNavMode('static')`.
+   */
   navigationAccordion(on = true): this {
     return this.sideNavMode(on ? 'accordion' : 'static');
   }
@@ -267,9 +270,7 @@ export class PanelBuilder {
       navigationType: this.config.navigationType
         ? normalizeNavigationType(this.config.navigationType)
         : undefined,
-      sideNavMode: this.config.sideNavMode
-        ? normalizeSideNavMode(this.config.sideNavMode)
-        : undefined,
+      sideNavMode: normalizeSideNavMode(this.config.sideNavMode, 'accordion'),
     };
   }
 }

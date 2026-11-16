@@ -597,8 +597,78 @@ button:disabled,
 .shamar-nav-chevron {
   transition: transform 140ms ease;
 }
-.shamar-nav-tree--active {
-  border-color: var(--color-primary-500);
+
+/* Side-nav treeline. Stock border-l is hidden: a full-height border runs past
+   the last child. Each direct child draws the rail; the last child's rail
+   stops on its branch as a filled 1px square (the branch sits below top: 50%). */
+.shamar-panel .shamar-nav-tree,
+.shamar-sidebar .shamar-nav-tree {
+  --shamar-nav-tree-line: var(--ff-primary-100, var(--color-primary-100));
+  border-left-color: transparent;
+}
+.shamar-panel details.shamar-nav-group-collapsible > .shamar-nav-tree,
+.shamar-sidebar details.shamar-nav-group-collapsible > .shamar-nav-tree {
+  margin-top: 0.375rem;
+  padding-top: 0.125rem;
+}
+.shamar-panel details.shamar-nav-group-collapsible:has(> summary.nav-item.nav-active) > .shamar-nav-tree,
+.shamar-panel details.shamar-nav-group-collapsible:has(> summary.nav-item.savannabits-nav-active) > .shamar-nav-tree,
+.shamar-panel .shamar-nav-tree--active,
+.shamar-sidebar .shamar-nav-tree--active {
+  --shamar-nav-tree-line: var(--ff-accent, var(--color-shamar-accent));
+  border-left-color: transparent;
+}
+.shamar-panel .shamar-nav-tree > .nav-item,
+.shamar-sidebar .shamar-nav-tree > .nav-item {
+  position: relative;
+}
+.shamar-panel .shamar-nav-tree > .nav-item::before,
+.shamar-sidebar .shamar-nav-tree > .nav-item::before {
+  content: '';
+  position: absolute;
+  left: -0.75rem;
+  top: 50%;
+  width: 0.5rem;
+  border-top: 1px solid var(--shamar-nav-tree-line);
+  pointer-events: none;
+}
+.shamar-panel .shamar-nav-tree > *,
+.shamar-sidebar .shamar-nav-tree > * {
+  position: relative;
+}
+.shamar-panel .shamar-nav-tree > *::after,
+.shamar-sidebar .shamar-nav-tree > *::after {
+  content: '';
+  position: absolute;
+  left: calc(-0.75rem - 1px);
+  top: 0;
+  bottom: -0.125rem;
+  width: 1px;
+  background: var(--shamar-nav-tree-line);
+  pointer-events: none;
+}
+.shamar-panel .shamar-nav-tree > :last-child::after,
+.shamar-sidebar .shamar-nav-tree > :last-child::after {
+  bottom: auto;
+  height: calc(50% + 1px);
+}
+.shamar-panel .shamar-nav-tree > .nav-item:last-child::before,
+.shamar-sidebar .shamar-nav-tree > .nav-item:last-child::before {
+  left: calc(-0.75rem - 1px);
+  top: 50%;
+  width: calc(0.5rem + 1px);
+  height: 1px;
+  border: 0;
+  border-radius: 0;
+  background: var(--shamar-nav-tree-line);
+}
+.shamar-panel details.shamar-nav-group-collapsible > .shamar-nav-tree > :first-child::after,
+.shamar-sidebar details.shamar-nav-group-collapsible > .shamar-nav-tree > :first-child::after {
+  top: -0.125rem;
+}
+.shamar-panel details.shamar-nav-group-collapsible > .shamar-nav-tree > :first-child:last-child::after,
+.shamar-sidebar details.shamar-nav-group-collapsible > .shamar-nav-tree > :first-child:last-child::after {
+  height: calc(50% + 0.125rem + 1px);
 }
 
 @media (width >= 48rem) {

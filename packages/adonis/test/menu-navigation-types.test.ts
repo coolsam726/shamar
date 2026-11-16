@@ -74,6 +74,13 @@ describe('menuLayoutContext navigation types', () => {
     assert.equal(attendance?.active, true)
   })
 
+  it('SIDE: accordion is the default when sideNavMode is omitted', () => {
+    const menu = menuLayoutContext(groups, '/admin', 'units', 'Units', undefined, {
+      navigationType: 'side',
+    })
+    assert.equal(menu.sideNavMode, 'accordion')
+  })
+
   it('SIDE: static mode keeps groups always expanded (no exclusive accordion)', () => {
     const menu = menuLayoutContext(groups, '/admin', 'units', 'Units', undefined, {
       navigationType: 'side',

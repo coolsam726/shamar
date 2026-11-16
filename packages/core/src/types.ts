@@ -785,8 +785,8 @@ export interface PanelConfig {
    */
   navigationType?: import('./navigation.js').NavigationType;
   /**
-   * How SIDE groups render: `static` (default) or `accordion`.
-   * Ignored for APP / INVERSE / TOP.
+   * How SIDE groups render: `accordion` (default) or `static`.
+   * Ignored for APP / INVERSE / TOP. Opt out with `navigationAccordion(false)`.
    */
   sideNavMode?: import('./navigation.js').SideNavMode;
 }

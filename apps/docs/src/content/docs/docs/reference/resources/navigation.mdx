@@ -29,7 +29,8 @@ import { panel, NavigationType } from '@shamar/adonis'
 panel('admin')
   .navigationType(NavigationType.APP) // default: L1 groups in sidebar; active children in top bar
   // .navigationType(NavigationType.APP_INVERSE) // or NavigationType.INVERSE / 'app_inverse'
-  // .navigationType(NavigationType.SIDE).navigationAccordion() // or NavigationType.SIDEBAR
+  // .navigationType(NavigationType.SIDE) // accordion by default; NavigationType.SIDEBAR is the same
+  // .navigationAccordion(false) // always-open SIDE groups
   // .navigationType(NavigationType.TOP) // or .topNavigation()
 ```
 
@@ -37,7 +38,7 @@ panel('admin')
 |---------------|---------|------------|
 | `NavigationType.APP` (`'app'`, default) | Sidebar | Top bar (active L1 children; nested = dropdowns) |
 | `NavigationType.APP_INVERSE` / `INVERSE` (`'inverse'` / `'app_inverse'`) | Top bar | Sidebar |
-| `NavigationType.SIDE` / `SIDEBAR` (`'side'` / `'sidebar'`) | Sidebar (groups as headings; optional accordion) | Sidebar |
+| `NavigationType.SIDE` / `SIDEBAR` (`'side'` / `'sidebar'`) | Sidebar (accordion groups by default; `navigationAccordion(false)` keeps them open) | Sidebar |
 | `NavigationType.TOP` (`'top'`) | Top bar (groups as nested dropdowns) | Top bar |
 
 ### Desktop vs mobile

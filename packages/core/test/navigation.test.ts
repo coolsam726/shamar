@@ -34,7 +34,8 @@ describe('navigation types', () => {
   it('normalizes side nav mode', () => {
     assert.equal(normalizeSideNavMode('accordion'), 'accordion')
     assert.equal(normalizeSideNavMode('STATIC'), 'static')
-    assert.equal(normalizeSideNavMode(undefined), 'static')
+    assert.equal(normalizeSideNavMode(undefined), 'accordion')
+    assert.equal(normalizeSideNavMode(null), 'accordion')
   })
 
   it('PanelBuilder.navigationType / navigationAccordion set config', () => {
@@ -54,5 +55,9 @@ describe('navigation types', () => {
 
     const sidebar = panel('admin').navigationType('sidebar').build()
     assert.equal(sidebar.navigationType, 'side')
+    assert.equal(sidebar.sideNavMode, 'accordion')
+
+    const flat = panel('admin').navigationType(NavigationType.SIDE).navigationAccordion(false).build()
+    assert.equal(flat.sideNavMode, 'static')
   })
 })

@@ -252,7 +252,7 @@ export function menuLayoutContext(
   options?: MenuLayoutOptions,
 ): MenuLayoutContext {
   const navigationType = normalizeNavigationType(options?.navigationType, 'app');
-  const sideNavMode = normalizeSideNavMode(options?.sideNavMode, 'static');
+  const sideNavMode = normalizeSideNavMode(options?.sideNavMode, 'accordion');
 
   const appRoots: MenuRoot[] = [
     {
